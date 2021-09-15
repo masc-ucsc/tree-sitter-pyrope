@@ -57,7 +57,7 @@ module.exports = grammar({
     start: $ =>
       seq(
         optional($._newline)
-        ,optional($.lambda_def_constrains)
+        //,optional($.lambda_def)
         ,optional($.stmt_seq)
       )
 
@@ -89,6 +89,7 @@ module.exports = grammar({
         ,$.ctrl_stmt
         //,$.scope_stmt
         ,$.try_stmt
+        ,$.factor_expr_stmt
         ,$.constrained_scope_stmt
       )
 
@@ -216,7 +217,7 @@ module.exports = grammar({
         ,optional($.gate_stmt)
       )
 
-    // Very close to multiple_stmt but not fcall_args allowed
+    // Very close to multiple_stmt
     ,assign_stmt: $ =>
       seq(
         choice(
@@ -234,11 +235,22 @@ module.exports = grammar({
 
     ,multiple_stmt: $ =>
       seq(
-        field("lhs",$._expr_seq1)
-        ,optional(
-          choice(
-            $.assignment_cont2
-            ,$.fcall_args
+        choice(
+          seq(
+            $.bundle
+            ,$.assignment_cont2
+          )
+          ,seq(
+            optional($.expr_attr)
+            ,$.fcall_or_variable
+            ,optional(
+              choice(
+                $.assignment_cont2
+                ,$.lambda_def
+                ,$._expr_simple_seq1
+                ,$.expr_cont
+              )
+            )
           )
         )
         ,optional($._assign_multiple_end)
@@ -252,19 +264,6 @@ module.exports = grammar({
           ,optional($.gate_stmt)
         )
         ,$.gate_stmt
-      )
-
-    ,fcall_args: $ =>
-      seq(
-        optional($.expr_attr)
-        ,$.factor_simple_fcall
-        ,optional($.expr_cont)
-        ,repeat(
-          seq(
-            repeat1($.comma_tok)
-            ,$.expr_entry
-          )
-        )
       )
 
     ,fcall_pipe: $ =>
@@ -293,23 +292,7 @@ module.exports = grammar({
             )
           )
         )
-        ,field("rhs",
-          seq(
-            field("attr",optional($.expr_attr))
-            ,field("f1",$.factor_first)
-            ,choice(
-              seq(
-                optional($.expr_cont)
-                ,field("in",optional($.in_range))
-              )
-              ,optional($.fcall_args)
-              ,seq(
-                repeat1($.comma_tok)
-                ,$.expr_simple_entry
-              )
-            )
-          )
-        )
+        ,field("rhs", $._expr_seq1)
       )
 
     ,scope_stmt: $ =>
@@ -331,7 +314,7 @@ module.exports = grammar({
 
     ,lambda_def: $ =>
       seq(
-        $.ok_tok
+        $.ok_lambda_tok
         ,$.lambda_def_constrains
         ,optional($.stmt_seq)
         ,$.ck_tok
@@ -360,7 +343,12 @@ module.exports = grammar({
       seq(
         field("attr",optional($.expr_attr))
         ,field("f1",$.factor_first)
-        ,optional($.expr_cont)
+        ,optional(
+          choice(
+            $.expr_cont
+            ,$.lambda_def
+          )
+        )
         ,field("in",optional($.in_range))
       )
 
@@ -491,6 +479,36 @@ module.exports = grammar({
         )
       )
 
+    ,factor_expr_stmt: $ =>
+      choice(
+        $.if_stmt
+        ,$.repipe_stmt
+        ,$.match_stmt
+        ,$.for_stmt
+        ,$.expr_range_cont   // open range
+        ,$.lambda_def
+        ,seq(
+          $.factor_expr_start
+          ,optional($.expr_cont)
+        )
+      )
+
+    ,factor_expr_start: $ =>
+      choice(
+        $.typecase
+        ,$.scope_expr
+        ,seq(
+          $.unary_op_tok
+          ,choice(
+            $.bundle
+            ,seq(
+              $.fcall_or_variable
+              ,optional($.typecase)
+            )
+          )
+        )
+      )
+
     ,fcall_or_variable: $ =>
       seq(
         choice(
@@ -511,9 +529,9 @@ module.exports = grammar({
 
     ,lambda_def_constrains: $ =>
       seq(
+        //$.bar_tok
         optional($.expr_attr)
         ,optional($.mut_tok)
-        ,$.bar_tok
         ,choice(
           $.trivial_or_caps_identifier_seq1 // just trivial sequence IDs no types no nothing or complex pattern
           ,seq(
@@ -644,6 +662,20 @@ module.exports = grammar({
             seq(
               repeat1($.comma_tok)
               ,$.expr_entry
+            )
+          )
+        )
+      )
+
+    ,_expr_simple_seq1: $ =>
+      seq(
+        repeat($.comma_tok)
+        ,seq(
+          $.expr_simple_entry
+          ,repeat(
+            seq(
+              repeat1($.comma_tok)
+              ,$.expr_simple_entry
             )
           )
         )
@@ -791,6 +823,7 @@ module.exports = grammar({
 
     // No ok_tok because it should have space after only if statement (more complicated per rule case)
     ,ok_tok: () => seq(/\{/)
+    ,ok_lambda_tok: () => seq(/\{\|/)
     ,ck_tok: () => seq(/\s*}/)
 
     ,ob_tok: () => seq(/\[/) // No newline because the following line may be a expr (not a self-contained statement)

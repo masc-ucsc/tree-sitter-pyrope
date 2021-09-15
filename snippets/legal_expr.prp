@@ -1,0 +1,10 @@
+
+a = 1 + 2
+let b = 1 + {c=3; c/3} + 2 + {if a ==3 { 44 } else {assert false }}
+
+var x = if {c=3 ; c == (1+3)} {
+  33333
+}else{
+  44444 + 33 / fcall(1,2)
+}
+

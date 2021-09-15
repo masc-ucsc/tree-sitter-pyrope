@@ -16,6 +16,10 @@
         "named": true
       },
       {
+        "type": "factor_expr_stmt",
+        "named": true
+      },
+      {
         "type": "multiple_stmt",
         "named": true
       },
@@ -135,116 +139,12 @@
           }
         ]
       },
-      "attr": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expr_attr",
-            "named": true
-          }
-        ]
-      },
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      },
-      "f1": {
+      "rhs": {
         "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          },
-          {
-            "type": "for_stmt",
-            "named": true
-          },
-          {
-            "type": "if_stmt",
-            "named": true
-          },
-          {
-            "type": "match_stmt",
-            "named": true
-          },
-          {
-            "type": "range_op_tok",
-            "named": true
-          },
-          {
-            "type": "range_open_tok",
-            "named": true
-          },
-          {
-            "type": "repipe_stmt",
-            "named": true
-          }
-        ]
-      },
-      "in": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "in_range",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_op_tok",
-            "named": true
-          },
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "does_typecase",
-            "named": true
-          },
-          {
-            "type": "expr_simple_entry",
-            "named": true
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          },
-          {
-            "type": "fcall_args",
-            "named": true
-          },
-          {
-            "type": "logical_op_tok",
-            "named": true
-          },
-          {
-            "type": "range_op_tok",
-            "named": true
-          },
-          {
-            "type": "range_open_tok",
+            "type": "expr_entry",
             "named": true
           }
         ]
@@ -564,6 +464,10 @@
           "named": true
         },
         {
+          "type": "lambda_def",
+          "named": true
+        },
+        {
           "type": "logical_op_tok",
           "named": true
         },
@@ -661,6 +565,111 @@
     }
   },
   {
+    "type": "factor_expr_start",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "fcall_or_variable",
+          "named": true
+        },
+        {
+          "type": "scope_expr",
+          "named": true
+        },
+        {
+          "type": "typecase",
+          "named": true
+        },
+        {
+          "type": "unary_op_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "factor_expr_stmt",
+    "named": true,
+    "fields": {
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "does_typecase",
+          "named": true
+        },
+        {
+          "type": "factor_expr_start",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "for_stmt",
+          "named": true
+        },
+        {
+          "type": "if_stmt",
+          "named": true
+        },
+        {
+          "type": "lambda_def",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "match_stmt",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        },
+        {
+          "type": "repipe_stmt",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "factor_second",
     "named": true,
     "fields": {},
@@ -725,68 +734,6 @@
         },
         {
           "type": "unary_op_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "fcall_args",
-    "named": true,
-    "fields": {
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "binary_op_tok",
-          "named": true
-        },
-        {
-          "type": "does_typecase",
-          "named": true
-        },
-        {
-          "type": "expr_attr",
-          "named": true
-        },
-        {
-          "type": "expr_entry",
-          "named": true
-        },
-        {
-          "type": "factor_second",
-          "named": true
-        },
-        {
-          "type": "factor_simple_fcall",
-          "named": true
-        },
-        {
-          "type": "logical_op_tok",
-          "named": true
-        },
-        {
-          "type": "range_op_tok",
-          "named": true
-        },
-        {
-          "type": "range_open_tok",
           "named": true
         }
       ]
@@ -1090,6 +1037,10 @@
           "named": true
         },
         {
+          "type": "ok_lambda_tok",
+          "named": true
+        },
+        {
           "type": "stmt_seq",
           "named": true
         }
@@ -1302,12 +1253,16 @@
     "type": "multiple_stmt",
     "named": true,
     "fields": {
-      "lhs": {
+      "by": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "expr_entry",
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
             "named": true
           }
         ]
@@ -1315,14 +1270,38 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "assignment_cont2",
           "named": true
         },
         {
-          "type": "fcall_args",
+          "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "does_typecase",
+          "named": true
+        },
+        {
+          "type": "expr_attr",
+          "named": true
+        },
+        {
+          "type": "expr_simple_entry",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "fcall_or_variable",
           "named": true
         },
         {
@@ -1332,9 +1311,30 @@
         {
           "type": "gate_stmt",
           "named": true
+        },
+        {
+          "type": "lambda_def",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "ok_lambda_tok",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "repipe_stmt",
@@ -1447,13 +1447,9 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
-        {
-          "type": "lambda_def_constrains",
-          "named": true
-        },
         {
           "type": "stmt_seq",
           "named": true

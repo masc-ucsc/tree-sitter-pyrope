@@ -25,7 +25,7 @@
 type Shape = (
   ,name = {|() -> :string|}
   ,area = {|() -> :i32|}
-  ,increase_size = {mut |(_:i12) -> ()|}
+  ,increase_size = {|mut(_:i12) -> ()|}
 )
 
 type Circle implements Shape = (
@@ -35,7 +35,7 @@ type Circle implements Shape = (
      let pi = import("math.pi")
      return pi * self.rad * self.rad
   }
-  ,increase_size = {mut |(_:i12) -> ()|  self.rad *= $1 }
+  ,increase_size = {|mut(_:i12) -> ()|  self.rad *= $1 }
 )
 
 add1 = {|a,b| // 1 cycle add
