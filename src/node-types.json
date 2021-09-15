@@ -1,0 +1,1928 @@
+[
+  {
+    "type": "stmt_base",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "assign_stmt",
+        "named": true
+      },
+      {
+        "type": "constrained_scope_stmt",
+        "named": true
+      },
+      {
+        "type": "ctrl_stmt",
+        "named": true
+      },
+      {
+        "type": "multiple_stmt",
+        "named": true
+      },
+      {
+        "type": "try_stmt",
+        "named": true
+      },
+      {
+        "type": "type_stmt",
+        "named": true
+      },
+      {
+        "type": "while_stmt",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "assign_stmt",
+    "named": true,
+    "fields": {
+      "lhs": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "assignment_cont2",
+          "named": true
+        },
+        {
+          "type": "fcall_pipe",
+          "named": true
+        },
+        {
+          "type": "gate_stmt",
+          "named": true
+        },
+        {
+          "type": "let_tok",
+          "named": true
+        },
+        {
+          "type": "mut_tok",
+          "named": true
+        },
+        {
+          "type": "set_tok",
+          "named": true
+        },
+        {
+          "type": "var_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assignment_cont",
+    "named": true,
+    "fields": {
+      "rhs": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "equal_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assignment_cont2",
+    "named": true,
+    "fields": {
+      "assign": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "assign_tok",
+            "named": true
+          },
+          {
+            "type": "eq_pound_tok",
+            "named": true
+          },
+          {
+            "type": "equal_tok",
+            "named": true
+          },
+          {
+            "type": "selector1",
+            "named": true
+          }
+        ]
+      },
+      "attr": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expr_attr",
+            "named": true
+          }
+        ]
+      },
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      },
+      "f1": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          },
+          {
+            "type": "for_stmt",
+            "named": true
+          },
+          {
+            "type": "if_stmt",
+            "named": true
+          },
+          {
+            "type": "match_stmt",
+            "named": true
+          },
+          {
+            "type": "range_op_tok",
+            "named": true
+          },
+          {
+            "type": "range_open_tok",
+            "named": true
+          },
+          {
+            "type": "repipe_stmt",
+            "named": true
+          }
+        ]
+      },
+      "in": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "in_range",
+            "named": true
+          }
+        ]
+      },
+      "rhs": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_op_tok",
+            "named": true
+          },
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "does_typecase",
+            "named": true
+          },
+          {
+            "type": "expr_simple_entry",
+            "named": true
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          },
+          {
+            "type": "fcall_args",
+            "named": true
+          },
+          {
+            "type": "logical_op_tok",
+            "named": true
+          },
+          {
+            "type": "range_op_tok",
+            "named": true
+          },
+          {
+            "type": "range_open_tok",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "bundle",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "bundle_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bundle_entry",
+    "named": true,
+    "fields": {
+      "lhsrhs": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "assignment_cont",
+          "named": true
+        },
+        {
+          "type": "let_tok",
+          "named": true
+        },
+        {
+          "type": "var_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "capture_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "bundle_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "colon_tok",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "constrained_scope_stmt",
+    "named": true,
+    "fields": {
+      "attr": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "fail",
+            "named": false
+          },
+          {
+            "type": "restrict",
+            "named": false
+          },
+          {
+            "type": "test",
+            "named": false
+          }
+        ]
+      },
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "gate_stmt",
+          "named": true
+        },
+        {
+          "type": "simple_string_literal",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "ctrl_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        },
+        {
+          "type": "gate_stmt",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "does_typecase",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "factor_second",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "dot_selector",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "natural_literal",
+          "named": true
+        },
+        {
+          "type": "trivial_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "else_line",
+    "named": true,
+    "fields": {
+      "else_code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "else_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expr_attr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comptime_tok",
+          "named": true
+        },
+        {
+          "type": "debug_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expr_entry",
+    "named": true,
+    "fields": {
+      "attr": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expr_attr",
+            "named": true
+          }
+        ]
+      },
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      },
+      "f1": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          },
+          {
+            "type": "for_stmt",
+            "named": true
+          },
+          {
+            "type": "if_stmt",
+            "named": true
+          },
+          {
+            "type": "match_stmt",
+            "named": true
+          },
+          {
+            "type": "range_op_tok",
+            "named": true
+          },
+          {
+            "type": "range_open_tok",
+            "named": true
+          },
+          {
+            "type": "repipe_stmt",
+            "named": true
+          }
+        ]
+      },
+      "in": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "in_range",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "does_typecase",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expr_simple_entry",
+    "named": true,
+    "fields": {
+      "attr": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expr_attr",
+            "named": true
+          }
+        ]
+      },
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      },
+      "f1": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "factor_second",
+            "named": true
+          },
+          {
+            "type": "factor_simple_fcall",
+            "named": true
+          },
+          {
+            "type": "inplace_concat_tok",
+            "named": true
+          },
+          {
+            "type": "typecase",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "does_typecase",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "factor_second",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "factor_simple_fcall",
+          "named": true
+        },
+        {
+          "type": "inplace_concat_tok",
+          "named": true
+        },
+        {
+          "type": "lambda_def",
+          "named": true
+        },
+        {
+          "type": "scope_expr",
+          "named": true
+        },
+        {
+          "type": "select_sequence",
+          "named": true
+        },
+        {
+          "type": "typecase",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "factor_simple_fcall",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "fcall_or_variable",
+          "named": true
+        },
+        {
+          "type": "typecase",
+          "named": true
+        },
+        {
+          "type": "unary_op_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fcall_args",
+    "named": true,
+    "fields": {
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "does_typecase",
+          "named": true
+        },
+        {
+          "type": "expr_attr",
+          "named": true
+        },
+        {
+          "type": "expr_entry",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "factor_simple_fcall",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fcall_or_variable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "all_cap_identifier",
+          "named": true
+        },
+        {
+          "type": "complex_identifier",
+          "named": true
+        },
+        {
+          "type": "literal_select_field",
+          "named": true
+        },
+        {
+          "type": "select_sequence",
+          "named": true
+        },
+        {
+          "type": "trivial_identifier",
+          "named": true
+        },
+        {
+          "type": "variable_base_last",
+          "named": true
+        },
+        {
+          "type": "variable_prev_field",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fcall_pipe",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "pipe_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "for_stmt",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      },
+      "id1": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "trivial_identifier",
+            "named": true
+          }
+        ]
+      },
+      "id2": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "trivial_identifier",
+            "named": true
+          }
+        ]
+      },
+      "id3": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "trivial_identifier",
+            "named": true
+          }
+        ]
+      },
+      "in": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "in_expr_seq1",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "mut_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "gate_stmt",
+    "named": true,
+    "fields": {
+      "cond": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "if_elif",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      },
+      "cond": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "elif_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "if_stmt",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      },
+      "cond": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "else_line",
+          "named": true
+        },
+        {
+          "type": "if_elif",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "in_expr_seq1",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "in_range",
+    "named": true,
+    "fields": {
+      "by": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "by",
+            "named": false
+          },
+          {
+            "type": "factor_second",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "factor_simple_fcall",
+          "named": true
+        },
+        {
+          "type": "inplace_concat_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        },
+        {
+          "type": "typecase",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "lambda_def",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "lambda_def_constrains",
+          "named": true
+        },
+        {
+          "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "lambda_def_constrains",
+    "named": true,
+    "fields": {
+      "capture": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "capture_list",
+            "named": true
+          }
+        ]
+      },
+      "cond": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      },
+      "input": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "bundle",
+            "named": true
+          }
+        ]
+      },
+      "output": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "bundle",
+            "named": true
+          },
+          {
+            "type": "typecase",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bar_tok",
+          "named": true
+        },
+        {
+          "type": "expr_attr",
+          "named": true
+        },
+        {
+          "type": "mut_tok",
+          "named": true
+        },
+        {
+          "type": "trivial_or_caps_identifier_seq1",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "literal_select_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bool_literal",
+          "named": true
+        },
+        {
+          "type": "natural_literal",
+          "named": true
+        },
+        {
+          "type": "select_sequence",
+          "named": true
+        },
+        {
+          "type": "simple_string_literal",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        },
+        {
+          "type": "match_stmt_else",
+          "named": true
+        },
+        {
+          "type": "match_stmt_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_stmt_else",
+    "named": true,
+    "fields": {
+      "else_code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "else_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_stmt_line",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      },
+      "does": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "does_typecase",
+            "named": true
+          }
+        ]
+      },
+      "in": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "in_expr_seq1",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "multiple_stmt",
+    "named": true,
+    "fields": {
+      "lhs": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "assignment_cont2",
+          "named": true
+        },
+        {
+          "type": "fcall_args",
+          "named": true
+        },
+        {
+          "type": "fcall_pipe",
+          "named": true
+        },
+        {
+          "type": "gate_stmt",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "repipe_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "scope_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "scope_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expr_attr",
+          "named": true
+        },
+        {
+          "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "select_sequence",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "dot_selector",
+          "named": true
+        },
+        {
+          "type": "selector1",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "selector0",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "selector1",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "start",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "lambda_def_constrains",
+          "named": true
+        },
+        {
+          "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "stmt_base",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "stmt_seq",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "stmt",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "string_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "trivial_or_caps_identifier_seq1",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "all_cap_identifier",
+          "named": true
+        },
+        {
+          "type": "trivial_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "try_stmt",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "else_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "all_cap_identifier",
+          "named": true
+        },
+        {
+          "type": "assignment_cont",
+          "named": true
+        },
+        {
+          "type": "complex_identifier",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "gate_stmt",
+          "named": true
+        },
+        {
+          "type": "select_sequence",
+          "named": true
+        },
+        {
+          "type": "trivial_identifier",
+          "named": true
+        },
+        {
+          "type": "typecase",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "typecase",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon_tok",
+          "named": true
+        },
+        {
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "selector0",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unary_op_tok",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "bang_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "variable_base_last",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "qmark_tok",
+          "named": true
+        },
+        {
+          "type": "variable_bit_sel",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "variable_bit_sel",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "at_tok",
+          "named": true
+        },
+        {
+          "type": "selector0",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "variable_prev_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr_entry",
+          "named": true
+        },
+        {
+          "type": "pob_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "while_stmt",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_stmt",
+            "named": true
+          }
+        ]
+      },
+      "cond": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "\"",
+    "named": false
+  },
+  {
+    "type": "all_cap_identifier",
+    "named": true
+  },
+  {
+    "type": "assign_tok",
+    "named": true
+  },
+  {
+    "type": "at_tok",
+    "named": true
+  },
+  {
+    "type": "bang_tok",
+    "named": true
+  },
+  {
+    "type": "bar_tok",
+    "named": true
+  },
+  {
+    "type": "binary_op_tok",
+    "named": true
+  },
+  {
+    "type": "bool_literal",
+    "named": true
+  },
+  {
+    "type": "break",
+    "named": false
+  },
+  {
+    "type": "by",
+    "named": false
+  },
+  {
+    "type": "complex_identifier",
+    "named": true
+  },
+  {
+    "type": "comptime_tok",
+    "named": true
+  },
+  {
+    "type": "continue",
+    "named": false
+  },
+  {
+    "type": "debug_tok",
+    "named": true
+  },
+  {
+    "type": "defer",
+    "named": false
+  },
+  {
+    "type": "does",
+    "named": false
+  },
+  {
+    "type": "doesnt",
+    "named": false
+  },
+  {
+    "type": "elif_tok",
+    "named": true
+  },
+  {
+    "type": "else_tok",
+    "named": true
+  },
+  {
+    "type": "eq_pound_tok",
+    "named": true
+  },
+  {
+    "type": "equal_tok",
+    "named": true
+  },
+  {
+    "type": "equals",
+    "named": false
+  },
+  {
+    "type": "fail",
+    "named": false
+  },
+  {
+    "type": "for",
+    "named": false
+  },
+  {
+    "type": "if",
+    "named": false
+  },
+  {
+    "type": "implements",
+    "named": false
+  },
+  {
+    "type": "in",
+    "named": false
+  },
+  {
+    "type": "inplace_concat_tok",
+    "named": true
+  },
+  {
+    "type": "let_tok",
+    "named": true
+  },
+  {
+    "type": "logical_op_tok",
+    "named": true
+  },
+  {
+    "type": "match",
+    "named": false
+  },
+  {
+    "type": "mut_tok",
+    "named": true
+  },
+  {
+    "type": "natural_literal",
+    "named": true
+  },
+  {
+    "type": "not",
+    "named": false
+  },
+  {
+    "type": "pipe_tok",
+    "named": true
+  },
+  {
+    "type": "pob_tok",
+    "named": true
+  },
+  {
+    "type": "qmark_tok",
+    "named": true
+  },
+  {
+    "type": "range_op_tok",
+    "named": true
+  },
+  {
+    "type": "range_open_tok",
+    "named": true
+  },
+  {
+    "type": "repipe",
+    "named": false
+  },
+  {
+    "type": "restrict",
+    "named": false
+  },
+  {
+    "type": "return",
+    "named": false
+  },
+  {
+    "type": "set_tok",
+    "named": true
+  },
+  {
+    "type": "simple_string_literal",
+    "named": true
+  },
+  {
+    "type": "test",
+    "named": false
+  },
+  {
+    "type": "to",
+    "named": false
+  },
+  {
+    "type": "trivial_identifier",
+    "named": true
+  },
+  {
+    "type": "try",
+    "named": false
+  },
+  {
+    "type": "type",
+    "named": false
+  },
+  {
+    "type": "unique",
+    "named": false
+  },
+  {
+    "type": "unless",
+    "named": false
+  },
+  {
+    "type": "var_tok",
+    "named": true
+  },
+  {
+    "type": "when",
+    "named": false
+  },
+  {
+    "type": "where",
+    "named": false
+  },
+  {
+    "type": "while",
+    "named": false
+  }
+]

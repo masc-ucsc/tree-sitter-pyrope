@@ -1,0 +1,99 @@
+
+fetch = {||
+
+  var #code:[32] = (
+    ,0x0A556  // r5, r5, r6
+
+    ,0x0A312  // r3 = r1 + r2
+    ,0x0A120  // r1 = r2
+    ,0x0A230  // r2 = r3
+    ,0x0B034  // if r3 < r4: pc = 0
+  )
+
+  %.insn      = #code[#pc]
+  %.restarted = $.x.restart
+
+  if $.x.restart {
+    #pc = $.x.restart_pc
+  }else{
+    #pc = u32(#pc + 1)
+  }
+}
+
+type Insn_type = (
+  ,r0:u4
+  ,r1:u4
+  ,rd:u4
+  ,opcode:u4
+  ,brtarget:u16
+)
+
+decode = {||
+
+  insn      = Insn_type($.f.insn)
+
+  var #rf:[32] = (0,1,1,0,100,0,1)
+
+  %.rf_data0 = #rf[insn.r0]
+  %.rf_data1 = #rf[insn.r1]
+  %.insns    = insn
+  %.restarted= $.restarted
+
+  if $.x.wb_enable {
+    #rf[$.x.wb_rd] = $.x.wb_val
+  }
+}
+
+execute = {||
+
+  #skip.__initial = true
+
+  valid = $.restarted or !skip;
+
+  r0_val = $.rf_data0
+  r0_val = #wb_val when #wb_enable and #wb_rd == $.insn.r0
+
+  r1_val = $.rf_data1
+  r1_val = #wb_val when #wb_enable and #wb_rd == $.insn.r1
+
+  restart = valid and $.insn.opcode == 0xB and r1_val < r0_val;
+  restart_pc = $.insn.brtarget;
+
+  #skip = restart when valid
+
+  #wb_enable = valid and $.insn.opcode == 0xA and $.insn.rd != 0;
+  #wb_rd     = $.insn.rd
+  #wb_val    = r0_val + r1_val
+
+  % = (restart, restart_pc, wb_enable, wb_rd, wb_val)
+  debug %.valid  = valid  // mark as debug variables
+  debug %.r0_val = r0_val
+  debug %.r1_val = r1_val
+}
+
+flop_all = {||
+  % = #flop
+  #flop = $
+}
+
+last_x = x_out defer
+f_out =#[1] flop_all(last_x).fetch()
+d_out =#[1] flop_all(f=f_out, x=last_x).decode()
+x_out =#[1] flop_all(d_out).execute()
+
+test "80 cycles run" {
+  for cycle in 0..<80 {
+    d = f_out#[-2] ++ d_out#[-1] ++ x_out
+
+    if d.valid {
+      if d.wb_enable {
+        puts "{:5d} WB {:x}:{:x} {},{}   {} -> r{:1d}", cycle, d.pc, d.insn, d.r1_val, d.r0_val, d.vb_val, d.wb_rd
+      } else {
+        puts "{:5d} WB {:x}:{:x} {},{}", cycle, d.pc, d.insn, d.r1_val, d.r0_val
+      }
+    }
+
+    step
+  }
+}
+

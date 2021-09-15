@@ -1,0 +1,111 @@
+
+// CPU based on https://github.com/tommythorn/silice-examples
+// a 4 stage 2 instruction CPU to showcase HDLs
+
+fetch = {||
+
+  var #code:[32] = (
+    ,0x0A556  // r5, r5, r6
+
+    ,0x0A312  // r3 = r1 + r2
+    ,0x0A120  // r1 = r2
+    ,0x0A230  // r2 = r3
+    ,0x0B034  // if r3 < r4: pc = 0
+  )
+
+  var #inp_flop
+  inp = #inp_flop
+  #inp_flop = $
+
+  %.insn      = code[#pc]
+  %.restarted = #inp_flop
+
+  if inp.x.restart {
+    #pc = inp.x.restart_pc
+  }else{
+    #pc = u32(#pc + 1)
+  }
+}
+
+type Insn_type = (
+  ,r0:u4
+  ,r1:u4
+  ,rd:u4
+  ,opcode:u4
+  ,brtarget:u16
+)
+
+decode = {||
+
+  var #inp_flop  // flop the inputs
+  inp = #inp_flop
+  #inp_flop = (
+    ,insn      = Insn_type($.f.insn)
+    ,restarted = $.f.restarted
+    ,x         = $.x
+  )
+
+  var #rf:[32] = (0,1,1,0,100,0,1)
+
+  %.rf_data0 = #rf[inp.insn.r0]
+  %.rf_data1 = #rf[inp.insn.r1]
+  %.insns    = inp.insn
+  %.restarted= inp.restarted#[-1]
+
+  if inp.x.wb_enable {
+    #rf[inp.x.wb_rd] = inp.x.wb_val
+  }
+}
+
+execute = {||
+
+  var #inp_flop
+  inp = #inp_flop
+  #inp_flop = $
+
+  #skip.__initial = true
+
+  valid = inp.restarted or !skip;
+
+  r0_val = inp.rf_data0
+  r0_val = #wb_val when #wb_enable and #wb_rd == inp.insn.r0
+
+  r1_val = inp.rf_data1
+  r1_val = #wb_val when #wb_enable and #wb_rd == inp.insn.r1
+
+  restart = valid and inp.insn.opcode == 0xB and r1_val < r0_val;
+  restart_pc = inp.insn.brtarget;
+
+  #skip = restart when valid
+
+  #wb_enable = valid and inp.insn.opcode == 0xA and inp.insn.rd != 0;
+  #wb_rd     = inp.insn.rd
+  #wb_val    = r0_val + r1_val
+
+  % = (restart, restart_pc, wb_enable, wb_rd, wb_val)
+  debug %.valid  = valid  // mark as debug variables
+  debug %.r0_val = r0_val
+  debug %.r1_val = r1_val
+}
+
+last_x = x_out defer
+f_out = fetch(last_x)
+d_out = decode(f=f_out, x=last_x)
+x_out = execute(d_out)
+
+test "80 cycles run" {
+  for cycle in 0..<80 {
+    d = f_out#[-2] ++ d_out#[-1] ++ x_out
+
+    if d.valid {
+      if d.wb_enable {
+        puts "{:5d} WB {:x}:{:x} {},{}   {} -> r{:1d}", cycle, d.pc, d.insn, d.r1_val, d.r0_val, d.vb_val, d.wb_rd
+      } else {
+        puts "{:5d} WB {:x}:{:x} {},{}", cycle, d.pc, d.insn, d.r1_val, d.r0_val
+      }
+    }
+
+    step
+  }
+}
+
