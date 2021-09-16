@@ -35,7 +35,6 @@ module.exports = grammar({
     ,$.cp_tok
     //,$.colonp_tok
     //,$.colon_tok
-    // ,$.stmt
     // ,$.stmt_seq
     // ,$.if_elif
     // ,$.else_line
@@ -46,8 +45,10 @@ module.exports = grammar({
     ,$.factor_first
     //,$.factor_second
     ,$.factor_simple
+    ,$.factor_simple_fcall
     ,$.variable_base_field
     ,$.bundle_seq
+    ,$.stmt_base
     // ,$.factor_simple_fcall
     // ,$.select_sequence
   ]
@@ -57,27 +58,19 @@ module.exports = grammar({
     start: $ =>
       seq(
         optional($._newline)
-        //,optional($.lambda_def)
         ,optional($.stmt_seq)
       )
 
     ,stmt_seq: $ =>
       seq(
-         $.stmt
+         $.stmt_base
         ,repeat(
           seq(
             $._newline
-            ,$.stmt
+            ,$.stmt_base
           )
         )
         ,optional($._newline)
-      )
-
-    ,stmt: $ =>
-      seq(
-        $.stmt_base
-        //,optional('defer')
-        //,optional($.gate_stmt)
       )
 
     ,stmt_base: $ =>
@@ -86,8 +79,9 @@ module.exports = grammar({
         ,$.while_stmt
         ,$.assign_stmt
         ,$.multiple_stmt
+        ,$.bundle_pipe
         ,$.ctrl_stmt
-        //,$.scope_stmt
+        ,$.scope_stmt
         ,$.try_stmt
         ,$.factor_expr_stmt
         ,$.constrained_scope_stmt
@@ -233,24 +227,28 @@ module.exports = grammar({
         ,optional($._assign_multiple_end)
       )
 
+    ,bundle_pipe: $ =>
+      seq(
+        $.bundle
+        ,$._assign_multiple_end
+      )
+
     ,multiple_stmt: $ =>
       seq(
-        choice(
-          seq(
-            $.bundle
-            ,$.assignment_cont2
-          )
-          ,seq(
-            optional($.expr_attr)
-            ,$.fcall_or_variable
-            ,optional(
-              choice(
-                $.assignment_cont2
-                ,$.lambda_def
-                ,$._expr_simple_seq1
-                ,$.expr_cont
-              )
+        optional($.expr_attr)
+        ,$.factor_simple
+        ,optional($.expr_cont)
+        ,optional(
+          choice(
+            seq(
+              $.comma_tok
+              ,$._expr_simple_seq1
+              ,$.assignment_cont2
             )
+            ,seq(
+              $._expr_simple_fcall_seq1
+            )
+            ,$.assignment_cont2
           )
         )
         ,optional($._assign_multiple_end)
@@ -292,7 +290,20 @@ module.exports = grammar({
             )
           )
         )
-        ,field("rhs", $._expr_seq1)
+        ,optional($.expr_attr)
+        ,$.factor_first
+        ,optional($.expr_cont)
+        ,optional(
+          choice(
+            seq(
+              $.comma_tok
+              ,$._expr_simple_seq1
+            )
+            ,seq(
+              $._expr_simple_fcall_seq1
+            )
+          )
+        )
       )
 
     ,scope_stmt: $ =>
@@ -356,6 +367,13 @@ module.exports = grammar({
       seq(
         field("attr",optional($.expr_attr))
         ,field("f1",$.factor_simple)
+        ,optional($.expr_cont)
+      )
+
+    ,expr_simple_fcall_entry: $ =>
+      seq(
+        field("attr",optional($.expr_attr))
+        ,field("f1",$.factor_simple_fcall)
         ,optional($.expr_cont)
       )
 
@@ -487,10 +505,6 @@ module.exports = grammar({
         ,$.for_stmt
         ,$.expr_range_cont   // open range
         ,$.lambda_def
-        ,seq(
-          $.factor_expr_start
-          ,optional($.expr_cont)
-        )
       )
 
     ,factor_expr_start: $ =>
@@ -669,9 +683,21 @@ module.exports = grammar({
 
     ,_expr_simple_seq1: $ =>
       seq(
-        repeat($.comma_tok)
-        ,seq(
+        seq(
           $.expr_simple_entry
+          ,repeat(
+            seq(
+              repeat1($.comma_tok)
+              ,$.expr_simple_entry
+            )
+          )
+        )
+      )
+
+    ,_expr_simple_fcall_seq1: $ =>
+      seq(
+        seq(
+          $.expr_simple_fcall_entry
           ,repeat(
             seq(
               repeat1($.comma_tok)
@@ -874,7 +900,7 @@ module.exports = grammar({
     //,doc_comment: (_) => token(seq("///", /.*/))
     //,line_comment: (_) => token(seq("//", /.*/))
 
-    ,_newline: (_) => token(prec(-1,/[;\n\r]+/))
+    ,_newline: (_) => token(prec(-1,/\s*[;\n\r]+/))
     //,_newline: $ => repeat1(choice(/;/,/\n/,/\\\r?\n/))
   }
 });
