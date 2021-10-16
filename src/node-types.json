@@ -459,6 +459,10 @@
         {
           "type": "debug_tok",
           "named": true
+        },
+        {
+          "type": "reset_tok",
+          "named": true
         }
       ]
     }
@@ -865,15 +869,27 @@
           "named": true
         },
         {
+          "type": "bool_literal",
+          "named": true
+        },
+        {
           "type": "complex_identifier",
           "named": true
         },
         {
-          "type": "literal_select_field",
+          "type": "natural_literal",
           "named": true
         },
         {
           "type": "select_sequence",
+          "named": true
+        },
+        {
+          "type": "simple_string_literal",
+          "named": true
+        },
+        {
+          "type": "string_literal",
           "named": true
         },
         {
@@ -1119,10 +1135,6 @@
           "named": true
         },
         {
-          "type": "inplace_concat_tok",
-          "named": true
-        },
-        {
           "type": "range_op_tok",
           "named": true
         },
@@ -1231,37 +1243,6 @@
         },
         {
           "type": "trivial_or_caps_identifier_seq1",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "literal_select_field",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "bool_literal",
-          "named": true
-        },
-        {
-          "type": "natural_literal",
-          "named": true
-        },
-        {
-          "type": "select_sequence",
-          "named": true
-        },
-        {
-          "type": "simple_string_literal",
-          "named": true
-        },
-        {
-          "type": "string_literal",
           "named": true
         }
       ]
@@ -1431,10 +1412,6 @@
         },
         {
           "type": "gate_stmt",
-          "named": true
-        },
-        {
-          "type": "inplace_concat_tok",
           "named": true
         },
         {
@@ -1974,6 +1951,10 @@
   {
     "type": "repipe",
     "named": false
+  },
+  {
+    "type": "reset_tok",
+    "named": true
   },
   {
     "type": "restrict",

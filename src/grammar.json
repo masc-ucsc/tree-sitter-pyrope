@@ -697,7 +697,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "factor_simple"
+          "name": "factor_simple_fcall"
         },
         {
           "type": "CHOICE",
@@ -1465,7 +1465,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "factor_simple"
+                  "name": "factor_simple_fcall"
                 },
                 {
                   "type": "CHOICE",
@@ -1591,54 +1591,49 @@
       ]
     },
     "factor_simple_fcall": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
-              "type": "SEQ",
+              "type": "SYMBOL",
+              "name": "unary_op_tok"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "bundle"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
               "members": [
                 {
                   "type": "SYMBOL",
                   "name": "unary_op_tok"
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "bundle"
+                  "type": "BLANK"
                 }
               ]
             },
             {
-              "type": "SEQ",
+              "type": "SYMBOL",
+              "name": "fcall_or_variable"
+            },
+            {
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "unary_op_tok"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                },
-                {
                   "type": "SYMBOL",
-                  "name": "fcall_or_variable"
+                  "name": "typecase"
                 },
                 {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "typecase"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
+                  "type": "BLANK"
                 }
               ]
             }
@@ -1801,6 +1796,10 @@
         {
           "type": "SYMBOL",
           "name": "debug_tok"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "reset_tok"
         }
       ]
     },
@@ -2725,6 +2724,13 @@
         "value": "debug"
       }
     },
+    "reset_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "reset"
+      }
+    },
     "comptime_tok": {
       "type": "TOKEN",
       "content": {
@@ -3266,6 +3272,7 @@
     "factor_simple",
     "factor_simple_fcall",
     "variable_base_field",
+    "literal_select_field",
     "bundle_seq",
     "stmt_base"
   ],

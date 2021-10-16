@@ -47,6 +47,7 @@ module.exports = grammar({
     ,$.factor_simple
     ,$.factor_simple_fcall
     ,$.variable_base_field
+    ,$.literal_select_field
     ,$.bundle_seq
     ,$.stmt_base
     // ,$.factor_simple_fcall
@@ -236,7 +237,7 @@ module.exports = grammar({
     ,multiple_stmt: $ =>
       seq(
         optional($.expr_attr)
-        ,$.factor_simple
+        ,$.factor_simple_fcall
         ,optional($.expr_cont)
         ,optional(
           choice(
@@ -437,7 +438,7 @@ module.exports = grammar({
         ,'in'
         ,choice(
           seq(
-            $.factor_simple
+            $.factor_simple_fcall
             ,optional($.expr_range_cont)
           )
           ,$.bundle
@@ -483,17 +484,15 @@ module.exports = grammar({
       )
 
     ,factor_simple_fcall: $ =>
-      seq(
-        choice(
-          seq(
-            $.unary_op_tok
-            ,$.bundle
-          )
-          ,seq(
-            optional($.unary_op_tok)
-            ,$.fcall_or_variable
-            ,optional($.typecase)
-          )
+      choice(
+        seq(
+          $.unary_op_tok
+          ,$.bundle
+        )
+        ,seq(
+          optional($.unary_op_tok)
+          ,$.fcall_or_variable
+          ,optional($.typecase)
         )
       )
 
