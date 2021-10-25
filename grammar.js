@@ -78,6 +78,7 @@ module.exports = grammar({
       choice(
         $.type_stmt
         ,$.while_stmt
+        ,$.assign_decl_stmt
         ,$.assign_stmt
         ,$.multiple_stmt
         ,$.bundle_pipe
@@ -188,12 +189,10 @@ module.exports = grammar({
       seq(
         choice(
           'continue'
+          ,'return'
           ,'break'
-          ,seq(
-            'return'
-            ,$._expr_seq1
-          )
         )
+        ,optional($._expr_seq1)
         ,optional($.gate_stmt)
       )
 
@@ -213,18 +212,29 @@ module.exports = grammar({
       )
 
     // Very close to multiple_stmt
-    ,assign_stmt: $ =>
+    ,assign_decl_stmt: $ =>
       seq(
         choice(
           $.let_tok
-          ,$.mut_tok
           ,$.var_tok
-          ,$.set_tok
         )
         ,field("lhs",$._expr_seq1)
         ,optional(
           $.assignment_cont2
         )
+        ,optional($._assign_multiple_end)
+      )
+
+    // similar to assignment but require to have a ... = ...
+    ,assign_stmt: $ =>
+      seq(
+        choice(
+          $.defer_tok
+          ,$.mut_tok
+          ,$.set_tok
+        )
+        ,field("lhs",$._expr_seq1)
+        ,$.assignment_cont2
         ,optional($._assign_multiple_end)
       )
 
@@ -258,10 +268,6 @@ module.exports = grammar({
     ,_assign_multiple_end: $ =>
       choice(
         repeat1($.fcall_pipe)
-        ,seq(
-          'defer'
-          ,optional($.gate_stmt)
-        )
         ,$.gate_stmt
       )
 
@@ -421,12 +427,10 @@ module.exports = grammar({
         ,seq(
           $.range_op_tok
           ,$.factor_second
-          ,field("by"
-            ,optional(
-              seq(
-                'by'
-                ,$.factor_second
-              )
+          ,optional(
+            seq(
+              $.by_tok
+              ,$.factor_second
             )
           )
         )
@@ -435,7 +439,7 @@ module.exports = grammar({
     ,in_range: $ =>
       seq(
         optional('not')
-        ,'in'
+        ,$.in_tok
         ,choice(
           seq(
             $.factor_simple_fcall
@@ -447,23 +451,23 @@ module.exports = grammar({
 
     ,in_expr_seq1: $ =>
       seq(
-        'in'
+        $.in_tok
         ,$._expr_seq1
       )
 
     ,factor_first: $ =>
       choice(
         $.factor_second
-        ,$.if_stmt
         ,$.repipe_stmt
-        ,$.match_stmt
-        ,$.for_stmt
         ,$.expr_range_cont   // open range
       )
 
     ,factor_second: $ =>
       choice(
         $.factor_simple
+        ,$.if_stmt
+        ,$.for_stmt
+        ,$.match_stmt
         ,$.lambda_def
         ,$.scope_expr
         ,seq(
@@ -504,6 +508,7 @@ module.exports = grammar({
         ,$.for_stmt
         ,$.expr_range_cont   // open range
         ,$.lambda_def
+        ,$.bundle
       )
 
     ,factor_expr_start: $ =>
@@ -793,6 +798,7 @@ module.exports = grammar({
     ,debug_tok: () => token('debug')
     ,comptime_tok: () => token('comptime')
     ,let_tok: () => token('let')
+    ,defer_tok: () => token('defer')
     ,mut_tok: () => token('mut')
     ,var_tok: () => token('var')
     ,set_tok: () => token('set')
@@ -802,6 +808,22 @@ module.exports = grammar({
         seq(
           /\s*/
           ,'elif'
+        )
+      )
+
+    ,by_tok: $ =>
+      token(
+        seq(
+          /\s*/
+          ,'by'
+        )
+      )
+
+    ,in_tok: $ =>
+      token(
+        seq(
+          /\s*/
+          ,'in'
         )
       )
 

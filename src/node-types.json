@@ -4,6 +4,10 @@
     "named": true,
     "subtypes": [
       {
+        "type": "assign_decl_stmt",
+        "named": true
+      },
+      {
         "type": "assign_stmt",
         "named": true
       },
@@ -46,7 +50,7 @@
     ]
   },
   {
-    "type": "assign_stmt",
+    "type": "assign_decl_stmt",
     "named": true,
     "fields": {
       "lhs": {
@@ -81,15 +85,53 @@
           "named": true
         },
         {
+          "type": "var_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assign_stmt",
+    "named": true,
+    "fields": {
+      "lhs": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "assignment_cont2",
+          "named": true
+        },
+        {
+          "type": "defer_tok",
+          "named": true
+        },
+        {
+          "type": "fcall_pipe",
+          "named": true
+        },
+        {
+          "type": "gate_stmt",
+          "named": true
+        },
+        {
           "type": "mut_tok",
           "named": true
         },
         {
           "type": "set_tok",
-          "named": true
-        },
-        {
-          "type": "var_tok",
           "named": true
         }
       ]
@@ -146,20 +188,6 @@
             "named": true
           }
         ]
-      },
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
       }
     },
     "children": {
@@ -168,6 +196,10 @@
       "types": [
         {
           "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "by_tok",
           "named": true
         },
         {
@@ -191,19 +223,7 @@
           "named": true
         },
         {
-          "type": "for_stmt",
-          "named": true
-        },
-        {
-          "type": "if_stmt",
-          "named": true
-        },
-        {
           "type": "logical_op_tok",
-          "named": true
-        },
-        {
-          "type": "match_stmt",
           "named": true
         },
         {
@@ -459,10 +479,6 @@
         {
           "type": "debug_tok",
           "named": true
-        },
-        {
-          "type": "reset_tok",
-          "named": true
         }
       ]
     }
@@ -481,42 +497,16 @@
           }
         ]
       },
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      },
       "f1": {
         "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "by",
-            "named": false
+            "type": "by_tok",
+            "named": true
           },
           {
             "type": "factor_second",
-            "named": true
-          },
-          {
-            "type": "for_stmt",
-            "named": true
-          },
-          {
-            "type": "if_stmt",
-            "named": true
-          },
-          {
-            "type": "match_stmt",
             "named": true
           },
           {
@@ -550,6 +540,10 @@
       "types": [
         {
           "type": "binary_op_tok",
+          "named": true
+        },
+        {
+          "type": "by_tok",
           "named": true
         },
         {
@@ -589,20 +583,6 @@
         "types": [
           {
             "type": "expr_attr",
-            "named": true
-          }
-        ]
-      },
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
             "named": true
           }
         ]
@@ -647,6 +627,10 @@
           "named": true
         },
         {
+          "type": "by_tok",
+          "named": true
+        },
+        {
           "type": "does_typecase",
           "named": true
         },
@@ -683,20 +667,6 @@
           }
         ]
       },
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      },
       "f1": {
         "multiple": true,
         "required": true,
@@ -729,6 +699,10 @@
           "named": true
         },
         {
+          "type": "by_tok",
+          "named": true
+        },
+        {
           "type": "does_typecase",
           "named": true
         },
@@ -754,26 +728,19 @@
   {
     "type": "factor_expr_stmt",
     "named": true,
-    "fields": {
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "by_tok",
+          "named": true
+        },
         {
           "type": "factor_second",
           "named": true
@@ -830,11 +797,23 @@
           "named": true
         },
         {
+          "type": "for_stmt",
+          "named": true
+        },
+        {
+          "type": "if_stmt",
+          "named": true
+        },
+        {
           "type": "inplace_concat_tok",
           "named": true
         },
         {
           "type": "lambda_def",
+          "named": true
+        },
+        {
+          "type": "match_stmt",
           "named": true
         },
         {
@@ -1095,6 +1074,10 @@
         {
           "type": "expr_entry",
           "named": true
+        },
+        {
+          "type": "in_tok",
+          "named": true
         }
       ]
     }
@@ -1102,22 +1085,7 @@
   {
     "type": "in_range",
     "named": true,
-    "fields": {
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
@@ -1127,11 +1095,19 @@
           "named": true
         },
         {
+          "type": "by_tok",
+          "named": true
+        },
+        {
           "type": "factor_second",
           "named": true
         },
         {
           "type": "fcall_or_variable",
+          "named": true
+        },
+        {
+          "type": "in_tok",
           "named": true
         },
         {
@@ -1350,22 +1326,7 @@
   {
     "type": "multiple_stmt",
     "named": true,
-    "fields": {
-      "by": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "by",
-            "named": false
-          },
-          {
-            "type": "factor_second",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
@@ -1380,6 +1341,10 @@
         },
         {
           "type": "bundle",
+          "named": true
+        },
+        {
+          "type": "by_tok",
           "named": true
         },
         {
@@ -1829,8 +1794,8 @@
     "named": false
   },
   {
-    "type": "by",
-    "named": false
+    "type": "by_tok",
+    "named": true
   },
   {
     "type": "complex_identifier",
@@ -1849,8 +1814,8 @@
     "named": true
   },
   {
-    "type": "defer",
-    "named": false
+    "type": "defer_tok",
+    "named": true
   },
   {
     "type": "does",
@@ -1897,8 +1862,8 @@
     "named": false
   },
   {
-    "type": "in",
-    "named": false
+    "type": "in_tok",
+    "named": true
   },
   {
     "type": "inplace_concat_tok",
@@ -1951,10 +1916,6 @@
   {
     "type": "repipe",
     "named": false
-  },
-  {
-    "type": "reset_tok",
-    "named": true
   },
   {
     "type": "restrict",
