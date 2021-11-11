@@ -2835,42 +2835,37 @@
       }
     },
     "unary_op_tok": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "TOKEN",
-          "content": {
-            "type": "SEQ",
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "\\s*"
+          },
+          {
+            "type": "CHOICE",
             "members": [
               {
-                "type": "PATTERN",
-                "value": "\\s*"
+                "type": "STRING",
+                "value": "not"
               },
               {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "not"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "-"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "~"
-                  }
-                ]
+                "type": "STRING",
+                "value": "-"
+              },
+              {
+                "type": "STRING",
+                "value": "~"
+              },
+              {
+                "type": "STRING",
+                "value": "!"
               }
             ]
           }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "bang_tok"
-        }
-      ]
+        ]
+      }
     },
     "inplace_concat_tok": {
       "type": "TOKEN",

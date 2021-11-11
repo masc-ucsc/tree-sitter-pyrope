@@ -1,0 +1,20 @@
+
+randomize = debug {|(self)|
+  rnd = import "prp/rnd"
+  for mut i in self {
+    if i equals :int {
+      i = rnd.between(i.__max,i.__min)
+    }elif i equals :boolean {
+      i = rnd.boolean()
+    }
+  }
+  return self
+}
+
+x = (a=1,b=true,c="hello")
+y = x.randomize()
+
+assert x.a==1 and x.b==true and x.c=="hello"
+cover  y.a!=1
+cover  y.b!=true
+assert y.c=="hello"

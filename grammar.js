@@ -828,14 +828,11 @@ module.exports = grammar({
       )
 
     ,unary_op_tok: $ =>
-      choice(
-        token(
-          seq(
-            /\s*/
-            ,choice('not', '-', '~')
-          )
+      token(
+        seq(
+          /\s*/
+          ,choice('not', '-', '~', '!')
         )
-        ,$.bang_tok
       )
 
     ,inplace_concat_tok: () => token('...')

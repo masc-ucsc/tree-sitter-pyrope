@@ -1660,21 +1660,6 @@
     }
   },
   {
-    "type": "unary_op_tok",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "bang_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "variable_base_last",
     "named": true,
     "fields": {},
@@ -1771,10 +1756,6 @@
   },
   {
     "type": "at_tok",
-    "named": true
-  },
-  {
-    "type": "bang_tok",
     "named": true
   },
   {
@@ -1952,6 +1933,10 @@
   {
     "type": "type",
     "named": false
+  },
+  {
+    "type": "unary_op_tok",
+    "named": true
   },
   {
     "type": "unique",

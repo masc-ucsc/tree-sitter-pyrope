@@ -1,0 +1,5 @@
+
+var a:u32
+var b:s3
+
+mut a,b = (222,3)
