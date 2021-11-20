@@ -5,9 +5,9 @@ type Delegate = (
 type Delegator = (
   ,var delegate
   ,let operation = {||
-    if comptime delegate has 'thing' {
+    if delegate has 'thing' comptime {
       delegate.thing()
-    }else{
+    }else comptime{
       'default implementation'
     }
   }
@@ -16,9 +16,9 @@ type Delegator = (
 var a:Delegator
 puts a.operation() // prints "default implementation"
 
-mut a.delegate = 'A delegate may be any object'
+a.delegate = 'A delegate may be any object'
 puts a.operation() // prints "default implementation"
 
-set a.delegate = :Delegate
+a.delegate = :Delegate
 puts a.operation() // prints "delegate implementation"
 

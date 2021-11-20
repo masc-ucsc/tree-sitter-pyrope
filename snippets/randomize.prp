@@ -1,11 +1,11 @@
 
-randomize = debug {|(self)|
+debug let randomize = {|(self)|
   rnd = import "prp/rnd"
-  for mut i in self {
+  for i,index in self {
     if i equals :int {
-      i = rnd.between(i.__max,i.__min)
+      self[index] = rnd.between(i.__max,i.__min)
     }elif i equals :boolean {
-      i = rnd.boolean()
+      self[index] = rnd.boolean()
     }
   }
   return self

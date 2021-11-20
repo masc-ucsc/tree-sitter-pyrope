@@ -1,56 +1,63 @@
 
+ //-------------
  type color = RED or BLUE or GREEN // enum just a unique ID
 
- type Rgb = (
-    ,color:u24
-    ,initial = {|x| color = x }
- )
-
- type Red   = Rgb(0xff0000)
- type Green = Rgb(0x00ff00)
- type Blue  = Rgb(0x0000ff)
- type color2 = Red or Green or Blue
-
  var x:color = RED // only in local module
-
- if x does RED { assert(true) }
+ assert x == RED
 
  puts "color:{} {}\n", :x, x // prints "color:RED RED"
 
+ //-------------
+ type Rgb = (
+    ,var color:u24
+    ,let set = {|(self,x)->(self)| self.color = x }
+ )
+
+ type Red:Rgb   = 0xff0000
+ type Green:Rgb = 0x00ff00
+ type Blue      = Rgb(0x0000ff)  // also works
+ type color2 = Red or Green or Blue
+
  var y:color2 = Red
- if y does Red { ; assert(true) }
+ assert y == Red and (y equals Rgb)
 
  puts "color:{} c1:{} c2:{}\n", :y, y, y.color // prints "color:Red c1:Red(color=0xff0000) c2:0xff0000"
 
+ //-------------
 type Shape = (
-  ,name = {|() -> :string|}
-  ,area = {|() -> :i32|}
-  ,increase_size = {|mut(_:i12) -> ()|}
+  ,var name = {|(self) -> :string|}
+  ,var area = {|(self) -> :i32|}
+  ,var increase_size = {|(self,_:i12) -> (self)|}
 )
 
 type Circle implements Shape = (
-  ,rad:i32
-  ,name = {|() -> :string| "circle" }
-  ,area = {|() -> :i32|
+  ,var rad:i32
+  ,var name = {|(self) -> :string| "circle" }
+  ,var area = {|(self) -> :i32|
      let pi = import("math.pi")
      return pi * self.rad * self.rad
   }
-  ,increase_size = {|mut(_:i12) -> ()|  self.rad *= $1 }
+  ,var increase_size = {|(self,_:i12) -> (self)|  self.rad *= $1 }
 )
 
-add1 = {|a,b| // 1 cycle add
-  #reg = a+b
-  return #reg
+let add1 = {|a,b| // 1 cycle add
+  reg r
+  let orig = r
+  r = a+b
+  return orig
 }
-mul3 = {|a,b| // 3 cycle multiply
-  #reg1 = $a * $b
-  #reg2 = #reg1
-  #reg3 = #reg2
-  return #reg3
+let mul3 = {|a,b| // 3 cycle multiply
+  reg r1,r2,r3
+  let orig = r4
+
+  r3 = r2
+  r2 = r1
+  r1 = a * b
+  return orig
 }
 
-x    = mul3(in1, in2)
-%out = add1(x,in3)
+x    =# mul3(in1, in2)
+%out =# add1(x,in3)
 
 // Design one
 let x = mul3(in1, in2)      // compile error: 'mul3' is pipelined

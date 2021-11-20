@@ -51,9 +51,9 @@ test "one_hot_encoder" {
   // Pyrope 2
 
   let table = (1,2,4,8)
-  mut result = table[sel]
+  result = table[sel]
 
   // Pyrope 3
-  mut result = 1<<sel
+  result = 1<<sel
 }
 

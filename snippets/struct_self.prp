@@ -1,0 +1,27 @@
+
+let B = (
+  ,let data = "hello"
+  ,pub data_only_b = "private"
+
+  ,pub call  = {|(self)| "B" ++ self.data }
+  ,pub call2 = {|(self)| "B" ++ self.data_only_b }
+)
+
+let C = (
+  ,var data = "world"
+  ,pub call = {|(self)| "C" ++ self.data }
+)
+
+var bb:B
+var cc:C
+
+comptime assert bb.call() == "Bhello" and B.call(bb)  == "Bhello"
+comptime assert cc.call() == "Cworld" and C.call(cc)  == "Cworld"
+
+comptime assert B.call(cc) == "Bword"
+comptime assert C.call(bb) == "Bhello"
+
+comptime assert bb.call2() == "Bprivate" and B.call2(bb) == "Bprivate"
+
+cc.call2()  // compile error, no call2 method
+B.call2(cc) // compile error, no data_only_b field

@@ -14,7 +14,7 @@ reduce = {|bundle, x1, x2|
 
   var x = base
   for i in bundle {
-    mut x = op(x, i)
+    x = op(x, i)
   }
   return x
 }

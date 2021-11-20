@@ -33,8 +33,7 @@ module.exports = grammar({
     ,$.cb_tok
     ,$.op_tok
     ,$.cp_tok
-    //,$.colonp_tok
-    //,$.colon_tok
+    ,$.colon_tok
     // ,$.stmt_seq
     // ,$.if_elif
     // ,$.else_line
@@ -48,7 +47,7 @@ module.exports = grammar({
     ,$.factor_simple_fcall
     ,$.variable_base_field
     ,$.literal_select_field
-    ,$.bundle_seq
+    ,$.tuple_seq
     ,$.stmt_base
     // ,$.factor_simple_fcall
     // ,$.select_sequence
@@ -79,9 +78,8 @@ module.exports = grammar({
         $.type_stmt
         ,$.while_stmt
         ,$.assign_decl_stmt
-        ,$.assign_stmt
         ,$.multiple_stmt
-        ,$.bundle_pipe
+        ,$.tuple_pipe
         ,$.ctrl_stmt
         ,$.scope_stmt
         ,$.try_stmt
@@ -91,26 +89,34 @@ module.exports = grammar({
 
     ,gate_stmt: $ =>
       seq(
-        choice('when', 'unless')
+        choice($.when_tok, $.unless_tok)
         ,field("cond",$.expr_entry)
       )
 
-    ,repipe_stmt: $ =>
+    ,repipe_expr: $ =>
       seq(
-        'repipe'
-        ,$.bundle
-        ,optional(
+        $.repipe_tok
+        ,$.variable_base_field
+        ,repeat(
           seq(
-            'to'
-            ,$.factor_second
+            repeat1($.comma_tok)
+            ,$.variable_base_field
+          )
+        )
+        ,$.to_tok
+        ,$.variable_base_field
+        ,repeat(
+          seq(
+            repeat1($.comma_tok)
+            ,$.variable_base_field
           )
         )
       )
 
     ,if_stmt: $ =>
       seq(
-        optional('unique')
-        ,'if'
+        optional($.unique_tok)
+        ,$.if_tok
         ,field("cond",$.expr_entry)
         ,field("code",$.scope_stmt)
         ,repeat($.if_elif)
@@ -119,7 +125,7 @@ module.exports = grammar({
 
     ,match_stmt: $ =>
       seq(
-        'match'
+        $.match_tok
         ,$._expr_seq1
         ,$.ok_tok
         ,repeat($.match_stmt_line)
@@ -159,24 +165,24 @@ module.exports = grammar({
 
     ,while_stmt: $ =>
       seq(
-        'while'
+        $.while_tok
         ,field("cond",$.expr_entry)
         ,field("code",$.scope_stmt)
       )
 
     ,for_stmt: $ =>
       seq(
-        'for'
+        $.for_tok
         ,optional($.mut_tok)
-        ,field("id1",$.trivial_identifier)
+        ,$.trivial_identifier  // value
         ,optional(
           seq(
             repeat1($.comma_tok)
-            ,field("id2",$.trivial_identifier)
+            ,field("id2",$.trivial_identifier) // index
             ,optional(
               seq(
                 repeat1($.comma_tok)
-                ,field("id3",$.trivial_identifier)
+                ,field("id3",$.trivial_identifier) // key
               )
             )
           )
@@ -188,9 +194,9 @@ module.exports = grammar({
     ,ctrl_stmt: $ =>
       seq(
         choice(
-          'continue'
-          ,'return'
-          ,'break'
+          $.return_tok
+          ,$.continue_tok
+          ,$.break_tok
         )
         ,optional($._expr_seq1)
         ,optional($.gate_stmt)
@@ -198,12 +204,12 @@ module.exports = grammar({
 
     ,type_stmt: $ =>
       seq(
-        'type'
+        $.type_tok
         ,$.variable_base_field
         ,optional($.typecase)
         ,optional(
           seq(
-            'implements'
+            $.implements_tok
             ,$.factor_second
           )
         )
@@ -214,9 +220,13 @@ module.exports = grammar({
     // Very close to multiple_stmt
     ,assign_decl_stmt: $ =>
       seq(
-        choice(
+        optional($.defer_read_tok)
+        ,optional($.attributes)
+        ,choice(
           $.let_tok
+          ,$.pub_tok
           ,$.var_tok
+          ,$.reg_tok
         )
         ,field("lhs",$._expr_seq1)
         ,optional(
@@ -225,28 +235,16 @@ module.exports = grammar({
         ,optional($._assign_multiple_end)
       )
 
-    // similar to assignment but require to have a ... = ...
-    ,assign_stmt: $ =>
+    ,tuple_pipe: $ =>
       seq(
-        choice(
-          $.defer_tok
-          ,$.mut_tok
-          ,$.set_tok
-        )
-        ,field("lhs",$._expr_seq1)
-        ,$.assignment_cont2
-        ,optional($._assign_multiple_end)
-      )
-
-    ,bundle_pipe: $ =>
-      seq(
-        $.bundle
+        $.tuple
         ,$._assign_multiple_end
       )
 
     ,multiple_stmt: $ =>
       seq(
-        optional($.expr_attr)
+        optional($.defer_read_tok)
+        ,optional($.attributes)
         ,$.factor_simple_fcall
         ,optional($.expr_cont)
         ,optional(
@@ -280,9 +278,7 @@ module.exports = grammar({
     ,assignment_cont: $ =>
       seq(
         $.equal_tok
-        ,field("rhs",
-          $.expr_entry
-        )
+        ,$.expr_entry
       )
 
     ,assignment_cont2: $ =>
@@ -297,17 +293,21 @@ module.exports = grammar({
             )
           )
         )
-        ,optional($.expr_attr)
-        ,$.factor_first
-        ,optional($.expr_cont)
-        ,optional(
-          choice(
-            seq(
-              $.comma_tok
-              ,$._expr_simple_seq1
-            )
-            ,seq(
-              $._expr_simple_fcall_seq1
+        ,choice(
+          $.repipe_expr
+          ,seq(
+            $.factor_first
+            ,optional(
+              choice(
+                $.expr_cont
+                ,seq(
+                  $.comma_tok
+                  ,$._expr_simple_seq1
+                )
+                ,seq(
+                  $._expr_simple_fcall_seq1
+                )
+              )
             )
           )
         )
@@ -315,7 +315,7 @@ module.exports = grammar({
 
     ,scope_stmt: $ =>
       seq(
-        optional($.expr_attr)
+        optional($.attributes)
         ,$.ok_tok
         ,optional($._newline)
         ,optional($.stmt_seq)
@@ -340,18 +340,14 @@ module.exports = grammar({
 
     ,try_stmt: $ =>
       seq(
-         'try'
+         $.try_tok
         ,field("code",$.scope_stmt)
         ,optional($.else_line)
       )
 
     ,constrained_scope_stmt: $ =>
       seq(
-        field("attr",choice(
-          'restrict'
-          ,'fail'
-          ,'test'
-        ))
+        $.restrict_tok
         ,choice($.string_literal,$.simple_string_literal)  // ID or explanation
         ,optional($.gate_stmt)
         ,field("code",$.scope_stmt)
@@ -359,8 +355,7 @@ module.exports = grammar({
 
     ,expr_entry: $ =>
       seq(
-        field("attr",optional($.expr_attr))
-        ,field("f1",$.factor_first)
+        $.factor_first
         ,optional(
           choice(
             $.expr_cont
@@ -372,15 +367,13 @@ module.exports = grammar({
 
     ,expr_simple_entry: $ =>
       seq(
-        field("attr",optional($.expr_attr))
-        ,field("f1",$.factor_simple)
+        $.factor_simple
         ,optional($.expr_cont)
       )
 
     ,expr_simple_fcall_entry: $ =>
       seq(
-        field("attr",optional($.expr_attr))
-        ,field("f1",$.factor_simple_fcall)
+        $.factor_simple_fcall
         ,optional($.expr_cont)
       )
 
@@ -398,10 +391,9 @@ module.exports = grammar({
     ,does_typecase: $ =>
       seq(
         choice(
-          'does' // honors, meets, honors, does, implements, provides
-          ,'doesnt' // honors, meets, honors, does, implements, provides
-          ,seq('not', 'equals')
-          ,'equals' // is, means
+          $.does_tok
+          ,seq($.not_tok, $.equals_tok)
+          ,$.equals_tok
         )
         ,$.factor_second
       )
@@ -438,14 +430,14 @@ module.exports = grammar({
 
     ,in_range: $ =>
       seq(
-        optional('not')
+        optional($.not_tok)
         ,$.in_tok
         ,choice(
           seq(
             $.factor_simple_fcall
             ,optional($.expr_range_cont)
           )
-          ,$.bundle
+          ,$.tuple
         )
       )
 
@@ -458,7 +450,6 @@ module.exports = grammar({
     ,factor_first: $ =>
       choice(
         $.factor_second
-        ,$.repipe_stmt
         ,$.expr_range_cont   // open range
       )
 
@@ -471,11 +462,25 @@ module.exports = grammar({
         ,$.lambda_def
         ,$.scope_expr
         ,seq(
-          //optional($.unary_op_tok)
-          $.bundle
+          $.tuple
           ,repeat($.select_sequence)
         )
       )
+
+    ,factor_typecase: $ =>
+      choice(
+        $.factor_simple_fcall
+        ,seq(
+          $.inplace_concat_tok
+          ,$.factor_second
+        )
+        ,$.lambda_def
+        ,seq(
+          $.tuple
+          ,repeat($.select_sequence)
+        )
+      )
+
 
     ,factor_simple: $ =>
       choice(
@@ -487,14 +492,15 @@ module.exports = grammar({
         ,$.typecase
       )
 
+
     ,factor_simple_fcall: $ =>
       choice(
         seq(
-          $.unary_op_tok
-          ,$.bundle
+          choice($.unary_op_tok, $.not_tok)
+          ,$.tuple
         )
         ,seq(
-          optional($.unary_op_tok)
+          optional(choice($.unary_op_tok, $.not_tok))
           ,$.fcall_or_variable
           ,optional($.typecase)
         )
@@ -503,12 +509,11 @@ module.exports = grammar({
     ,factor_expr_stmt: $ =>
       choice(
         $.if_stmt
-        ,$.repipe_stmt
         ,$.match_stmt
         ,$.for_stmt
         ,$.expr_range_cont   // open range
         ,$.lambda_def
-        ,$.bundle
+        ,$.tuple
       )
 
     ,factor_expr_start: $ =>
@@ -516,9 +521,9 @@ module.exports = grammar({
         $.typecase
         ,$.scope_expr
         ,seq(
-          $.unary_op_tok
+          choice($.unary_op_tok, $.not_tok)
           ,choice(
-            $.bundle
+            $.tuple
             ,seq(
               $.fcall_or_variable
               ,optional($.typecase)
@@ -539,7 +544,7 @@ module.exports = grammar({
         )
       )
 
-    ,expr_attr: $ =>
+    ,attributes: $ =>
       choice(
          seq($.comptime_tok, optional($.debug_tok))
         ,$.debug_tok
@@ -547,24 +552,21 @@ module.exports = grammar({
 
     ,lambda_def_constrains: $ =>
       seq(
-        //$.bar_tok
-        optional($.expr_attr)
-        ,optional($.mut_tok)
-        ,choice(
+        choice(
           $.trivial_or_caps_identifier_seq1 // just trivial sequence IDs no types no nothing or complex pattern
           ,seq(
             field("capture"
               ,optional($.capture_list)
             )
             ,field("input"
-              ,optional($.bundle)
+              ,optional($.tuple)
             )
             ,field("output"
               ,optional(
                 seq(
                   $._arrow_tok
                   ,choice(
-                    $.bundle
+                    $.tuple
                     ,$.typecase
                   )
                 )
@@ -572,7 +574,7 @@ module.exports = grammar({
             )
             ,optional(
               seq(
-                'where'
+                $.where_tok
                 ,field("cond",$.expr_entry)
               )
             )
@@ -585,7 +587,7 @@ module.exports = grammar({
     ,capture_list: $ =>
       seq(
         $.ob_tok
-        ,optional($.bundle_seq)
+        ,optional($.tuple_seq)
         ,$.cb_tok
       )
 
@@ -608,7 +610,7 @@ module.exports = grammar({
       seq(
         $.colon_tok
         ,choice(
-          $.factor_second
+          $.factor_typecase
           ,repeat1($.selector0)   // Array
         )
       )
@@ -641,12 +643,12 @@ module.exports = grammar({
       choice(
         $.dot_selector
         ,$.selector1
-        ,$.bundle
+        ,$.tuple
       )
 
     ,dot_selector: $ =>
       seq(
-        $.dot_tok
+        choice($.qmark_dot_tok, $.dot_tok)
         ,choice($.trivial_identifier, $.natural_literal)
       )
 
@@ -711,24 +713,24 @@ module.exports = grammar({
         )
       )
 
-    ,bundle: $ =>
+    ,tuple: $ =>
       seq(
         $.op_tok
-        ,optional($.bundle_seq)
+        ,optional($.tuple_seq)
         ,$.cp_tok
       )
 
-    ,bundle_seq: $ =>
+    ,tuple_seq: $ =>
       choice(
         $._newline
         ,seq(
           repeat($.comma_tok)
           ,seq(
-            $.bundle_entry
+            $.tuple_entry
             ,repeat(
               seq(
                 repeat1($.comma_tok)
-                ,$.bundle_entry
+                ,$.tuple_entry
               )
             )
           )
@@ -736,9 +738,9 @@ module.exports = grammar({
         )
       )
 
-    ,bundle_entry: $ =>
+    ,tuple_entry: $ =>
       seq(
-        optional(choice($.var_tok, $.let_tok))
+        optional(choice($.var_tok, $.let_tok, $.pub_tok))
         ,field("lhsrhs", $.expr_entry)
         ,optional($.assignment_cont)
       )
@@ -746,14 +748,17 @@ module.exports = grammar({
     ,variable_bit_sel: $ =>
       seq(
         $.at_tok
-        ,optional(token(choice('sext', 'zext', '|', '&', '^', '+')))
+        ,optional($.bit_sel_tok)
         ,$.selector0
       )
+
+    ,bit_sel_tok: () => token(choice('sext', 'zext', '|', '&', '^', '+'))
 
     ,bool_literal: (_) => token(choice("true","false"))
     ,natural_literal: (_) => token(/[0-9][\?\w\d_]*/)
 
     ,comma_tok: () => seq(/\s*,/)
+    ,qmark_dot_tok: () => seq(/\?\./)
     ,dot_tok: () => seq(/\s*\./)
 
     ,binary_op_tok: () =>
@@ -761,9 +766,17 @@ module.exports = grammar({
         seq(
           /\s*/
           ,choice(
-            '++' // bundle op
+            '++', '--' // tuple ops
             ,'+', '-', '*', '/', '|', '&', '^' // scalar op
           )
+        )
+      )
+
+    ,def_op_tok: () =>
+      token(
+        seq(
+          /\s*/
+          ,choice('++', '--')
         )
       )
 
@@ -797,11 +810,14 @@ module.exports = grammar({
     // No spaces before, or alias for new line statement
     ,debug_tok: () => token('debug')
     ,comptime_tok: () => token('comptime')
+    ,defer_read_tok: () => token('defer_read')
+
+
+    ,where_tok: () => token('where')
     ,let_tok: () => token('let')
-    ,defer_tok: () => token('defer')
-    ,mut_tok: () => token('mut')
+    ,pub_tok: () => token('pub')
     ,var_tok: () => token('var')
-    ,set_tok: () => token('set')
+    ,reg_tok: () => token('reg')
 
     ,elif_tok: () =>
       token(
@@ -831,9 +847,34 @@ module.exports = grammar({
       token(
         seq(
           /\s*/
-          ,choice('not', '-', '~', '!')
+          ,choice('-', '~', '!')
         )
       )
+
+    ,restrict_tok: () => token(choice('restrict', 'fail', 'test'))
+
+    ,implements_tok: () => token('implements')
+
+    ,unless_tok: () => token('unless')
+    ,when_tok: () => token('when')
+    ,repipe_tok: () => token('repipe')
+    ,to_tok: () => token('to')
+    ,if_tok: () => token('if')
+    ,unique_tok: () => token('unique')
+    ,match_tok: () => token('match')
+    ,while_tok: () => token('while')
+    ,for_tok: () => token('for')
+    ,mut_tok: () => token('mut')
+
+    ,return_tok: () => token('return')
+    ,continue_tok: () => token('continue')
+    ,break_tok: () => token('break')
+
+    ,type_tok: () => token('type')
+    ,try_tok: () => token('try')
+    ,not_tok: () => token('not')
+    ,equals_tok: () => token('equals')
+    ,does_tok: () => token(choice('does','doesnt'))
 
     ,inplace_concat_tok: () => token('...')
 
@@ -873,11 +914,14 @@ module.exports = grammar({
     ,ob_tok: () => seq(/\[/) // No newline because the following line may be a expr (not a self-contained statement)
     ,cb_tok: () => seq(/\s*\]/)
 
+    ,lt_tok: () => token('<')
+    ,gt_tok: () => seq(/\s*>/)
+
     ,op_tok: () => seq(/\(/)
     ,cp_tok: () => seq(/\s*\)/)
 
-    ,colonp_tok: () => seq(/\s*:\{/)
     ,colon_tok: () => seq(/\s*:/)
+    ,colonl_tok: () => seq(/\s*:\{/)
 
     ,bar_tok: () => token('|')
     ,pob_tok: () => token('#[')
@@ -903,11 +947,17 @@ module.exports = grammar({
 
     ,complex_identifier: (_) => token(/[$%#][\.a-zA-Z\d_]*/)
     ,all_cap_identifier: (_) => token(/[A-Z][A-Z\d_]*/)
+
+
     ,trivial_identifier: (_) =>
       token(
         choice(
           /[A-Z]?[a-z_][a-zA-Z\d_]*/
-          ,/`[^`]+`/
+          ,seq(
+            '`'
+            ,repeat(choice(prec(1,/\\./), /[^`\\\n]+/))
+            ,token.immediate('`')
+          )
         )
       )
 

@@ -1,0 +1,38 @@
+
+//------------------------------
+// file prj/code/a.prp
+
+// let b = import "b"  // Not needed, same directory file
+
+let result = a ++ b.calc()
+
+comptime assert result == "abc"
+
+// b.c.calc() is a compile error
+
+//------------------------------
+// file prj/code/b.prp
+
+let c = import "c"  // pub c = import "c" would re-export "c"
+
+pub calc = {||
+ return "b" ++ c.calc()
+}
+
+// pub is same as let but visible to import
+// pub
+
+//------------------------------
+// file prj/code/c.prp
+
+pub calc = {||
+ return "c"
+}
+
+//------------------------------
+// file prj2/code/other.prp
+
+let b = import "prj/b"
+
+comptime assert b.calc() == "bc"
+

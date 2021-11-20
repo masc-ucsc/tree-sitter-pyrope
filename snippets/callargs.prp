@@ -1,0 +1,32 @@
+
+fun = {|(a:u32,b:u6)->(:u33)|
+  return a+b
+}
+
+type Args = (
+  ,a:u32
+  ,b:u6
+)
+
+fun2 = {|(...x:Args)->(:u33)|
+  return x.a+x.b
+}
+
+comptime assert fun2(a=2,b=4) == fun(2,4) == fun(a=2,b=4)
+
+fun3 = {|(...x:Args)->(res:u33)|
+  res = x.a+x.b
+}
+
+comptime assert fun2(a=3,b=10) == fun3(a=3,b=10).res
+
+type Res_arg = (
+  ,total:u33
+)
+
+fun4 = {|(...x:Args)->(...res:Res_arg)|
+  res.total = a+b
+}
+
+comptime assert fun3(a=3,b=10).res == fun4(a=3,b=10).total
+
