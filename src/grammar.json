@@ -1480,11 +1480,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "lambda_def"
+          "name": "scope_expr"
         },
         {
           "type": "SYMBOL",
-          "name": "scope_expr"
+          "name": "lambda_def"
         },
         {
           "type": "SEQ",
@@ -1499,6 +1499,18 @@
                 "type": "SYMBOL",
                 "name": "select_sequence"
               }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "qmark_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         }
@@ -1541,6 +1553,18 @@
                 "type": "SYMBOL",
                 "name": "select_sequence"
               }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "qmark_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         }
@@ -2044,6 +2068,10 @@
                 "type": "SYMBOL",
                 "name": "selector0"
               }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "qmark_tok"
             }
           ]
         }

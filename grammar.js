@@ -459,11 +459,12 @@ module.exports = grammar({
         ,$.if_stmt
         ,$.for_stmt
         ,$.match_stmt
-        ,$.lambda_def
         ,$.scope_expr
+        ,$.lambda_def
         ,seq(
           $.tuple
           ,repeat($.select_sequence)
+          ,optional($.qmark_tok)
         )
       )
 
@@ -478,6 +479,7 @@ module.exports = grammar({
         ,seq(
           $.tuple
           ,repeat($.select_sequence)
+          ,optional($.qmark_tok)
         )
       )
 
@@ -612,6 +614,7 @@ module.exports = grammar({
         ,choice(
           $.factor_typecase
           ,repeat1($.selector0)   // Array
+          ,$.qmark_tok
         )
       )
 
@@ -815,6 +818,7 @@ module.exports = grammar({
 
     ,where_tok: () => token('where')
     ,let_tok: () => token('let')
+    ,union_tok: () => token('union')
     ,pub_tok: () => token('pub')
     ,var_tok: () => token('var')
     ,reg_tok: () => token('reg')

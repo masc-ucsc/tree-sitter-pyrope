@@ -639,6 +639,10 @@
           "named": true
         },
         {
+          "type": "qmark_tok",
+          "named": true
+        },
+        {
           "type": "scope_expr",
           "named": true
         },
@@ -687,6 +691,10 @@
         },
         {
           "type": "not_tok",
+          "named": true
+        },
+        {
+          "type": "qmark_tok",
           "named": true
         },
         {
@@ -1660,6 +1668,10 @@
       "types": [
         {
           "type": "factor_typecase",
+          "named": true
+        },
+        {
+          "type": "qmark_tok",
           "named": true
         },
         {
