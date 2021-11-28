@@ -30,7 +30,7 @@ type Shape = (
   ,var increase_size = {|(self,_:i12) -> (self)|}
 )
 
-type Circle implements Shape = (
+type Circle implements Shape with (
   ,var rad:i32
   ,var name = {|(self) -> :string| "circle" }
   ,var area = {|(self) -> :i32|

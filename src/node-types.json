@@ -24,7 +24,7 @@
         "named": true
       },
       {
-        "type": "scope_stmt",
+        "type": "scope_pipe_stmt",
         "named": true
       },
       {
@@ -69,14 +69,6 @@
           "named": true
         },
         {
-          "type": "attributes",
-          "named": true
-        },
-        {
-          "type": "defer_read_tok",
-          "named": true
-        },
-        {
           "type": "fcall_pipe",
           "named": true
         },
@@ -89,11 +81,11 @@
           "named": true
         },
         {
-          "type": "pub_tok",
+          "type": "reg_tok",
           "named": true
         },
         {
-          "type": "reg_tok",
+          "type": "start_assign_flags",
           "named": true
         },
         {
@@ -118,6 +110,10 @@
         {
           "type": "expr_entry",
           "named": true
+        },
+        {
+          "type": "plusplus_equal_tok",
+          "named": true
         }
       ]
     }
@@ -140,6 +136,10 @@
           },
           {
             "type": "equal_tok",
+            "named": true
+          },
+          {
+            "type": "plusplus_equal_tok",
             "named": true
           },
           {
@@ -592,7 +592,15 @@
           "named": true
         },
         {
+          "type": "select_sequence",
+          "named": true
+        },
+        {
           "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "variable_base_last",
           "named": true
         }
       ]
@@ -639,10 +647,6 @@
           "named": true
         },
         {
-          "type": "qmark_tok",
-          "named": true
-        },
-        {
           "type": "scope_expr",
           "named": true
         },
@@ -660,6 +664,10 @@
         },
         {
           "type": "unary_op_tok",
+          "named": true
+        },
+        {
+          "type": "variable_base_last",
           "named": true
         }
       ]
@@ -1241,19 +1249,11 @@
           "named": true
         },
         {
-          "type": "attributes",
-          "named": true
-        },
-        {
           "type": "binary_op_tok",
           "named": true
         },
         {
           "type": "by_tok",
-          "named": true
-        },
-        {
-          "type": "defer_read_tok",
           "named": true
         },
         {
@@ -1298,6 +1298,10 @@
         },
         {
           "type": "range_open_tok",
+          "named": true
+        },
+        {
+          "type": "start_assign_flags",
           "named": true
         },
         {
@@ -1376,6 +1380,37 @@
     }
   },
   {
+    "type": "scope_pipe_stmt",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "defer_read_tok",
+          "named": true
+        },
+        {
+          "type": "defer_write_tok",
+          "named": true
+        },
+        {
+          "type": "scope_pipe_tok",
+          "named": true
+        },
+        {
+          "type": "scope_stmt",
+          "named": true
+        },
+        {
+          "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "scope_stmt",
     "named": true,
     "fields": {},
@@ -1399,11 +1434,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "dot_selector",
+          "named": true
+        },
+        {
+          "type": "qmark_tok",
           "named": true
         },
         {
@@ -1457,6 +1496,33 @@
       "types": [
         {
           "type": "stmt_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "start_assign_flags",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attributes",
+          "named": true
+        },
+        {
+          "type": "defer_read_tok",
+          "named": true
+        },
+        {
+          "type": "defer_write_tok",
+          "named": true
+        },
+        {
+          "type": "pub_tok",
           "named": true
         }
       ]
@@ -1552,7 +1618,7 @@
     "fields": {
       "lhsrhs": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expr_entry",
@@ -1566,6 +1632,14 @@
       "required": false,
       "types": [
         {
+          "type": "always_after_tok",
+          "named": true
+        },
+        {
+          "type": "always_before_tok",
+          "named": true
+        },
+        {
           "type": "assignment_cont",
           "named": true
         },
@@ -1575,6 +1649,10 @@
         },
         {
           "type": "pub_tok",
+          "named": true
+        },
+        {
+          "type": "reg_tok",
           "named": true
         },
         {
@@ -1628,15 +1706,15 @@
           "named": true
         },
         {
-          "type": "factor_second",
-          "named": true
-        },
-        {
           "type": "gate_stmt",
           "named": true
         },
         {
           "type": "implements_tok",
+          "named": true
+        },
+        {
+          "type": "pub_tok",
           "named": true
         },
         {
@@ -1648,11 +1726,19 @@
           "named": true
         },
         {
+          "type": "tuple",
+          "named": true
+        },
+        {
           "type": "type_tok",
           "named": true
         },
         {
           "type": "typecase",
+          "named": true
+        },
+        {
+          "type": "with_tok",
           "named": true
         }
       ]
@@ -1787,6 +1873,14 @@
     "named": true
   },
   {
+    "type": "always_after_tok",
+    "named": true
+  },
+  {
+    "type": "always_before_tok",
+    "named": true
+  },
+  {
     "type": "assign_tok",
     "named": true
   },
@@ -1836,6 +1930,10 @@
   },
   {
     "type": "defer_read_tok",
+    "named": true
+  },
+  {
+    "type": "defer_write_tok",
     "named": true
   },
   {
@@ -1911,6 +2009,10 @@
     "named": true
   },
   {
+    "type": "plusplus_equal_tok",
+    "named": true
+  },
+  {
     "type": "pob_tok",
     "named": true
   },
@@ -1944,6 +2046,10 @@
   },
   {
     "type": "return_tok",
+    "named": true
+  },
+  {
+    "type": "scope_pipe_tok",
     "named": true
   },
   {
@@ -1992,6 +2098,10 @@
   },
   {
     "type": "while_tok",
+    "named": true
+  },
+  {
+    "type": "with_tok",
     "named": true
   }
 ]

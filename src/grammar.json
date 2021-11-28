@@ -97,7 +97,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "scope_stmt"
+          "name": "scope_pipe_stmt"
         },
         {
           "type": "SYMBOL",
@@ -575,24 +575,24 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "pub_tok"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
           "type": "SYMBOL",
           "name": "type_tok"
         },
         {
           "type": "SYMBOL",
           "name": "variable_base_field"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "typecase"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
         },
         {
           "type": "CHOICE",
@@ -606,30 +606,124 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "factor_second"
+                  "name": "variable_base_field"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "with_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "tuple"
                 }
               ]
             },
             {
-              "type": "BLANK"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "typecase"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "assignment_cont"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "gate_stmt"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "start_assign_flags": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "defer_read_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "defer_write_tok"
+                }
+              ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "pub_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "attributes"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "pub_tok"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "attributes"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         },
         {
           "type": "SYMBOL",
-          "name": "assignment_cont"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "gate_stmt"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "name": "attributes"
         }
       ]
     },
@@ -641,19 +735,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "defer_read_tok"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "attributes"
+              "name": "start_assign_flags"
             },
             {
               "type": "BLANK"
@@ -666,10 +748,6 @@
             {
               "type": "SYMBOL",
               "name": "let_tok"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "pub_tok"
             },
             {
               "type": "SYMBOL",
@@ -736,19 +814,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "defer_read_tok"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "attributes"
+              "name": "start_assign_flags"
             },
             {
               "type": "BLANK"
@@ -861,8 +927,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "equal_tok"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "equal_tok"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "plusplus_equal_tok"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -880,8 +955,17 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "equal_tok"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "equal_tok"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "plusplus_equal_tok"
+                  }
+                ]
               },
               {
                 "type": "SYMBOL",
@@ -1016,6 +1100,86 @@
         {
           "type": "SYMBOL",
           "name": "ck_tok"
+        }
+      ]
+    },
+    "scope_pipe_stmt": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "defer_read_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "defer_write_tok"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "scope_stmt"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "scope_stmt"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "scope_pipe_tok"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "ok_tok"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_newline"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "stmt_seq"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "ck_tok"
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1505,7 +1669,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "qmark_tok"
+                  "name": "variable_base_last"
                 },
                 {
                   "type": "BLANK"
@@ -1689,8 +1853,32 @@
           "name": "lambda_def"
         },
         {
-          "type": "SYMBOL",
-          "name": "tuple"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "tuple"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "select_sequence"
+              }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "variable_base_last"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -1772,31 +1960,26 @@
           ]
         },
         {
-          "type": "SEQ",
+          "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "variable_prev_field"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "variable_prev_field"
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "variable_base_last"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "variable_base_last"
+            },
+            {
+              "type": "BLANK"
             }
           ]
         }
@@ -2163,8 +2346,25 @@
           "name": "dot_selector"
         },
         {
-          "type": "SYMBOL",
-          "name": "selector1"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "qmark_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "selector1"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -2450,50 +2650,89 @@
       ]
     },
     "tuple_entry": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
               "type": "CHOICE",
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "var_tok"
+                  "name": "always_after_tok"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "let_tok"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "pub_tok"
+                  "name": "always_before_tok"
                 }
               ]
             },
             {
-              "type": "BLANK"
+              "type": "SYMBOL",
+              "name": "assignment_cont"
             }
           ]
         },
         {
-          "type": "FIELD",
-          "name": "lhsrhs",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expr_entry"
-          }
-        },
-        {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "assignment_cont"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "pub_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             },
             {
-              "type": "BLANK"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "var_tok"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "let_tok"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "reg_tok"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "FIELD",
+              "name": "lhsrhs",
+              "content": {
+                "type": "SYMBOL",
+                "name": "expr_entry"
+              }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "assignment_cont"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         }
@@ -2802,6 +3041,27 @@
         "value": "defer_read"
       }
     },
+    "defer_write_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "defer_write"
+      }
+    },
+    "always_before_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "always_before"
+      }
+    },
+    "always_after_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "always_after"
+      }
+    },
     "where_tok": {
       "type": "TOKEN",
       "content": {
@@ -2814,6 +3074,13 @@
       "content": {
         "type": "STRING",
         "value": "let"
+      }
+    },
+    "union_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "union"
       }
     },
     "pub_tok": {
@@ -2939,6 +3206,13 @@
       "content": {
         "type": "STRING",
         "value": "implements"
+      }
+    },
+    "with_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "with"
       }
     },
     "unless_tok": {
@@ -3126,6 +3400,13 @@
         "value": "\\s*="
       }
     },
+    "plusplus_equal_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "\\s*\\+\\+="
+      }
+    },
     "assign_tok": {
       "type": "TOKEN",
       "content": {
@@ -3141,10 +3422,6 @@
               {
                 "type": "STRING",
                 "value": ":="
-              },
-              {
-                "type": "STRING",
-                "value": "++="
               },
               {
                 "type": "STRING",
@@ -3273,6 +3550,13 @@
       "content": {
         "type": "PATTERN",
         "value": "\\s*\\|>"
+      }
+    },
+    "scope_pipe_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "#>"
       }
     },
     "ok_tok": {

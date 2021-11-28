@@ -81,7 +81,7 @@ module.exports = grammar({
         ,$.multiple_stmt
         ,$.tuple_pipe
         ,$.ctrl_stmt
-        ,$.scope_stmt
+        ,$.scope_pipe_stmt
         ,$.try_stmt
         ,$.factor_expr_stmt
         ,$.constrained_scope_stmt
@@ -204,27 +204,44 @@ module.exports = grammar({
 
     ,type_stmt: $ =>
       seq(
-        $.type_tok
+        optional($.pub_tok)
+        ,$.type_tok
         ,$.variable_base_field
-        ,optional($.typecase)
-        ,optional(
+        ,choice(
           seq(
             $.implements_tok
-            ,$.factor_second
+            ,$.variable_base_field
+            ,$.with_tok
+            ,$.tuple
+          )
+          ,seq(
+            optional($.typecase)
+            ,$.assignment_cont
+            ,optional($.gate_stmt)
           )
         )
-        ,$.assignment_cont
-        ,optional($.gate_stmt)
+      )
+
+    ,start_assign_flags: $ =>
+      choice(
+        seq(
+          choice($.defer_read_tok, $.defer_write_tok)
+          ,optional($.pub_tok)
+          ,optional($.attributes)
+        )
+        ,seq(
+          $.pub_tok
+          ,optional($.attributes)
+        )
+        ,$.attributes
       )
 
     // Very close to multiple_stmt
     ,assign_decl_stmt: $ =>
       seq(
-        optional($.defer_read_tok)
-        ,optional($.attributes)
+        optional($.start_assign_flags)
         ,choice(
           $.let_tok
-          ,$.pub_tok
           ,$.var_tok
           ,$.reg_tok
         )
@@ -243,8 +260,7 @@ module.exports = grammar({
 
     ,multiple_stmt: $ =>
       seq(
-        optional($.defer_read_tok)
-        ,optional($.attributes)
+        optional($.start_assign_flags)
         ,$.factor_simple_fcall
         ,optional($.expr_cont)
         ,optional(
@@ -277,7 +293,7 @@ module.exports = grammar({
 
     ,assignment_cont: $ =>
       seq(
-        $.equal_tok
+        choice($.equal_tok, $.plusplus_equal_tok)
         ,$.expr_entry
       )
 
@@ -285,7 +301,7 @@ module.exports = grammar({
       seq(
         field("assign",
           choice(
-            $.equal_tok
+            choice($.equal_tok, $.plusplus_equal_tok)
             ,$.assign_tok
             ,seq(
               $.eq_pound_tok
@@ -320,6 +336,26 @@ module.exports = grammar({
         ,optional($._newline)
         ,optional($.stmt_seq)
         ,$.ck_tok
+      )
+
+    ,scope_pipe_stmt: $ =>
+      choice(
+        seq(
+          choice($.defer_read_tok, $.defer_write_tok)
+          ,$.scope_stmt
+        )
+        ,seq(
+          $.scope_stmt
+          ,repeat(
+            seq(
+              $.scope_pipe_tok
+              ,$.ok_tok
+              ,optional($._newline)
+              ,optional($.stmt_seq)
+              ,$.ck_tok
+            )
+          )
+        )
       )
 
     ,scope_expr: $ =>
@@ -464,7 +500,7 @@ module.exports = grammar({
         ,seq(
           $.tuple
           ,repeat($.select_sequence)
-          ,optional($.qmark_tok)
+          ,optional($.variable_base_last)
         )
       )
 
@@ -515,7 +551,11 @@ module.exports = grammar({
         ,$.for_stmt
         ,$.expr_range_cont   // open range
         ,$.lambda_def
-        ,$.tuple
+        ,seq(
+          $.tuple
+          ,repeat($.select_sequence)
+          ,optional($.variable_base_last)
+        )
       )
 
     ,factor_expr_start: $ =>
@@ -540,10 +580,8 @@ module.exports = grammar({
           $.variable_base_field
           ,$.literal_select_field
         )
-        ,seq(
-          optional($.variable_prev_field)
-          ,optional($.variable_base_last)
-        )
+        ,optional($.variable_prev_field)
+        ,optional($.variable_base_last)
       )
 
     ,attributes: $ =>
@@ -613,8 +651,8 @@ module.exports = grammar({
         $.colon_tok
         ,choice(
           $.factor_typecase
-          ,repeat1($.selector0)   // Array
-          ,$.qmark_tok
+          ,repeat1($.selector0)   // untyped Array
+          ,$.qmark_tok            // just qmark
         )
       )
 
@@ -645,7 +683,7 @@ module.exports = grammar({
     ,select_sequence: $ =>
       choice(
         $.dot_selector
-        ,$.selector1
+        ,seq(optional($.qmark_tok), $.selector1)
         ,$.tuple
       )
 
@@ -742,10 +780,17 @@ module.exports = grammar({
       )
 
     ,tuple_entry: $ =>
-      seq(
-        optional(choice($.var_tok, $.let_tok, $.pub_tok))
-        ,field("lhsrhs", $.expr_entry)
-        ,optional($.assignment_cont)
+      choice(
+        seq(
+          choice($.always_after_tok, $.always_before_tok)
+          ,$.assignment_cont
+        )
+        ,seq(
+          optional($.pub_tok)
+          ,optional(choice($.var_tok, $.let_tok, $.reg_tok))
+          ,field("lhsrhs", $.expr_entry)
+          ,optional($.assignment_cont)
+        )
       )
 
     ,variable_bit_sel: $ =>
@@ -814,7 +859,10 @@ module.exports = grammar({
     ,debug_tok: () => token('debug')
     ,comptime_tok: () => token('comptime')
     ,defer_read_tok: () => token('defer_read')
+    ,defer_write_tok: () => token('defer_write')
 
+    ,always_before_tok: () => token('always_before')
+    ,always_after_tok: () => token('always_after')
 
     ,where_tok: () => token('where')
     ,let_tok: () => token('let')
@@ -858,6 +906,7 @@ module.exports = grammar({
     ,restrict_tok: () => token(choice('restrict', 'fail', 'test'))
 
     ,implements_tok: () => token('implements')
+    ,with_tok: () => token('with')
 
     ,unless_tok: () => token('unless')
     ,when_tok: () => token('when')
@@ -892,12 +941,13 @@ module.exports = grammar({
       )
 
     ,equal_tok: () => token(/\s*=/)
+    ,plusplus_equal_tok: () => token(/\s*\+\+=/)
 
     ,assign_tok: () =>
       token(
         seq(
           /\s*/
-          ,choice(':=', '++=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', 'or=', 'and=', '<<=', '>>=')
+          ,choice(':=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', 'or=', 'and=', '<<=', '>>=')
         )
       )
     ,eq_pound_tok: () =>
@@ -909,6 +959,7 @@ module.exports = grammar({
       )
 
     ,pipe_tok: () => token(/\s*\|>/)
+    ,scope_pipe_tok: () => token(/#>/)
 
     // No ok_tok because it should have space after only if statement (more complicated per rule case)
     ,ok_tok: () => seq(/\{/)
