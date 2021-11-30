@@ -30,7 +30,7 @@ type Shape = (
   ,var increase_size = {|(self,_:i12) -> (self)|}
 )
 
-type Circle implements Shape with (
+type Circle extends Shape with (
   ,var rad:i32
   ,var name = {|(self) -> :string| "circle" }
   ,var area = {|(self) -> :i32|
@@ -75,11 +75,11 @@ var d:u5
 
 b = a     // OK done automatically. No precision lost
 c = a     // compile error, '100' overflows the maximum allowed value of 'c'
-c:= a     // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
+wrap c = a     // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
 c = u5(a) // OK, c == 31
 c = 31
 d = c + 1 // compile error, '32' overflows the maximum allowed value  of 'd'
-d:= c + 1   // OK d == 0
-d:=# c + 1   // OK d == 0
-d = u5(c+1) // OK, d==31
-d = :d(c+1) // OK, d==31
+wrap d= c + 1   // OK d == 0
+wrap d=# c + 1   // OK d == 0
+saturate d:u5 = c+1 // OK, d==31
+saturate d = c+1 // OK, d==31

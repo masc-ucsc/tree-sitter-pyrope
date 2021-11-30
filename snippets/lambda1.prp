@@ -1,7 +1,7 @@
 
 dispatch = {||
-  comptime assert $0 equals string
-  return match $0 {
+  comptime assert $.0 equals string
+  return match $.0 {
            == 'add' { $1 + $2 }
            == 'sub' { $1 - $2 }
            == 'mul' { $1 * $2 }

@@ -69,6 +69,10 @@
           "named": true
         },
         {
+          "type": "enum_tok",
+          "named": true
+        },
+        {
           "type": "fcall_pipe",
           "named": true
         },
@@ -85,11 +89,23 @@
           "named": true
         },
         {
+          "type": "repipe_tok",
+          "named": true
+        },
+        {
+          "type": "saturate_tok",
+          "named": true
+        },
+        {
           "type": "start_assign_flags",
           "named": true
         },
         {
           "type": "var_tok",
+          "named": true
+        },
+        {
+          "type": "wrap_tok",
           "named": true
         }
       ]
@@ -154,15 +170,11 @@
       "required": true,
       "types": [
         {
-          "type": "binary_op_tok",
-          "named": true
-        },
-        {
           "type": "by_tok",
           "named": true
         },
         {
-          "type": "does_typecase",
+          "type": "expr_cont",
           "named": true
         },
         {
@@ -178,7 +190,7 @@
           "named": true
         },
         {
-          "type": "logical_op_tok",
+          "type": "fcall_or_variable",
           "named": true
         },
         {
@@ -190,7 +202,11 @@
           "named": true
         },
         {
-          "type": "repipe_expr",
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_op_tok",
           "named": true
         }
       ]
@@ -229,6 +245,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "colon_tok",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "constrained_scope_stmt",
@@ -300,33 +321,6 @@
     }
   },
   {
-    "type": "does_typecase",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "does_tok",
-          "named": true
-        },
-        {
-          "type": "equals_tok",
-          "named": true
-        },
-        {
-          "type": "factor_second",
-          "named": true
-        },
-        {
-          "type": "not_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "dot_selector",
     "named": true,
     "fields": {},
@@ -376,20 +370,9 @@
     }
   },
   {
-    "type": "expr_entry",
+    "type": "expr_cont",
     "named": true,
-    "fields": {
-      "in": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "in_range",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
@@ -403,7 +386,38 @@
           "named": true
         },
         {
-          "type": "does_typecase",
+          "type": "factor_second",
+          "named": true
+        },
+        {
+          "type": "logical_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_op_tok",
+          "named": true
+        },
+        {
+          "type": "range_open_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expr_entry",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "by_tok",
+          "named": true
+        },
+        {
+          "type": "expr_cont",
           "named": true
         },
         {
@@ -411,11 +425,7 @@
           "named": true
         },
         {
-          "type": "lambda_def",
-          "named": true
-        },
-        {
-          "type": "logical_op_tok",
+          "type": "in_range",
           "named": true
         },
         {
@@ -438,15 +448,7 @@
       "required": true,
       "types": [
         {
-          "type": "binary_op_tok",
-          "named": true
-        },
-        {
-          "type": "by_tok",
-          "named": true
-        },
-        {
-          "type": "does_typecase",
+          "type": "expr_cont",
           "named": true
         },
         {
@@ -462,19 +464,7 @@
           "named": true
         },
         {
-          "type": "logical_op_tok",
-          "named": true
-        },
-        {
-          "type": "not_tok",
-          "named": true
-        },
-        {
-          "type": "range_op_tok",
-          "named": true
-        },
-        {
-          "type": "range_open_tok",
+          "type": "lambda_def",
           "named": true
         },
         {
@@ -501,19 +491,7 @@
       "required": true,
       "types": [
         {
-          "type": "binary_op_tok",
-          "named": true
-        },
-        {
-          "type": "by_tok",
-          "named": true
-        },
-        {
-          "type": "does_typecase",
-          "named": true
-        },
-        {
-          "type": "factor_second",
+          "type": "expr_cont",
           "named": true
         },
         {
@@ -521,27 +499,11 @@
           "named": true
         },
         {
-          "type": "logical_op_tok",
-          "named": true
-        },
-        {
-          "type": "not_tok",
-          "named": true
-        },
-        {
-          "type": "range_op_tok",
-          "named": true
-        },
-        {
-          "type": "range_open_tok",
+          "type": "lambda_def",
           "named": true
         },
         {
           "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "typecase",
           "named": true
         },
         {
@@ -643,10 +605,6 @@
           "named": true
         },
         {
-          "type": "not_tok",
-          "named": true
-        },
-        {
           "type": "scope_expr",
           "named": true
         },
@@ -674,57 +632,6 @@
     }
   },
   {
-    "type": "factor_typecase",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "factor_second",
-          "named": true
-        },
-        {
-          "type": "fcall_or_variable",
-          "named": true
-        },
-        {
-          "type": "inplace_concat_tok",
-          "named": true
-        },
-        {
-          "type": "lambda_def",
-          "named": true
-        },
-        {
-          "type": "not_tok",
-          "named": true
-        },
-        {
-          "type": "qmark_tok",
-          "named": true
-        },
-        {
-          "type": "select_sequence",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "typecase",
-          "named": true
-        },
-        {
-          "type": "unary_op_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "fcall_or_variable",
     "named": true,
     "fields": {},
@@ -733,15 +640,7 @@
       "required": true,
       "types": [
         {
-          "type": "all_cap_identifier",
-          "named": true
-        },
-        {
           "type": "bool_literal",
-          "named": true
-        },
-        {
-          "type": "complex_identifier",
           "named": true
         },
         {
@@ -1016,10 +915,6 @@
           "named": true
         },
         {
-          "type": "not_tok",
-          "named": true
-        },
-        {
           "type": "range_op_tok",
           "named": true
         },
@@ -1029,10 +924,6 @@
         },
         {
           "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "typecase",
           "named": true
         },
         {
@@ -1200,16 +1091,6 @@
           }
         ]
       },
-      "does": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "does_typecase",
-            "named": true
-          }
-        ]
-      },
       "in": {
         "multiple": false,
         "required": false,
@@ -1249,15 +1130,7 @@
           "named": true
         },
         {
-          "type": "binary_op_tok",
-          "named": true
-        },
-        {
-          "type": "by_tok",
-          "named": true
-        },
-        {
-          "type": "does_typecase",
+          "type": "expr_cont",
           "named": true
         },
         {
@@ -1266,10 +1139,6 @@
         },
         {
           "type": "expr_simple_fcall_entry",
-          "named": true
-        },
-        {
-          "type": "factor_second",
           "named": true
         },
         {
@@ -1285,31 +1154,11 @@
           "named": true
         },
         {
-          "type": "logical_op_tok",
-          "named": true
-        },
-        {
-          "type": "not_tok",
-          "named": true
-        },
-        {
-          "type": "range_op_tok",
-          "named": true
-        },
-        {
-          "type": "range_open_tok",
-          "named": true
-        },
-        {
           "type": "start_assign_flags",
           "named": true
         },
         {
           "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "typecase",
           "named": true
         },
         {
@@ -1328,41 +1177,6 @@
     "type": "qmark_dot_tok",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "repipe_expr",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "all_cap_identifier",
-          "named": true
-        },
-        {
-          "type": "complex_identifier",
-          "named": true
-        },
-        {
-          "type": "repipe_tok",
-          "named": true
-        },
-        {
-          "type": "select_sequence",
-          "named": true
-        },
-        {
-          "type": "to_tok",
-          "named": true
-        },
-        {
-          "type": "trivial_identifier",
-          "named": true
-        }
-      ]
-    }
   },
   {
     "type": "scope_expr",
@@ -1457,27 +1271,12 @@
     }
   },
   {
-    "type": "selector0",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "expr_entry",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "selector1",
     "named": true,
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "expr_entry",
@@ -1556,10 +1355,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "all_cap_identifier",
-          "named": true
-        },
         {
           "type": "trivial_identifier",
           "named": true
@@ -1644,6 +1439,10 @@
           "named": true
         },
         {
+          "type": "attributes",
+          "named": true
+        },
+        {
           "type": "let_tok",
           "named": true
         },
@@ -1694,23 +1493,15 @@
       "required": true,
       "types": [
         {
-          "type": "all_cap_identifier",
-          "named": true
-        },
-        {
           "type": "assignment_cont",
           "named": true
         },
         {
-          "type": "complex_identifier",
+          "type": "extends_tok",
           "named": true
         },
         {
           "type": "gate_stmt",
-          "named": true
-        },
-        {
-          "type": "implements_tok",
           "named": true
         },
         {
@@ -1753,7 +1544,19 @@
       "required": true,
       "types": [
         {
-          "type": "factor_typecase",
+          "type": "colon_tok",
+          "named": true
+        },
+        {
+          "type": "dot_selector",
+          "named": true
+        },
+        {
+          "type": "fcall_or_variable",
+          "named": true
+        },
+        {
+          "type": "lambda_def",
           "named": true
         },
         {
@@ -1761,7 +1564,11 @@
           "named": true
         },
         {
-          "type": "selector0",
+          "type": "selector1",
+          "named": true
+        },
+        {
+          "type": "tuple",
           "named": true
         }
       ]
@@ -1803,7 +1610,7 @@
           "named": true
         },
         {
-          "type": "selector0",
+          "type": "selector1",
           "named": true
         }
       ]
@@ -1869,10 +1676,6 @@
     "named": false
   },
   {
-    "type": "all_cap_identifier",
-    "named": true
-  },
-  {
     "type": "always_after_tok",
     "named": true
   },
@@ -1913,10 +1716,6 @@
     "named": true
   },
   {
-    "type": "complex_identifier",
-    "named": true
-  },
-  {
     "type": "comptime_tok",
     "named": true
   },
@@ -1937,15 +1736,15 @@
     "named": true
   },
   {
-    "type": "does_tok",
-    "named": true
-  },
-  {
     "type": "elif_tok",
     "named": true
   },
   {
     "type": "else_tok",
+    "named": true
+  },
+  {
+    "type": "enum_tok",
     "named": true
   },
   {
@@ -1957,7 +1756,7 @@
     "named": true
   },
   {
-    "type": "equals_tok",
+    "type": "extends_tok",
     "named": true
   },
   {
@@ -1966,10 +1765,6 @@
   },
   {
     "type": "if_tok",
-    "named": true
-  },
-  {
-    "type": "implements_tok",
     "named": true
   },
   {
@@ -1998,10 +1793,6 @@
   },
   {
     "type": "natural_literal",
-    "named": true
-  },
-  {
-    "type": "not_tok",
     "named": true
   },
   {
@@ -2049,15 +1840,15 @@
     "named": true
   },
   {
+    "type": "saturate_tok",
+    "named": true
+  },
+  {
     "type": "scope_pipe_tok",
     "named": true
   },
   {
     "type": "simple_string_literal",
-    "named": true
-  },
-  {
-    "type": "to_tok",
     "named": true
   },
   {
@@ -2102,6 +1893,10 @@
   },
   {
     "type": "with_tok",
+    "named": true
+  },
+  {
+    "type": "wrap_tok",
     "named": true
   }
 ]

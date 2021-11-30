@@ -25,26 +25,26 @@ if ubtb_pc? and !ftq.full {
 
 // Fast TAGE+BTB predictor (1 or 2 predictions per cycle)
 let ftage_pc   =# fast_tage.predict(pc)
-ftage_ftq_head =# repipe ftq_head to stage_pc
+repipe ftage_ftq =  (head=ftq_head , pc=stage_pc)
 
 if ftage_pc? {
-  ftq.fix(ftage_ftq_head)
+  ftq.fix(ftage_ftq.head)
   for f in ftage_pc {
-    ftq.append(ftage_ftq_head+i, ftage_pc[i])
+    ftq.append(ftage_ftq.head+i, ftage_pc[i])
   }
-  ftq_head = ftage_ftq_head + ftage_ftq_head.size
+  ftq_head = ftage_ftq.head + ftage_ftq.head.size
 
   fast_tage.flush()
 }
 
 // Slow TAGE+BTB predictor (1 predictions per cycle)
 let stage_pc    =# slow_tage.predict(pc)
-stage_ftq_head  =# repipe ftq_head to stage_pc
+repipe stage_ftq  = (head=ftq_head , pc=stage_pc)
 
 if stage_pc? {
-  ftq.fix(stage_ftq_head)
-  ftq.append(stage_ftq_head+i, ftage_pc[i])
-  ftq_head = stage_ftq_head + 1
+  ftq.fix(stage_ftq.head)
+  ftq.append(stage_ftq.head+i, ftage_pc[i])
+  ftq_head = stage_ftq.head + 1
 
   fast_tage.flush()
   slow_tage.flush()
