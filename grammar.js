@@ -46,8 +46,6 @@ module.exports = grammar({
     ,$.variable_base_field
     ,$.tuple_seq
     ,$.stmt_base
-    // ,$.factor_simple_fcall
-    // ,$.select_sequence
   ]
 
   ,rules: {
@@ -249,7 +247,7 @@ module.exports = grammar({
               ,$._expr_simple_seq1
               ,$.assignment_cont2
             )
-            ,$._expr_simple_fcall_seq1 // HERE
+            ,$._expr_simple_fcall_seq1
             ,repeat1($.expr_cont)
             ,$.assignment_cont2
           )
@@ -477,7 +475,6 @@ module.exports = grammar({
         )
       )
 
-
     ,factor_simple_fcall: $ =>
       choice(
          seq(
@@ -487,7 +484,6 @@ module.exports = grammar({
         ,seq(
           optional($.unary_op_tok)
           ,$.fcall_or_variable
-          //,optional($.typecase) HERE2
         )
       )
 
