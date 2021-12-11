@@ -8,7 +8,7 @@ debug let randomize = {|(self)|
       self[index] = rnd.boolean()
     }
   }
-  return self
+  ret self
 }
 
 x = (a=1,b=true,c="hello")

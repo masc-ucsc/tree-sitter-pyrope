@@ -171,8 +171,15 @@ module.exports = grammar({
           $.return_tok
           ,$.continue_tok
           ,$.break_tok
+          ,seq(
+            choice(
+              $.ret_tok
+              ,$.cont_tok
+              ,$.last_tok
+            )
+            ,$._expr_seq1
+          )
         )
-        ,optional($._expr_seq1)
         ,optional($.gate_stmt)
       )
 
@@ -344,10 +351,11 @@ module.exports = grammar({
 
     ,lambda_def: $ =>
       seq(
-        $.ok_lambda_tok
+        choice($.ok_function_tok, $.ok_procedure_tok)
         ,$.lambda_def_constrains
         ,optional($.stmt_seq)
         ,$.ck_tok
+        ,optional($.tuple) // call the lambda right now
       )
 
     ,try_stmt: $ =>
@@ -543,15 +551,27 @@ module.exports = grammar({
           $.trivial_or_caps_identifier_seq1 // just trivial sequence IDs no types no nothing or complex pattern
           ,seq(
             field("capture"
-              ,optional($.capture_list)
+              ,optional(
+                seq(
+                  optional($._newline)
+                  ,$.capture_list
+                )
+              )
             )
             ,field("input"
-              ,optional($.tuple)
+              ,optional(
+                seq(
+                  optional($._newline)
+                  ,$.tuple
+                )
+              )
             )
             ,field("output"
               ,optional(
                 seq(
-                  $._arrow_tok
+                  optional($._newline)
+                  ,$._arrow_tok
+                  ,optional($._newline)
                   ,choice(
                     $.tuple
                     ,$.typecase
@@ -567,6 +587,7 @@ module.exports = grammar({
             )
           )
         )
+        ,optional($._newline)
         ,$.bar_tok
         ,optional($._newline)
       )
@@ -774,7 +795,7 @@ module.exports = grammar({
         seq(
           /\s*/
           ,choice(
-            'or', 'and', 'or_else', 'and_then', 'has', 'implies', '<', '<=', '==', '!=', '>=', '>' // logical op
+            'or', 'and', 'or_else', 'and_then', 'has no', 'has', 'implies', '<', '<=', '==', '!=', '>=', '>' // logical op
           )
         )
       )
@@ -868,6 +889,10 @@ module.exports = grammar({
     ,continue_tok: () => token('continue')
     ,break_tok: () => token('break')
 
+    ,ret_tok: () => token('ret')
+    ,cont_tok: () => token('cont')
+    ,last_tok: () => token('last')
+
     ,type_tok: () => token('type')
     ,try_tok: () => token('try')
 
@@ -904,8 +929,9 @@ module.exports = grammar({
     ,scope_pipe_tok: () => token(/#>/)
 
     // No ok_tok because it should have space after only if statement (more complicated per rule case)
-    ,ok_tok: () => seq(/\{/)
-    ,ok_lambda_tok: () => seq(/\{\|/)
+    ,ok_tok: () => seq('{')
+    ,ok_function_tok: () => seq('{|')
+    ,ok_procedure_tok: () => seq('#{|')
     ,ck_tok: () => seq(/\s*}/)
 
     ,ob_tok: () => seq(/\[/) // No newline because the following line may be a expr (not a self-contained statement)
@@ -940,7 +966,7 @@ module.exports = grammar({
     ,trivial_identifier: (_) =>
       token(
         choice(
-          /[$%#a-zA-Z_][a-zA-Z\d_]*/
+          /[$%a-zA-Z_][a-zA-Z\d_]*/
           ,seq(
             '`'
             ,repeat(choice(prec(1,/\\./), /[^`\\\n]+/))

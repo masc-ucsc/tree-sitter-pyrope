@@ -6,44 +6,44 @@ find_one = (
   }
 
   ,pick = {|(x:u4)->(pos:u2,found:boolean)|
-    return match x {
-      == 0b1??? { return 3,true }
-      == 0b01?? { return 2,true }
-      == 0b001? { return 1,true }
-      == 0b0001 { return 0,true }
-      == 0b0000 { return 0b?,false }
+    ret match x {
+      == 0b1??? { (3  ,true ) }
+      == 0b01?? { (2  ,true ) }
+      == 0b001? { (1  ,true ) }
+      == 0b0001 { (0  ,true ) }
+      == 0b0000 { (0b?,false) }
     }
   }
   ,pick = {|(x:u3)->(pos:u2,found:boolean)|
-    return match x {
-      == 0b1?? { return 2,true }
-      == 0b01? { return 1,true }
-      == 0b001 { return 0,true }
-      == 0b000 { return 0b?,false }
+    match x {
+      == 0b1?? { ret 2,true }
+      == 0b01? { ret 1,true }
+      == 0b001 { ret 0,true }
+      == 0b000 { ret 0b?,false }
     }
   }
   ,pick = {|(x:u2)->(pos:u2,found:boolean)|
-    return match x {
-      == 0b1? { return 1,true }
-      == 0b01 { return 0,true }
-      == 0b00 { return 0b?,false }
+    ret match x {
+      == 0b1? { (1  ,true ) }
+      == 0b01 { (0  ,true ) }
+      == 0b00 { (0b?,false) }
     }
   }
   ,pick = {|(x:u1)->(pos:u1,found:boolean)|
-    return 0, x
+    ret 0, x
   }
 
   ,pick = {|(x)->(pos,found:boolean)|
     let list = for i in 0..<x.__ubits by 4 {
-      continue pick(x[i..+4])
+      cont pick(x[i..+4])
     }
 
     for e,index in list {
       continue unless e.found
-      return (pos=(i*4) | e.pos, found=true)
+      ret (pos=(i*4) | e.pos, found=true)
     }
 
-    return (pos=0,found=false)
+    ret (pos=0,found=false)
   }
 )
 

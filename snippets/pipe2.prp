@@ -1,14 +1,16 @@
 {|(in1,in2) -> (out)|
 
 add1 = {|a,b| // 1 cycle add
-  #reg = a+b
-  return #reg
+  reg r
+  r = a+b
+  ret r
 }
 mul3 = {|a,b| // 3 cycle multiply
-  #reg1 = $a * $b
-  #reg2 = #reg1
-  #reg3 = #reg2
-  return #reg3
+  reg reg1, reg2, reg3
+  reg1 = $a * $b
+  reg2 = reg1
+  reg3 = reg2
+  ret reg3
 }
 
 x    = mul3(in1, in2)

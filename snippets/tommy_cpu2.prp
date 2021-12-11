@@ -1,7 +1,7 @@
 
 fetch = {||
 
-  var #code:[32] = (
+  reg code:[32] = (
     ,0x0A556  // r5, r5, r6
 
     ,0x0A312  // r3 = r1 + r2
@@ -10,13 +10,15 @@ fetch = {||
     ,0x0B034  // if r3 < r4: pc = 0
   )
 
-  %.insn      = #code[#pc]
+  reg pc:i32
+
+  %.insn      = code[pc]
   %.restarted = $.x.restart
 
   if $.x.restart {
-    #pc = $.x.restart_pc
+    pc = $.x.restart_pc
   }else{
-    #pc = u32(#pc + 1)
+    pc = i32(pc + 1)
   }
 }
 
@@ -32,38 +34,38 @@ decode = {||
 
   insn      = Insn_type($.f.insn)
 
-  var #rf:[32] = (0,1,1,0,100,0,1)
+  var rf:[32] = (0,1,1,0,100,0,1)
 
-  %.rf_data0 = #rf[insn.r0]
-  %.rf_data1 = #rf[insn.r1]
+  %.rf_data0 = rf[insn.r0]
+  %.rf_data1 = rf[insn.r1]
   %.insns    = insn
   %.restarted= $.restarted
 
   if $.x.wb_enable {
-    #rf[$.x.wb_rd] = $.x.wb_val
+    rf[$.x.wb_rd] = $.x.wb_val
   }
 }
 
 execute = {||
 
-  #skip.__initial = true
+  reg skip = true
 
   valid = $.restarted or !skip;
 
   r0_val = $.rf_data0
-  r0_val = #wb_val when #wb_enable and #wb_rd == $.insn.r0
+  r0_val = wb_val when wb_enable and wb_rd == $.insn.r0
 
   r1_val = $.rf_data1
-  r1_val = #wb_val when #wb_enable and #wb_rd == $.insn.r1
+  r1_val = wb_val when wb_enable and wb_rd == $.insn.r1
 
   restart = valid and $.insn.opcode == 0xB and r1_val < r0_val;
   restart_pc = $.insn.brtarget;
 
-  #skip = restart when valid
+  skip = restart when valid
 
-  #wb_enable = valid and $.insn.opcode == 0xA and $.insn.rd != 0;
-  #wb_rd     = $.insn.rd
-  #wb_val    = r0_val + r1_val
+  wb_enable = valid and $.insn.opcode == 0xA and $.insn.rd != 0;
+  wb_rd     = $.insn.rd
+  wb_val    = r0_val + r1_val
 
   % = (restart, restart_pc, wb_enable, wb_rd, wb_val)
   debug %.valid  = valid  // mark as debug variables
@@ -72,8 +74,9 @@ execute = {||
 }
 
 flop_all = {||
-  % = #flop
-  #flop = $
+  reg flop
+  % = flop
+  flop = $
 }
 
 last_x = x_out defer

@@ -302,6 +302,10 @@
           "named": true
         },
         {
+          "type": "cont_tok",
+          "named": true
+        },
+        {
           "type": "continue_tok",
           "named": true
         },
@@ -311,6 +315,14 @@
         },
         {
           "type": "gate_stmt",
+          "named": true
+        },
+        {
+          "type": "last_tok",
+          "named": true
+        },
+        {
+          "type": "ret_tok",
           "named": true
         },
         {
@@ -946,11 +958,19 @@
           "named": true
         },
         {
-          "type": "ok_lambda_tok",
+          "type": "ok_function_tok",
+          "named": true
+        },
+        {
+          "type": "ok_procedure_tok",
           "named": true
         },
         {
           "type": "stmt_seq",
+          "named": true
+        },
+        {
+          "type": "tuple",
           "named": true
         }
       ]
@@ -961,7 +981,7 @@
     "named": true,
     "fields": {
       "capture": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -981,7 +1001,7 @@
         ]
       },
       "input": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -1169,7 +1189,12 @@
     }
   },
   {
-    "type": "ok_lambda_tok",
+    "type": "ok_function_tok",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "ok_procedure_tok",
     "named": true,
     "fields": {}
   },
@@ -1676,6 +1701,10 @@
     "named": false
   },
   {
+    "type": "#{|",
+    "named": false
+  },
+  {
     "type": "always_after_tok",
     "named": true
   },
@@ -1717,6 +1746,10 @@
   },
   {
     "type": "comptime_tok",
+    "named": true
+  },
+  {
+    "type": "cont_tok",
     "named": true
   },
   {
@@ -1773,6 +1806,10 @@
   },
   {
     "type": "inplace_concat_tok",
+    "named": true
+  },
+  {
+    "type": "last_tok",
     "named": true
   },
   {
@@ -1833,6 +1870,10 @@
   },
   {
     "type": "restrict_tok",
+    "named": true
+  },
+  {
+    "type": "ret_tok",
     "named": true
   },
   {
@@ -1898,5 +1939,13 @@
   {
     "type": "wrap_tok",
     "named": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "{|",
+    "named": false
   }
 ]

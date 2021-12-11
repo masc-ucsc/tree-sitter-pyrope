@@ -1,6 +1,6 @@
 
 fun = {|(a:u32,b:u6)->(:u33)|
-  return a+b
+  ret a+b
 }
 
 type Args = (
@@ -9,7 +9,7 @@ type Args = (
 )
 
 fun2 = {|(...x:Args)->(:u33)|
-  return x.a+x.b
+  ret x.a+x.b
 }
 
 comptime assert fun2(a=2,b=4) == fun(2,4) == fun(a=2,b=4)

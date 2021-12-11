@@ -1,11 +1,11 @@
 
 dispatch = {||
   comptime assert $.0 equals string
-  return match $.0 {
-           == 'add' { $1 + $2 }
-           == 'sub' { $1 - $2 }
-           == 'mul' { $1 * $2 }
-           == 'div' { $1 / $2 }
+  ret match $.0 {
+    == 'add' { $1 + $2 }
+    == 'sub' { $1 - $2 }
+    == 'mul' { $1 * $2 }
+    == 'div' { $1 / $2 }
   }
 }
 
@@ -17,7 +17,7 @@ dispatch2 = {||
     ,mul = {|| $1 * $2 }
     ,div = {|| $1 / $2 }
   )
-  return s[$0]($1,$2)
+  ret s[$0]($1,$2)
 }
 
 test "Check both methods" {

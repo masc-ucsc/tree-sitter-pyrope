@@ -8,7 +8,7 @@ let accumulate = {|(...a)|
   for i in a[1..] {
     total = acc(total,i)
   }
-  return total
+  ret total
 }
 
 comptime assert accumulate(1,2,3, add) == 6

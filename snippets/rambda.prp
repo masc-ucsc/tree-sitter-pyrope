@@ -6,26 +6,26 @@ r_where = {|| {|[cond=$](x)| x == cond } }
 
 r_pick_first = {|fun, array|
   for i in array {
-    return i when fun(i)
+    ret i when fun(i)
   }
 }
 
 r_pick_first2 = {|fun, array|
-  return for i in array {
-    break i when fun(i)
+  ret for i in array {
+    last i when fun(i)
   }
 }
 
 r_pick_all = {|fun, array|
-  return for i in array {
-    continue i when fun(i)
+  ret for i in array {
+    cont i when fun(i)
   }
 }
 
 r_pick_all2 = {|fun, array|
-  ret = ()
+  var r = ()
   for i in array {
-    ret ++= i when fun(i)
+    r ++= i when fun(i)
   }
-  return ret
+  ret r
 }

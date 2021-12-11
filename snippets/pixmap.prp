@@ -34,7 +34,7 @@ type Pixmap = (
   }
 
   ,let get_pixel = {|(self,x,y)|
-    return self.data[x][y]
+    ret self.data[x][y]
   }
 
   ,let set_pixel = {|(self,x,y,c:Colour)->(self)|

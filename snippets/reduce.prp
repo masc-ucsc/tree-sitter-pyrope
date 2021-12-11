@@ -16,12 +16,12 @@ reduce = {|bundle, x1, x2|
   for i in bundle {
     x = op(x, i)
   }
-  return x
+  ret x
 }
 
 reduce = {|bundle, x1|
 
-  return reduce(bundle,0,x1) when x1 equals :{||}
+  ret reduce(bundle,0,x1) when x1 equals :{||}
 
   comptime assert false, "unclear method to apply a reduction"
 }
