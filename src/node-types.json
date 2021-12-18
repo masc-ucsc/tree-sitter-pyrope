@@ -89,10 +89,6 @@
           "named": true
         },
         {
-          "type": "repipe_tok",
-          "named": true
-        },
-        {
           "type": "saturate_tok",
           "named": true
         },
@@ -1862,10 +1858,6 @@
   },
   {
     "type": "reg_tok",
-    "named": true
-  },
-  {
-    "type": "repipe_tok",
     "named": true
   },
   {

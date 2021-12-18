@@ -702,10 +702,6 @@
             },
             {
               "type": "SYMBOL",
-              "name": "repipe_tok"
-            },
-            {
-              "type": "SYMBOL",
               "name": "reg_tok"
             },
             {
@@ -2191,8 +2187,17 @@
                     {
                       "type": "REPEAT",
                       "content": {
-                        "type": "SYMBOL",
-                        "name": "dot_selector"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "selector1"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "dot_selector"
+                          }
+                        ]
                       }
                     }
                   ]
@@ -3015,13 +3020,6 @@
       "content": {
         "type": "STRING",
         "value": "let"
-      }
-    },
-    "repipe_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "repipe"
       }
     },
     "reg_tok": {

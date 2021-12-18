@@ -224,7 +224,6 @@ module.exports = grammar({
         ,choice(
           $.enum_tok
           ,$.let_tok
-          ,$.repipe_tok
           ,$.reg_tok
           ,$.saturate_tok
           ,$.var_tok
@@ -624,7 +623,12 @@ module.exports = grammar({
           ,$.fcall_or_variable
           ,seq(
             $.tuple
-            ,repeat($.dot_selector)
+            ,repeat(
+              choice(
+                $.selector1
+                ,$.dot_selector
+              )
+            )
           )
         )
         )
@@ -831,7 +835,6 @@ module.exports = grammar({
 
     ,enum_tok:     () => token('enum'    )
     ,let_tok:      () => token('let'     )
-    ,repipe_tok:   () => token('repipe'  )
     ,reg_tok:      () => token('reg'     )
     ,saturate_tok: () => token('saturate')
     ,var_tok:      () => token('var'     )
@@ -876,7 +879,6 @@ module.exports = grammar({
 
     ,unless_tok: () => token('unless')
     ,when_tok: () => token('when')
-    ,repipe_tok: () => token('repipe')
     ,to_tok: () => token('to')
     ,if_tok: () => token('if')
     ,unique_tok: () => token('unique')
