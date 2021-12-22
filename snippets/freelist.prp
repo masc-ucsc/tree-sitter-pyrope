@@ -73,7 +73,7 @@ freelist = (
 
   ,mask_push = {|(self, mask)->(self)|
 
-    assert (self.bitmask & mask) == 0
+    assert 0 == (self.bitmask & mask)
 
     self.bitmask |= mask
     if empty {

@@ -1,0 +1,2109 @@
+    var result
+    if some_opcode {
+      result = do_division(a,b)
+    }else{
+      result = do_multiplication(a,b)
+    }
+    var result
+    result1 = do_division(a,b)
+    result2 = do_multiplication(a,b)
+    if some_opcode {
+      result = result1
+    }else{
+      result = result2
+    }
+    c = mul(a,b)
+    assert c == a * b // assert fails!!
+    c = mul(a,b)
+    assert c == a#[-1] * b#[-1] // read last cycle #[-1] a and b
+    // Do not use non-blocking
+    counter = counter + 1  // blocking assignment
+    tmp     = counter + 2  // blocking assignment
+    assert tmp == (counter+1) // this never fails
+test "my first test" {
+  puts "hello world"
+}
+    pub let gcd = {|(cmd:?(a:uint,b:uint))->(z:?uint)|
+      reg x,y
+      if cmd? {
+        x,y = cmd
+      }elif x > y { 
+        x = x - y 
+      }else{ 
+        y = y - x 
+      }
+      z  = x
+      z? = y == 0
+    }
+
+    test "16bits gcd" {
+      for i in 1..=100 {
+        for j in 1..=100 {
+          let z =# gcd(a=i,b=j)
+
+          waitfor z?
+
+          puts "result is {}", z
+          assert z == __my_cpp_gcd(v1=cmd.a, v2=cmd.b)
+        }
+      }
+    }
+// comment
+a = 3 // another comment
+0xF_a_0 // 4000 in hexa. Underscores have no meaning
+0b1100  // 12 in binary
+0sb1110 // -2 in binary (sb signed binary)
+33      // 33 in decimal
+0o111   // 73 in octal
+0111    // 111 in decimal (some languages use octal here)
+assert 1k == 1K == 1024
+assert 1m == 1M == 1024*1024
+assert 1g == 1G == 1024*1024*1024
+0b?             // 0 or 1 in decimal
+0sb?            // 0 or -1 in decimal
+0b?0            // 0 or 2 in decimal
+0sb0?0          // 0 or 2 in decimal
+a = "hello \n newline"
+b = 'simpler here'
+let a:string = "127"
+let b:int    = a     // same as let b = int(a)
+let c:string = b     // same as let c = string(b)
+assert a == c
+assert b == 0x7F
+a = 1
+  + 3         // 1st stmt
+b,c = (1,3)   // 2nd stmt
+`foo is . strange!\nidentifier` = 4
+`for` = 3
+a = 1 ; b = 2
+a = 1
+puts "Hello a is {}", a
+// src/file1.prp
+puts(order=2, " world")
+
+// src/file2.prp
+print(order=1, "hello")
+let fun = {|(a,b)| ret a + b }
+var a = pure() + 1          // OK
+let x = nonpure() + a       // error, `a` is mutable and `nonpure` is unpure
+let b = pure(a) + 10 + nonpure(a) // OK
+var d = t.nonpure() + pure(b)     // OK, b is immutable
+let y = t.nonpure() + nonpure()   // error, multiple non pure calls
+var a = {var d=3 ; last d+1} + 100 // OK
+assert a == (3+1+100)
+
+
+
+
+    var r1 = fcall1()
+    r1 = fcall2() unless r1
+
+    var r2 = fcall1()
+    r2 = fcall2() when r2
+
+    var r3 = fcall1()
+    r3 += fcall2()
+    var r1 = fcall1() or_else fcall2()
+
+
+    var r2 = fcall1() and_then fcall2()
+
+
+    var r3 = fcall1()
+    r3 += fcall2()
+let b = (f1=3,f2=4) // b is named and ordered
+let c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
+let a = (
+  ,r1 = (b=1,c=2)
+  ,r2 = (3,4)
+)
+// different ways to access the same field
+assert a.r1.c    == 2
+assert a['r1'].c == 2
+assert a.r1.1    == 2
+assert a.r1[1]   == 2
+assert a[0][1]   == 2
+assert a[0]['c'] == 2
+assert a['r1.c'] == 2
+assert a['r1.1'] == 2
+assert a['0.c']  == 2
+assert a['0.1']  == 2
+assert a.0.c     == 2
+assert a.0.1     == 2
+let a = (foo = 3)
+assert a has 'foo'
+assert !(a has 'bar')
+assert a has no 'bar' // "has no" is the opposite of "has"
+assert a has 0
+assert !(a has 1)
+assert a has no 1
+let val = 4
+let x = (
+  ,field1=1         // field1 with implicit type and 1 value
+  ,field2:string    // field2 with explicit type and "" default value
+  ,field3:int = 3   // field3 with explicit type and 3 value
+  ,val              // unnamed field with value `val` (4)
+)
+a = (1,2)   // tuple of 2 entries, 1 and 2
+b = (1)     // tuple of 1 entry, 1
+c = 1       // tuple of 1 entry, 1
+d = (,,1,,) // tuple of 1 entry, 1
+assert a.0 == b.0 == c.0 == d.0
+assert a!=b
+assert b == c == d
+b = 3
+a = (b:u8, 4)
+assert a == (3:u8, 4)
+
+var f = (b=3, let e=5)
+f.b = 4             // OK
+
+let x = (1,2)
+var y = (1, let 3)
+y[0] = 100          // OK
+var bund1 = (0,1,2,3,4) // ordered and can be used as an array
+
+var bund2 = (bund1,bund1,((10,20),30))
+assert bund2[0][1] == 1
+assert bund2[1][1] == 1
+assert bund2[2][0] == (10,20)
+assert bund2[2][0][1] == 20
+assert bund2[2][1] == 30
+var array = (0,1,2)       // size 3, not 4
+var index = 2
+if runtime {
+  index = 4
+}
+// Index can be 2 or 4
+
+
+var res2 = 0sb?           // Possible code to be compatible with Verilog
+if index<3 {
+  res = array[index]      // OK
+}
+let bad (a=3,b=4)
+bad.b.__poison = true
+
+let b = bad.b
+
+assert  b.__poison and b==4
+var x = (
+  ,ff = 1
+)
+
+var y = (
+  ,ff = 1
+  ,ff ++= 2
+  ,zz ++= 3
+)
+assert y == (ff=(1,2),zz=3)
+fcall 1,2         // same as: fcall(1,2)
+x = fcall 1,2     // same as: x = fcall(1,2)
+b = xx[1,2]       // same as: xx[(1,2)]
+
+for a in 1,2,3 {  // same as: for a in (1,2,3) {
+  x = a
+}
+y = match z {    
+  in 1,2 { 4 }    // same as: in (1,2) { 4 }
+  else { 5 }
+}
+y2 = match 1,z {  // same as: y2 = match (1,z) {
+}
+
+fun = {|a,b|      // same as: fun = {|(a,b)|
+} 
+var a=0
+var b=1
+
+a,b = (2,3)
+assert a==2 and b==3
+
+var c,d = (1,2)
+assert c == 1 and d == 2
+let a = "foo"
+let a = 10
+let b = 20
+let c = 30
+
+let v = (a,b,c)
+assert v == (10,20,30)
+
+enum e = (a=1,b=2,c=300)
+assert e.a == 1 and e.b == 2 and e.c == 300
+
+let x = e.a
+puts "x is {}", x  // prints: "x is e.a"
+enum v3 = (
+   ,a
+   ,b=5  // alias with 'a'
+   ,c
+)
+assert v3.a == 1
+assert v3.b == 5
+assert v3.c == 2
+enum animal = (
+  ,bird=(eagle, parrot)
+  ,mammal=(rat, human)
+)
+
+assert animal.bird.eagle != animal.mammal
+assert animal.bird != animal.mammal.human
+assert animal.bird == animal.bird.parrot
+
+assert animal.bird         == 0b000001
+assert animal.bird.eagle   == 0b000011
+assert animal.bird.parrot  == 0b000101
+assert animal.mammal       == 0b001000
+assert animal.mammal.rat   == 0b011000
+assert animal.mammal.human == 0b101000
+enum v3:int = (
+   ,a
+   ,b=5  // alias with 'a'
+   ,c
+)
+assert v3.a == 0
+assert v3.b == 5
+assert v3.c == 6
+
+var b  = 3
+b  = 5     // OK
+b += 1     // OK, OP= assumes mutable
+
+var c=(x=1,let b=2, var d=3)
+c.x   = 3  // OK, x inherited the 'var' declaration
+c.d   = 30 // OK, d was already var type
+
+let d=(x=1, let y=2, var z=3)
+var a=(a=1,b=2)
+var b=(c=3)
+
+var ccat1 = a ++ b
+assert ccat1 == (a=1,b=2,c=3)
+assert ccat1 == (1,2,3)
+
+var ccat2 = a ++ (b=20)
+assert ccat2 == (a=1,b=(2,20),c=3)
+assert ccat2 == (1,(2,20),3)
+
+var join1 = (...a,...b)
+assert join1 == (a=1,b=2,c=3)
+assert join1 == (1,2,3)
+
+assert(((1,a=2,c=3) ++ (a=20,33,c=30,4)) == (1,a=(2,20),c=(3,30),33,4))
+reg counter = 10
+var not_count = 20
+var a:int          // any value, no constrain
+var b:unsigned     // only positive values
+var c:u13          // only from 0 to 1<<13
+var d:int(20..=30) // only values from 20 to 30
+var e:int(-1,0)    // 1 bit integer: -1 or 0
+let b = true
+let c = 3
+
+if c!=0 { call(x) }     // OK
+
+d = b or false // OK
+
+let e = -1
+if e { // OK e is a 1 bit signed value
+  call(x)
+}
+
+assert 0 == (int(true)  + 1)  // explicity typecast
+assert 1 == (int(false) + 1)  // explicity typecast
+assert boolean(33) or false   // explicity typecast
+let a = (1,2,3)
+assert a[0..] == (1,2,3)
+assert a[1..] == (2,3)
+assert a[..=1] == (1,2)
+assert a[..<2] == (1,2)
+assert a[1..<10] == (2,3)
+
+let b = 0b0110_1001
+assert b@[1..]        == 0b0110_100
+assert b@[1..=-1]     == 0b0110_100
+assert b@[1..=-2]     == 0b0110_100  // unsigned result from bit selector
+assert b@sext[1..=-2] == 0sb110_100
+assert b@[1..=-3]     == 0sb10_100
+assert b@[1..<-3]     == 0b0_100
+
+let c = 1..=3
+assert int(c) == 0b1110
+assert range(0b01_1100) == 2..=4
+assert((0..<30 by 10) == (0,10,20)) // ranges and tuples can combined
+assert((1..=3) ++ 4 == (1,2,3,4))   // tuple and range ops become a tuple
+assert 1..=3 == (1,2,3)
+assert((1..=3)@[] == 0b1110)        // convert range to integer with @[]
+a = 'cad'              // c is 0x63, a is 0x61, and d is 0x64
+b = 0x64_61_63
+assert a == string(b)  // typecast number to string
+assert int(a) == b     // typecast string to number
+assert a@[] == b       // typecast string to number
+assert "hello" == ('h','e','l','l','o')
+assert "h" ++ "ell" == ('h','e','l','l') == "hell"
+comptime let a = 1     // obviously comptime
+comptime var b = a + 2 // OK too
+var a = (debug b=2, c = 3) // a.b is a debug variable
+debug let c = 3
+var a:u120    // a is an unsigned value with up to 120bits, initialized to zero
+
+var x:s3 = 0  // x is a signed value with 3 bits (-4 to 3)
+x = 3         // OK
+
+var person = (
+  ,name:string // empty string by default
+  ,age:u8      // zero by default
+)
+
+var b
+b ++= (1,2)
+b ++= (3,4)
+
+assert b == (1,2,3,4)
+var bund1 = (color:string, value:s33)
+var x:bund1          // OK
+bund1.color = "red"  // OK
+x.color     = "blue" // OK
+
+type typ = (color:string, value:s20)
+var y:typ            // OK
+typ.color = "red"    // compile errro
+y.color   = "red"    // OK
+let x = a and b
+x = 0b1_0110   // positive
+y = 0s1_0110   // negative
+assert x@[0,2] == 0b10
+assert y@[100,200]       == 0b11   and x@[100,200]       == 0
+assert y@sext[0,100,200] == 0sb110 and x@sext[1,100,200] == 0b001
+assert x@|[] == -1
+assert x@&[0,1] == 0
+assert x@+[0..=5] == x@+[0..<100] == 3
+assert y@[]@+[] == 3
+assert y@[0..=5]@+[] == 3
+assert y@[0..=6]@+[] == 4
+
+var z     = 0b0110
+z@[0] = 1
+assert z == 0b0111
+var tup = (a:u8=0xf, b:u8=0x1)  // explicit sizes set
+assert tup@[] == 0xf1
+
+assert((0xF:u8,0x1:u16)@[] == 0xF_0001)
+assert((0xF:u8,0x1:u8 )@[] == 0xF_01)
+var v = 0b10
+assert v@[0,1] == v@[1,2] == v@[] == v@[0..=1] == v@[..=1] == 0b10
+
+var trans
+trans@[0] = v@[1]
+trans@[1] = v@[0]
+assert trans == 0b01
+assert((a=1,b=2) ++ (c=3    ) == (a=1    ,b=2,c=3))
+assert((a=1,b=2) ++ (a=3,c=4) == (a=(1,3),b=2,c=4))
+
+assert((a=1,b=2,3,...(e=4,5)) == (a=1,b=2,3,e=4,5))
+
+assert((a=1,b=2) has "a")
+
+assert(2 in (a=1,b=2))
+assert((2,5) in (a=1,b=2,4,5))
+
+assert 1<<(1,4,3) == 0b01_1010
+assert((x or !y) == (x or (!y)) == (x or not y))
+assert((3*5+5) == ((3*5) + 5) == 3*5 + 5)
+
+a = x1 or x2==x3 // same as b = x1 or (x2==x3)
+c = 3
+  & 4 * 4
+c2 = 3
+  & (4 * 4)
+  & (5 + 3)      // OK
+
+d = 3 + 3 - 5    // OK, same result right-left
+
+e = 1
+  | 5
+
+f = (1 & 4)
+  | (1 + 5)
+  | 1
+
+g = 1 + 3
+  * 1 + 2
+  + 5           // OK, but not nice
+
+g1= 1 + (3 * 1)
+  + 2
+  + 5           // OK
+
+g2= (1 + 3)
+  * (1 + 2)
+  + 5           // OK
+
+
+i = a == 3 <= b == d
+assert i == (a==3 and 3<=b and b == d)
+var v1:u32
+var v2:?u32
+
+comptime assert v1?
+comptime assert not v2?
+
+comptime assert v1 == 0 and v2 == 0 // data still same as usual
+
+v1 = 0sb?                      // OK, poison data
+v2 = 0sb?                      // OK, poison data, do not touch valid
+comptime assert v2?            // valid even though data is not
+
+comptime assert v1 != 0        // usual verilog x logic
+comptime assert v2 != 0        // usual verilog x logic
+
+let res1 = v1 + 0              // OK, just unknown result
+let res2 = v2 + 0              // OK, just unknown result
+
+comptime assert res1?
+comptime assert res2?
+type custom = (
+  ,var data:i16
+  ,var valid= {||
+    ret self.data != 33
+  }
+)
+
+var x:custom
+comptime assert x?
+x.data = 33
+comptime assert not x?
+type complex = (
+  ,reg v1:string
+  ,pub v2:string
+
+  ,pub set = {|(self,v)->(self)|
+     self.v1 = v
+     self.v2 = v
+  }
+)
+
+var x1:complex
+var x2:?complex
+
+comptime assert x1.v1 == "" and x1.v2 == ""
+comptime assert not x2?  and not x2.v1? and not v2.v2?
+comptime assert x2.v1 == "" and x2.v2 == ""
+
+comptime assert x2?.v1 == "" and x2?.v1 != ""  // any comparison is false
+
+// When x2? is false, any x2?.foo returns 0sb? with the associated x rules
+
+x2.v2 = "hello" // direct access still OK
+
+comptime assert not x2? and x2.v1 == "" and x2.v2 == "hello"
+
+x2 = "world"
+
+comptime assert x2? and x2?.v1 == "world" and x2.v1 == "world"
+a = 3
+assert a == 3          // checked at runtime (or compile time)
+comptime assert a == 3 // checked at compile time
+
+verify a < 4           // checked at runtime and verification
+assume b > 3           // may optimize and perform a runtime check
+
+restrict "cond1" when foo < 1 and foo >3 {
+   verify bar == 4  // only checked at verification, restricting conditions
+}
+
+let fun1 = {|a,b| a | b}
+let fun2 = {|a,b| ~(~a | ~b) }
+lec fun1, fun2
+a = 0
+if cond {
+  a = 3
+}
+assert cond implies a == 3, "the branch was taken, so it must be 3??"
+assert a == 3, "the same error" when   cond
+verify a == 0, "the same error" unless cond
+reg memory:u33[] = (1,2,3) // may take cycles to load this contents
+
+assert memory[0] == 1 unless memory.reset 
+disable.assert = memory.reset or foo_reset
+assert false   // never fails during reset
+// coverage case NUM group states that random should be odd or even
+covecase NUM,   random&1 , "odd number"
+covecase NUM, !(random&1), "even number"
+
+covercase COND1, reset, "in reset"
+covercase COND1, val>3, "bigger than 3"
+
+assert((!reset and val>3) or reset)  // less checks than COND1
+
+cover a==3, "at least a is 3 once in a while"
+a = unique if cond == 1 {
+    300
+  }elif cond == 2 {
+    400
+  }else{
+    500
+  }
+
+var x
+if a { x = 3 } else { x = 4 }
+x = 1
+match x {
+  == 1            { puts "always true" }
+  in 2,3          { puts "never"       }
+}
+// It is equivalent to:
+unique if x == 1  { puts "always true" }
+elif x in (2,3)   { puts "never"       }
+else              { assert false       }
+var hot = match x {
+    == 0b001 { a }
+    == 0b010 { b }
+    == 0b100 { c }
+  }
+var a = 3
+a += 1 when false             // never executes 
+assert a == 3
+assert a == 1000 when a > 10  // assert never executed either
+
+ret 3 when some_condition
+{
+  var x=1
+  var z
+  {
+    z = 10
+  }
+  assert z == 10 
+}
+
+var yy = {let x=3 ; 33/3} + 1
+assert yy == 12
+
+if {let a=1+yy; 13<a} {
+ some_code()
+}
+
+let z3 = 1 + { if true { brk 3  } else { assert false } }
+assert z4 == 4
+for i in 0..<100 {
+ some_code(i)
+}
+
+var bund = (1,2,3,4)
+for i,index in bund {
+  assert bund[j] == i
+}
+
+
+for mut i in bund {
+  i += 1
+}
+assert bund == (2,3,4,5)
+b = (a=1,b=3,c=5,7,11)
+
+for i,index,key in b {
+  assert i==1  implies (index==0 and key == 'a')
+  assert i==3  implies (index==1 and key == 'b')
+  assert i==5  implies (index==2 and key == 'c')
+  assert i==7  implies (index==3 and key == '' )
+  assert i==11 implies (index==4 and key == '' )
+}
+var c = for i in 0..<5 { cont i }
+var d = for i in 0..<5 { i }
+var 2 = for i in 0..<5 { brk i }
+assert c == (0,1,2,3,4) == d
+assert e == (0)
+var total
+for a in 1..=10 {
+  continue when a == 2
+  total ++= a
+  break when a == 3    // exit for scope
+}
+assert total == (1,3)
+
+if true {
+  code(x)
+}
+
+a = 3
+var total2
+if a>0 {
+  total2 ++= a
+  break when a == 2    // exit if scope
+  a = a - 1
+  continue
+  assert false         // never executed
+}
+assert total2 == (3,2)
+total = for i in 1..=9 {
+  cont  i+10 when i < 3
+  brk  i+20 when i > 5
+}
+assert total == (11, 12, 3, 4, 5, 26)
+
+let v = {|| ret 4 }
+assert v == 4
+
+let y = {         // expr scope1
+  var d=1 
+  brk {          // start expr scope2, brk finishes scope1
+    if true { 
+      brk 33     // finishes scope2
+      assert false 
+    } else { 
+      brk d
+      assert false 
+    }
+  } + 200 
+  assert false
+}
+assert y == (33+200)
+var c = 10
+defer_read assert b == 33    // behaves like a postcondition
+defer_read b = c
+assert b == 33
+c += 20
+c += 3
+defer_read f1 = ring($a, f4)
+f2 = ring($b, f1)
+f3 = ring($c, f2)
+f4 = ring($d, f3)
+reg counter:u32
+
+let counter_m1 = counter#[-1] // last cycle
+let counter_0  = counter#[0] // current cycle 
+let counter_1  = counter#[1] // last cycle
+let counter_2  = counter#[2] // last last cycle cycle 
+
+defer_read deferred = counter
+
+if counter < 100 {
+  counter += 1
+}else{
+  counter = 0
+}
+
+if counter == 10 {
+  assert deferred   == 10
+  assert counter_0  == 10
+  assert counter_1  ==  9
+  assert counter_2  ==  8
+  assert counter_m1 ==  9
+}
+var a = 1
+var x = 100
+defer_write x = a
+a = 200
+
+comptime assert x == 100
+defer_read comptime assert x == 1
+test "my test 1" when size > 10 {
+  assert size>10
+}
+let c = 3
+comptime let x = c 
+
+if runtime == 1 comptime {
+  // all the values should be comptime
+  xx = 3
+}
+    test "wait 1 cycle" {
+      let a = 1 + $input
+      puts "printed every cycle input={}", a
+      step 1
+      puts "also every cycle a={}",a  // printed on cycle later
+    }
+    test "wait 1 cycle" {
+      {
+        pub let a = 1 + $input
+        puts "printed every cycle input={}", a
+      } #> {
+        puts "also every cycle a={}",a  // printed on cycle later
+      }
+    }
+    total = 3
+
+    waitfor a_cond  // wait until a_cond is true
+
+    assert total == 3 and a_cond
+    total = 3
+
+    while !a_cond {
+      step
+    }
+
+    assert total == 3 and a_cond
+let a_3   = {   3 } // just scope, not a lambda. Scope is evaluate now
+let a_fun = {|| 4 } // local function, when just_4 is called 4 is returned
+
+pub let fun3 = {|| 5 }    // public lambda that can be imported by other files
+
+let x = a_fun()           // OK, explicit call
+
+assert a_3 equals 3
+assert a_fun equals {|| }
+assert a_fun() == 4       // calls to eval the function
+var add
+add = {|| $a+$b+$c }              // no IO specified
+add = {|a,b,c| a+b+c }            // constrain inputs to a,b,c
+add = {|(a,b,c)| a+b+c }          // same
+add = {|(a:u32,b:s3,c)| a+b+c }   // constrain some input types
+add = {|(a,b,c) -> :u32| a+b+c }  // constrain result to u32
+add = {|(a,b,c) -> (res)| a+b+c } // constrain result to be named res
+add = {|(a,b:a,c:a)| a+b+c }      // constrain inputs to have same type
+
+x = 2
+var add2
+add2 = {|       (a)|   x + a }    // implicit capture x
+add2 = {|[x    ](a)|   x + a }    // explicit capture x
+add2 = {|[foo=x](a)| foo + a }    // capture x but rename to something else
+
+var y = (
+  ,val:u32 = 1
+  ,inc1 = {|(self)->(self)| self.val = u32(self.val + 1) }
+)
+
+debug let my_log = {||
+  print "loging:"
+  for i in $ {
+    print " {}", i
+  }
+  puts
+}
+
+let fun = {|<X>(a:X,b:X)| a+b }   // enforces a and b with same type
+assert fun(33:u22,100:u22)
+
+my_log a, false, x+1
+let fun = {|(in1,in2)->(out1,out2)|
+  assert in1 == $.in1 and in2 == $.in2
+
+  out1 = in1 + $in1
+  out2 = out1 + in2 + $in2
+
+  assert out1 == $.out1 and out2 == $.out2
+}
+
+let fun2 = {|(a1,...rest)|
+  assert a1   == $.0
+  assert rest == $[1..]
+}
+div  = {|a,b| a / $b }   // named input tuple
+div2 = {|| $0 / $1 }     // unnamed input tuple
+
+noarg = {|()| ret 33 }   // explicit no args
+
+assert noarg == 33 == noarg()
+
+b=div(a=8, b=4)          // OK, 2
+d=(a=8).div(b=2)         // OK, 4
+
+h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
+i=8.div2(4,3)            // OK, same as div2(8,4,2)
+
+j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
+k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
+l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
+
+var tup = (
+  ,let fun = {|| ret 1 }
+)
+
+let fun = {|(b)| ret 2 }
+
+assert fun()    == 2
+assert fun(tup) == 2
+assert 4.fun()  == 2
+assert tup.fun() == 1
+var tup = (
+  ,var x = 3
+  ,let fun = {|()| assert $.size == 1 ; ret self.x }
+)
+
+let fun2 = {|(b)| ret b.x             } // no self, but it is the same
+let fun3 = {|(self,b)| ret self.x + b }
+
+assert tup.fun() == 3   // tup.fun call
+assert tup.fun == 3     // explicit no args, so () is optional in call
+assert fun2(tup) == 3
+assert tup.fun2() == 3  // UFCS
+
+assert fun3(tup,2) == 5
+assert tup.fun3(2) == 5
+var a_1 = (
+  ,x:u10
+  ,let fun = {|(self,x)->(self)| 
+    assert $.__size == 2 // self and x
+    self.x = x 
+    assert %.__size == 2 // due to the mut keyword
+    assert %.self.x == x
+  }
+)
+
+a_1.fun(3)
+assert a_1.x == 3
+
+fun2 = {|(self, x)->(self)| self.x = x }
+a_2 = a_1.fun2(4)
+assert a_1.x == 3
+assert a_2.x == 4
+var counter = (
+  ,var val:i32
+  ,let inc = {|(self, v)| self.var += v }
+)
+
+assert counter.val == 0
+counter.inc(3)
+assert counter.val == 3
+
+let inc = {|(self, v)->(self)| self.var *= v } // NOT INC but multiply
+counter.inc(2)
+assert counter.val == 5
+
+let mul = inc
+counter = counter.mul(2)   // call the new mul method with UFCS
+assert counter.val == 10
+
+let other = counter.mul(2) // UFCS no self update return
+assert counter.val == 10
+assert other.val   == 20
+
+mul(counter, 2) // also legal, but no self update
+assert counter.val == 20
+    // equivalent code due to automatic `self` insertion
+    let fun1 = {|(self)->(self)| self.foo = self.bar + 1}
+    let fun2 = {|      ->(self)| self.foo = self.bar + 1}
+    let fun3 = {|(self)        | self.foo = self.bar + 1}
+    let fun4 = {|              | self.foo = self.bar + 1}
+
+    // NOT equivalent because () means no input/output
+    let non2 = {|()    ->(self)| self.foo = self.bar + 1}
+    let non3 = {|(self)->()    | self.foo = self.bar + 1}
+    foo = {|| puts "fun.foo" }
+    a = (
+      ,foo = {||
+         bar = {|| puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    a.foo 3   // prints "mem.foo", arg passed (but not used by foo)
+    a.foo(3)  // prints "mem.foo", arg passed (but not used by foo)
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo.bar()   // prints "bar", passes a.foo as argument to bar
+    a.foo().bar() // prints "mem.foo" (foo gets a) and then "bar" (has no input)
+
+    foo()         // prints "fun.foo"
+    b.foo()       // prints "fun.foo"
+    foo = {|(self)| puts "fun.foo" }  // explicit self
+    a = (
+      ,foo = {|()|                    // implicit self 
+         bar = {|()| puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo().bar() // prints "mem.foo" and then "bar"
+
+    b.foo()       // prints "fun.foo"
+type base = (
+  ,pub var fun1 = {|| 1 }         // catch all
+  ,pub var fun2 = {|| 2 }         // catch all
+  ,pub var fun3 = {|| 3 }         // catch all
+)
+type ext extends base with (
+  ,pub var fun1 =   {|(a,b)| 4 }  // overwrite allowed with extends
+  ,pub var fun2 ++= {|a,b|   5 }  // append
+  ,pub var fun2 ++= {||      6 }  // append
+  ,pub var fun3 =   {|a,b|   7 } ++ base.fun3 // prepend
+  ,pub var fun3 =   {||      8 } ++ base.fun3 // prepend
+)
+
+var t:ext
+
+// t.fun1 only has ext.fun1
+assert t.fun1(a=1,b=2) == 4
+
+// t.fun2 has base.fun2 and then ext.fun2
+assert t.fun2(1,2) == 5  // EXACT match of arguments has higher priority
+assert t.fun2() == 2     // base.fun2 catches all ahead of ext.fun2
+
+// t.fun3 has ext.fun3 and then base.fun3
+assert t.fun3(1,2) == 7  // EXACT match of arguments has higher priority
+assert t.fun3() == 8     // ext.fun3 catches all ahead of ext.fun3
+type x extends base with (
+  ,pub var fun1 = {|| ret base.fun1() + 100 }
+)
+var fun_list = {|(a,b)| ret a+b}
+fun_list ++= {|(a,b,c)| ret a+b+c }
+fun_list ++= {|(a,b,c,d)| ret a+b+c+d }
+
+assert fun_list.size()
+
+assert fun_list(1,2) == 3
+assert fun_list(1,2,4) == 7
+assert fun_list(1,2,4,5) == 12
+
+
+fun_list ++= {|(a,b)| ret 100}
+assert fun_list(1,2) == 3
+
+fun_list = {|(a,b)| ret 200} ++ fun_list
+assert fun_list(1,2) == 200
+var fun = {|(a,b)| ret a+b+100 }
+  fun ++= {|(x,y)| ret x+y+200 }
+
+assert fun(a=1,b=2) == 103
+assert fun(x=1,y=2) == 203
+assert fun(  1,  2) == 103  // first in list
+var fun = {|(a:int,b:string)->:bool  | ret true    }
+fun ++=   {|(a:int,b:int   )->:bool  | ret false   }
+fun ++=   {|(a:int,b:int   )->:string| ret "hello" }
+
+let a = fun(3,hello)
+assert a == true
+
+let b = fun(3,300)        // first in list return bool
+assert b == false
+
+let c:string = fun(3,300)
+assert c == "hello"
+var fun = {|(a,b)      where a>40    | ret b+100 }
+  fun ++= {|(a,b)->(x) where x > 300 | ret b+200 } // output x
+  fun ++= {|(a,b)->(a) where $.a > 20| ret b+300 } // input a
+  fun ++= {|(a,b)->(a) where %.a > 10| ret b+400 } // output a
+  fun ++= {|(a,b)                    | ret a+b+1000 } // default
+
+var fun_manual = {|(a,b)|
+  if a>40 {
+    ret b+100
+  }
+  let x = b + 200
+  if x>300 {
+    ret (x=x)
+  }
+  if a>20 {
+    ret b+300
+  }
+  let tmp = a + b
+  if tmp >10 {
+    ret (a=tmp)
+  }
+  ret a+b+1000
+}
+
+test "check equiv" {
+  for a in -100..=100 {
+    for b in -100..=100 {
+      assert fun(a,b) == fun_manual(a,b)
+    }
+  }
+}
+var res
+if cond {
+  res = a
+}else{
+  res = b
+}
+
+// RTL equivalent
+var res2 = __mux(cond,b,a)
+
+lec res, res2
+var res = a
+if cond1 {
+  res = b
+}elif cond2 {
+  res = c
+}else{
+  assert true // no res
+}
+
+// RTL equivalent
+var tmp = __mux(cond2, a, c)
+var res2= __mux(cond1, tmp, b)
+
+lec res, res2
+var res = a
+unique if cond1 {
+  res = b
+}elif cond2 {
+  res = c
+} // no res in else
+
+// RTL equivalent
+var sel = (!cond1 and !cond2, cond1, cond2)@[]  // one hot encode
+var res2= __hotmux(sel, a, b, c)
+assume !(cond1 and cond2)          // one hot check
+
+lec res, res2
+var res = a
+match x {
+  == c1 { res = b }
+  == c2 { res = c }
+  == c3 { res = d }
+}
+
+// RTL equivalent
+let cond1 = x == c1
+let cond2 = x == c2
+let cond3 = x == c3
+var sel = (cond1, cond2, !cond1 and !cond2)@[]  // one hot encode (no cond3)
+var res2= __hotmux(sel, b, c, d)
+assume  ( cond1 and !cond2 and !cond3)
+     or (!cond1 and  cond2 and !cond3)
+     or (!cond1 and !cond2 and  cond3)    // one hot check (no else allowed)
+
+lec res, res2
+    var lhs = v1 or_else v2
+
+    // RTL equivalent
+    let lhs2  = __or(v1, v2)
+    let lhs2_v = __or(__and(v1?, v1), __and(v2?, v2))
+
+    lec lhs , lhs2
+    lec lhs?, lhs2_v
+    var lhs = v1 + v2
+
+    // RTL equivalent
+    let lhs2   = __sum(A=(v1, v2))
+    let lhs2_v = __and(v1?, v2?)
+
+    lec lhs , lhs2
+    lec lhs?, lhs2_v
+    lhs = v0
+    if cond1 {
+      lhs = v1
+    }elif cond2 {
+      lhs = v2
+    } // no else
+
+    // RTL equivalent
+    let tmp = __mux(cond2, v0, v2)
+    let lhs2= __mux(cond1, tmp, v1)
+
+    let tmp_v = __mux(cond2, v0?, v2?)
+    let lhs2_v= __mux(cond1, tmp_v, v1?)
+
+    lec lhs , lhs2
+    lec lhs?, lhs2_v
+let fun = {|(a,b)->(c,d)| 
+   c = a+b
+   if c==0 { 
+    d = a-b 
+  }
+}
+
+if cond {
+  c,d = fun(a,b)
+}
+
+// RTL equivalent
+let tmp_a = a
+let tmp_b = b
+tmp_a? = __and(a?, cond)   // adjust the call arg valids
+tmp_b? = __and(b?, cond)
+
+tmp_c, tmp_d = fun(tmp_a,tmp_b)
+
+let c2 = __mux(cond, c, tmp_c)
+let d2 = __mux(cond, d, tmp_d)
+
+let c2_v = __mux(cond, c?, tmp_c?)
+let d2_v = __mux(cond, d?, tmp_d?)
+
+lec c, c2
+lec d, d2
+
+lec c?, c2_v
+lec d?, d2_v
+    let div = {|a,b|
+
+      assert b!=0 or b?  // OK if invalid too
+      out = a / b
+    }
+    let fun = {|a,b|
+      out = a + b
+      if out? {          // we may want to print only when valid
+        puts "{} + {} is {}", a, b, out
+      }
+    }
+    let div = {|a,b|
+      disable.assert not b?
+      assert b!=0 
+      out = a / b
+    }
+
+    let fun2 = {|a,b|
+      out = a + b
+
+      disable.puts = not out?
+      puts "{} + {} is {}", a, b, out
+    }
+reg r:u16 = 3 // reset sets r to 3
+r = 2         // non-reset assignment
+
+reg array:u16[] = (1,2,3,4)  // reset values
+
+reg r2:u128 = conf.get("my_data.for.r2")
+
+reg array:[] = conf.get("some.conf.hex.dump")
+reg array:tag[1024] = (
+  ,clock=my_clock
+
+  ,always_reset = {|(self)->(self)|
+     reg reset_iter:u10 = (reset="") // no reset flop
+
+     self[reset_iter].state = I
+
+     reset_iter = u10(reset_iter + 1)
+  }
+)
+    pub let inner = {|(z,y)->(a,h)|
+      a =   y & z
+      h = !(y & z)
+    }
+
+    pub let top2 = {|(a,b)->(c,d)|
+      let x= inner(y=a,z=b)
+      c = x.a
+      d = x.h
+    }
+    type inner_t = (
+      ,pub set = {|(z,y)->(self)|
+        self.z = z
+        self.y = y
+      }
+      ,always_after = {||
+        self.a =   self.y & self.z
+        self.h = !(self.y & self.z)
+      }
+    )
+
+    pub let top2 = {|(a,b)->(c,d)|
+      let foo:inner_t = (y=a,z=b)
+      c = foo.a
+      d = foo.h
+    }
+my_flop1_q = __flop(din=my_din, reset=my_rst, clock=my_clk
+                   ,enable=my_enable, posclk=true, initial=3, async=false)
+
+reg my_flop2 = (reset=my_rst, clock=my_clk, posclk=true, initial=3, async=false)
+let my_flop2_q = my_flop2
+
+if my_enable {
+  my_flop2 = my_din
+}
+my_latch_q = __latch(din=my_din, enable=my_enable, posclk=true)
+assert i==0 or (i#[-1] + 1 == i)
+
+let i_let = i
+
+var i_var0 = i
+var i_var1
+i_var1 = i
+
+reg i_reg0 = i   // initialization only
+reg i_reg1
+i_reg1 = i       // every cycle
+
+
+{
+  assert i == i#[0]       // i#[0] is unflop input (or first defined) value
+  assert i == i_let
+  assert i == i_var0
+  assert i == i_var1
+
+  assert 0 == i_reg0
+  assert i == i_reg1
+
+  let local_var = 3
+
+  pub let pub_var = 100 + i
+
+} #> {
+  assert pub_var == 100 + i // pipelined pub_var
+
+  // both inputs and variables flop, so asserts hold
+  assert i == i_let
+  assert i == i_var0
+  assert i == i_var1
+
+  assert 0 == i_reg0        // i_reg0 never changes, so 0 is fine
+  assert i#[-1] == i_reg1   // last i-reg, not current
+
+  assert i == 0 or (i == i#[0]+1)  // i#[0] is the unflop original
+}
+
+reg my_reg:(retime=true,clock=my_clk)
+    pub let block = #{|(in1,in2)->(out)|
+      {
+        pub let tmp = in1 * in2
+      } #> {
+        assert true // nothing to do, but one statement required
+        // extra cycle for multiply
+      } #> {
+        assert true
+        // extra cycle for multiply
+      } #> {
+        out = tmp + in1#[0]
+      }
+    }
+    let add1 = #{|a,b| // 1 cycle add
+      reg r
+      let rr = r // get flop value
+      r = a+b
+      ret rr
+    }
+    let mul3 = #{|a,b| // 3 cycle multiply
+      reg reg1, reg2, reg3
+      reg3 = reg2
+      reg2 = reg1
+      reg1 = $a * $b
+      ret reg3
+    }
+
+    pub let block = #{|(in1,in2)->(out)|
+      let x =# mul3(in1, in2)
+      out   =# add1(x,in3)
+    }
+let x =# mul3(in1, in2)     // OK
+%out  =# add1(x,in3)        // OK (in3 has 0 cycles, x has 3 cycles)
+%out  =#[1..<4] add1(x,in3) // OK
+    {
+      pub tmp = in1 * in2
+    } #> {
+      assert true
+      // extra cycle for multiply
+    } #> {
+      assert true
+      // extra cycle for multiply
+    } #> {
+      out = tmp + in1
+    }
+    x =# mul3(in1, in2)
+    y = in1#[-3]
+    %out =# add1(a=x,b=y)    // connect in1 from -3 cycles
+    var b = "hello"
+
+    var a:u32
+
+    a += 1
+
+    a = b                       // incorrect
+
+
+    var dest:u32
+
+    dest = foo:u16 + v:u8
+    var b = "hello"
+
+    var a:u32
+
+    a += 1
+    comptime assert a does u32
+    a = b                       // incorrect
+    comptime assert a does u32
+
+    var dest:u32
+    comptime assert (dest does u32) and (foo does u16) and (v does u8)
+    dest = foo:u16 + v:u8
+type t1 = (a:int=1  , b:string)
+type t2 = (a:int=100, b:string)
+var  v1 = (a=33     , b="hello")
+
+comptime assert t1 equals t2
+comptime assert t1 equals v1
+type a1 = u32                 // same as 'type a1:u32'
+type a2 = int(max=33,min=-5)  // same as 'type a2:int(-5,33)'
+type a3 = (
+    ,var name:string
+    ,var age:u8
+    )
+
+type b1 = a1 or  a2           // same as 'type b1:int(-5..<4G)
+type b2 = a1 and a2           // same as 'type b2:int( 0..=33)
+
+type at=int(33..)     // number bigger than 32
+type bt=(
+  ,var c:string
+  ,var d=100
+  ,let set = {|(self)->(self)| self.c = $[1..] } // skip first argument (self)
+)
+
+var a:at=40
+var v:bt="hello"
+puts "a:{} or {}", a, at // a:40 or 33
+puts "b:{}", b           // b:(c="hello",d=100)
+assert      (a=3     ,:string) does (a:int,"hello")
+assert      (a={3}   ,:string) does (a:int,"hello")
+assert not ((a=3     ,:string) does (b:int,"hello"))
+assert not ((a="foo" ,:string) does (a:int,"hello"))
+assert not ((a={|| 3},:string) does (a:int,"hello"))
+assert      {||    3 } does {|(a)| 3 }
+assert not ({|(a)| 3 } does {|(a)| 3 })
+
+assert not ({|(a,b)| 3 } does {|(a)  | 3})
+assert not ({|(a)|   3 } does {|(a,b)| 3})
+
+assert     ({|(a)|     3 } does {|(a:string)| 3})
+assert not ({|(a:int)| 3 } does {|(a:string)| 3})
+a = {|| ret 1 }
+b = {|| ret 2 }
+assert a equals {|| }
+assert a != b
+assert a equals b
+assert not (a equals {|(x)| ret 1 }) // different arguments
+type x = (a:string, b:int)
+type y = (a:string)
+type z = (a:string, b:u32, c:i8)
+
+assert   x does y
+assert   y does y
+assert   z does y
+assert !(x does z)
+assert !(y does z)
+assert !(y does x)
+assert !(z does x)
+
+type big = x or y or z or (d:u33)
+assert   big does x
+assert   big does y
+assert   big does z
+assert   big does (d:u20)
+assert !(big does (d:u40))
+type Rgb = (
+  ,let c:u24
+  ,let set = {|c| self.c = c }
+)
+
+enum Color:Rgb = (
+  ,Yellow   = 0xffff00
+  ,Red      = 0xff0000
+  ,Green    = Rgb(0x00ff00) // alternative redundant syntax
+  ,Blue     = Rgb(0x0000ff)
+)
+
+var y:Color = Color.Red
+if y == Color.Red {
+  puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
+}
+var val:u8 // designer constraints a to be between 0 and 255
+val = 3    // val has 3 bits (0sb011 all the numbers are signed)
+
+
+val = 0x1F0@[0..<val.__ubits] // explicitly select bits to not overflow
+assert val == 240
+
+wrap val = 0x1F0   // Drop bits from 0x1F0 to fit in maximum 'val' allowed bits
+assert val == 240
+
+val = u8(0x1F0)    // same
+assert val == 0xF0
+a = 3                      // max:3, min:3
+if b {
+  c = a+1                  // max:4, min:4
+}else{
+  c = a                    // max:3, min:3
+}
+e.__sbits = 4              // max:3, min:-4
+e = 3                      // max:3, min:3
+d = c                      // max:4, min:3
+if d==4 {
+  d = e + 1                // max:4, min:4
+}
+g = d                      // max:4, min:3
+h = c@[0,1]                // max:3, min:0
+if cmd? {
+  x,y = cmd     // x.max=cmd.a.max; x.min = 0 (uint) ; ....
+}elif x > y {
+                // narrowing: x.min = y.min + 1 = 1
+                // narrowing: y.max = x.min - 1
+  x = x - y     // x.max = x.max - x.min = x.max - 1
+                // x.min = x.min - y.max = 1
+}else{          // x <= y
+                // narrowing: x.max = y.min
+                // narrowing: y.min = x.min
+  y = y - x     // y.max = y.max - x.min = y.max
+                // y.min = y.min - x.max = 0
+}
+                // merging: x.max = x.max ; x.min = 0
+                // merging: y.max = y.max ; y.min = 0
+                // converged becauze x and y is same or smaller at beginning
+reg x,y
+if cmd? {
+  x,y = cmd
+}elif x > y {
+  x = x - y
+}else{
+  y = y - x
+}
+wrap x:cmd.a = x  // use cmd.a type for x, and drop bits as needed
+y = cmd.b(y)  // typecast y to cmd.b type (this can add a mux)
+var a:u32=100
+var b:u10
+var c:u5
+var d:u5
+
+b = a      // OK done automatically. No precision lost
+wrap c = a // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
+
+saturate c = a  // OK, c == 31
+c = 31
+
+wrap d = c + 1   // OK d == 0
+saturate d = c+1 // OK, d==31
+saturate d = c+1 // OK, d==31
+
+saturate x:boolean = c // same as x = c!=0
+
+var lhs:(x1:u8, x2:u12) // 9 + 13 bits in signed == 22bits
+lhs@[] = 0x1FF:u22
+assert lhs.x1 == 0xFF and lhs.x2==1
+type at=(c:string,d:u32)
+type bt=(c:string,d:u100)
+
+type ct=(
+  ,var d:u32
+  ,var c:string
+) // different order
+type dt=(
+  ,var d:u32
+  ,var c:string
+  ,let set = {|(x:at)| self.d = x.d ; self.c = x.c }
+)
+
+var b:bt=(c="hello", d=10000)
+var a:at
+
+a = b // OK c is string, and 10000 fits in u32
+
+var c:ct
+
+var d:dt
+d = a // OK, call intitial to type cast
+type Say_mixin = (
+  ,let say = {|s| puts s }
+)
+
+type Say_hi_mixin = (
+  ,let say_hi  = {|| self.say("hi {}", self.name) }
+  ,let say_bye = {|| self.say("bye {}", self.name) }
+)
+
+type User = (
+  ,var name:string
+  ,let set = {|(self,n:string)| self.name = n }
+)
+
+type Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
+
+var a:Mixing_all("Julius Caesar")
+a.say_hi()
+type Shape = (
+  ,name:string
+  ,area          = {|(self,     )->:i32  |}
+  ,increase_size = {|(self,_:i12)->(self)|}
+  ,set           = {|name| self.name = name }
+)
+
+type Circle extends Shape with (
+  ,set = {|| super("circle") }
+  ,increase_size = {|(self,_:i12)| self.rad *= $1 }
+  ,rad:i32
+  ,area = {|(self) -> :i32   |
+     let pi = import("math").pi
+     ret pi * self.rad * self.rad
+  }
+)
+type Circle = (
+  ,rad:i32
+  ,name = "Circle"
+  ,area = {|(self) -> :i32|
+     let pi = import("math").pi
+     ret pi * self.rad * self.rad
+  }
+  ,increase_size = {|(self,_:i12)| self.rad *= $1 }
+)
+comptime assert Circle does Shape
+type base_abstract = (
+  ,pub var fun = nil,                 // defined or error on use
+  ,pub var fun2 = {|(a,b)->(c)| nil } // extended or error on use
+)
+a = (b=1,c:u32=2)
+var b = a
+b.c=100
+
+assert a equals b
+assert a.size == 2
+assert a['b'] == 1
+assert a['c'] equals u32
+
+assert   a has 'c'
+assert !(a has 'foo')
+
+assert a.__id == 'a'
+assert a.0.__id == ':0:b' and a.b.__id == ':0:b'
+assert a.1.__id == ':1:c' and a.c.__id == ':1:c'
+fun = {|(a,b=2) -> (c) where a>10| c = a + b }
+assert fun.inputs equals (a,b)
+assert fun.outputs equals (c)
+assert fun.where(a=200) and !fun.where(a=1)
+let x = fun(args)
+
+let x = for i in fun { last i(args) when (i.inputs does args) and i.where(args) }
+randomize = debug {|(self)|
+  rnd = import "prp/rnd"
+  for mut i in self {
+    if i equals :int {
+      i = rnd.between(i.__max,i.__min)
+    }elif i equals :boolean {
+      i = rnd.boolean()
+    }
+  }
+  ret self
+}
+
+x = (a=1,b=true,c="hello")
+y = x.randomize()
+
+assert x.a==1 and x.b==true and x.c=="hello"
+cover  y.a!=1
+cover  y.b!=true
+assert y.c=="hello"
+// file: src/my_fun.prp
+pub let fun1    = {|a,b|  }
+pub let fun2    = {|a|
+  pub let inside = {|| }
+}
+pub let another = {|a|  }
+
+pub let mytup = (
+  ,call = {|| puts "call called" }
+)
+// file: src/user.prp
+a = import "my_fun/*fun*"
+a.fun1(a=1,b=2)         // OK
+
+x = import "my_fun/mytup"
+
+x.call()                // prints call called
+pub fun1 = {|| }        // visible for import
+pub fun2 = {||          // visible for import
+   pub fun2_1 = {|| }   // visible for import
+   if cond {
+     pub fun2_2 = {|| } // not visible (if scope)
+   }
+}
+{
+  pub fun3 = {|| }      // not visible (scope)
+}
+a = import "prj1/file1"
+b = import "file1"        // import xxx_fun from file1 in the local project
+c = import "file2"        // import the functions from local file2
+d = import "prj2/file3"   // import the functions from project prj2 and file3
+b = import "prp/Number"
+a = import "fancy/Number_mixin"
+
+type Number = b ++ a // patch the default Number class
+
+var x:Number = 3
+// file remote.prp
+pub let uart = {||
+  assert uart_addr == 300
+}
+
+// file local.prp
+pub let setup_xx = {||
+  punch xx to "MY_ADDR"     // creates a var that drives remote uart_addr
+  xx = 300                  // sets uart_addr to 300
+}
+let some = {||
+  if runtime {
+    let pi = import "math.PI" // OK
+    puts "PI is {}", pi
+
+  }
+  punch v to "foo/bar"        // OK
+}
+
+pub let mod2 = {||
+  punch a to "module1/mod2/foo"
+
+  punch b to "uart_addr" // any module that has an input $uart_addr
+  b[0] = 0x100
+  b[1] = 0x200
+
+  punch b to "foo.*/uart_addr" // modules named foo.* that have uart_addr as input
+
+  punch c from "bar/some_output"
+  punch d from "bar/some_register"
+}
+type bpred = ( // complex predictor
+  ,pub let taken = {|| ret some_table[som_var] >=0 }
+)
+
+test "mocking taken branches" {
+  poke "core.fetch.bpred.taken", true
+
+  var l = core.fetch.predict(0xFFF)
+}
+var f1:XXX = 3,2
+var f2:XXX = XXX(3,2)
+var f3:XXX
+
+f3 = 3,2
+assert f3 == f2 == f1
+type some_obj = (
+  ,a1:string
+  ,pub a2 = (
+    ,_val:u32                            // hidden field
+
+    ,pub var get={|| self._val + 100 }   // getter
+    ,set={|x| self._val = x+1 }          // setter
+  )
+  ,pub var set = {|a,b|                  // setter
+    self.a1      = a
+    self.a2._val = b
+  }
+)
+
+var x:some_obj = "hello", 3
+
+assert x.a1 == "hello"
+assert x.a2 == 103
+x.a2 = 5
+assert x.a2.get == 106
+type showcase = (
+  ,pub var v:int
+  ,pub var get ++= {|(self)->(self,:string) where self.i>100|
+    ret "this is a big number" ++ string(v)
+  }
+  ,pub var get ++= {|(self)->(self,:int)|
+    ret v
+  }
+)
+
+var s:showcase
+s.v = 3
+s.v = 100
+
+type my_obj = (
+  ,val:u32
+  ,pub var get 
+    = {|()->:string | ret string(self.val) }
+   ++ {|()->:boolean| ret self.val != 0    }
+   ++ {|()->:int    | ret self.val         }
+)
+type t=(
+  ,pub var v
+  ,pub let set = {|a| self.v = a }
+  ,pub let lt = {|other| self.v  < other.v }
+  ,pub let eq = {|other| self.v == other.v }
+)
+
+var m1:t = 10
+var m2:t = 4
+assert m1 < m2 and !(m1==m2)
+assert m1 <= m2 and m1 != m2 and m2 > m1 and m2 >= m1
+reg mem:[]
+mem[3]   = something // async memory
+var array:[]
+array[3] = something // array no cross cycles persistence
+var index:u7
+var index2:u6
+
+array[index] = something
+some_result  = array[index2+3]
+reg mem1:i8[16] = 3       // mem 16bit memory initialized to 3 with type i8
+reg mem2:i8[16]           // mem 16bit memory initialized to 0 with type i8
+var mem3:[] = 0sb?        // array infer size and type, 0sb? initialized
+var mem4:[13]             // array 13 entries size, initialized to zero
+x1 = array[first..<last]  // from first to last, last not included
+x2 = array[first..=last]  // from first to last, last included
+x3 = array[first..+size]  // from first to first+size, first+size. not included
+a[3][4] = 1
+
+var b:u8[4][8] = 13
+
+assert b[2][7] == 13
+    var mem1:u5[4][8] = 0
+    comptime var reset_value:u5[3][8]  // only used during reset
+    for i in 0..<3 {
+      for j in 0..<8 {
+        reset_value[i][j] = j
+      }
+    }
+    reg mem2 = reset_value   // infer async mem u5[3][8]
+    var mem:( 
+      ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
+      ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
+      ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
+      ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
+    )
+    reg mem2:( 
+      ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
+      ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
+      ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
+    )
+    reg rf:i64[32]
+
+    reg a:(addr1:u5, addr2:u5)
+
+    data_rs1 = rf[a.addr1]
+    data_rs2 = rf[a.addr2]
+
+    a = (insn[8..=11], insn[0..=4])
+    reg rf:i64[32]
+
+    reg a:(data1:i64, data2:i64)
+
+    data_rs1 = a.data1
+    data_rs2 = a.data2
+
+    a = (rf[insn[8..=11]], rf[insn[0..=4]])
+// A 2rd+1wr memory (RF type)
+
+mem.addr    = ($raddr0, $raddr1, $wraddr)
+mem.bits    = 4
+mem.size    = 16
+mem.clock   = $my_clock
+mem.din     = (0, 0, $din0)
+mem.enable  = (1, 1, $we0)
+
+mem.fwd     = false
+mem.latency = (1, 1, 1)
+mem.wensize = 1 // we bit (no write mask)
+mem.rdport  = (-1,1,0) // 0 WR, !=0 -> RD
+
+res =# __memory(mem)
+
+%q0 = res.0
+%q1 = res.1
+
+var d2:[2][2] = ((1,2),(3,4))
+assert d2[0][0] == 1 and d2[0][1] == 2 and d2[1][0] == 3 and d2[1][1] == 4
+
+assert d2[0] == (1,2) and d2[1] == (2,3)
+let flatten = {|arr|
+  var res
+  for i in arr {
+    res ++= i
+  }
+  ret res
+}
+
+assert flatten(d2) == (1,2,3,4)
+assert flatten((((1),2),3),4) == (1,2,3,4)
+// file1.prp
+
+var a:punch("A")
+var b = punch("B")
+b = a + 1
+var c:punch("C")
+
+assert a == 100
+assert b == 101
+assert c == 102
+
+// file2.prp
+
+var x = punch("A")
+x = 100
+var y:punch("B")
+var z = punch("C")
+z = y + 1
+
+assert x == 100
+assert y == 101
+assert y == 102
+    assume sel==1 or sel==2 or sel==4 // not needed. match sets it
+    match sel {
+      == 0b001 { f = i0 }
+      == 0b010 { f = i2 }
+      == 0b100 { f = i3 }
+    }
+    f = (sel[0] & i0)
+      | (sel[1] & i1)
+      | (sel[2] & i2)
+    assume a != 0
+
+
+    if (1 + a) != 1 { // always false
+      out = 1
+    }else{
+      out = 3
+    }
+
+    assume b != 3 
+    // array = (1,2,3,4,5,6,7,8)
+    res = array[b]
+let fun = {|| 1 }
+
+let tup = (
+  ,let fun = {|| 2}
+
+  ,let code = {||
+     assert self.fun() == 2
+     assert fun() == 1
+  }
+)
+var x = 3
+
+let fun = {|()->:int|
+   assert x == 3
+   ret 200
+}
+var x = 3
+let y = 10
+
+let fun = {|()->:int|
+   assert x == 3 and y == 10
+   x = 10000
+   ret x+200
+}
+
+assert x == 3
+
+let z = fun()
+assert z == 10200
+assert x == 3
+var x = 3
+var y = 10
+
+let fun2 = {|[y]()->:int| // [] means capture just y
+  var x  = 200
+  ret y + x
+}
+x = 1000
+assert fun2() == 203
+assert 0 == (0)  // OK, same as assert( 0 == (0) )
+asssert(2 in (1,2)) // OK
+var x = (
+  ,var v:int
+  ,var always_after = {||
+    self.v = 1
+  }
+)
+
+var y = x ++ (
+  ,var always_after = {||
+    self.v = 2
+  }
+)
+
+var z = (
+  ,var always_after = {||
+    self.v = 3
+  }
+) ++ x
+
+assert x.v == 1
+assert y.v == 2
+assert z.v == 1 // self.v = 3 executes before self.v = 1
+assert !(0sb? == 0)
+assert !(0sb? != 0)
+assert !(0sb? == 0sb?)
+assert !(0sb? != 0sb?)
+var x = 0sb10?
+let str = __to_string(x) // only works for compile time constants
+assert x == "0sb10?"
+let s:string="hell"
+for i,idx in s {
+  let v = match idx {
+   == 0 { "h" }
+   == 1 { "e" }
+   == 2 { "l" }
+   == 3 { "l" }
+  }
+  assert v == i
+}
+
+let t = (1,2,3)
+for i,idx in t {
+  let v = match idx {
+   == 0 { 1 }
+   == 1 { 2 }
+   == 2 { 3 }
+  }
+  assert v == i
+}
+
+let r=2..<5
+for i,idx in r {
+  let v = match idx {
+   == 0 { 2 }
+   == 1 { 3 }
+   == 2 { 4 }
+  }
+  assert v == i
+}
+
+let r2=4..=2 by -1
+assert r == r2
+for i,idx in r2 {
+  let v = match idx {
+   == 0 { 2 }
+   == 1 { 3 }
+   == 2 { 4 }
+  }
+  assert v == i
+}
+
+for i in 2..<5 {
+  let ri = 2+(4-i) // reverse index
+  // 2 == (2..<5).trailing_one
+  // 4 == (2..<5).leading_one
+  let v = match idx {
+   == 0 { 4 }
+   == 1 { 3 }
+   == 2 { 2 }
+  }
+  assert v == ri
+}
+
+for i,idx in 123 {
+  assert i == 123 and idx==0
+}
+reg r_ver = (
+  ,always_reset = {||} // do nothing
+)
+reg r
+var v
+
+assert v == 0 and r == 0
+
+assert !(r_ver != 0)    // 0sb? != 0 evaluates false
+assert !(r_ver == 0)    // 0sb? == 0 evaluates false too
+assert !(r_ver != 0sb?) // 0sb? != 0sb? evaluates false too
+assert !(r_ver == 0sb?) // 0sb? == 0sb? evaluates false too
+
+assert r_ver == something unless r_ver.reset  // do not check during reset
+var arr:[] = (0,1,2,3,4,5,6,7)
+
+assert arr[0] == 0 and arr[7] == 7 // always works
+
+reg mem:[] = (0,1,2,3,4,5,6,7)
+
+assert mem[7] == 7 // FAIL, this may fail during reset
+assert mem[7] == 7 unless mem.reset // OK
+reg v:u32 = 33
+
+assert v == 33 // this will fail after reset
+
+v = 1
+let fun = {|| puts "here" ; ret 3}
+let have = {|f| f() }
+
+let x = have fun   // same as have(fun), nothing printed
+assert x == 3      // prints "here"
+
+let y = have fun() // same as have(fun()), prints "here"
+assert x == 3      // nothing printed
+if if x == 3 { true }else{ false } {
+  puts "x is 3"
+}
+let http:8080//masc.soe.ucsc.edu
+
+assert http == 8080
+let v = (3)--3
+assert v == 6
+({|| {||} }())()  // does nothing
+    type Person = (name:string, age:u32)
+    var a = (one:Person, two:Person)
+
+    x = ('one', 'two')
+    a[x].age = 10
+    type Person = (name:string, age:u32)
+    var a = (one:Person, two:Person)
+
+    x = 'one'
+    y = 'two'
+    a[x].age = 10
+    a[y].age = 10
+let telescope_unit = {|(a:u32,b:u32,start:bool) -> (res:?u32)|
+
+  reg result_done
+  reg result_flop
+
+  if result_done {
+    res = result_flop
+  }
+
+  reg int_done
+  reg int_flop
+  reg int_b
+
+  if int_done {  // pending work (2 cycle op, can not telescope)
+    result_flop = int_flop-int_b
+    result_done = int_done
+    int_flop = a+1
+    int_b    = b
+    int_done = start
+  }else{          // no pending work from before (telescoping is allowed)
+    if b == 0 {
+      result_flop = a+1
+      result_done = start
+    }else{
+      result_flop = int_flop-int_b
+      int_flop = a+1
+      int_b    = b
+      int_done = start
+    }
+  }
+}
+ let res1 =#[1,2] telescope_unit($a,$b,$start)
+
+ if res1? {
+   puts "{}-{}+1 is {}", $a, $b, res1.res  // incorrect reference to a
+ }
+ let res1 =#[1,2] telescope_unit(a,b,start)
+
+ yield res1? // wait for condition to happen
+ assert res1?
+
+ // code executed 1 or 2 cycles after telescope_unit is called
+ puts "{}-{}+1 is {}", $a, $b, res1.res
+// implicit start/end (starts when called)
+let telescope_unit3 = {|(a:u32,b:u32) -> (:?u32)|
+
+  {
+    pub let tmp = a+1
+  } #> {
+    if b == 0 {
+      ret tmp
+    }
+    pub let tmp2 = tmp-b
+  } #> {
+    ret tmp2
+  }
+}
+ let res2 =#[1,2] telescope_unit3($a,$b,$start)
+
+ if res2? { // code executed 1 or 2 cycles after telescope_unit is called
+   puts "{}-{}+1 is {}", $a, $b, res2
+ }
+while some_condition {
+
+  step   // next cycle starts here
+}

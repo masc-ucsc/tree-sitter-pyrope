@@ -1,8 +1,8 @@
 
 
 let accumulate = {|(...a)|
-  var add = {|(a:string,b:string)| a ++ b }
-  add   ++= {|(a:int   ,b:int   )| a +  b }
+  var add = {|(a:string,b:string)| ret a ++ b }
+  add   ++= {|(a:int   ,b:int   )| ret a +  b }
 
   var total = a[0]
   for i in a[1..] {

@@ -2,10 +2,10 @@
 reduce = {|bundle, x1, x2|
   var op
   var base
-  if x1 equals :{||} {
+  if x1 equals :{|| nil} {
      op   = x1
      base = x2
-  }elif x2 equals :{||} {
+  }elif x2 equals :{|| nil} {
      op   = x2
      base = x1
   }else{

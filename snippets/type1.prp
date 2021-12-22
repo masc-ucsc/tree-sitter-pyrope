@@ -8,22 +8,6 @@
  puts "color:{} {}\n", :x, x // prints "color:RED RED"
 
  //-------------
- type Rgb = (
-    ,var color:u24
-    ,let set = {|(self,x)->(self)| self.color = x }
- )
-
- type Red:Rgb   = 0xff0000
- type Green:Rgb = 0x00ff00
- type Blue      = Rgb(0x0000ff)  // also works
- type color2 = Red or Green or Blue
-
- var y:color2 = Red
- assert y == Red and (y equals Rgb)
-
- puts "color:{} c1:{} c2:{}\n", :y, y, y.color // prints "color:Red c1:Red(color=0xff0000) c2:0xff0000"
-
- //-------------
 type Shape = (
   ,var name = {|(self) -> :string|}
   ,var area = {|(self) -> :i32|}
