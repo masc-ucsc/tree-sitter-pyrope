@@ -727,48 +727,6 @@
         }
       ]
     },
-    "punch_stmt": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "punch_tok"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "fcall_or_variable"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "typecase"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "from_tok"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "to_tok"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "expr_entry"
-        }
-      ]
-    },
     "tuple_pipe": {
       "type": "SEQ",
       "members": [
@@ -1181,17 +1139,8 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "stmt_base"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "punch_stmt"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "stmt_base"
             },
             {
               "type": "BLANK"
@@ -1208,17 +1157,8 @@
                 "name": "_newline"
               },
               {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "stmt_base"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "punch_stmt"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "stmt_base"
               }
             ]
           }
@@ -3008,27 +2948,6 @@
         "value": "wrap"
       }
     },
-    "punch_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "punch"
-      }
-    },
-    "from_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "from"
-      }
-    },
-    "to_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "to"
-      }
-    },
     "elif_tok": {
       "type": "TOKEN",
       "content": {
@@ -3646,7 +3565,7 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "[$%a-zA-Z_][a-zA-Z\\d_]*"
+            "value": "[a-zA-Zα-ωΑ-Ωµ_][a-zA-Zα-ωΑ-Ωµ\\d_]*"
           },
           {
             "type": "SEQ",

@@ -665,10 +665,10 @@ defer_read b = c
 assert b == 33
 c += 20
 c += 3
-defer_read f1 = ring($a, f4)
-f2 = ring($b, f1)
-f3 = ring($c, f2)
-f4 = ring($d, f3)
+defer_read f1 = ring(a, f4)
+f2 = ring(b, f1)
+f3 = ring(c, f2)
+f4 = ring(d, f3)
 reg counter:u32
 
 let counter_m1 = counter#[-1] // last cycle
@@ -709,14 +709,14 @@ if runtime == 1 comptime {
   xx = 3
 }
     test "wait 1 cycle" {
-      let a = 1 + $input
+      let a = 1 + input
       puts "printed every cycle input={}", a
       step 1
       puts "also every cycle a={}",a  // printed on cycle later
     }
     test "wait 1 cycle" {
       {
-        pub let a = 1 + $input
+        pub let a = 1 + input
         puts "printed every cycle input={}", a
       } #> {
         puts "also every cycle a={}",a  // printed on cycle later
@@ -745,7 +745,7 @@ assert a_3 equals 3
 assert a_fun equals {|| }
 assert a_fun() == 4       // calls to eval the function
 var add
-add = {|| $a+$b+$c }              // no IO specified
+add = {|(...x)| x.0+x.1+x.2 }     // no IO specified
 add = {|a,b,c| a+b+c }            // constrain inputs to a,b,c
 add = {|(a,b,c)| a+b+c }          // same
 add = {|(a:u32,b:s3,c)| a+b+c }   // constrain some input types
@@ -764,9 +764,9 @@ var y = (
   ,inc1 = {|(self)->(self)| self.val = u32(self.val + 1) }
 )
 
-debug let my_log = {||
+debug let my_log = {|(...inp)|
   print "loging:"
-  for i in $ {
+  for i in inp {
     print " {}", i
   }
   puts
@@ -776,23 +776,10 @@ let fun = {|<X>(a:X,b:X)| a+b }   // enforces a and b with same type
 assert fun(33:u22,100:u22)
 
 my_log a, false, x+1
-let fun = {|(in1,in2)->(out1,out2)|
-  assert in1 == $.in1 and in2 == $.in2
+div  = {|a,b| a / b }          // named input tuple
+div2 = {|(...x)| x.0 / x.1 }   // unnamed input tuple
 
-  out1 = in1 + $in1
-  out2 = out1 + in2 + $in2
-
-  assert out1 == $.out1 and out2 == $.out2
-}
-
-let fun2 = {|(a1,...rest)|
-  assert a1   == $.0
-  assert rest == $[1..]
-}
-div  = {|a,b| a / $b }   // named input tuple
-div2 = {|| $0 / $1 }     // unnamed input tuple
-
-noarg = {|()| ret 33 }   // explicit no args
+noarg = {|()| ret 33 }         // explicit no args
 
 assert noarg == 33 == noarg()
 
@@ -818,7 +805,7 @@ assert 4.fun()  == 2
 assert tup.fun() == 1
 var tup = (
   ,var x = 3
-  ,let fun = {|()| assert $.size == 1 ; ret self.x }
+  ,let fun = {|(...rest)| assert rest.size == 0 ; ret self.x }
 )
 
 let fun2 = {|(b)| ret b.x             } // no self, but it is the same
@@ -834,20 +821,20 @@ assert tup.fun3(2) == 5
 var a_1 = (
   ,x:u10
   ,let fun = {|(self,x)->(self)| 
-    assert $.__size == 2 // self and x
     self.x = x 
-    assert %.__size == 2 // due to the mut keyword
-    assert %.self.x == x
   }
 )
 
-a_1.fun(3)
-assert a_1.x == 3
+a_1.fun(3)            // syntax sugar for a_1 = a_1.fun(3)
+var a_2 = a_1.fun(4)  // a_2 is updated, not a_1
+assert a_1.x == 3 and a_2.x == 4
 
+// Same behavior as in a function with UFCS
 fun2 = {|(self, x)->(self)| self.x = x }
-a_2 = a_1.fun2(4)
-assert a_1.x == 3
-assert a_2.x == 4
+
+a_1.fun2(10)    
+var a_3 = a_1.fun2(20)
+assert a_1 == 10 and a_3 == 20
 var counter = (
   ,var val:i32
   ,let inc = {|(self, v)| self.var += v }
@@ -990,8 +977,8 @@ let c:string = fun(3,300)
 assert c == "hello"
 var fun = {|(a,b)      where a>40    | ret b+100 }
   fun ++= {|(a,b)->(x) where x > 300 | ret b+200 } // output x
-  fun ++= {|(a,b)->(a) where $.a > 20| ret b+300 } // input a
-  fun ++= {|(a,b)->(a) where %.a > 10| ret b+400 } // output a
+  fun ++= {|(a,b)->(a) where a > 20  | ret b+300 } // input a
+  fun ++= {|(a,b)->(x) where x > 10  | ret b+400 } // output x
   fun ++= {|(a,b)                    | ret a+b+1000 } // default
 
 var fun_manual = {|(a,b)|
@@ -1279,7 +1266,7 @@ reg my_reg:(retime=true,clock=my_clk)
       reg reg1, reg2, reg3
       reg3 = reg2
       reg2 = reg1
-      reg1 = $a * $b
+      reg1 = a * b
       ret reg3
     }
 
@@ -1287,9 +1274,9 @@ reg my_reg:(retime=true,clock=my_clk)
       let x =# mul3(in1, in2)
       out   =# add1(x,in3)
     }
-let x =# mul3(in1, in2)     // OK
-%out  =# add1(x,in3)        // OK (in3 has 0 cycles, x has 3 cycles)
-%out  =#[1..<4] add1(x,in3) // OK
+let x =# mul3(in1, in2)    // OK
+out  =# add1(x,in3)        // OK (in3 has 0 cycles, x has 3 cycles)
+out  =#[1..<4] add1(x,in3) // OK
     {
       pub tmp = in1 * in2
     } #> {
@@ -1303,7 +1290,7 @@ let x =# mul3(in1, in2)     // OK
     }
     x =# mul3(in1, in2)
     y = in1#[-3]
-    %out =# add1(a=x,b=y)    // connect in1 from -3 cycles
+    out =# add1(a=x,b=y)    // connect in1 from -3 cycles
     var b = "hello"
 
     var a:u32
@@ -1348,7 +1335,7 @@ type at=int(33..)     // number bigger than 32
 type bt=(
   ,var c:string
   ,var d=100
-  ,let set = {|(self)->(self)| self.c = $[1..] } // skip first argument (self)
+  ,let set = {|(self,...args)->(self)| self.c = args } // skip first argument (self)
 )
 
 var a:at=40
@@ -1529,7 +1516,7 @@ type Shape = (
 
 type Circle extends Shape with (
   ,set = {|| super("circle") }
-  ,increase_size = {|(self,_:i12)| self.rad *= $1 }
+  ,increase_size = {|(self,x:i12)| self.rad *= x }
   ,rad:i32
   ,area = {|(self) -> :i32   |
      let pi = import("math").pi
@@ -1543,7 +1530,7 @@ type Circle = (
      let pi = import("math").pi
      ret pi * self.rad * self.rad
   }
-  ,increase_size = {|(self,_:i12)| self.rad *= $1 }
+  ,increase_size = {|(self,a:i12)| self.rad *= a }
 )
 comptime assert Circle does Shape
 type base_abstract = (
@@ -1605,6 +1592,9 @@ pub let mytup = (
 a = import "my_fun/*fun*"
 a.fun1(a=1,b=2)         // OK
 
+let fun1 = import "my_fun/fun1"
+lec fun1, a.fun1
+
 x = import "my_fun/mytup"
 
 x.call()                // prints call called
@@ -1628,43 +1618,33 @@ a = import "fancy/Number_mixin"
 type Number = b ++ a // patch the default Number class
 
 var x:Number = 3
-// file remote.prp
-pub let uart = {||
-  assert uart_addr == 300
+let do_increase = {||
+  reg counter("MY_COUNTER")
+
+  wrap counter:u32 = counter + 1
 }
+
+let do_debug = {||
+  reg counter("MY_COUNTER")
+  puts "The counter value is {}", counter
+}
+// file remote.prp
+reg uart_addr("MY_ADDR")
+assert 0x400 > uart_addr >= 0x300
 
 // file local.prp
 pub let setup_xx = {||
-  punch xx to "MY_ADDR"     // creates a var that drives remote uart_addr
-  xx = 300                  // sets uart_addr to 300
-}
-let some = {||
-  if runtime {
-    let pi = import "math.PI" // OK
-    puts "PI is {}", pi
-
+  reg xx(instance="MY_ADDR") // creates a var that drives remote uart_addr
+  for mut i,index in xx {
+    i = 0x300+index*0x10     //  sets uart_addr to 0x300, 0x310, 0x320...
   }
-  punch v to "foo/bar"        // OK
-}
-
-pub let mod2 = {||
-  punch a to "module1/mod2/foo"
-
-  punch b to "uart_addr" // any module that has an input $uart_addr
-  b[0] = 0x100
-  b[1] = 0x200
-
-  punch b to "foo.*/uart_addr" // modules named foo.* that have uart_addr as input
-
-  punch c from "bar/some_output"
-  punch d from "bar/some_register"
 }
 type bpred = ( // complex predictor
   ,pub let taken = {|| ret some_table[som_var] >=0 }
 )
 
 test "mocking taken branches" {
-  poke "core.fetch.bpred.taken", true
+  poke "bpred_file/taken", true
 
   var l = core.fetch.predict(0xFFF)
 }
@@ -1784,12 +1764,12 @@ assert b[2][7] == 13
     a = (rf[insn[8..=11]], rf[insn[0..=4]])
 // A 2rd+1wr memory (RF type)
 
-mem.addr    = ($raddr0, $raddr1, $wraddr)
+mem.addr    = (raddr0, raddr1, wraddr)
 mem.bits    = 4
 mem.size    = 16
-mem.clock   = $my_clock
-mem.din     = (0, 0, $din0)
-mem.enable  = (1, 1, $we0)
+mem.clock   = my_clock
+mem.din     = (0, 0, din0)
+mem.enable  = (1, 1, we0)
 
 mem.fwd     = false
 mem.latency = (1, 1, 1)
@@ -1798,8 +1778,8 @@ mem.rdport  = (-1,1,0) // 0 WR, !=0 -> RD
 
 res =# __memory(mem)
 
-%q0 = res.0
-%q1 = res.1
+q0 = res.0
+q1 = res.1
 
 var d2:[2][2] = ((1,2),(3,4))
 assert d2[0][0] == 1 and d2[0][1] == 2 and d2[1][0] == 3 and d2[1][1] == 4
@@ -1815,28 +1795,6 @@ let flatten = {|arr|
 
 assert flatten(d2) == (1,2,3,4)
 assert flatten((((1),2),3),4) == (1,2,3,4)
-// file1.prp
-
-var a:punch("A")
-var b = punch("B")
-b = a + 1
-var c:punch("C")
-
-assert a == 100
-assert b == 101
-assert c == 102
-
-// file2.prp
-
-var x = punch("A")
-x = 100
-var y:punch("B")
-var z = punch("C")
-z = y + 1
-
-assert x == 100
-assert y == 101
-assert y == 102
     assume sel==1 or sel==2 or sel==4 // not needed. match sets it
     match sel {
       == 0b001 { f = i0 }
@@ -2072,10 +2030,10 @@ let telescope_unit = {|(a:u32,b:u32,start:bool) -> (res:?u32)|
     }
   }
 }
- let res1 =#[1,2] telescope_unit($a,$b,$start)
+ let res1 =#[1,2] telescope_unit(a,b,start)
 
  if res1? {
-   puts "{}-{}+1 is {}", $a, $b, res1.res  // incorrect reference to a
+   puts "{}-{}+1 is {}", a, b, res1.res  // incorrect reference to a
  }
  let res1 =#[1,2] telescope_unit(a,b,start)
 
@@ -2083,7 +2041,7 @@ let telescope_unit = {|(a:u32,b:u32,start:bool) -> (res:?u32)|
  assert res1?
 
  // code executed 1 or 2 cycles after telescope_unit is called
- puts "{}-{}+1 is {}", $a, $b, res1.res
+ puts "{}-{}+1 is {}", a, b, res1.res
 // implicit start/end (starts when called)
 let telescope_unit3 = {|(a:u32,b:u32) -> (:?u32)|
 
@@ -2098,10 +2056,10 @@ let telescope_unit3 = {|(a:u32,b:u32) -> (:?u32)|
     ret tmp2
   }
 }
- let res2 =#[1,2] telescope_unit3($a,$b,$start)
+ let res2 =#[1,2] telescope_unit3(a,b,start)
 
  if res2? { // code executed 1 or 2 cycles after telescope_unit is called
-   puts "{}-{}+1 is {}", $a, $b, res2
+   puts "{}-{}+1 is {}", a, b, res2
  }
 while some_condition {
 

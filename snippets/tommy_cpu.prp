@@ -2,7 +2,7 @@
 // CPU based on https://github.com/tommythorn/silice-examples
 // a 4 stage 2 instruction CPU to showcase HDLs
 
-fetch = {||
+fetch = {|(inp_flop_din)->(insn,restarted)|
 
   reg code:[32] = (
     ,0x0A556  // r5, r5, r6
@@ -15,12 +15,12 @@ fetch = {||
 
   reg inp_flop
   inp = inp_flop
-  inp_flop = $
+  inp_flop = inp_flop_din
 
   reg pc
 
-  %.insn      = code[pc]
-  %.restarted = inp_flop
+  insn      = code[pc]
+  restarted = inp_flop
 
   if inp.x.restart {
     pc = inp.x.restart_pc
@@ -37,33 +37,33 @@ type Insn_type = (
   ,brtarget:u16
 )
 
-decode = {||
+decode = {|(...inp_din)->(...out)|
 
   reg inp_flop  // flop the inputs
   inp = inp_flop
   inp_flop = (
-    ,insn      = Insn_type($.f.insn)
-    ,restarted = $.f.restarted
-    ,x         = $.x
+    ,insn      = Insn_type(inp_din.f.insn)
+    ,restarted = inp_din.f.restarted
+    ,x         = inp_din.x
   )
 
   reg rf:[32] = (0,1,1,0,100,0,1)
 
-  %.rf_data0 = rf[inp.insn.r0]
-  %.rf_data1 = rf[inp.insn.r1]
-  %.insns    = inp.insn
-  %.restarted= inp.restarted#[-1]
+  out.rf_data0 = rf[inp.insn.r0]
+  out.rf_data1 = rf[inp.insn.r1]
+  out.insns    = inp.insn
+  out.restarted= inp.restarted#[-1]
 
   if inp.x.wb_enable {
     rf[inp.x.wb_rd] = inp.x.wb_val
   }
 }
 
-execute = {||
+execute = {|(...inp_din)->(...out)|
 
   reg inp_flop
   inp = inp_flop
-  inp_flop = $
+  inp_flop = inp_dpin
 
   reg skip = true // reset to true (not false)
 
@@ -84,10 +84,10 @@ execute = {||
   wb_rd     = inp.insn.rd
   wb_val    = r0_val + r1_val
 
-  % = (restart, restart_pc, wb_enable, wb_rd, wb_val)
-  debug %.valid  = valid  // mark as debug variables
-  debug %.r0_val = r0_val
-  debug %.r1_val = r1_val
+  out = (restart, restart_pc, wb_enable, wb_rd, wb_val)
+  debug out.valid  = valid  // mark as debug variables
+  debug out.r0_val = r0_val
+  debug out.r1_val = r1_val
 }
 
 last_x = x_out defer

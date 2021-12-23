@@ -899,10 +899,6 @@
           "named": true
         },
         {
-          "type": "punch_stmt",
-          "named": true
-        },
-        {
           "type": "stmt_base",
           "named": true
         }
@@ -1148,41 +1144,6 @@
     "type": "ok_procedure_tok",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "punch_stmt",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expr_entry",
-          "named": true
-        },
-        {
-          "type": "fcall_or_variable",
-          "named": true
-        },
-        {
-          "type": "from_tok",
-          "named": true
-        },
-        {
-          "type": "punch_tok",
-          "named": true
-        },
-        {
-          "type": "to_tok",
-          "named": true
-        },
-        {
-          "type": "typecase",
-          "named": true
-        }
-      ]
-    }
   },
   {
     "type": "qmark_dot_tok",
@@ -1839,10 +1800,6 @@
     "named": true
   },
   {
-    "type": "from_tok",
-    "named": true
-  },
-  {
     "type": "if_tok",
     "named": true
   },
@@ -1895,10 +1852,6 @@
     "named": true
   },
   {
-    "type": "punch_tok",
-    "named": true
-  },
-  {
     "type": "qmark_tok",
     "named": true
   },
@@ -1936,10 +1889,6 @@
   },
   {
     "type": "simple_string_literal",
-    "named": true
-  },
-  {
-    "type": "to_tok",
     "named": true
   },
   {

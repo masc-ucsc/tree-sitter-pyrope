@@ -28,18 +28,22 @@ reduce = {|bundle, x1|
 
 /// xargs converts from UFCS to append first tuple to end
 /// Orig:
-///  (3,4) |> xargs(1,2) |> foo 
+///  (3,4) |> xargs(1,2) |> foo
 /// Becomes:
 ///  foo(1,2,3,4)
 ///
 ///  (3,4) |> foo(1,2) is the same as foo((3,4),1,2)
 ///
 
-xars = {|| $[1..] ++ $0 }
+let echo  = {|(...x)| ret x }
+let xargs = {|(a,...x)| ret x ++ a }
 
-a = (1,2,3).reduce(0, '+')
-b = __sum(A=(1,2,3))
-c = (1,2) |> xargs(3)
-assert c == (3,1,2)
-
+let a = (1,2,3).reduce(0, '+')
+let b = __sum(A=(1,2,3))
 assert b == a == (1+2+3)
+
+let c1 = (1,2) |> echo(3)
+let c2 = (1,2) |> xargs(3)
+assert c1 == (3,1,2)
+assert c2 == (1,2,3)
+

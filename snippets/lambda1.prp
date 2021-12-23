@@ -1,53 +1,66 @@
 
-dispatch = {||
-  comptime assert $.0 equals string
-  ret match $.0 {
-    == 'add' { $1 + $2 }
-    == 'sub' { $1 - $2 }
-    == 'mul' { $1 * $2 }
-    == 'div' { $1 / $2 }
+dispatch = {|a,b,c|
+  comptime assert a equals string
+  ret match a {
+    == 'add' { b + c }
+    == 'sub' { b - c }
+    == 'mul' { b * c }
+    == 'div' { b / c }
   }
 }
 
-dispatch2 = {||
-  comptime assert $0 equals :string
-  s = (
-    ,add = {|| $1 + $2 }
-    ,sub = {|| $1 - $2 }
-    ,mul = {|| $1 * $2 }
-    ,div = {|| $1 / $2 }
+dispatch2 = {|<T>(a:string,b:T,c:T)|
+  let s = (
+    ,add = {|| a + b }
+    ,sub = {|| a - b }
+    ,mul = {|| a * b }
+    ,div = {|| a / b }
   )
-  ret s[$0]($1,$2)
+  ret s[a]() // a,b are captured
 }
 
-test "Check both methods" {
+dispatch3 = {|<T>(a:string,b:T,c:T)|
+  let s = (
+    ,add = {|x,y| x + y }
+    ,sub = {|x,y| x - y }
+    ,mul = {|x,y| x * y }
+    ,div = {|x,y| x / y }
+  )
+  ret s[a](b,c)
+}
+
+test "Check methods equivalence" {
 
   for i in 0..<100 {
-    a = s5.rand()
-    b = s44.rand()
+    a = i5.rand()
+    b = i44.rand()
 
     {
-      x = dispatch('add',a,b)
-      y = dispatch2('add',a,b)
-      assert x == y == (a+b)
+      let x = dispatch('add',a,b)
+      let y = dispatch2('add',a,b)
+      let z = dispatch3('add',a,b)
+      assert x == y == z == (a+b)
     }
 
     {
-      x = dispatch('sub',a,b)
-      y = dispatch2('sub',a,b)
-      assert x == y == (a-b)
+      let x = dispatch('sub',a,b)
+      let y = dispatch2('sub',a,b)
+      let z = dispatch3('sub',a,b)
+      assert x == y == z == (a-b)
     }
 
     {
-      x = dispatch('mul',a,b)
-      y = dispatch2('mul',a,b)
-      assert x == y == (a*b)
+      let x = dispatch('mul',a,b)
+      let y = dispatch2('mul',a,b)
+      let z = dispatch3('mul',a,b)
+      assert x == y == z == (a*b)
     }
 
     {
-      x = dispatch('div',a,b)
-      y = dispatch2('div',a,b)
-      assert x == y == (a/b)
+      let x = dispatch('div',a,b)
+      let y = dispatch2('div',a,b)
+      let z = dispatch3('div',a,b)
+      assert x == y == z == (a/b)
     }
   }
 }

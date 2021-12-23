@@ -1,28 +1,17 @@
 
-//const PREC = { }
-
-//const IDENTIFIER_CHARS = /[^\x00-\x1F\s:;`"'@$#.,|^&<=>+\-*/\\%?!~()\[\]{}]*/;
-//const LOWER_ALPHA_CHAR = /[^\x00-\x1F\sA-Z0-9:;`"'@$#.,|^&<=>+\-*/\\%?!~()\[\]{}]/;
-
 module.exports = grammar({
-  name: 'pyrope',
+  name: 'pyrope'
 
-  externals: (_) => [],
+  ,externals: (_) => []
+  ,conflicts: $ => [ ] // No conflicts SLR grammar :D
 
-  extras: $ => [
+  ,extras: $ => [
     / /
     ,/\t/
     , $._comment
   ]
 
   ,word: $ => $.trivial_identifier
-
-  ,conflicts: $ => [ ] // No conflicts SLR grammar :D
-
-  ,supertypes: $ => [
-    //$.stmt_base
-    //,$.typecase
-  ]
 
   ,inline: $ => [
     $.comma_tok
@@ -229,15 +218,6 @@ module.exports = grammar({
         ,optional($._assign_multiple_end)
       )
 
-    ,punch_stmt: $ =>
-      seq(
-        $.punch_tok
-        ,$.fcall_or_variable
-        ,optional($.typecase)
-        ,choice($.from_tok, $.to_tok)
-        ,$.expr_entry
-      )
-
     ,tuple_pipe: $ =>
       seq(
         $.tuple
@@ -358,19 +338,11 @@ module.exports = grammar({
       seq(
         choice($.ok_function_tok, $.ok_procedure_tok)
         ,$.lambda_def_constrains
-        ,optional( // lambda can be empty (type def)
-          choice(
-            $.stmt_base
-            ,$.punch_stmt
-          )
-        )
+        ,optional($.stmt_base)
         ,repeat(
           seq(
             $._newline
-            ,choice(
-              $.stmt_base
-              ,$.punch_stmt
-            )
+            ,$.stmt_base
           )
         )
         ,$.ck_tok
@@ -850,10 +822,6 @@ module.exports = grammar({
     ,var_tok:      () => token('var'     )
     ,wrap_tok:     () => token('wrap'    )
 
-    ,punch_tok:    () => token('punch'   )
-    ,from_tok:     () => token('from'    )
-    ,to_tok:       () => token('to'      )
-
     ,elif_tok: () =>
       token(
         seq(
@@ -893,7 +861,6 @@ module.exports = grammar({
 
     ,unless_tok: () => token('unless')
     ,when_tok: () => token('when')
-    ,to_tok: () => token('to')
     ,if_tok: () => token('if')
     ,unique_tok: () => token('unique')
     ,match_tok: () => token('match')
@@ -982,7 +949,8 @@ module.exports = grammar({
     ,trivial_identifier: (_) =>
       token(
         choice(
-          /[$%a-zA-Z_][a-zA-Z\d_]*/
+          /[a-zA-Zα-ωΑ-Ωµ_][a-zA-Zα-ωΑ-Ωµ\d_]*/
+          ///[a-zA-Z_][a-zA-Z\d_]*/
           ,seq(
             '`'
             ,repeat(choice(prec(1,/\\./), /[^`\\\n]+/))
@@ -990,8 +958,6 @@ module.exports = grammar({
           )
         )
       )
-
-    //,identifier: (_) => token(/[a-zA-Zα-ωΑ-Ωµ_][\.a-zA-Zα-ωΑ-Ωµ\d_]*/)
 
     ,_comment: (_) => token(prec(1,/\s*\/\/[^\n]*/))
     ,_newline: (_) => token(prec(-1,/\s*[;\n\r]+/))
