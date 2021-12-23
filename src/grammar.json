@@ -3565,7 +3565,7 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "[a-zA-Zα-ωΑ-Ωµ_][a-zA-Zα-ωΑ-Ωµ\\d_]*"
+            "value": "[\\p{L}_$][\\p{L}\\p{Nd}_$]*"
           },
           {
             "type": "SEQ",
@@ -3606,6 +3606,17 @@
         ]
       }
     },
+    "_spaces": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 0,
+        "content": {
+          "type": "PATTERN",
+          "value": "[ \\t\\v]+"
+        }
+      }
+    },
     "_comment": {
       "type": "TOKEN",
       "content": {
@@ -3624,19 +3635,15 @@
         "value": -1,
         "content": {
           "type": "PATTERN",
-          "value": "\\s*[;\\n\\r]+"
+          "value": "[;\\n\\r]+[;\\s]*"
         }
       }
     }
   },
   "extras": [
     {
-      "type": "PATTERN",
-      "value": " "
-    },
-    {
-      "type": "PATTERN",
-      "value": "\\t"
+      "type": "SYMBOL",
+      "name": "_spaces"
     },
     {
       "type": "SYMBOL",

@@ -5,11 +5,7 @@ module.exports = grammar({
   ,externals: (_) => []
   ,conflicts: $ => [ ] // No conflicts SLR grammar :D
 
-  ,extras: $ => [
-    / /
-    ,/\t/
-    , $._comment
-  ]
+  ,extras: $ => [ $._spaces , $._comment ]
 
   ,word: $ => $.trivial_identifier
 
@@ -949,8 +945,8 @@ module.exports = grammar({
     ,trivial_identifier: (_) =>
       token(
         choice(
-          /[a-zA-Zα-ωΑ-Ωµ_][a-zA-Zα-ωΑ-Ωµ\d_]*/
-          ///[a-zA-Z_][a-zA-Z\d_]*/
+          // /[a-zA-Zα-ωΑ-Ωµ_][a-zA-Zα-ωΑ-Ωµ\d_]*/
+          /[\p{L}_$][\p{L}\p{Nd}_$]*/
           ,seq(
             '`'
             ,repeat(choice(prec(1,/\\./), /[^`\\\n]+/))
@@ -959,7 +955,8 @@ module.exports = grammar({
         )
       )
 
+    ,_spaces : (_) => token(prec(0,/[ \t\v]+/))
     ,_comment: (_) => token(prec(1,/\s*\/\/[^\n]*/))
-    ,_newline: (_) => token(prec(-1,/\s*[;\n\r]+/))
+    ,_newline: (_) => token(prec(-1,/[;\n\r]+[;\s]*/))
   }
 });
