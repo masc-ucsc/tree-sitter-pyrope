@@ -1,6 +1,6 @@
 
 type colour = (
-  ,let set = {|(r:u8,g:u8,b:u8)->(self)|
+  ,let set = fun (r:u8,g:u8,b:u8)->(self) {
     self.r = r
     self.g = g
     self.b = b
@@ -16,12 +16,12 @@ let white:Colour = (255,255,255)
 type Pixmap = (
   ,var data = 3   // No type
 
-  ,let set = {|(width, height, c:Colour)->(self)|
+  ,let set = fun (width, height, c:Colour)->(self) {
     let tmp:[width][height] = c
     self.data = tmp
   }
 
-  ,let fill = {|(self,c:Colour)->(self)|
+  ,let fill = fun (self,c:Colour)->(self) {
     if false { // one way to do it
       self.data = for i in self.data {
         c
@@ -33,11 +33,11 @@ type Pixmap = (
     }
   }
 
-  ,let get_pixel = {|(self,x,y)|
+  ,let get_pixel = fun (self,x,y) {
     ret self.data[x][y]
   }
 
-  ,let set_pixel = {|(self,x,y,c:Colour)->(self)|
+  ,let set_pixel = fun (self,x,y,c:Colour)->(self) {
     self.data[x][y] = c
   }
 )

@@ -1,11 +1,11 @@
 
 find_one = (
 
-  ,set = {|(x)->(self)|
+  ,set = fun (x)->(self) {
     self = pick(x)
   }
 
-  ,pick = {|(x:u4)->(pos:u2,found:boolean)|
+  ,pick = fun (x:u4)->(pos:u2,found:boolean) {
     ret match x {
       == 0b1??? { (3  ,true ) }
       == 0b01?? { (2  ,true ) }
@@ -14,7 +14,7 @@ find_one = (
       == 0b0000 { (0b?,false) }
     }
   }
-  ,pick = {|(x:u3)->(pos:u2,found:boolean)|
+  ,pick = fun (x:u3)->(pos:u2,found:boolean) {
     match x {
       == 0b1?? { ret 2,true }
       == 0b01? { ret 1,true }
@@ -22,18 +22,18 @@ find_one = (
       == 0b000 { ret 0b?,false }
     }
   }
-  ,pick = {|(x:u2)->(pos:u2,found:boolean)|
+  ,pick = fun (x:u2)->(pos:u2,found:boolean) {
     ret match x {
       == 0b1? { (1  ,true ) }
       == 0b01 { (0  ,true ) }
       == 0b00 { (0b?,false) }
     }
   }
-  ,pick = {|(x:u1)->(pos:u1,found:boolean)|
+  ,pick = fun (x:u1)->(pos:u1,found:boolean) {
     ret 0, x
   }
 
-  ,pick = {|(x)->(pos,found:boolean)|
+  ,pick = fun (x)->(pos,found:boolean) {
     let list = for i in 0..<x.__ubits by 4 {
       cont pick(x[i..+4])
     }
@@ -51,7 +51,7 @@ freelist = (
   ,top
   ,empty:bool
 
-  ,pop = {|(self)->(self)|
+  ,pop = fun (self)->(self) {
     let f = find_one(self.bitmask)
 
     self.empty = !f.found
@@ -60,7 +60,7 @@ freelist = (
     self.bitmask@[f.pos] = false
   }
 
-  ,push = {|(self, free)->(self)|
+  ,push = fun (self, free)->(self) {
     assert !self.bitmask@[free]
 
     if empty {
@@ -71,7 +71,7 @@ freelist = (
     self.bitmask@[free] = true
   }
 
-  ,mask_push = {|(self, mask)->(self)|
+  ,mask_push = fun (self, mask)->(self) {
 
     assert 0 == (self.bitmask & mask)
 
@@ -86,7 +86,7 @@ freelist = (
     }
   }
 
-  ,set = {|(self,initmask)->(self)|
+  ,set = fun (self,initmask)->(self) {
      self.bitmask = initmask
      pop() // To populate top
   }

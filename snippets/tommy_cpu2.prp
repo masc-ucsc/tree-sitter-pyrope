@@ -1,5 +1,5 @@
 
-fetch = {|(...inp)->(...out)|
+fetch = proc (...inp)->(...out) {
 
   reg code:[32] = (
     ,0x0A556  // r5, r5, r6
@@ -30,7 +30,7 @@ type Insn_type = (
   ,brtarget:u16
 )
 
-decode = {|(...inp)->(...out)|
+decode = proc (...inp)->(...out) {
 
   insn      = Insn_type(inp.f.insn)
 
@@ -46,7 +46,7 @@ decode = {|(...inp)->(...out)|
   }
 }
 
-execute = {|(...inp)->(...out)|
+execute = proc (...inp)->(...out) {
 
   reg skip = true
 
@@ -73,7 +73,7 @@ execute = {|(...inp)->(...out)|
   debug out.r1_val = r1_val
 }
 
-flop_all = {|(...inp)->(...out)|
+flop_all = proc (...inp)->(...out) {
   reg flop
   out = flop
   flop = inp

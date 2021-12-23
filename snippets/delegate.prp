@@ -1,10 +1,10 @@
 type Delegate = (
-  ,var thing = {|| 'delegate implement' }
+  ,var thing = fun() { ret 'delegate implement' }
 )
 
 type Delegator = (
   ,var delegate
-  ,let operation = {||
+  ,let operation = fun () {
     if delegate has 'thing' comptime {
       delegate.thing()
     }else comptime{

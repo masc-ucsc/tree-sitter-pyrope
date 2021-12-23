@@ -45,7 +45,7 @@ type complex = (
   ,pub v1:string
   ,pub v2:string
 
-  ,pub set = {|(self,v)->(self)|
+  ,pub set = proc (self,v)->(self) {
      self.v1 = v
      self.v2 = v
   }
@@ -76,13 +76,13 @@ comptime assert x2? and x2?.v1 == "world" and x2.v1 == "world"
 type custom_valid = (
   ,pub v:string
 
-  ,pub set = {|(self,v)->(self)|
+  ,pub set = proc (self,v)->(self) {
      self.v = v
      self.my_valid = true
   }
 
-  ,pub valid = {|(self)->(:boolean)| self.v != 0 and self.my_valid }
-  ,pub valid = {|(self,v)->(self)| self.my_valid = v }
+  ,pub valid = fun  (self)->(:boolean){ self.v != 0 and self.my_valid }
+  ,pub valid = proc (self,v)->(self){ self.my_valid = v }
 )
 
 var x:custom_valid  // no need to say x:custom_valid?, but legal

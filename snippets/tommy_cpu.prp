@@ -2,7 +2,7 @@
 // CPU based on https://github.com/tommythorn/silice-examples
 // a 4 stage 2 instruction CPU to showcase HDLs
 
-fetch = {|(inp_flop_din)->(insn,restarted)|
+fetch = proc (inp_flop_din)->(insn,restarted) {
 
   reg code:[32] = (
     ,0x0A556  // r5, r5, r6
@@ -37,7 +37,7 @@ type Insn_type = (
   ,brtarget:u16
 )
 
-decode = {|(...inp_din)->(...out)|
+decode = proc (...inp_din)->(...out) {
 
   reg inp_flop  // flop the inputs
   inp = inp_flop
@@ -59,7 +59,7 @@ decode = {|(...inp_din)->(...out)|
   }
 }
 
-execute = {|(...inp_din)->(...out)|
+execute = proc (...inp_din)->(...out) {
 
   reg inp_flop
   inp = inp_flop

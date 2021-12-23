@@ -14,10 +14,6 @@ module.exports = grammar({
     ,$.dot_tok
     ,$.ok_tok
     ,$.ck_tok
-    ,$.ob_tok
-    ,$.cb_tok
-    ,$.op_tok
-    ,$.cp_tok
     // ,$.if_elif
     // ,$.else_line
     ,$.expr_logical_cont
@@ -27,7 +23,8 @@ module.exports = grammar({
     //,$.factor_second
     ,$.factor_simple
     ,$.factor_simple_fcall
-    ,$.tuple_seq
+    //,$.tuple_seq
+    ,$.tuple
     //,$.stmt_base
   ]
 
@@ -269,7 +266,7 @@ module.exports = grammar({
             ,$.assign_tok
             ,seq(
               $.eq_pound_tok
-              ,optional($.selector1)
+              ,optional($.selector)
             )
           )
         )
@@ -332,8 +329,16 @@ module.exports = grammar({
 
     ,lambda_def: $ =>
       seq(
-        choice($.ok_function_tok, $.ok_procedure_tok)
-        ,$.lambda_def_constrains
+        $.lambda_def_constrains
+        ,field("where"
+          ,optional(
+            seq(
+              $._where_tok
+              ,$.expr_entry
+            )
+          )
+        )
+        ,$.ok_tok
         ,optional($.stmt_base)
         ,repeat(
           seq(
@@ -518,71 +523,37 @@ module.exports = grammar({
 
     ,lambda_def_constrains: $ =>
       seq(
-        choice(
-          $.trivial_or_caps_identifier_seq1 // just trivial sequence IDs no types no nothing or complex pattern
-          ,seq(
-            field("generic"
-              ,optional(
-                seq(
-                  optional($._newline)
-                  ,$.generic_list
-                )
-              )
-            )
-            ,field("capture"
-              ,optional(
-                seq(
-                  optional($._newline)
-                  ,$.capture_list
-                )
-              )
-            )
-            ,field("input"
-              ,optional(
-                seq(
-                  optional($._newline)
-                  ,$.tuple
-                )
-              )
-            )
-            ,field("output"
-              ,optional(
-                seq(
-                  optional($._newline)
-                  ,$._arrow_tok
-                  ,optional($._newline)
-                  ,choice(
-                    $.tuple
-                    ,$.typecase
-                  )
-                )
-              )
-            )
-            ,optional(
-              seq(
-                $.where_tok
-                ,field("cond",$.expr_entry)
-              )
+        choice($.function_tok, $.procedure_tok)
+        ,field("generic"
+          ,optional(
+            seq(
+              optional($._newline)
+              ,$._lt_tok
+              ,$.trivial_or_caps_identifier_seq1 // just trivial sequence IDs
+              ,$._gt_tok
             )
           )
         )
-        ,optional($._newline)
-        ,$.bar_tok
+        ,field("capture"
+          ,optional(
+            seq(
+              $._ob_tok
+              ,optional($.tuple_seq)
+              ,$._cb_tok
+            )
+          )
+        )
+        ,field("input", $.tuple)
+        ,optional(
+          seq(
+            $._arrow_tok
+            ,optional($._newline)
+            ,field("output" ,$.tuple
+            )
+          )
+        )
       )
 
-    ,generic_list: $ =>
-      seq(
-        $.lt_tok
-        ,$.trivial_or_caps_identifier_seq1 // just trivial sequence IDs
-        ,$.gt_tok
-      )
-
-    ,capture_list: $ =>
-      seq(
-        $.ob_tok
-        ,optional($.tuple_seq)
-        ,$.cb_tok
-      )
 
     ,trivial_or_caps_identifier_seq1: $ =>
       seq(
@@ -606,8 +577,8 @@ module.exports = grammar({
         $.colon_tok
         ,optional($.qmark_tok)
         ,choice(
-          $.lambda_def
-          ,repeat1($.selector1)   // untyped Array
+          $.lambda_def_constrains
+          ,repeat1($.selector)   // untyped Array
           ,$.fcall_or_variable
           // FIXME: $.fcall_cont should work (without last)
           ,seq(
@@ -631,27 +602,21 @@ module.exports = grammar({
           choice($.qmark_dot_tok, $.dot_tok)
           ,choice($.trivial_identifier, $.natural_literal)
         )
-        ,seq(optional($.qmark_tok), $.selector1)
+        ,seq(optional($.qmark_tok), $.selector)
       )
 
     ,variable_prev_field: $ =>
       seq(
          $.pob_tok
         ,$._expr_seq1
-        ,$.cb_tok
+        ,$._cb_tok
       )
 
-    ,selector1: $ =>
+    ,selector: $ =>
       seq(
-         $.ob_tok
+         $._ob_tok
         ,optional($._expr_seq1)
-        ,$.cb_tok
-      )
-
-    ,selector0: $ =>
-      seq(
-         $.ob_tok
-        ,$.cb_tok
+        ,$._cb_tok
       )
 
     ,_expr_seq1: $ =>
@@ -694,9 +659,9 @@ module.exports = grammar({
 
     ,tuple: $ =>
       seq(
-        $.op_tok
+        $._op_tok
         ,optional($.tuple_seq)
-        ,$.cp_tok
+        ,$._cp_tok
       )
 
     ,tuple_seq: $ =>
@@ -740,7 +705,7 @@ module.exports = grammar({
       seq(
         $.at_tok
         ,optional($.bit_sel_tok)
-        ,$.selector1
+        ,$.selector
       )
 
     ,bit_sel_tok: () => token(choice('sext', 'zext', '|', '&', '^', '+'))
@@ -808,7 +773,7 @@ module.exports = grammar({
     ,always_before_tok: () => token('always_before')
     ,always_after_tok: () => token('always_after')
 
-    ,where_tok:    () => token('where'   )
+    ,_where_tok:   () => token('where'   )
     ,pub_tok:      () => token('pub'     )
 
     ,enum_tok:     () => token('enum'    )
@@ -909,18 +874,18 @@ module.exports = grammar({
 
     // No ok_tok because it should have space after only if statement (more complicated per rule case)
     ,ok_tok: () => seq('{')
-    ,ok_function_tok: () => seq('{|')
-    ,ok_procedure_tok: () => seq('#{|')
+    ,function_tok: () => seq('fun')
+    ,procedure_tok: () => seq('proc')
     ,ck_tok: () => seq(/\s*}/)
 
-    ,ob_tok: () => seq(/\[/) // No newline because the following line may be a expr (not a self-contained statement)
-    ,cb_tok: () => seq(/\s*\]/)
+    ,_ob_tok: () => seq(/\[/) // No newline because the following line may be a expr (not a self-contained statement)
+    ,_cb_tok: () => seq(/\s*\]/)
 
-    ,lt_tok: () => token('<')
-    ,gt_tok: () => seq(/\s*>/)
+    ,_lt_tok: () => token('<')
+    ,_gt_tok: () => seq(/\s*>/)
 
-    ,op_tok: () => seq(/\(/)
-    ,cp_tok: () => seq(/\s*\)/)
+    ,_op_tok: () => seq(/\(/)
+    ,_cp_tok: () => seq(/\s*\)/)
 
     ,colon_tok: () => seq(/\s*:/)
 

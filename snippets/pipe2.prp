@@ -1,11 +1,11 @@
-let xx = {|(in1,in2) -> (out)|
+let xx = proc (in1,in2) -> (out) {
 
-  add1 = {|a,b| // 1 cycle add
+  add1 = proc (a,b) { // 1 cycle add
     reg r
     r = a+b
     ret r
   }
-  mul3 = {|a,b| // 3 cycle multiply
+  mul3 = proc (a,b) { // 3 cycle multiply
     reg reg1, reg2, reg3
     reg1 = a * b
     reg2 = reg1

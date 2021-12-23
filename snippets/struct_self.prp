@@ -3,13 +3,13 @@ let B = (
   ,let data = "hello"
   ,pub data_only_b = "private"
 
-  ,pub call  = {|(self)| "B" ++ self.data }
-  ,pub call2 = {|(self)| "B" ++ self.data_only_b }
+  ,pub call  = fun (self){ "B" ++ self.data }
+  ,pub call2 = fun (self){ "B" ++ self.data_only_b }
 )
 
 let C = (
   ,var data = "world"
-  ,pub call = {|(self)| "C" ++ self.data }
+  ,pub call = fun (self){ "C" ++ self.data }
 )
 
 var bb:B

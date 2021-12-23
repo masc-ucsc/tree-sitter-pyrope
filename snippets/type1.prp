@@ -9,28 +9,28 @@
 
  //-------------
 type Shape = (
-  ,var name = {|(self) -> :string|}
-  ,var area = {|(self) -> :i32|}
-  ,var increase_size = {|(self,_:i12) -> (self)|}
+  ,var name:fun (self) -> (o:string)
+  ,var area:fun (self) -> (o:i32)
+  ,var increase_size:fun (self,o:i12) -> (self)
 )
 
 type Circle extends Shape with (
   ,var rad:i32
-  ,var name = {|(self) -> :string| "circle" }
-  ,var area = {|(self) -> :i32|
+  ,var name = fun (self) -> (o:string) { "circle" }
+  ,var area = fun (self) -> (o:i32) {
      let pi = import("math.pi")
      ret pi * self.rad * self.rad
   }
-  ,var increase_size = {|(self,a:i12) -> (self)|  self.rad *= a }
+  ,var increase_size = fun (self,a:i12) -> (self) { self.rad *= a }
 )
 
-let add1 = {|a,b| // 1 cycle add
+let add1 = fun (a,b){ // 1 cycle add
   reg r
   let orig = r
   r = a+b
   ret orig
 }
-let mul3 = {|a,b| // 3 cycle multiply
+let mul3 = fun (a,b) { // 3 cycle multiply
   reg r1,r2,r3
   let orig = r4
 

@@ -1,5 +1,5 @@
 
-fun = {|(a:u32,b:u6)->(:u33)|
+let f1 = fun (a:u32,b:u6)->(:u33) {
   ret a+b
 }
 
@@ -8,13 +8,13 @@ type Args = (
   ,b:u6
 )
 
-fun2 = {|(...x:Args)->(:u33)|
+let fun2 = fun (...x:Args)->(:u33) {
   ret x.a+x.b
 }
 
-comptime assert fun2(a=2,b=4) == fun(2,4) == fun(a=2,b=4)
+comptime assert fun2(a=2,b=4) == f1(2,4) == f1(a=2,b=4)
 
-fun3 = {|(...x:Args)->(res:u33)|
+let fun3 = fun (...x:Args)->(res:u33) {
   res = x.a+x.b
 }
 
@@ -24,7 +24,7 @@ type Res_arg = (
   ,total:u33
 )
 
-fun4 = {|(...x:Args)->(...res:Res_arg)|
+let fun4 = fun (...x:Args)->(...res:Res_arg) {
   res.total = a+b
 }
 

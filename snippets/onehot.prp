@@ -6,7 +6,7 @@ a = 1<<val
 
 // decoder
 
-decoder = {|num|
+decoder = fun (num) {
   let clog2 = import('math.clog2')
 
   // For a 8 bit one hot encoding, we could

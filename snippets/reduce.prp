@@ -1,11 +1,11 @@
 
-reduce = {|bundle, x1, x2|
+reduce = fun (bundle, x1, x2) {
   var op
   var base
-  if x1 equals :{|| nil} {
+  if x1 equals :fun() {
      op   = x1
      base = x2
-  }elif x2 equals :{|| nil} {
+  }elif x2 equals :fun() {
      op   = x2
      base = x1
   }else{
@@ -19,9 +19,9 @@ reduce = {|bundle, x1, x2|
   ret x
 }
 
-reduce = {|bundle, x1|
+reduce = fun (bundle, x1) {
 
-  ret reduce(bundle,0,x1) when x1 equals :{||}
+  ret reduce(bundle,0,x1) when x1 equals :fun()
 
   comptime assert false, "unclear method to apply a reduction"
 }
@@ -35,8 +35,8 @@ reduce = {|bundle, x1|
 ///  (3,4) |> foo(1,2) is the same as foo((3,4),1,2)
 ///
 
-let echo  = {|(...x)| ret x }
-let xargs = {|(a,...x)| ret x ++ a }
+let echo  = fun (...x){ ret x }
+let xargs = fun (a,...x){ ret x ++ a }
 
 let a = (1,2,3).reduce(0, '+')
 let b = __sum(A=(1,2,3))

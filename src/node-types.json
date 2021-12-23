@@ -109,7 +109,7 @@
             "named": true
           },
           {
-            "type": "selector1",
+            "type": "selector",
             "named": true
           }
         ]
@@ -144,7 +144,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -172,21 +172,6 @@
         },
         {
           "type": "debug_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "capture_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "tuple_entry",
           "named": true
         }
       ]
@@ -410,7 +395,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -449,7 +434,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -519,7 +504,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -539,14 +524,14 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "select_sequence",
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -683,6 +668,11 @@
     }
   },
   {
+    "type": "function_tok",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "gate_stmt",
     "named": true,
     "fields": {
@@ -711,34 +701,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "generic_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "gt_tok",
-          "named": true
-        },
-        {
-          "type": "lt_tok",
-          "named": true
-        },
-        {
-          "type": "trivial_or_caps_identifier_seq1",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "gt_tok",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "if_elif",
@@ -864,7 +826,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -881,21 +843,24 @@
   {
     "type": "lambda_def",
     "named": true,
-    "fields": {},
+    "fields": {
+      "where": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "expr_entry",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
           "type": "lambda_def_constrains",
-          "named": true
-        },
-        {
-          "type": "ok_function_tok",
-          "named": true
-        },
-        {
-          "type": "ok_procedure_tok",
           "named": true
         },
         {
@@ -914,17 +879,7 @@
         "required": false,
         "types": [
           {
-            "type": "capture_list",
-            "named": true
-          }
-        ]
-      },
-      "cond": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expr_entry",
+            "type": "tuple_seq",
             "named": true
           }
         ]
@@ -934,7 +889,7 @@
         "required": false,
         "types": [
           {
-            "type": "generic_list",
+            "type": "trivial_or_caps_identifier_seq1",
             "named": true
           }
         ]
@@ -944,7 +899,7 @@
         "required": false,
         "types": [
           {
-            "type": "tuple",
+            "type": "tuple_seq",
             "named": true
           }
         ]
@@ -954,30 +909,22 @@
         "required": false,
         "types": [
           {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "typecase",
+            "type": "tuple_seq",
             "named": true
           }
         ]
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "bar_tok",
+          "type": "function_tok",
           "named": true
         },
         {
-          "type": "trivial_or_caps_identifier_seq1",
-          "named": true
-        },
-        {
-          "type": "where_tok",
+          "type": "procedure_tok",
           "named": true
         }
       ]
@@ -1121,7 +1068,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -1136,12 +1083,7 @@
     }
   },
   {
-    "type": "ok_function_tok",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "ok_procedure_tok",
+    "type": "procedure_tok",
     "named": true,
     "fields": {}
   },
@@ -1236,7 +1178,7 @@
           "named": true
         },
         {
-          "type": "selector1",
+          "type": "selector",
           "named": true
         },
         {
@@ -1247,7 +1189,7 @@
     }
   },
   {
-    "type": "selector1",
+    "type": "selector",
     "named": true,
     "fields": {},
     "children": {
@@ -1417,21 +1359,6 @@
     }
   },
   {
-    "type": "tuple",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "tuple_entry",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "tuple_entry",
     "named": true,
     "fields": {
@@ -1510,7 +1437,22 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tuple_seq",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "tuple_entry",
           "named": true
         }
       ]
@@ -1545,7 +1487,7 @@
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         },
         {
@@ -1576,7 +1518,7 @@
           "named": true
         },
         {
-          "type": "lambda_def",
+          "type": "lambda_def_constrains",
           "named": true
         },
         {
@@ -1588,11 +1530,11 @@
           "named": true
         },
         {
-          "type": "selector1",
+          "type": "selector",
           "named": true
         },
         {
-          "type": "tuple",
+          "type": "tuple_seq",
           "named": true
         }
       ]
@@ -1634,7 +1576,7 @@
           "named": true
         },
         {
-          "type": "selector1",
+          "type": "selector",
           "named": true
         }
       ]
@@ -1700,10 +1642,6 @@
     "named": false
   },
   {
-    "type": "#{|",
-    "named": false
-  },
-  {
     "type": "always_after_tok",
     "named": true
   },
@@ -1717,10 +1655,6 @@
   },
   {
     "type": "at_tok",
-    "named": true
-  },
-  {
-    "type": "bar_tok",
     "named": true
   },
   {
@@ -1800,6 +1734,10 @@
     "named": true
   },
   {
+    "type": "fun",
+    "named": false
+  },
+  {
     "type": "if_tok",
     "named": true
   },
@@ -1817,10 +1755,6 @@
   },
   {
     "type": "logical_op_tok",
-    "named": true
-  },
-  {
-    "type": "lt_tok",
     "named": true
   },
   {
@@ -1846,6 +1780,10 @@
   {
     "type": "pob_tok",
     "named": true
+  },
+  {
+    "type": "proc",
+    "named": false
   },
   {
     "type": "pub_tok",
@@ -1924,10 +1862,6 @@
     "named": true
   },
   {
-    "type": "where_tok",
-    "named": true
-  },
-  {
     "type": "while_tok",
     "named": true
   },
@@ -1941,10 +1875,6 @@
   },
   {
     "type": "{",
-    "named": false
-  },
-  {
-    "type": "{|",
     "named": false
   }
 ]

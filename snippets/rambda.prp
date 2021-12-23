@@ -1,31 +1,31 @@
 
-divide = {|a,b| a/b }
-half   = {|a| divide(a/2) }
+divide = fun (a,b) { ret a/b }
+half   = fun (a) { ret divide(a/2) }
 
-r_where = {|x| {|[cond=x](x)| x == cond } }
+r_where = fun (x) { ret fun [cond=x](x){ ret x == cond } }
 
-r_pick_first = {|fun, array|
+r_pick_first = fun (fun1, array) {
   for i in array {
-    ret i when fun(i)
+    ret i when fun1(i)
   }
 }
 
-r_pick_first2 = {|fun, array|
+r_pick_first2 = fun (fun1, array) {
   ret for i in array {
-    last i when fun(i)
+    last i when fun1(i)
   }
 }
 
-r_pick_all = {|fun, array|
+r_pick_all = fun (fun1, array) {
   ret for i in array {
-    cont i when fun(i)
+    cont i when fun1(i)
   }
 }
 
-r_pick_all2 = {|fun, array|
+r_pick_all2 = fun (fun1, array) {
   var r = ()
   for i in array {
-    r ++= i when fun(i)
+    r ++= i when fun1(i)
   }
   ret r
 }

@@ -1,5 +1,5 @@
 
-dispatch = {|a,b,c|
+dispatch = fun (a,b,c) {
   comptime assert a equals string
   ret match a {
     == 'add' { b + c }
@@ -9,22 +9,22 @@ dispatch = {|a,b,c|
   }
 }
 
-dispatch2 = {|<T>(a:string,b:T,c:T)|
+dispatch2 = fun <T>(a:string,b:T,c:T) {
   let s = (
-    ,add = {|| a + b }
-    ,sub = {|| a - b }
-    ,mul = {|| a * b }
-    ,div = {|| a / b }
+    ,add = fun ()    { a + b } // a & b captured
+    ,sub = fun (b)   { a - b } // a captured
+    ,mul = fun (a,b) { a * b } // no captured
+    ,div = fun (a)   { a / b } // b captured
   )
   ret s[a]() // a,b are captured
 }
 
-dispatch3 = {|<T>(a:string,b:T,c:T)|
+dispatch3 = fun <T>(a:string,b:T,c:T) {
   let s = (
-    ,add = {|x,y| x + y }
-    ,sub = {|x,y| x - y }
-    ,mul = {|x,y| x * y }
-    ,div = {|x,y| x / y }
+    ,add = fun (x,y) { ret x + y }
+    ,sub = fun (x,y) { ret x - y }
+    ,mul = fun (x,y) { ret x * y }
+    ,div = fun (x,y) { ret x / y }
   )
   ret s[a](b,c)
 }

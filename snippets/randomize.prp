@@ -1,5 +1,5 @@
 
-debug let randomize = {|(self)|
+debug let randomize = proc ()->(self) {
   rnd = import "prp/rnd"
   for i,index in self {
     if i equals :int {

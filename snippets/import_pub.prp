@@ -15,7 +15,7 @@ comptime assert result == "abc"
 
 let c = import "c"  // pub c = import "c" would re-export "c"
 
-pub calc = {||
+pub calc = fun () { // capture c
  ret "b" ++ c.calc()
 }
 
@@ -25,7 +25,7 @@ pub calc = {||
 //------------------------------
 // file prj/code/c.prp
 
-pub calc = {||
+pub calc = fun () {
  ret "c"
 }
 
