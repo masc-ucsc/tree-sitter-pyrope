@@ -556,8 +556,17 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "assignment_cont"
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "typecase"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "assignment_cont"
+                    }
+                  ]
                 },
                 {
                   "type": "CHOICE",

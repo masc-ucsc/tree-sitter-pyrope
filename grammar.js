@@ -172,7 +172,7 @@ module.exports = grammar({
             ,$.tuple
           )
           ,seq(
-            $.assignment_cont
+            choice($.typecase, $.assignment_cont)
             ,optional($.gate_stmt)
           )
         )

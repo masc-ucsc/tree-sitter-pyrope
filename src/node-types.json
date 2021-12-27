@@ -1495,6 +1495,10 @@
           "named": true
         },
         {
+          "type": "typecase",
+          "named": true
+        },
+        {
           "type": "with_tok",
           "named": true
         }
