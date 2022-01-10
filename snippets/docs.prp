@@ -23,7 +23,7 @@
 test "my first test" {
   puts "hello world"
 }
-    pub let gcd = proc (cmd:?(a:uint,b:uint))->(z:?uint) {
+    pub let gcd = proc (cmd:(a:uint,b:uint)?)->(z:uint?) {
       reg x,y
       if cmd? {
         x,y = cmd
@@ -388,6 +388,9 @@ assert tup@[] == 0xf1
 
 assert((0xF:u8,0x1:u16)@[] == 0xF_0001)
 assert((0xF:u8,0x1:u8 )@[] == 0xF_01)
+assert((false,true,false,false,true )@[] == 0sb0_1001)
+assert((true)@[]     == 0sb01)
+assert((true)@sext[] == -1   )
 var v = 0b10
 assert v@[0,1] == v@[1,2] == v@[] == v@[0..=1] == v@[..=1] == 0b10
 
@@ -441,7 +444,7 @@ g2= (1 + 3)
 i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
 var v1:u32
-var v2:?u32
+var v2:u32?
 
 comptime assert v1?
 comptime assert not v2?
@@ -482,7 +485,7 @@ type complex = (
 )
 
 var x1:complex
-var x2:?complex
+var x2:complex?
 
 comptime assert x1.v1 == "" and x1.v2 == ""
 comptime assert not x2?  and not x2.v1? and not v2.v2?
@@ -591,12 +594,6 @@ var bund = (1,2,3,4)
 for i,index in bund {
   assert bund[j] == i
 }
-
-
-for mut i in bund {
-  i += 1
-}
-assert bund == (2,3,4,5)
 b = (a=1,b=3,c=5,7,11)
 
 for i,index,key in b {
@@ -694,14 +691,14 @@ defer_write x = a
 a = 200
 
 comptime assert x == 100
-defer_read comptime assert x == 1
+defer_read assert x == 1
 test "my test 1" when size > 10 {
   assert size>10
 }
 let c = 3
 comptime let x = c 
 
-if runtime == 1 comptime {
+comptime if runtime == 1 {
   // all the values should be comptime
   xx = 3
 }
@@ -731,279 +728,6 @@ if runtime == 1 comptime {
     }
 
     assert total == 3 and a_cond
-let a_3   = {   3 }     // just scope, not a lambda. Scope is evaluate now
-let a_fun = fun() { 4 } // local function, when just_4 is called 4 is returned
-
-pub let fun3 = fun(){ 5 } // public lambda that can be imported by other files
-
-let x = a_fun()           // OK, explicit call
-
-assert a_3 equals 3
-assert a_fun equals :fun()
-assert a_fun() == 4       // calls to eval the function
-var add
-add = fun (...x) { x.0+x.1+x.2 }       // no IO specified
-add = fun (a,b,c){ a+b+c }            // constrain inputs to a,b,c
-add = fun (a,b,c){ a+b+c }            // same
-add = fun (a:u32,b:s3,c){ a+b+c }     // constrain some input types
-add = fun (a,b,c) -> (x:u32){ a+b+c } // constrain result to u32
-add = fun (a,b,c) -> (res){ a+b+c }   // constrain result to be named res
-add = fun (a,b:a,c:a){ a+b+c }        // constrain inputs to have same type
-add = fun <T>(a:T,b:T,c:T){ a+b+c }   // same
-
-x = 2
-var add2
-add2 = fun       (a){   x + a }    // implicit capture x
-add2 = fun[x    ](a){   x + a }    // explicit capture x
-add2 = fun[foo=x](a){ foo + a }    // capture x but rename to something else
-
-var y = (
-  ,val:u32 = 1
-  ,inc1 = fun (self)->(self){ self.val = u32(self.val + 1) }
-)
-
-debug let my_log = fun (...inp) {
-  print "loging:"
-  for i in inp {
-    print " {}", i
-  }
-  puts
-}
-
-let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
-assert f(33:u22,100:u22)
-
-my_log a, false, x+1
-div  = fun (a,b) { a / b }          // named input tuple
-div2 = fun (...x){ x.0 / x.1 }   // unnamed input tuple
-
-noarg = fun () { ret 33 }         // explicit no args
-
-assert noarg == 33 == noarg()
-
-b=div(a=8, b=4)          // OK, 2
-d=(a=8).div(b=2)         // OK, 4
-
-h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
-i=8.div2(4,3)            // OK, same as div2(8,4,2)
-
-j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
-k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
-l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
-
-var tup = (
-  ,let f1 = fun() { ret 1 }
-)
-
-let f1 = fun (b){ ret 2 }
-
-assert f1()     == 2
-assert f1(tup)  == 2
-assert 4.f1()   == 2
-assert tup.f1() == 1
-var tup = (
-  ,var x = 3
-  ,let f1 = fun(...rest){ assert rest.size == 0 ; ret self.x }
-)
-
-let fun2 = fun(b){ ret b.x             } // no self, but it is the same
-let fun3 = fun(self,b){ ret self.x + b }
-
-assert tup.f1() == 3   // tup.fun call
-assert tup.f1 == 3     // explicit no args, so () is optional in call
-assert fun2(tup) == 3
-assert tup.fun2() == 3  // UFCS
-
-assert fun3(tup,2) == 5
-assert tup.fun3(2) == 5
-var a_1 = (
-  ,x:u10
-  ,let f1 = fun(self,x)->(self) {
-    self.x = x 
-  }
-)
-
-a_1.f1(3)            // syntax sugar for a_1 = a_1.f1(3)
-var a_2 = a_1.f1(4)  // a_2 is updated, not a_1
-assert a_1.x == 3 and a_2.x == 4
-
-// Same behavior as in a function with UFCS
-fun2 = fun (self, x)->(self){ self.x = x }
-
-a_1.fun2(10)    
-var a_3 = a_1.fun2(20)
-assert a_1 == 10 and a_3 == 20
-var counter = (
-  ,var val:i32
-  ,let inc = fun (self, v){ self.var += v }
-)
-
-assert counter.val == 0
-counter.inc(3)
-assert counter.val == 3
-
-let inc = fun (self, v)->(self){ self.var *= v } // NOT INC but multiply
-counter.inc(2)
-assert counter.val == 5
-
-let mul = inc
-counter = counter.mul(2)   // call the new mul method with UFCS
-assert counter.val == 10
-
-let other = counter.mul(2) // UFCS no self update return
-assert counter.val == 10
-assert other.val   == 20
-
-mul(counter, 2) // also legal, but no self update
-assert counter.val == 20
-    // equivalent code due to automatic `self` insertion
-    let fun1 = proc(self)->(self){ self.foo = self.bar + 1}
-    let fun2 = proc(    )->(self){ self.foo = self.bar + 1}
-    let fun3 = proc(self)        { self.foo = self.bar + 1}
-    let fun4 = proc(    )        { self.foo = self.bar + 1}
-
-    // NOT equivalent because () means no input/output
-    let non2 = proc()    ->(self){ self.foo = self.bar + 1}
-    let non3 = proc(self)->()    { self.foo = self.bar + 1}
-    foo = fun () { puts "fun.foo" }
-    a = (
-      ,foo = fun () {
-         bar = fun() { puts "bar" }
-         puts "mem.foo"
-         ret (bar=bar)
-      }
-    )
-    b = 3
-
-    puts "start"
-    b.foo()   // prints "fun.foo"
-    a.foo()   // prints "mem.foo"
-    a.foo 3   // prints "mem.foo", arg passed (but not used by foo)
-    a.foo(3)  // prints "mem.foo", arg passed (but not used by foo)
-    x = a.foo // Nothing printed, just lambda in x
-    y = x()   // prints "foo"
-    y()       // prints "bar"
-    z = y     // nothing printed
-
-    a.foo.bar()   // prints "bar", passes a.foo as argument to bar
-    a.foo().bar() // prints "mem.foo" (foo gets a) and then "bar" (has no input)
-
-    foo()         // prints "fun.foo"
-    b.foo()       // prints "fun.foo"
-    foo = fun (self){ puts "fun.foo" }  // explicit self
-    a = (
-      ,foo = fun (){                    // implicit self 
-         bar = fun (){ puts "bar" }
-         puts "mem.foo"
-         ret (bar=bar)
-      }
-    )
-    b = 3
-
-    puts "start"
-    b.foo()   // prints "fun.foo"
-    a.foo()   // prints "mem.foo"
-    x = a.foo // Nothing printed, just lambda in x
-    y = x()   // prints "foo"
-    y()       // prints "bar"
-    z = y     // nothing printed
-
-    a.foo().bar() // prints "mem.foo" and then "bar"
-
-    b.foo()       // prints "fun.foo"
-type base = (
-  ,pub var fun1 = fun() { 1 }         // catch all
-  ,pub var fun2 = fun() { 2 }         // catch all
-  ,pub var fun3 = fun() { 3 }         // catch all
-)
-type ext extends base with (
-  ,pub var fun1 =   fun (a,b){ 4 }  // overwrite allowed with extends
-  ,pub var fun2 ++= fun (a,b){ 5 }  // append
-  ,pub var fun2 ++= fun ()   { 6 }  // append
-  ,pub var fun3 =   fun(a,b) { 7 } ++ base.fun3 // prepend
-  ,pub var fun3 =   fun()    { 8 } ++ base.fun3 // prepend
-)
-
-var t:ext
-
-// t.fun1 only has ext.fun1
-assert t.fun1(a=1,b=2) == 4
-
-// t.fun2 has base.fun2 and then ext.fun2
-assert t.fun2(1,2) == 5  // EXACT match of arguments has higher priority
-assert t.fun2() == 2     // base.fun2 catches all ahead of ext.fun2
-
-// t.fun3 has ext.fun3 and then base.fun3
-assert t.fun3(1,2) == 7  // EXACT match of arguments has higher priority
-assert t.fun3() == 8     // ext.fun3 catches all ahead of ext.fun3
-type x extends base with (
-  ,pub var fun1 = fun() { ret base.fun1() + 100 }
-)
-var fun_list = fun(a,b){ ret a+b}
-fun_list ++= fun(a,b,c){ ret a+b+c }
-fun_list ++= fun(a,b,c,d){ ret a+b+c+d }
-
-assert fun_list.size()
-
-assert fun_list(1,2) == 3
-assert fun_list(1,2,4) == 7
-assert fun_list(1,2,4,5) == 12
-
-
-fun_list ++= fun(a,b){ ret 100}
-assert fun_list(1,2) == 3
-
-fun_list = fun(a,b){ ret 200} ++ fun_list
-assert fun_list(1,2) == 200
-var f1 = fun(a,b){ ret a+b+100 }
-  f1 ++= fun(x,y){ ret x+y+200 }
-
-assert f1(a=1,b=2) == 103
-assert f1(x=1,y=2) == 203
-assert f1(  1,  2) == 103  // first in list
-var fo = fun(a:int,b:string)->(:bool)  { ret true    }
-fo ++=   fun(a:int,b:int   )->(:bool)  { ret false   }
-fo ++=   fun(a:int,b:int   )->(:string){ ret "hello" }
-
-let a = fo(3,hello)
-assert a == true
-
-let b = fo(3,300)        // first in list return bool
-assert b == false
-
-let c:string = fo(3,300)
-assert c == "hello"
-var f1 = fun(a,b)      where a >  40 { ret b+100    }
-  f1 ++= fun(a,b)->(x) where x > 300 { ret b+200    } // output x
-  f1 ++= fun(a,b)->(a) where a >  20 { ret b+300    } // input a
-  f1 ++= fun(a,b)->(x) where x >  10 { ret b+400    } // output x
-  f1 ++= fun(a,b)                    { ret a+b+1000 } // default
-
-var fun_manual = fun(a,b){  // equivalent but not as maintenable
-  if a>40 {
-    ret b+100
-  }
-  let x = b + 200
-  if x>300 {
-    ret (x=x)
-  }
-  if a>20 {
-    ret b+300
-  }
-  let tmp = a + b
-  if tmp >10 {
-    ret (a=tmp)
-  }
-  ret a+b+1000
-}
-
-test "check equiv" {
-  for a in -100..=100 {
-    for b in -100..=100 {
-      assert f1(a,b) == fun_manual(a,b)
-    }
-  }
-}
 var res
 if cond {
   res = a
@@ -1134,7 +858,7 @@ lec d?, d2_v
       }
     }
     let div = fun(a,b) {
-      disable.assert not b?
+      disable.assert = not b?
       assert b!=0 
       out = a / b
     }
@@ -1289,6 +1013,396 @@ out  =#[1..<4] add1(x,in3) // OK
     x =# mul3(in1, in2)
     y = in1#[-3]
     out =# add1(a=x,b=y)    // connect in1 from -3 cycles
+let a_3   = {   3 }     // just scope, not a lambda. Scope is evaluate now
+let a_fun = fun() { 4 } // local function, when just_4 is called 4 is returned
+
+pub let fun3 = fun(){ 5 } // public lambda that can be imported by other files
+
+let x = a_fun()           // OK, explicit call
+
+assert a_3 equals 3
+assert a_fun equals :fun()
+assert a_fun() == 4       // calls to eval the function
+var add
+add = fun (...x) { x.0+x.1+x.2 }       // no IO specified
+add = fun (a,b,c){ a+b+c }            // constrain inputs to a,b,c
+add = fun (a,b,c){ a+b+c }            // same
+add = fun (a:u32,b:s3,c){ a+b+c }     // constrain some input types
+add = fun (a,b,c) -> (x:u32){ a+b+c } // constrain result to u32
+add = fun (a,b,c) -> (res){ a+b+c }   // constrain result to be named res
+add = fun (a,b:a,c:a){ a+b+c }        // constrain inputs to have same type
+add = fun <T>(a:T,b:T,c:T){ a+b+c }   // same
+
+x = 2
+var add2
+add2 = fun       (a){   x + a }    // implicit capture x
+add2 = fun[x    ](a){   x + a }    // explicit capture x
+add2 = fun[foo=x](a){ foo + a }    // capture x but rename to something else
+
+var y = (
+  ,val:u32 = 1
+  ,inc1 = fun (self)->(self){ self.val = u32(self.val + 1) }
+)
+
+debug let my_log = fun (...inp) {
+  print "loging:"
+  for i in inp {
+    print " {}", i
+  }
+  puts
+}
+
+let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
+assert f(33:u22,100:u22)
+
+my_log a, false, x+1
+div  = fun (a,b) { a / b }          // named input tuple
+div2 = fun (...x){ x.0 / x.1 }   // unnamed input tuple
+
+noarg = fun () { ret 33 }         // explicit no args
+
+assert noarg == 33 == noarg()
+
+b=div(a=8, b=4)          // OK, 2
+d=(a=8).div(b=2)         // OK, 4
+
+h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
+i=8.div2(4,3)            // OK, same as div2(8,4,2)
+
+j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
+k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
+l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
+
+var tup = (
+  ,let f1 = fun() { ret 1 }
+)
+
+let f1 = fun (b){ ret 2 }
+
+assert f1()     == 2
+assert f1(tup)  == 2
+assert 4.f1()   == 2
+assert tup.f1() == 1
+var tup = (
+  ,var x = 3
+  ,let f1 = fun(...rest){ assert rest.size == 0 ; ret self.x }
+)
+
+let fun2 = fun(b){ ret b.x             } // no self, but it is the same
+let fun3 = fun(self,b){ ret self.x + b }
+
+assert tup.f1() == 3   // tup.fun call
+assert tup.f1 == 3     // explicit no args, so () is optional in call
+assert fun2(tup) == 3
+assert tup.fun2() == 3  // UFCS
+
+assert fun3(tup,2) == 5
+assert tup.fun3(2) == 5
+var a_1 = (
+  ,x:u10
+  ,let f1 = fun(self,x)->(self) {
+    self.x = x 
+  }
+)
+
+a_1.f1(3)            // syntax sugar for a_1 = a_1.f1(3)
+var a_2 = a_1.f1(4)  // a_2 is updated, not a_1
+assert a_1.x == 3 and a_2.x == 4
+
+// Same behavior as in a function with UFCS
+fun2 = fun (self, x)->(self){ self.x = x }
+
+a_1.fun2(10)    
+var a_3 = a_1.fun2(20)
+assert a_1 == 10 and a_3 == 20
+var counter = (
+  ,var val:i32
+  ,let inc = fun (self, v){ self.var += v }
+)
+
+assert counter.val == 0
+counter.inc(3)
+assert counter.val == 3
+
+let inc = fun (self, v)->(self){ self.var *= v } // NOT INC but multiply
+counter.inc(2)
+assert counter.val == 5
+
+let mul = inc
+counter = counter.mul(2)   // call the new mul method with UFCS
+assert counter.val == 10
+
+let other = counter.mul(2) // UFCS no self update return
+assert counter.val == 10
+assert other.val   == 20
+
+mul(counter, 2) // also legal, but no self update
+assert counter.val == 20
+    // equivalent code due to automatic `self` insertion
+    let fun1 = proc(self)->(self){ self.foo = self.bar + 1}
+    let fun2 = proc(    )->(self){ self.foo = self.bar + 1}
+    let fun3 = proc(self)        { self.foo = self.bar + 1}
+    let fun4 = proc(    )        { self.foo = self.bar + 1}
+
+    // NOT equivalent because () means no input/output
+    let non2 = proc()    ->(self){ self.foo = self.bar + 1}
+    let non3 = proc(self)->()    { self.foo = self.bar + 1}
+    foo = fun () { puts "fun.foo" }
+    a = (
+      ,foo = fun () {
+         bar = fun() { puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    a.foo(3)  // prints "mem.foo", arg passed (but not used by foo)
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo.bar()   // prints "bar", passes a.foo as argument to bar
+    a.foo().bar() // prints "mem.foo" (foo gets a) and then "bar" (has no input)
+
+    foo()         // prints "fun.foo"
+    b.foo()       // prints "fun.foo"
+    foo = fun (self){ puts "fun.foo" }  // explicit self
+    a = (
+      ,foo = fun (){                    // implicit self 
+         bar = fun (){ puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo().bar() // prints "mem.foo" and then "bar"
+
+    b.foo()       // prints "fun.foo"
+type Animal = (
+  ,pub let legs:int
+  ,var name= "unnamed"
+  ,pub let say_name = fun() { puts name }
+)
+
+type Dog extends Animal with (
+  ,pub var set = proc()->(self) { self.legs = 4 }
+  ,bark = fun() { puts "bark bark" }
+)
+
+type Bird extends Animal with (
+  ,seeds_eaten:int
+
+  ,pub var set = proc()->(self) { self.legs = 2 }
+  ++ proc(a:Animal)->(self) { self.legs = 2 ; name = "bird animal" }
+  ,eat_seeds = proc(n)->(self) { self.seeds_eaten += n }
+)
+
+type Greyhound = Dog ++ ( // also extends Dog
+  ,race = fun() { puts "running fast" }
+)
+var a:Animal
+var b:Bird
+var d:Dog
+
+b = a // OK, explicit setter in Bird for Animal
+
+a = d // OK, 'd does a' is true
+a = b // OK, 'Bird does Animal' is true
+var a_vec:Animal[]
+var b_vec:Bird[]
+var d_vec:Dog[]
+
+a_vec[0] = d:Dog    // OK
+a_vec[1] = b:Bird   // OK
+
+d_vec[0] = d:Dog        // OK  'd does d'
+d_vec[0] = g:Greyhound  // OK  'g does d'
+d_vec[0] = b:Bird       // Compile error
+d_vec[0] = a:Animal     // Compile error
+
+b_vec[0] = d:Dog        // OK, explicit conversion
+b_vec[0] = g:Greyhound  // OK, explicit conversion
+b_vec[0] = b:Bird       // OK, 'b does b'
+b_vec[0] = a:Animal     // OK, explicit conversion
+
+pub do_animal_vec = fun(a_vec:Animal[])->(r:Animal[]) {
+  r = a_vec
+  r[0] = d:Dog  // OK `d does r[0]`
+}
+
+var x = do_animal_vec(b_vec:Bird[]) // OK
+assert x does :Animal[]  // not :Bird[]
+type Age = (
+  ,pub var age:int
+)
+type Weight = (
+  ,pub var weight:int
+)
+
+assert not (Age does Weight)
+
+var a:Age
+a = 3      // same as a.0 = 3
+assert a == a.age == a.0 == 3
+
+var w:Weight
+w = 100    // same as w.0 = 100
+
+type fa_t = fun(a:Animal)->()
+type fd_t = fun(d:Dog)->()
+
+let call_animal = fun(a:Animal)->() {
+   puts a.name // OK
+}
+let call_dog = fun(d:Dog)->() {
+   d.bark()    // OK
+}
+
+let f_a = fun(fa:fa_t) { 
+  var a:Animal
+  var d:Dog
+  fa(a)  // OK
+  fa(d)  // OK, `d does Animal` is true
+}
+f_a(call_animal) // OK
+
+let f_d = fun(fd:fd_t) { 
+  var a:Animal
+  var d:Dog
+  fd(d)  // OK
+}
+f_d(call_animal) // OK, `fd_t does call_animal` is true
+f_d(call_dog)    // OK
+let m = fun(a:integer,...x:(:string,c:int,d), y:integer)->() { 
+  assert a == 1
+  assert x.0 == "here"
+  assert x.1 == 2 == x.c
+  assert y == 3
+  if d does :integer { // inferred type
+    assert d == 33
+  }else{
+    assert d == "x"
+  }
+}
+
+m(1,"here",2,"x",3)         // OK
+m(a=1,"here",2,"x",3)       // OK
+m(a=1,"here",c=2,"x",3)     // OK
+m(a=1,"here",c=2,33,y=3)    // OK
+
+type base = (
+  ,pub var fun1 = fun() { 1 }         // catch all
+  ,pub var fun2 = fun() { 2 }         // catch all
+  ,pub var fun3 = fun() { 3 }         // catch all
+)
+type ext extends base with (
+  ,pub var fun1 =   fun (a,b){ 4 }  // overwrite allowed with extends
+  ,pub var fun2 ++= fun (a,b){ 5 }  // append
+  ,pub var fun2 ++= fun ()   { 6 }  // append
+  ,pub var fun3 =   fun(a,b) { 7 } ++ base.fun3 // prepend
+  ,pub var fun3 =   fun()    { 8 } ++ base.fun3 // prepend
+)
+
+var t:ext
+
+// t.fun1 only has ext.fun1
+assert t.fun1(a=1,b=2) == 4
+
+// t.fun2 has base.fun2 and then ext.fun2
+assert t.fun2(1,2) == 5  // EXACT match of arguments has higher priority
+assert t.fun2() == 2     // base.fun2 catches all ahead of ext.fun2
+
+// t.fun3 has ext.fun3 and then base.fun3
+assert t.fun3(1,2) == 7  // EXACT match of arguments has higher priority
+assert t.fun3() == 8     // ext.fun3 catches all ahead of ext.fun3
+type x extends base with (
+  ,pub var fun1 = fun() { ret base.fun1() + 100 }
+)
+var fun_list = fun(a,b){ ret a+b}
+fun_list ++= fun(a,b,c){ ret a+b+c }
+fun_list ++= fun(a,b,c,d){ ret a+b+c+d }
+
+assert fun_list.size()
+
+assert fun_list(1,2) == 3
+assert fun_list(1,2,4) == 7
+assert fun_list(1,2,4,5) == 12
+
+
+fun_list ++= fun(a,b){ ret 100}
+assert fun_list(1,2) == 3
+
+fun_list = fun(a,b){ ret 200} ++ fun_list
+assert fun_list(1,2) == 200
+var f1 = fun(a,b){ ret a+b+100 }
+  f1 ++= fun(x,y){ ret x+y+200 }
+
+assert f1(a=1,b=2) == 103
+assert f1(x=1,y=2) == 203
+assert f1(  1,  2) == 103  // first in list
+var fo = fun(a:int,b:string)->(:bool)  { ret true    }
+fo ++=   fun(a:int,b:int   )->(:bool)  { ret false   }
+fo ++=   fun(a:int,b:int   )->(:string){ ret "hello" }
+
+let a = fo(3,hello)
+assert a == true
+
+let b = fo(3,300)        // first in list return bool
+assert b == false
+
+let c:string = fo(3,300)
+assert c == "hello"
+var f1 = fun(a,b)      where a >  40 { ret b+100    }
+  f1 ++= fun(a,b)->(x) where x > 300 { ret b+200    } // output x
+  f1 ++= fun(a,b)->(a) where a >  20 { ret b+300    } // input a
+  f1 ++= fun(a,b)->(x) where x >  10 { ret b+400    } // output x
+  f1 ++= fun(a,b)                    { ret a+b+1000 } // default
+
+var fun_manual = fun(a,b){  // equivalent but not as maintenable
+  if a>40 {
+    ret b+100
+  }
+  let x = b + 200
+  if x>300 {
+    ret (x=x)
+  }
+  if a>20 {
+    ret b+300
+  }
+  let tmp = a + b
+  if tmp >10 {
+    ret (a=tmp)
+  }
+  ret a+b+1000
+}
+
+test "check equiv" {
+  for a in -100..=100 {
+    for b in -100..=100 {
+      assert f1(a,b) == fun_manual(a,b)
+    }
+  }
+}
+let rotate = fun(a) where a has 'x' and a has 'y' {
+  var r = a
+  r.x = a.y
+  r.y = a.x
+  ret r
+}
     var b = "hello"
 
     var a:u32
@@ -1336,14 +1450,25 @@ var a:at=40
 var v:bt="hello"
 puts "a:{} or {}", a, at // a:40 or 33
 puts "b:{}", b           // b:(c="hello",d=100)
-assert     (a:int(max=33,min=0) does (a:int(20,5))
-assert not (a:int(max=33,min=0) does (a:int(50,5))
+assert     (a:int(max=33,min=0) does (a:int(20,5)))
+assert not (a:int(max=33,min=0) does (a:int(50,5)))
 
 assert     (a:string,b:int) does (a:"hello", b:33)
 assert not ((b:int,a:string) does (a:"hello", b:33)) // order maters in tuples
 
 assert      :fun(x,xxx2)->(y,z) does :fun(x     )->(y,z)
 assert not (:fun(x     )->(y,z) does :fun(x,xxx2)->(y,z))
+type t1 = (a:string, b:int)
+type t2 = (b:int, a:string)
+
+var a:t1  = ("hello", 3)     // OK
+var b:t1  = (a="hello", 3)   // OK
+var c:t1  = (a="hello", b=3) // OK
+var c1:t1 = (b=3, a="hello") // OK
+
+var d:t2 = c                 // OK, both fully named
+assert d.0 == c.1 and c.0 == d.1
+assert d.a == c.a and d.b == c.b
 let a = fun() { ret 1 }
 let b = fun() { ret 2 }
 assert a equals :fun()
@@ -1522,7 +1647,7 @@ assert a.1.__id == ':1:c' and a.c.__id == ':1:c'
 let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
 assert fu.__inp equals (a,b)
 assert fu.__out equals (c)
-assert fu.__where(a=200) and !fun.__where(a=1)
+assert fu.__where(a=200) and !fu.__where(a=1)
 let x = fn(args)
 
 let x = for i in fn { last i(args) when (i.__inp does :args) 
@@ -1608,11 +1733,11 @@ test "mocking taken branches" {
 
   var l = core.fetch.predict(0xFFF)
 }
-var f1:XXX = 3,2
+var f1:XXX = (3,2)
 var f2:XXX = XXX(3,2)
 var f3:XXX
 
-f3 = 3,2
+f3 = (3,2)
 assert f3 == f2 == f1
 type some_obj = (
   ,a1:string
@@ -1628,7 +1753,7 @@ type some_obj = (
   }
 )
 
-var x:some_obj = "hello", 3
+var x:some_obj = ("hello", 3)
 
 assert x.a1 == "hello"
 assert x.a2 == 103
@@ -1673,7 +1798,7 @@ pub let ext = if cfg.foo.bar == 3 {
 }else{
    bar
 }
-type __my_typed_cpp:fun(a,b)->(e)
+type __my_typed_cpp = fun(a,b)->(e)
 reg mem:[]
 mem[3]   = something // async memory
 var array:[]
@@ -1911,6 +2036,14 @@ for i in 2..<5 {
 for i,idx in 123 {
   assert i == 123 and idx==0
 }
+let v = 0xF0
+
+assert v@[0] == 0
+assert v@[4] == 1
+
+assert v@[3..=4] == 0b010 == v@[3,4]
+assert v@[4..=3 by -1] == 0b010
+assert v@[4,3] == 0b001
 reg r_ver = (
   ,always_reset = proc()->(self){ self = 0sb? }
 )
@@ -1957,6 +2090,23 @@ let http:8080//masc.soe.ucsc.edu
 assert http == 8080
 let v = (3)--3
 assert v == 6
+let ret1 = fun()->(a) {
+  a = 1
+}
+
+let ret2 = fun()->(a,b) {
+  a = 2
+  b = 3
+}
+
+let a1 = ret1()
+assert a1 == 1 // NOT a1.a == 1
+
+let a2 = ret2()
+assert a2.a == 2 and a2.b == 3
+
+let x1,x2 = ret2()
+assert x1 == 2 and x2 == 3
     type Person = (name:string, age:u32)
     var a = (one:Person, two:Person)
 
@@ -1969,7 +2119,7 @@ assert v == 6
     y = 'two'
     a[x].age = 10
     a[y].age = 10
-let telescope_unit = fun(a:u32,b:u32,start:bool) -> (res:?u32) {
+let telescope_unit = fun(a:u32,b:u32,start:bool) -> (res:u32?) {
 
   reg result_done
   reg result_flop
@@ -2013,7 +2163,7 @@ let telescope_unit = fun(a:u32,b:u32,start:bool) -> (res:?u32) {
  // code executed 1 or 2 cycles after telescope_unit is called
  puts "{}-{}+1 is {}", a, b, res1.res
 // implicit start/end (starts when called)
-let telescope_unit3 = fun(a:u32,b:u32) -> (:?u32) {
+let telescope_unit3 = fun(a:u32,b:u32) -> (:u32?) {
 
   {
     pub let tmp = a+1

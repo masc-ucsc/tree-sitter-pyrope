@@ -16,10 +16,10 @@ find_one = (
   }
   ,pick = fun (x:u3)->(pos:u2,found:boolean) {
     match x {
-      == 0b1?? { ret 2,true }
-      == 0b01? { ret 1,true }
-      == 0b001 { ret 0,true }
-      == 0b000 { ret 0b?,false }
+      == 0b1?? { ret (2,true) }
+      == 0b01? { ret (1,true) }
+      == 0b001 { ret (0,true) }
+      == 0b000 { ret (0b?,false) }
     }
   }
   ,pick = fun (x:u2)->(pos:u2,found:boolean) {
@@ -30,7 +30,7 @@ find_one = (
     }
   }
   ,pick = fun (x:u1)->(pos:u1,found:boolean) {
-    ret 0, x
+    ret (0, x)
   }
 
   ,pick = fun (x)->(pos,found:boolean) {

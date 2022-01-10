@@ -5,9 +5,9 @@ type Delegate = (
 type Delegator = (
   ,var delegate
   ,let operation = fun () {
-    if delegate has 'thing' comptime {
+    comptime if delegate has 'thing' {
       delegate.thing()
-    }else comptime{
+    }else{
       'default implementation'
     }
   }

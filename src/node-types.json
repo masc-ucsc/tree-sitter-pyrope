@@ -15,21 +15,6 @@
     }
   },
   {
-    "type": "assert_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "assignment",
     "named": true,
     "fields": {
@@ -91,41 +76,73 @@
           }
         ]
       },
-      "qualifier": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "type_qualifier",
-            "named": true
-          }
-        ]
-      },
       "rvalue": {
         "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
             "named": true
           },
           {
-            "type": "introspection",
+            "type": "constant",
             "named": true
           },
           {
-            "type": "library_import",
+            "type": "for_expression",
             "named": true
-          }
-        ]
-      },
-      "scope": {
-        "multiple": false,
-        "required": false,
-        "types": [
+          },
           {
-            "type": "pub",
-            "named": false
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "simple_function_call",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
           }
         ]
       }
@@ -151,6 +168,21 @@
     }
   },
   {
+    "type": "assignment_or_declaration_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "assignment_or_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binary_expression",
     "named": true,
     "fields": {
@@ -159,7 +191,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -311,7 +399,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -340,34 +484,226 @@
   {
     "type": "bit_selection",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "bit_select",
-          "named": true
-        },
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "select": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "bit_select",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
     "type": "bounded_integer_type",
     "named": true,
-    "fields": {},
+    "fields": {
+      "max_value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "min_value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
         {
           "type": "unsized_integer_type",
           "named": true
@@ -384,11 +720,63 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "constant",
+          "named": true
+        },
+        {
+          "type": "for_expression",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "function_definition",
           "named": true
         },
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "if_expression",
+          "named": true
+        },
+        {
+          "type": "match_expression",
+          "named": true
+        },
+        {
+          "type": "optional_expression",
+          "named": true
+        },
+        {
+          "type": "scope_expression",
+          "named": true
+        },
+        {
+          "type": "selection",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "type_cast",
+          "named": true
+        },
+        {
+          "type": "type_specification",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
           "named": true
         }
       ]
@@ -420,46 +808,107 @@
   {
     "type": "control_statement",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "cover_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "covercase_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "break",
+            "named": false
+          },
+          {
+            "type": "brk",
+            "named": false
+          },
+          {
+            "type": "cont",
+            "named": false
+          },
+          {
+            "type": "continue",
+            "named": false
+          },
+          {
+            "type": "last",
+            "named": false
+          },
+          {
+            "type": "ret",
+            "named": false
+          },
+          {
+            "type": "return",
+            "named": false
+          }
+        ]
+      }
     }
   },
   {
@@ -480,26 +929,103 @@
   {
     "type": "cycle_selection",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "cycle_select",
-          "named": true
-        },
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "select": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "cycle_select",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
     "type": "declaration",
     "named": true,
     "fields": {
+      "delay": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "#",
+            "named": false
+          },
+          {
+            "type": "cycle_select",
+            "named": true
+          }
+        ]
+      },
       "lvalue": {
         "multiple": false,
         "required": true,
@@ -510,12 +1036,92 @@
           }
         ]
       },
+      "operator": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "assignment_operator",
+            "named": true
+          }
+        ]
+      },
       "qualifier": {
         "multiple": false,
         "required": false,
         "types": [
           {
             "type": "type_qualifier",
+            "named": true
+          }
+        ]
+      },
+      "rvalue": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "simple_function_call",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -548,11 +1154,107 @@
     }
   },
   {
-    "type": "expression",
+    "type": "enum_declaration",
+    "named": true,
+    "fields": {
+      "definition": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "expression_list",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -576,6 +1278,10 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "if_expression",
           "named": true
         },
@@ -585,10 +1291,6 @@
         },
         {
           "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "primary",
           "named": true
         },
         {
@@ -619,15 +1321,55 @@
     }
   },
   {
-    "type": "expression_list",
+    "type": "expression_statement",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "constant",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "optional_expression",
+          "named": true
+        },
+        {
+          "type": "selection",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "type_cast",
+          "named": true
+        },
+        {
+          "type": "type_specification",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
           "named": true
         }
       ]
@@ -664,6 +1406,16 @@
           {
             "type": "identifier_list",
             "named": true
+          }
+        ]
+      },
+      "mutable": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "mut",
+            "named": false
           }
         ]
       }
@@ -712,6 +1464,16 @@
             "named": true
           }
         ]
+      },
+      "mutable": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "mut",
+            "named": false
+          }
+        ]
       }
     }
   },
@@ -724,7 +1486,63 @@
         "required": true,
         "types": [
           {
-            "type": "primary",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -742,9 +1560,122 @@
     }
   },
   {
+    "type": "function_call_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "simple_function_call",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function_definition",
     "named": true,
     "fields": {
+      "capture": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "capture_list",
+            "named": true
+          }
+        ]
+      },
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "where",
+            "named": false
+          }
+        ]
+      },
       "func_type": {
         "multiple": false,
         "required": true,
@@ -758,40 +1689,130 @@
             "named": false
           }
         ]
+      },
+      "generic": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "input": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "tuple_list",
+            "named": true
+          }
+        ]
+      },
+      "output": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "->",
+            "named": false
+          },
+          {
+            "type": "tuple_list",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "capture_list",
-          "named": true
-        },
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "identifier_list",
-          "named": true
-        },
-        {
-          "type": "scope_statement",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        }
-      ]
     }
   },
   {
     "type": "function_type",
     "named": true,
     "fields": {
-      "func_type": {
+      "generic": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "input": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "tuple_list",
+            "named": true
+          }
+        ]
+      },
+      "output": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "->",
+            "named": false
+          },
+          {
+            "type": "tuple_list",
+            "named": true
+          }
+        ]
+      },
+      "type": {
         "multiple": false,
         "required": true,
         "types": [
@@ -805,35 +1826,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "identifier_list",
-          "named": true
-        },
-        {
-          "type": "tuple_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "hierarchical_identifier",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -870,7 +1862,63 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -880,15 +1928,71 @@
         "required": false,
         "types": [
           {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
             "type": "elif",
             "named": false
           },
           {
-            "type": "expression",
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
             "named": true
           },
           {
             "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -934,7 +2038,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -944,15 +2104,71 @@
         "required": false,
         "types": [
           {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
             "type": "elif",
             "named": false
           },
           {
-            "type": "expression",
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
             "named": true
           },
           {
             "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -967,51 +2183,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "introspection",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "lec_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "library_import",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1040,24 +2211,99 @@
   {
     "type": "match_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "expression_list",
-          "named": true
-        },
-        {
-          "type": "scope_statement",
-          "named": true
-        }
-      ]
+    "fields": {
+      "code": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "else",
+            "named": false
+          },
+          {
+            "type": "expression_list",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "in",
+            "named": false
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1097,20 +2343,83 @@
   {
     "type": "member_selection",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "member_select",
-          "named": true
-        }
-      ]
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "select": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "member_select",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1157,7 +2466,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -1172,51 +2537,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "peek_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "poke_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "primary",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "hierarchical_identifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1255,33 +2575,95 @@
     }
   },
   {
-    "type": "print_statement",
+    "type": "restrict_statement",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "puts_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "expression_list",
-          "named": true
-        }
-      ]
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1327,11 +2709,71 @@
       "required": false,
       "types": [
         {
-          "type": "tuple_item",
+          "type": "assignment_or_declaration",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "constant",
+          "named": true
+        },
+        {
+          "type": "for_expression",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "if_expression",
+          "named": true
+        },
+        {
+          "type": "match_expression",
+          "named": true
+        },
+        {
+          "type": "optional_expression",
+          "named": true
+        },
+        {
+          "type": "scope_expression",
+          "named": true
+        },
+        {
+          "type": "selection",
+          "named": true
+        },
+        {
+          "type": "tuple",
           "named": true
         },
         {
           "type": "tuple_list",
+          "named": true
+        },
+        {
+          "type": "type_cast",
+          "named": true
+        },
+        {
+          "type": "type_specification",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
           "named": true
         }
       ]
@@ -1361,6 +2803,32 @@
     }
   },
   {
+    "type": "simple_function_call",
+    "named": true,
+    "fields": {
+      "input": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "statement",
     "named": true,
     "fields": {},
@@ -1369,11 +2837,7 @@
       "required": true,
       "types": [
         {
-          "type": "assert_statement",
-          "named": true
-        },
-        {
-          "type": "assignment_or_declaration",
+          "type": "assignment_or_declaration_statement",
           "named": true
         },
         {
@@ -1381,15 +2845,11 @@
           "named": true
         },
         {
-          "type": "cover_statement",
+          "type": "enum_declaration",
           "named": true
         },
         {
-          "type": "covercase_statement",
-          "named": true
-        },
-        {
-          "type": "expression",
+          "type": "expression_statement",
           "named": true
         },
         {
@@ -1397,11 +2857,11 @@
           "named": true
         },
         {
-          "type": "if_statement",
+          "type": "function_call_statement",
           "named": true
         },
         {
-          "type": "lec_statement",
+          "type": "if_statement",
           "named": true
         },
         {
@@ -1409,27 +2869,11 @@
           "named": true
         },
         {
-          "type": "peek_statement",
-          "named": true
-        },
-        {
-          "type": "poke_statement",
-          "named": true
-        },
-        {
-          "type": "print_statement",
-          "named": true
-        },
-        {
-          "type": "puts_statement",
+          "type": "restrict_statement",
           "named": true
         },
         {
           "type": "scope_statement",
-          "named": true
-        },
-        {
-          "type": "step_statement",
           "named": true
         },
         {
@@ -1445,30 +2889,7 @@
           "named": true
         },
         {
-          "type": "verify_statement",
-          "named": true
-        },
-        {
-          "type": "wait_statement",
-          "named": true
-        },
-        {
           "type": "while_statement",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "step_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "expression",
           "named": true
         }
       ]
@@ -1496,20 +2917,97 @@
   {
     "type": "test_statement",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "scope_statement",
-          "named": true
-        }
-      ]
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "when",
+            "named": false
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1532,25 +3030,6 @@
     }
   },
   {
-    "type": "tuple_item",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "assignment_or_declaration",
-          "named": true
-        },
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "tuple_list",
     "named": true,
     "fields": {},
@@ -1559,7 +3038,67 @@
       "required": true,
       "types": [
         {
-          "type": "tuple_item",
+          "type": "assignment_or_declaration",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "constant",
+          "named": true
+        },
+        {
+          "type": "for_expression",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "if_expression",
+          "named": true
+        },
+        {
+          "type": "match_expression",
+          "named": true
+        },
+        {
+          "type": "optional_expression",
+          "named": true
+        },
+        {
+          "type": "scope_expression",
+          "named": true
+        },
+        {
+          "type": "selection",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "type_cast",
+          "named": true
+        },
+        {
+          "type": "type_specification",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
           "named": true
         }
       ]
@@ -1581,90 +3120,234 @@
     }
   },
   {
-    "type": "type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "array_type",
-          "named": true
-        },
-        {
-          "type": "constant",
-          "named": true
-        },
-        {
-          "type": "function_type",
-          "named": true
-        },
-        {
-          "type": "hierarchical_identifier",
-          "named": true
-        },
-        {
-          "type": "primitive_type",
-          "named": true
-        },
-        {
-          "type": "tuple_type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "type_cast",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "type",
-          "named": true
-        }
-      ]
+    "fields": {
+      "optional": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "?",
+            "named": false
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "function_type",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "primitive_type",
+            "named": true
+          },
+          {
+            "type": "tuple_type",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
     "type": "type_declaration",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
+    "fields": {
+      "definition": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "function_type",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "primitive_type",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
     "type": "type_extension",
     "named": true,
-    "fields": {},
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "parent": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
         {
           "type": "tuple_list",
           "named": true
@@ -1680,20 +3363,83 @@
   {
     "type": "type_specification",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "type_cast",
-          "named": true
-        }
-      ]
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1705,7 +3451,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -1735,6 +3537,14 @@
             "named": false
           },
           {
+            "type": "unless",
+            "named": false
+          },
+          {
+            "type": "when",
+            "named": false
+          },
+          {
             "type": "~",
             "named": false
           }
@@ -1746,36 +3556,6 @@
     "type": "unsized_integer_type",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "verify_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "wait_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        }
-      ]
-    }
   },
   {
     "type": "while_statement",
@@ -1796,7 +3576,63 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "for_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "function_definition",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "scope_expression",
+            "named": true
+          },
+          {
+            "type": "selection",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
             "named": true
           }
         ]
@@ -1952,10 +3788,6 @@
     "named": false
   },
   {
-    "type": "assert",
-    "named": false
-  },
-  {
     "type": "assignment_operator",
     "named": true
   },
@@ -2004,14 +3836,6 @@
     "named": false
   },
   {
-    "type": "cover",
-    "named": false
-  },
-  {
-    "type": "covercase",
-    "named": false
-  },
-  {
     "type": "debug",
     "named": false
   },
@@ -2041,6 +3865,10 @@
   },
   {
     "type": "else",
+    "named": false
+  },
+  {
+    "type": "enum",
     "named": false
   },
   {
@@ -2080,10 +3908,6 @@
     "named": false
   },
   {
-    "type": "import",
-    "named": false
-  },
-  {
     "type": "in",
     "named": false
   },
@@ -2097,10 +3921,6 @@
   },
   {
     "type": "last",
-    "named": false
-  },
-  {
-    "type": "lec",
     "named": false
   },
   {
@@ -2144,18 +3964,6 @@
     "named": false
   },
   {
-    "type": "peek",
-    "named": false
-  },
-  {
-    "type": "poke",
-    "named": false
-  },
-  {
-    "type": "print",
-    "named": false
-  },
-  {
     "type": "proc",
     "named": false
   },
@@ -2164,19 +3972,15 @@
     "named": false
   },
   {
-    "type": "punch",
-    "named": false
-  },
-  {
-    "type": "puts",
-    "named": false
-  },
-  {
     "type": "range_type",
     "named": true
   },
   {
     "type": "reg",
+    "named": false
+  },
+  {
+    "type": "restrict",
     "named": false
   },
   {
@@ -2212,10 +4016,6 @@
     "named": true
   },
   {
-    "type": "step",
-    "named": false
-  },
-  {
     "type": "string_type",
     "named": true
   },
@@ -2232,6 +4032,10 @@
     "named": false
   },
   {
+    "type": "unique",
+    "named": false
+  },
+  {
     "type": "unless",
     "named": false
   },
@@ -2241,14 +4045,6 @@
   },
   {
     "type": "var",
-    "named": false
-  },
-  {
-    "type": "verify",
-    "named": false
-  },
-  {
-    "type": "waitfor",
     "named": false
   },
   {
