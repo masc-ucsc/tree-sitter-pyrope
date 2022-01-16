@@ -1,5 +1,89 @@
 [
   {
+    "type": "_expression",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "binary_expression",
+        "named": true
+      },
+      {
+        "type": "constant",
+        "named": true
+      },
+      {
+        "type": "for_expression",
+        "named": true
+      },
+      {
+        "type": "function_call",
+        "named": true
+      },
+      {
+        "type": "function_definition",
+        "named": true
+      },
+      {
+        "type": "identifier",
+        "named": true
+      },
+      {
+        "type": "if_expression",
+        "named": true
+      },
+      {
+        "type": "match_expression",
+        "named": true
+      },
+      {
+        "type": "optional_expression",
+        "named": true
+      },
+      {
+        "type": "scope_expression",
+        "named": true
+      },
+      {
+        "type": "selection",
+        "named": true
+      },
+      {
+        "type": "tuple",
+        "named": true
+      },
+      {
+        "type": "type_cast",
+        "named": true
+      },
+      {
+        "type": "type_specification",
+        "named": true
+      },
+      {
+        "type": "unary_expression",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "constant",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "bool_literal",
+        "named": true
+      },
+      {
+        "type": "number",
+        "named": true
+      },
+      {
+        "type": "string_literal",
+        "named": true
+      }
+    ]
+  },
+  {
     "type": "array_type",
     "named": true,
     "fields": {},
@@ -81,67 +165,11 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
+            "type": "_expression",
             "named": true
           },
           {
             "type": "simple_function_call",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
             "named": true
           }
         ]
@@ -191,63 +219,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -399,63 +371,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -490,63 +406,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -572,63 +432,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -638,63 +442,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -720,86 +468,7 @@
       "required": true,
       "types": [
         {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "constant",
-          "named": true
-        },
-        {
-          "type": "for_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
-          "named": true
-        },
-        {
-          "type": "function_definition",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "if_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "scope_expression",
-          "named": true
-        },
-        {
-          "type": "selection",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "type_cast",
-          "named": true
-        },
-        {
-          "type": "type_specification",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "constant",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "bool_literal",
-          "named": true
-        },
-        {
-          "type": "number",
-          "named": true
-        },
-        {
-          "type": "string_literal",
+          "type": "_expression",
           "named": true
         }
       ]
@@ -814,63 +483,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -935,63 +548,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -1061,67 +618,11 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
+            "type": "_expression",
             "named": true
           },
           {
             "type": "simple_function_call",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
             "named": true
           }
         ]
@@ -1166,63 +667,7 @@
             "named": false
           },
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -1258,63 +703,7 @@
       "required": true,
       "types": [
         {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "constant",
-          "named": true
-        },
-        {
-          "type": "for_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
-          "named": true
-        },
-        {
-          "type": "function_definition",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "if_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "scope_expression",
-          "named": true
-        },
-        {
-          "type": "selection",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "type_cast",
-          "named": true
-        },
-        {
-          "type": "type_specification",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
+          "type": "_expression",
           "named": true
         }
       ]
@@ -1486,63 +875,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -1550,10 +883,10 @@
     },
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
-          "type": "tuple_list",
+          "type": "tuple",
           "named": true
         }
       ]
@@ -1611,63 +944,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           },
           {
@@ -1709,19 +986,11 @@
         ]
       },
       "input": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "(",
-            "named": false
-          },
-          {
-            "type": ")",
-            "named": false
-          },
-          {
-            "type": "tuple_list",
+            "type": "tuple",
             "named": true
           }
         ]
@@ -1731,19 +1000,11 @@
         "required": false,
         "types": [
           {
-            "type": "(",
-            "named": false
-          },
-          {
-            "type": ")",
-            "named": false
-          },
-          {
             "type": "->",
             "named": false
           },
           {
-            "type": "tuple_list",
+            "type": "tuple",
             "named": true
           }
         ]
@@ -1773,19 +1034,11 @@
         ]
       },
       "input": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "(",
-            "named": false
-          },
-          {
-            "type": ")",
-            "named": false
-          },
-          {
-            "type": "tuple_list",
+            "type": "tuple",
             "named": true
           }
         ]
@@ -1795,19 +1048,11 @@
         "required": false,
         "types": [
           {
-            "type": "(",
-            "named": false
-          },
-          {
-            "type": ")",
-            "named": false
-          },
-          {
             "type": "->",
             "named": false
           },
           {
-            "type": "tuple_list",
+            "type": "tuple",
             "named": true
           }
         ]
@@ -1862,63 +1107,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -1928,11 +1117,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
+            "type": "_expression",
             "named": true
           },
           {
@@ -1940,59 +1125,7 @@
             "named": false
           },
           {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
             "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
             "named": true
           }
         ]
@@ -2038,63 +1171,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -2104,11 +1181,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
+            "type": "_expression",
             "named": true
           },
           {
@@ -2116,59 +1189,7 @@
             "named": false
           },
           {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
             "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
             "named": true
           }
         ]
@@ -2231,11 +1252,7 @@
             "named": false
           },
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
+            "type": "_expression",
             "named": true
           },
           {
@@ -2247,60 +1264,8 @@
             "named": true
           },
           {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
             "type": "in",
             "named": false
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
           }
         ]
       }
@@ -2349,63 +1314,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -2466,63 +1375,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -2593,63 +1446,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -2709,71 +1506,15 @@
       "required": false,
       "types": [
         {
+          "type": "_expression",
+          "named": true
+        },
+        {
           "type": "assignment_or_declaration",
           "named": true
         },
         {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "constant",
-          "named": true
-        },
-        {
-          "type": "for_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
-          "named": true
-        },
-        {
-          "type": "function_definition",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "if_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "scope_expression",
-          "named": true
-        },
-        {
-          "type": "selection",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
           "type": "tuple_list",
-          "named": true
-        },
-        {
-          "type": "type_cast",
-          "named": true
-        },
-        {
-          "type": "type_specification",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
           "named": true
         }
       ]
@@ -2933,63 +1674,7 @@
         "required": false,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           },
           {
@@ -3015,15 +1700,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
         {
           "type": "tuple_list",
-          "named": true
-        },
-        {
-          "type": "type_cast",
           "named": true
         }
       ]
@@ -3038,67 +1719,11 @@
       "required": true,
       "types": [
         {
+          "type": "_expression",
+          "named": true
+        },
+        {
           "type": "assignment_or_declaration",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "constant",
-          "named": true
-        },
-        {
-          "type": "for_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
-          "named": true
-        },
-        {
-          "type": "function_definition",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "if_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "scope_expression",
-          "named": true
-        },
-        {
-          "type": "selection",
-          "named": true
-        },
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "type_cast",
-          "named": true
-        },
-        {
-          "type": "type_specification",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
           "named": true
         }
       ]
@@ -3110,10 +1735,14 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "tuple_list",
+          "named": true
+        },
+        {
+          "type": "tuple_type",
           "named": true
         }
       ]
@@ -3178,27 +1807,11 @@
             "named": false
           },
           {
+            "type": "_expression",
+            "named": true
+          },
+          {
             "type": "array_type",
-            "named": true
-          },
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
             "named": true
           },
           {
@@ -3206,47 +1819,7 @@
             "named": true
           },
           {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
             "type": "primitive_type",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
             "named": true
           }
         ]
@@ -3282,63 +1855,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -3349,7 +1866,7 @@
       "required": true,
       "types": [
         {
-          "type": "tuple_list",
+          "type": "tuple",
           "named": true
         }
       ]
@@ -3369,63 +1886,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -3451,63 +1912,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -3576,63 +1981,7 @@
         "required": true,
         "types": [
           {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "for_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "function_definition",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
-            "type": "selection",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
+            "type": "_expression",
             "named": true
           }
         ]

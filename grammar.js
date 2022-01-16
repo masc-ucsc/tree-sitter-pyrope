@@ -64,6 +64,15 @@ module.exports = grammar({
       'argument_list'
       ,'tuple_list'
     ]
+    ,[
+      'expression'
+      ,'simple_function_call'
+    ]
+  ]
+
+  ,supertypes: $ => [
+    $._expression
+    ,$.constant
   ]
 
   ,rules: {
@@ -148,9 +157,7 @@ module.exports = grammar({
       ,'extends'
       ,field('parent', $._expression)
       ,'with'
-      ,'('
-      ,$.tuple_list
-      ,')'
+      ,$.tuple
       ,$._semicolon
     ))
     ,if_statement: $ => prec.left('statement', seq(
@@ -230,14 +237,14 @@ module.exports = grammar({
     ))
 
     // Function Call
-    ,simple_function_call: $ => prec.left(seq(
+    ,simple_function_call: $ => prec.left('simple_function_call', seq(
       field('name', $.identifier)
       ,field('input', $.expression_list)
     ))
 
     // Tuple
     ,tuple: $ => prec.left(seq(
-      '(', optional($.tuple_list), ')', optional($.type_cast)
+      '(', optional($.tuple_list), ')'
     ))
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
@@ -284,8 +291,8 @@ module.exports = grammar({
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', $.capture_list, ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
-      ,field('input', seq('(', optional($.tuple_list), ')'))
-      ,field('output', optseq('->', '(', optional($.tuple_list), ')'))
+      ,field('input', $.tuple)
+      ,field('output', optseq('->', $.tuple))
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     )
@@ -293,7 +300,7 @@ module.exports = grammar({
     ,identifier_list: $ => prec.left(listseq1($.identifier))
 
     // Expressions
-    ,_expression: $ => prec.left(choice(
+    ,_expression: $ => prec.left('expression', choice(
       $.identifier
       ,$.constant
       ,$.selection
@@ -385,9 +392,7 @@ module.exports = grammar({
     )
     ,function_call: $ => prec.right('function', seq(
       field('name', $._expression)
-      ,'('
-      ,optional($.tuple_list)
-      ,')'
+      ,$.tuple
     ))
     ,for_expression: $ => prec.right('expression', alias($.for_statement, $.for_expression))
     ,if_expression: $ => prec.right('expression', alias($.if_statement, $.if_expression))
@@ -437,15 +442,13 @@ module.exports = grammar({
       ,$.constant
       // TODO: Support type from expression
     )
-    ,tuple_type: $ => prec.left(seq(
-      '(', $.tuple_list, ')'
-    ))
+    ,tuple_type: $ => alias($.tuple, $.tuple_type)
     ,array_type: $ => prec.right(repeat1($.select))
     ,function_type: $ => prec.right(seq(
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
-      ,field('input', optseq('(', optional($.tuple_list), ')'))
-      ,field('output', optseq('->', '(', optional($.tuple_list), ')'))
+      ,field('input', optional($.tuple))
+      ,field('output', optseq('->', $.tuple))
     ))
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
@@ -506,13 +509,11 @@ module.exports = grammar({
     )
 
     // Constants
-    ,constant: $ => prec.left(seq(
-      choice(
-        $.number
-        ,$.bool_literal
-        ,$.string_literal
-      )
-    ))
+    ,constant: $ => choice(
+      $.number
+      ,$.bool_literal
+      ,$.string_literal
+    )
 
     // Numbers
     ,number: $ => choice(
