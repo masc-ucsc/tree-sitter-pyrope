@@ -1029,8 +1029,12 @@
             }
           },
           {
-            "type": "SYMBOL",
-            "name": "_tuple_item"
+            "type": "FIELD",
+            "name": "item",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_tuple_item"
+            }
           },
           {
             "type": "REPEAT",
@@ -1045,8 +1049,12 @@
                   }
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "_tuple_item"
+                  "type": "FIELD",
+                  "name": "item",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_tuple_item"
+                  }
                 }
               ]
             }

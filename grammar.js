@@ -249,8 +249,8 @@ module.exports = grammar({
     ))
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
-      ,$._tuple_item
-      ,repeat(seq(repeat1(','), $._tuple_item))
+      ,field('item', $._tuple_item)
+      ,repeat(seq(repeat1(','), field('item', $._tuple_item)))
       ,repeat(',')
     ))
     ,_tuple_item: $ => prec.left(choice(
