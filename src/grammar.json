@@ -205,7 +205,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "assignment_or_declaration"
+            "name": "_assignment_or_declaration"
           },
           {
             "type": "SYMBOL",
@@ -927,8 +927,12 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "_expression"
+            "type": "FIELD",
+            "name": "item",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_expression"
+            }
           },
           {
             "type": "REPEAT",
@@ -943,8 +947,12 @@
                     "value": ","
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "_expression"
+                    "type": "FIELD",
+                    "name": "item",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
                   }
                 ]
               }
@@ -1065,12 +1073,12 @@
           },
           {
             "type": "SYMBOL",
-            "name": "assignment_or_declaration"
+            "name": "_assignment_or_declaration"
           }
         ]
       }
     },
-    "assignment_or_declaration": {
+    "_assignment_or_declaration": {
       "type": "CHOICE",
       "members": [
         {
@@ -1499,8 +1507,12 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "identifier"
+              "type": "FIELD",
+              "name": "identifier",
+              "content": {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
             },
             {
               "type": "CHOICE",
@@ -1516,8 +1528,12 @@
                         "value": "="
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "_expression"
+                        "type": "FIELD",
+                        "name": "expression",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_expression"
+                        }
                       }
                     ]
                   }
@@ -1548,8 +1564,12 @@
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "identifier"
+                      "type": "FIELD",
+                      "name": "identifier",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      }
                     },
                     {
                       "type": "CHOICE",
@@ -1565,8 +1585,12 @@
                                 "value": "="
                               },
                               {
-                                "type": "SYMBOL",
-                                "name": "_expression"
+                                "type": "FIELD",
+                                "name": "expression",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_expression"
+                                }
                               }
                             ]
                           }
@@ -1608,8 +1632,12 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "identifier"
+                "type": "FIELD",
+                "name": "item",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                }
               }
             ]
           },
@@ -1632,8 +1660,12 @@
                     "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "identifier"
+                        "type": "FIELD",
+                        "name": "item",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "identifier"
+                        }
                       }
                     ]
                   }

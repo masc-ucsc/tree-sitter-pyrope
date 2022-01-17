@@ -177,7 +177,7 @@
     }
   },
   {
-    "type": "assignment_or_declaration",
+    "type": "assignment_or_declaration_statement",
     "named": true,
     "fields": {},
     "children": {
@@ -190,21 +190,6 @@
         },
         {
           "type": "declaration",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "assignment_or_declaration_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "assignment_or_declaration",
           "named": true
         }
       ]
@@ -462,16 +447,27 @@
   {
     "type": "capture_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
-          "named": true
-        }
-      ]
+    "fields": {
+      "expression": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "identifier": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -697,16 +693,17 @@
   {
     "type": "expression_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
-          "named": true
-        }
-      ]
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1076,16 +1073,17 @@
   {
     "type": "identifier_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1510,7 +1508,11 @@
           "named": true
         },
         {
-          "type": "assignment_or_declaration",
+          "type": "assignment",
+          "named": true
+        },
+        {
+          "type": "declaration",
           "named": true
         },
         {
@@ -1723,7 +1725,11 @@
           "named": true
         },
         {
-          "type": "assignment_or_declaration",
+          "type": "assignment",
+          "named": true
+        },
+        {
+          "type": "declaration",
           "named": true
         }
       ]

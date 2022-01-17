@@ -118,7 +118,7 @@ module.exports = grammar({
       )
     ))
     ,assignment_or_declaration_statement: $ => prec.right(seq(
-      $.assignment_or_declaration
+      $._assignment_or_declaration
       ,$._semicolon
     ))
     ,function_call_statement: $ => prec.right(seq(
@@ -233,7 +233,8 @@ module.exports = grammar({
       ,field('code', $.scope_statement)
     ))
     ,expression_list: $ => prec.left(seq(
-      $._expression, repseq(',', $._expression)
+      field('item', $._expression)
+      ,repseq(',', field('item', $._expression))
     ))
 
     // Function Call
@@ -254,11 +255,11 @@ module.exports = grammar({
     ))
     ,_tuple_item: $ => prec.left(choice(
       $._expression
-      ,$.assignment_or_declaration
+      ,$._assignment_or_declaration
     ))
     
     // Assignment/Declaration
-    ,assignment_or_declaration: $ => choice($.assignment, $.declaration)
+    ,_assignment_or_declaration: $ => choice($.assignment, $.declaration)
     ,assignment: $ => prec.right(seq(
       choice(
         field('debug', optional('debug'))
@@ -296,8 +297,10 @@ module.exports = grammar({
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     )
-    ,capture_list: $ => listseq1($.identifier, optseq('=', $._expression))
-    ,identifier_list: $ => prec.left(listseq1($.identifier))
+    ,capture_list: $ => listseq1(
+      field('identifier', $.identifier), optseq('=', field('expression', $._expression))
+    )
+    ,identifier_list: $ => prec.left(listseq1(field('item', $.identifier)))
 
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
