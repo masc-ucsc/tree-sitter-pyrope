@@ -180,7 +180,7 @@ module.exports = grammar({
       ,field('mutable', optional('mut'))
       ,field('index', $.identifier_list)
       ,'in'
-      ,field('data', $.tuple_list)
+      ,field('data', $.expression_list)
       ,field('code', $.scope_statement)
     )
     ,while_statement: $ => seq(
@@ -411,10 +411,10 @@ module.exports = grammar({
     ,select: $ => seq(
       '['
       ,optional(choice(
-        $.tuple_list
+        field('list', $.expression_list)
         // TODO: clean this up
-        ,seq($._tuple_item, '..')
-        ,seq(choice('..=', '..<', '..+'), $._tuple_item)
+        ,field('open_range', seq($._expression, '..'))
+        ,field('from_zero', seq(choice('..=', '..<', '..+'), $._expression))
       ))
       ,']'
     )
