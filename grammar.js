@@ -30,7 +30,7 @@ module.exports = grammar({
 
   ,precedences: $ => [
     [
-      'member'
+      'dot'
       ,'function'
       ,'selection'
       ,'unary'
@@ -217,6 +217,7 @@ module.exports = grammar({
         ,$.unary_expression
         ,$.optional_expression
         ,$.binary_expression
+        ,$.dot_expression
       )
       ,$._semicolon
     ))
@@ -315,6 +316,7 @@ module.exports = grammar({
       ,$.unary_expression
       ,$.optional_expression
       ,$.binary_expression
+      ,$.dot_expression
       ,$.for_expression
       ,$.if_expression
       ,$.match_expression
@@ -384,7 +386,6 @@ module.exports = grammar({
         ,['equals', 'type_equal']
         ,['does', 'type_compare']
         ,['doesnt', 'type_compare']
-        ,['.', 'member']
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('left', $._expression)
@@ -393,6 +394,7 @@ module.exports = grammar({
         ))
       )
     )
+    ,dot_expression: $ => prec.right('dot', seq(field('left', $._expression), '.', field('right', $._expression)))
     ,function_call: $ => prec.right('function', seq(
       field('name', $._expression)
       ,$.tuple
