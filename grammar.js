@@ -30,7 +30,8 @@ module.exports = grammar({
 
   ,precedences: $ => [
     [
-      'dot'
+      'dot_sub'
+      ,'dot'
       ,'function'
       ,'selection'
       ,'unary'
@@ -394,7 +395,10 @@ module.exports = grammar({
         ))
       )
     )
-    ,dot_expression: $ => prec.right('dot', seq(field('left', $._expression), '.', field('right', $._expression)))
+    ,dot_expression: $ => prec.right('dot', seq(
+      field('item', $._expression)
+      ,repeat1(prec.right('dot_sub', seq('.', field('item', $._expression))))
+    ))
     ,function_call: $ => prec.right('function', seq(
       field('name', $._expression)
       ,$.tuple
