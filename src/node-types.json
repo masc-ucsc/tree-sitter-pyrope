@@ -12,6 +12,10 @@
         "named": true
       },
       {
+        "type": "dereference",
+        "named": true
+      },
+      {
         "type": "dot_expression",
         "named": true
       },
@@ -41,6 +45,10 @@
       },
       {
         "type": "optional_expression",
+        "named": true
+      },
+      {
+        "type": "reference",
         "named": true
       },
       {
@@ -90,7 +98,22 @@
   {
     "type": "array_type",
     "named": true,
-    "fields": {},
+    "fields": {
+      "base": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "primitive_type",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
@@ -383,6 +406,11 @@
     }
   },
   {
+    "type": "bit_select_type",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "bit_selection",
     "named": true,
     "fields": {
@@ -565,6 +593,16 @@
     "type": "declaration",
     "named": true,
     "fields": {
+      "comptime": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "comptime",
+            "named": false
+          }
+        ]
+      },
       "delay": {
         "multiple": false,
         "required": false,
@@ -633,6 +671,21 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "dereference",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -739,6 +792,10 @@
           "named": true
         },
         {
+          "type": "dereference",
+          "named": true
+        },
+        {
           "type": "dot_expression",
           "named": true
         },
@@ -756,6 +813,10 @@
         },
         {
           "type": "optional_expression",
+          "named": true
+        },
+        {
+          "type": "reference",
           "named": true
         },
         {
@@ -1411,6 +1472,22 @@
     }
   },
   {
+    "type": "parameter_sized_integer_type",
+    "named": true,
+    "fields": {
+      "parameter": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "primitive_type",
     "named": true,
     "fields": {},
@@ -1427,6 +1504,10 @@
           "named": true
         },
         {
+          "type": "parameter_sized_integer_type",
+          "named": true
+        },
+        {
           "type": "range_type",
           "named": true
         },
@@ -1440,6 +1521,21 @@
         },
         {
           "type": "unsized_integer_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "reference",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
           "named": true
         }
       ]
@@ -2197,10 +2293,6 @@
     "named": true
   },
   {
-    "type": "bit_select_type",
-    "named": true
-  },
-  {
     "type": "bool_literal",
     "named": true
   },
@@ -2219,6 +2311,10 @@
   {
     "type": "by",
     "named": false
+  },
+  {
+    "type": "comment",
+    "named": true
   },
   {
     "type": "complex_string_literal",
@@ -2401,6 +2497,10 @@
     "named": true
   },
   {
+    "type": "sext",
+    "named": false
+  },
+  {
     "type": "signed",
     "named": false
   },
@@ -2466,6 +2566,10 @@
   },
   {
     "type": "wrap",
+    "named": false
+  },
+  {
+    "type": "zext",
     "named": false
   },
   {

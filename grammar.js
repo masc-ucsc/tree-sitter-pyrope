@@ -23,8 +23,8 @@ module.exports = grammar({
   name: 'pyrope'
 
   ,externals: $ => [ $._automatic_semicolon ]
-  ,conflicts: $ => [ [$.assignment] ]
-  ,extras:    $ => [ $._space, $._comment ]
+  ,conflicts: $ => [ [$.assignment], [$.declaration] ]
+  ,extras:    $ => [ $._space, $.comment ]
   ,word:      $ => $.identifier
   ,inline:    $ => []
 
@@ -68,6 +68,10 @@ module.exports = grammar({
     ,[
       'expression'
       ,'simple_function_call'
+    ]
+    ,[
+      'array_type'
+      ,'type'
     ]
   ]
 
@@ -209,6 +213,8 @@ module.exports = grammar({
       choice(
         $.identifier
         ,$.constant
+        ,$.reference
+        ,$.dereference
         ,$.selection
         ,$.type_specification
         ,$.type_cast
@@ -276,7 +282,8 @@ module.exports = grammar({
       ))
     ))
     ,declaration: $ => seq(
-      choice(
+      field('comptime', optional('comptime'))
+      ,choice(
         seq(field('scope', optional('pub')), field('qualifier', $.type_qualifier))
         ,seq(field('scope', 'pub'))
       )
@@ -308,6 +315,8 @@ module.exports = grammar({
     ,_expression: $ => prec.left('expression', choice(
       $.identifier
       ,$.constant
+      ,$.reference
+      ,$.dereference
       ,$.selection
       ,$.type_specification
       ,$.type_cast
@@ -352,6 +361,8 @@ module.exports = grammar({
       field('argument', $._expression)
       ,field('operator', '?')
     ))
+    ,reference: $ => prec.right(seq('*', $._expression))
+    ,dereference: $ => prec.right(seq('&', $._expression))
     ,binary_expression: $ => choice(
       ...[
         ['..=', 'range']
@@ -430,7 +441,7 @@ module.exports = grammar({
         seq('@', optional($.bit_select_type), $.select)
       )
     ))
-    ,bit_select_type: $ => token(choice('|', '&', '^', '+', 'sext', 'zext'))
+    ,bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
     ,cycle_select: $ => seq('#', $.select)
 
     // Variable Properties
@@ -442,7 +453,7 @@ module.exports = grammar({
       ,field('type', $._type)
       ,field('optional', optional('?'))
     ))
-    ,_type: $ => choice(
+    ,_type: $ => prec('type', choice(
       $.primitive_type
       ,$.tuple_type
       ,$.array_type
@@ -450,9 +461,15 @@ module.exports = grammar({
       ,$.identifier
       ,$.constant
       // TODO: Support type from expression
-    )
+    ))
     ,tuple_type: $ => alias($.tuple, $.tuple_type)
-    ,array_type: $ => prec.right(repeat1($.select))
+    ,array_type: $ => prec.left('array_type', seq(
+      optional(field('base', choice(
+        $.primitive_type
+        ,$.identifier
+      )))
+      ,repeat1($.select)
+    ))
     ,function_type: $ => prec.right(seq(
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
@@ -462,6 +479,7 @@ module.exports = grammar({
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
       ,$.sized_integer_type
+      ,$.parameter_sized_integer_type
       ,$.bounded_integer_type
       ,$.range_type
       ,$.string_type
@@ -497,6 +515,12 @@ module.exports = grammar({
       ,')'
     )
     ,sized_integer_type: $ => token(/[siu]\d+/)
+    ,parameter_sized_integer_type: $ => seq(
+      field('sign', /[siu]/)
+      ,'('
+      ,field('parameter', $._expression)
+      ,')'
+    )
     ,range_type: $ => token('range')
     ,string_type: $ => token('string')
     ,boolean_type: $ => token('boolean')
@@ -555,7 +579,7 @@ module.exports = grammar({
 
     // Special
     ,_space:   $ => token(/[\s\p{Zs}\uFEFF\u2060\u200B]/)
-    ,_comment: $ => token(choice(
+    ,comment: $ => token(choice(
       /\/\/.*/
       ,seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     ))
