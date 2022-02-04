@@ -32,6 +32,7 @@ module.exports = grammar({
     [
       'dot_sub'
       ,'dot'
+      ,'select'
       ,'function'
       ,'selection'
       ,'unary'
@@ -435,11 +436,9 @@ module.exports = grammar({
       ))
       ,']'
     )
-    ,member_select: $ => prec.left(repeat1($.select))
-    ,bit_select: $ => prec.left(seq(
-      repeat1(
-        seq('@', optional($.bit_select_type), $.select)
-      )
+    ,member_select: $ => prec.right('select', repeat1($.select))
+    ,bit_select: $ => prec.right('select', seq(
+      '@', field('type', optional($.bit_select_type)), field('select', $.select)
     ))
     ,bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
     ,cycle_select: $ => seq('#', $.select)

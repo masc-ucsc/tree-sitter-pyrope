@@ -3372,8 +3372,8 @@
       ]
     },
     "member_select": {
-      "type": "PREC_LEFT",
-      "value": 0,
+      "type": "PREC_RIGHT",
+      "value": "select",
       "content": {
         "type": "REPEAT1",
         "content": {
@@ -3383,37 +3383,37 @@
       }
     },
     "bit_select": {
-      "type": "PREC_LEFT",
-      "value": 0,
+      "type": "PREC_RIGHT",
+      "value": "select",
       "content": {
         "type": "SEQ",
         "members": [
           {
-            "type": "REPEAT1",
+            "type": "STRING",
+            "value": "@"
+          },
+          {
+            "type": "FIELD",
+            "name": "type",
             "content": {
-              "type": "SEQ",
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "@"
-                },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "bit_select_type"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                },
-                {
                   "type": "SYMBOL",
-                  "name": "select"
+                  "name": "bit_select_type"
+                },
+                {
+                  "type": "BLANK"
                 }
               ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "select",
+            "content": {
+              "type": "SYMBOL",
+              "name": "select"
             }
           }
         ]
@@ -4238,6 +4238,10 @@
       {
         "type": "STRING",
         "value": "dot"
+      },
+      {
+        "type": "STRING",
+        "value": "select"
       },
       {
         "type": "STRING",

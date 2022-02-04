@@ -389,20 +389,27 @@
   {
     "type": "bit_select",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "bit_select_type",
-          "named": true
-        },
-        {
-          "type": "select",
-          "named": true
-        }
-      ]
+    "fields": {
+      "select": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "select",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "bit_select_type",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
