@@ -24,7 +24,7 @@ module.exports = grammar({
 
   ,externals: $ => [ $._automatic_semicolon ]
   ,conflicts: $ => [ [$.assignment], [$.declaration] ]
-  ,extras:    $ => [ $._space, $.comment ]
+  ,extras:    $ => [ $._space, $._comment ]
   ,word:      $ => $.identifier
   ,inline:    $ => []
 
@@ -578,7 +578,7 @@ module.exports = grammar({
 
     // Special
     ,_space:   $ => token(/[\s\p{Zs}\uFEFF\u2060\u200B]/)
-    ,comment: $ => token(choice(
+    ,_comment: $ => token(choice(
       /\/\/.*/
       ,seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     ))

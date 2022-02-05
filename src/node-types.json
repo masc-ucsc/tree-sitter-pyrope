@@ -2320,10 +2320,6 @@
     "named": false
   },
   {
-    "type": "comment",
-    "named": true
-  },
-  {
     "type": "complex_string_literal",
     "named": true
   },
