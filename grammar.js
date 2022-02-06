@@ -34,7 +34,9 @@ module.exports = grammar({
       ,'dot'
       ,'select'
       ,'function'
-      ,'selection'
+      ,'member_selection'
+      ,'bit_selection'
+      ,'cycle_selection'
       ,'unary'
       ,'range'
       ,'type_spec'
@@ -333,23 +335,23 @@ module.exports = grammar({
       ,$.match_expression
       ,$.scope_expression
     ))
-    ,selection: $ => prec.right('selection', choice(
+    ,selection: $ => choice(
       $.member_selection
       ,$.bit_selection
       ,$.cycle_selection
-    ))
-    ,member_selection: $ => seq(
+    )
+    ,member_selection: $ => prec.right('member_selection', seq(
       field('argument', $._expression)
       ,field('select', $.member_select)
-    )
-    ,bit_selection: $ => seq(
+    ))
+    ,bit_selection: $ => prec.right('bit_selection', seq(
       field('argument', $._expression)
       ,field('select', $.bit_select)
-    )
-    ,cycle_selection: $ => seq(
+    ))
+    ,cycle_selection: $ => prec.right('cycle_selection', seq(
       field('argument', $._expression)
       ,field('select', $.cycle_select)
-    )
+    ))
     ,type_specification: $ => seq(
       field('argument', $._expression)
       ,field('type', $.type_cast)
