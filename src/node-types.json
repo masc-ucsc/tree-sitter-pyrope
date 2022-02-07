@@ -1495,6 +1495,22 @@
     }
   },
   {
+    "type": "pipestage_statement",
+    "named": true,
+    "fields": {
+      "scope": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "primitive_type",
     "named": true,
     "fields": {},
@@ -1757,6 +1773,10 @@
         },
         {
           "type": "match_statement",
+          "named": true
+        },
+        {
+          "type": "pipestage_statement",
           "named": true
         },
         {

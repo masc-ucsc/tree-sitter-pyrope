@@ -98,6 +98,7 @@ module.exports = grammar({
       ,choice(
         // Synthesizable
         $.scope_statement
+        ,$.pipestage_statement
         ,$.assignment_or_declaration_statement
         ,$.function_call_statement
         ,$.control_statement
@@ -118,12 +119,10 @@ module.exports = grammar({
       '{'
       ,repseq($.statement)
       ,'}'
-      ,repseq(
-        '#>'
-        ,'{'
-        ,repseq($.statement)
-        ,'}'
-      )
+    ))
+    ,pipestage_statement: $ => prec.left('statement', seq(
+      field('scope', $.scope_statement)
+      ,repeat1(seq('#>', field('scope', $.scope_statement)))
     ))
     ,assignment_or_declaration_statement: $ => prec.right(seq(
       $._assignment_or_declaration

@@ -69,6 +69,10 @@
               },
               {
                 "type": "SYMBOL",
+                "name": "pipestage_statement"
+              },
+              {
+                "type": "SYMBOL",
                 "name": "assignment_or_declaration_statement"
               },
               {
@@ -153,45 +157,42 @@
           {
             "type": "STRING",
             "value": "}"
+          }
+        ]
+      }
+    },
+    "pipestage_statement": {
+      "type": "PREC_LEFT",
+      "value": "statement",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "scope",
+            "content": {
+              "type": "SYMBOL",
+              "name": "scope_statement"
+            }
           },
           {
-            "type": "REPEAT",
+            "type": "REPEAT1",
             "content": {
-              "type": "PREC_LEFT",
-              "value": 0,
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "#>"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "{"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "PREC_LEFT",
-                      "value": 0,
-                      "content": {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "statement"
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "}"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "#>"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "scope",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "scope_statement"
                   }
-                ]
-              }
+                }
+              ]
             }
           }
         ]
