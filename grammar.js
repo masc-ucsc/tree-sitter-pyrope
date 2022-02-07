@@ -215,8 +215,6 @@ module.exports = grammar({
       choice(
         $.identifier
         ,$.constant
-        ,$.reference
-        ,$.dereference
         ,$.selection
         ,$.type_specification
         ,$.type_cast
@@ -317,8 +315,6 @@ module.exports = grammar({
     ,_expression: $ => prec.left('expression', choice(
       $.identifier
       ,$.constant
-      ,$.reference
-      ,$.dereference
       ,$.selection
       ,$.type_specification
       ,$.type_cast
@@ -363,8 +359,6 @@ module.exports = grammar({
       field('argument', $._expression)
       ,field('operator', '?')
     ))
-    ,reference: $ => prec.right(seq('*', $._expression))
-    ,dereference: $ => prec.right(seq('&', $._expression))
     ,binary_expression: $ => choice(
       ...[
         ['..=', 'range']
@@ -445,7 +439,7 @@ module.exports = grammar({
     ,cycle_select: $ => seq('#', $.select)
 
     // Variable Properties
-    ,type_qualifier: $ => choice('var', 'mut', 'let', 'reg')
+    ,type_qualifier: $ => choice('var', 'mut', 'let', 'reg', 'ref')
 
     // Types
     ,type_cast: $ => prec.left(seq(

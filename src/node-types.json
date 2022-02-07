@@ -12,10 +12,6 @@
         "named": true
       },
       {
-        "type": "dereference",
-        "named": true
-      },
-      {
         "type": "dot_expression",
         "named": true
       },
@@ -45,10 +41,6 @@
       },
       {
         "type": "optional_expression",
-        "named": true
-      },
-      {
-        "type": "reference",
         "named": true
       },
       {
@@ -681,21 +673,6 @@
     }
   },
   {
-    "type": "dereference",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "description",
     "named": true,
     "fields": {},
@@ -799,10 +776,6 @@
           "named": true
         },
         {
-          "type": "dereference",
-          "named": true
-        },
-        {
           "type": "dot_expression",
           "named": true
         },
@@ -820,10 +793,6 @@
         },
         {
           "type": "optional_expression",
-          "named": true
-        },
-        {
-          "type": "reference",
           "named": true
         },
         {
@@ -1544,21 +1513,6 @@
         },
         {
           "type": "unsized_integer_type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "reference",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
           "named": true
         }
       ]
@@ -2494,6 +2448,10 @@
   {
     "type": "range_type",
     "named": true
+  },
+  {
+    "type": "ref",
+    "named": false
   },
   {
     "type": "reg",
