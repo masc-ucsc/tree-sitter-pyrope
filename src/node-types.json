@@ -2402,6 +2402,10 @@
     "named": false
   },
   {
+    "type": "loc",
+    "named": false
+  },
+  {
     "type": "match",
     "named": false
   },

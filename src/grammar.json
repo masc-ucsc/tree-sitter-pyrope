@@ -3442,6 +3442,10 @@
         {
           "type": "STRING",
           "value": "ref"
+        },
+        {
+          "type": "STRING",
+          "value": "loc"
         }
       ]
     },
