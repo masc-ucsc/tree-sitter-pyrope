@@ -29,6 +29,7 @@ module.exports = grammar({
   ,inline:    $ => []
 
   ,precedences: $ => [
+    // Expressions
     [
       'dot_sub'
       ,'dot'
@@ -59,6 +60,16 @@ module.exports = grammar({
       ,'tuple_relation'
       ,'type_compare'
       ,'type_equal'
+      ,'expression'
+    ]
+    // Types
+    ,[
+      'type_dot'
+      ,'type_dot_sub'
+      ,'array_type'
+      ,'expression_type'
+      ,'type'
+      ,'expression'
     ]
     ,[
       'statement'
@@ -73,8 +84,8 @@ module.exports = grammar({
       ,'simple_function_call'
     ]
     ,[
-      'array_type'
-      ,'type'
+      'type_spec'
+      ,'type_cast'
     ]
   ]
 
@@ -247,8 +258,8 @@ module.exports = grammar({
 
     // Function Call
     ,simple_function_call: $ => prec.left('simple_function_call', seq(
-      field('name', $.identifier)
-      ,field('input', $.expression_list)
+      field('function', $._restricted_expression)
+      ,field('argument', $.expression_list)
     ))
 
     // Tuple
@@ -313,22 +324,11 @@ module.exports = grammar({
 
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
-      $.identifier
-      ,$.constant
-      ,$.selection
-      ,$.type_specification
+      $.type_specification
       ,$.type_cast
-      ,$.function_call
-      ,$.function_definition
-      ,$.tuple
       ,$.unary_expression
-      ,$.optional_expression
       ,$.binary_expression
-      ,$.dot_expression
-      ,$.for_expression
-      ,$.if_expression
-      ,$.match_expression
-      ,$.scope_expression
+      ,$._restricted_expression
     ))
     ,selection: $ => choice(
       $.member_selection
@@ -336,21 +336,23 @@ module.exports = grammar({
       ,$.cycle_selection
     )
     ,member_selection: $ => prec.right('member_selection', seq(
-      field('argument', $._expression)
+      field('argument', $._restricted_expression)
       ,field('select', $.member_select)
     ))
     ,bit_selection: $ => prec.right('bit_selection', seq(
-      field('argument', $._expression)
+      field('argument', $._restricted_expression)
       ,field('select', $.bit_select)
     ))
     ,cycle_selection: $ => prec.right('cycle_selection', seq(
-      field('argument', $._expression)
+      field('argument', $._restricted_expression)
       ,field('select', $.cycle_select)
     ))
-    ,type_specification: $ => seq(
-      field('argument', $._expression)
-      ,field('type', $.type_cast)
-    )
+    ,type_specification: $ => prec.left('type_spec', seq(
+      field('argument', $._restricted_expression)
+      ,':'
+      ,field('type', $._type)
+      ,field('optional', optional('?'))
+    ))
     ,unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...', 'no', 'unless', 'when'))
       ,field('argument', $._expression)
@@ -402,19 +404,33 @@ module.exports = grammar({
         ))
       )
     )
-    ,dot_expression: $ => prec.right('dot', seq(
-      field('item', $._expression)
-      ,repeat1(prec.right('dot_sub', seq('.', field('item', $._expression))))
+    ,dot_expression: $ => prec.left('dot', seq(
+      field('item', $._restricted_expression)
+      ,repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
     ))
     ,function_call: $ => prec.right('function', seq(
-      field('name', $._expression)
-      ,$.tuple
+      field('function', $._restricted_expression)
+      ,field('argument', $.tuple)
     ))
     ,for_expression: $ => prec.right('expression', alias($.for_statement, $.for_expression))
     ,if_expression: $ => prec.right('expression', alias($.if_statement, $.if_expression))
     ,match_expression: $ => prec.right('expression', alias($.match_statement, $.match_expression))
     ,scope_expression: $ => prec.right('expression', alias($.scope_statement, $.scope_expression))
-    
+    ,_restricted_expression: $ => prec('expression', choice(
+      $.identifier
+      ,$.constant
+      ,$.selection
+      ,$.function_call
+      ,$.function_definition
+      ,$.tuple
+      ,$.optional_expression
+      ,$.dot_expression
+      ,$.for_expression
+      ,$.if_expression
+      ,$.match_expression
+      ,$.scope_expression
+    ))
+
     // Operators
     ,assignment_operator: $ => token(choice(
       '=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', '<<=', '>>=', '++=', 'or=', 'and='
@@ -442,21 +458,41 @@ module.exports = grammar({
     ,type_qualifier: $ => choice('var', 'mut', 'let', 'reg', 'ref', 'loc')
 
     // Types
-    ,type_cast: $ => prec.left(seq(
+    ,type_cast: $ => prec.left('type_cast', seq(
       ':'
       ,field('type', $._type)
       ,field('optional', optional('?'))
     ))
-    ,_type: $ => prec('type', choice(
+    ,_type: $ => prec.left('type', choice(
       $.primitive_type
-      ,$.tuple_type
       ,$.array_type
       ,$.function_type
-      ,$.identifier
-      ,$.constant
-      // TODO: Support type from expression
+      ,$.expression_type
     ))
-    ,tuple_type: $ => alias($.tuple, $.tuple_type)
+    ,expression_type: $ => prec.left('expression_type', choice(
+      $.identifier
+      ,$.constant
+      // NOTE: No restriction on expressions enclosed in a tuple (potentially avoids ambiguity)
+      //       ` :some_type[2] ` means an array of `some_type` with a size of 2
+      //       `:(some_type[2])` means the type of the item at position 2 of `some_type`
+      ,$.tuple
+      ,$.for_expression
+      ,$.if_expression
+      ,$.match_expression
+      ,$.scope_expression
+      // NOTE: These expressions need to be restricted due to ambiguity
+      //       `a: b:int.c`
+      ,$.dot_expression_type
+      ,$.function_call_type
+    ))
+    ,dot_expression_type: $ => prec.right('type_dot', seq(
+      field('item', $.expression_type)
+      ,repeat1(prec.right('type_dot_sub', seq('.', field('item', $.expression_type))))
+    ))
+    ,function_call_type: $ => prec.right('function', seq(
+      field('function', $.expression_type)
+      ,field('argument', $.tuple)
+    ))
     ,array_type: $ => prec.left('array_type', seq(
       optional(field('base', choice(
         $.primitive_type
@@ -505,6 +541,7 @@ module.exports = grammar({
           '..'
           ,field('max_value', $._expression)
         )
+        ,field('expression', $._expression)
       )
       ,')'
     )
