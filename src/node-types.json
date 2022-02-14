@@ -1343,7 +1343,7 @@
       },
       "input": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "tuple",

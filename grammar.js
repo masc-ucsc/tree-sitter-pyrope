@@ -313,7 +313,7 @@ module.exports = grammar({
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', $.capture_list, ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
-      ,field('input', $.tuple)
+      ,field('input', optional($.tuple))
       ,field('output', optseq('->', $.tuple))
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)

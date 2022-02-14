@@ -1442,8 +1442,16 @@
           "type": "FIELD",
           "name": "input",
           "content": {
-            "type": "SYMBOL",
-            "name": "tuple"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "tuple"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         },
         {
