@@ -96,7 +96,15 @@
         "required": false,
         "types": [
           {
+            "type": "enum_type",
+            "named": true
+          },
+          {
             "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "function_type",
             "named": true
           },
           {

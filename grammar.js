@@ -503,6 +503,8 @@ module.exports = grammar({
     ,array_type: $ => prec.left('array_type', seq(
       optional(field('base', choice(
         $.primitive_type
+        ,$.enum_type
+        ,$.function_type
         ,$.expression_type
       )))
       ,repeat1($.select)

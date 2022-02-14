@@ -3717,6 +3717,14 @@
                     },
                     {
                       "type": "SYMBOL",
+                      "name": "enum_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "function_type"
+                    },
+                    {
+                      "type": "SYMBOL",
                       "name": "expression_type"
                     }
                   ]
