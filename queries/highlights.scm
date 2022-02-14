@@ -10,7 +10,6 @@
 
 [
   "enum"
-  "type"
   "extends"
   "with"
   "in"
@@ -63,6 +62,15 @@
 (boolean_type) @Type
 (string_type) @Type
 (range_type) @Type
+(type_type) @Type
+
+(type_declaration
+  "type" @keyword
+)
+
+(type_extension
+  "type" @keyword
+)
 
 (function_call
   function: (identifier) @Special

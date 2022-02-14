@@ -1889,6 +1889,10 @@
           "named": true
         },
         {
+          "type": "type_type",
+          "named": true
+        },
+        {
           "type": "unsized_integer_type",
           "named": true
         }
@@ -2522,6 +2526,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "type_type",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "unary_expression",

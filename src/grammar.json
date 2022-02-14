@@ -3907,6 +3907,10 @@
           {
             "type": "SYMBOL",
             "name": "boolean_type"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "type_type"
           }
         ]
       }
@@ -4148,6 +4152,13 @@
       "content": {
         "type": "STRING",
         "value": "boolean"
+      }
+    },
+    "type_type": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "type"
       }
     },
     "identifier": {

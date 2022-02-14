@@ -524,6 +524,7 @@ module.exports = grammar({
       ,$.range_type
       ,$.string_type
       ,$.boolean_type
+      ,$.type_type
     ))
     ,unsized_integer_type: $ => choice(
       'int'
@@ -565,6 +566,7 @@ module.exports = grammar({
     ,range_type: $ => prec.left('range_type', seq('range', '(', $._expression, ')'))
     ,string_type: $ => token('string')
     ,boolean_type: $ => token('boolean')
+    ,type_type: $ => token('type')
 
     // Identifiers
     ,identifier: $ => token(
