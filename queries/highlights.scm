@@ -22,6 +22,7 @@
   "var"
   "reg"
   "ref"
+  "loc"
   "mut"
   "where"
 ] @keyword
@@ -61,9 +62,14 @@
 (sized_integer_type) @Type
 (boolean_type) @Type
 (string_type) @Type
+(range_type) @Type
 
 (function_call
-  name: (identifier) @Special
+  function: (identifier) @Special
+)
+
+(function_call_type
+  function: (expression_type (identifier)) @Special
 )
 
 (number) @Constant
