@@ -411,15 +411,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "primitive_type"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "array_type"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "function_type"
+                            "name": "_type"
                           }
                         ]
                       }
@@ -3543,6 +3535,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "enum_type"
+          },
+          {
+            "type": "SYMBOL",
             "name": "function_type"
           },
           {
@@ -3593,13 +3589,17 @@
           {
             "type": "SYMBOL",
             "name": "function_call_type"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "mixin_type"
           }
         ]
       }
     },
     "dot_expression_type": {
       "type": "PREC_RIGHT",
-      "value": "type_dot",
+      "value": "dot_type",
       "content": {
         "type": "SEQ",
         "members": [
@@ -3615,7 +3615,7 @@
             "type": "REPEAT1",
             "content": {
               "type": "PREC_RIGHT",
-              "value": "type_dot_sub",
+              "value": "dot_type_sub",
               "content": {
                 "type": "SEQ",
                 "members": [
@@ -3640,7 +3640,7 @@
     },
     "function_call_type": {
       "type": "PREC_RIGHT",
-      "value": "function",
+      "value": "function_call_type",
       "content": {
         "type": "SEQ",
         "members": [
@@ -3658,6 +3658,39 @@
             "content": {
               "type": "SYMBOL",
               "name": "tuple"
+            }
+          }
+        ]
+      }
+    },
+    "mixin_type": {
+      "type": "PREC_LEFT",
+      "value": "mixin_type",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_type"
+          },
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "PREC_LEFT",
+              "value": "mixin_type_sub",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "++"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_type"
+                  }
+                ]
+              }
             }
           }
         ]
@@ -3684,7 +3717,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "identifier"
+                      "name": "expression_type"
                     }
                   ]
                 }
@@ -3704,9 +3737,26 @@
         ]
       }
     },
+    "enum_type": {
+      "type": "PREC_LEFT",
+      "value": "enum_type",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "enum"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "tuple"
+          }
+        ]
+      }
+    },
     "function_type": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": "function_type",
       "content": {
         "type": "SEQ",
         "members": [
@@ -4046,10 +4096,28 @@
       ]
     },
     "range_type": {
-      "type": "TOKEN",
+      "type": "PREC_LEFT",
+      "value": "range_type",
       "content": {
-        "type": "STRING",
-        "value": "range"
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "range"
+          },
+          {
+            "type": "STRING",
+            "value": "("
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_expression"
+          },
+          {
+            "type": "STRING",
+            "value": ")"
+          }
+        ]
       }
     },
     "string_type": {
@@ -4343,6 +4411,50 @@
     [
       {
         "type": "STRING",
+        "value": "dot_type"
+      },
+      {
+        "type": "STRING",
+        "value": "dot_type_sub"
+      },
+      {
+        "type": "STRING",
+        "value": "array_type"
+      },
+      {
+        "type": "STRING",
+        "value": "range_type"
+      },
+      {
+        "type": "STRING",
+        "value": "function_type"
+      },
+      {
+        "type": "STRING",
+        "value": "enum_type"
+      },
+      {
+        "type": "STRING",
+        "value": "function_call_type"
+      },
+      {
+        "type": "STRING",
+        "value": "mixin_type"
+      },
+      {
+        "type": "STRING",
+        "value": "mixin_type_sub"
+      },
+      {
+        "type": "STRING",
+        "value": "expression_type"
+      },
+      {
+        "type": "STRING",
+        "value": "type"
+      },
+      {
+        "type": "STRING",
         "value": "dot_sub"
       },
       {
@@ -4379,11 +4491,11 @@
       },
       {
         "type": "STRING",
-        "value": "type_spec"
+        "value": "step"
       },
       {
         "type": "STRING",
-        "value": "step"
+        "value": "type_spec"
       },
       {
         "type": "STRING",
@@ -4443,11 +4555,11 @@
       },
       {
         "type": "STRING",
-        "value": "tuple_concat"
+        "value": "tuple_relation"
       },
       {
         "type": "STRING",
-        "value": "tuple_relation"
+        "value": "tuple_concat"
       },
       {
         "type": "STRING",
@@ -4456,32 +4568,6 @@
       {
         "type": "STRING",
         "value": "type_equal"
-      },
-      {
-        "type": "STRING",
-        "value": "expression"
-      }
-    ],
-    [
-      {
-        "type": "STRING",
-        "value": "type_dot"
-      },
-      {
-        "type": "STRING",
-        "value": "type_dot_sub"
-      },
-      {
-        "type": "STRING",
-        "value": "array_type"
-      },
-      {
-        "type": "STRING",
-        "value": "expression_type"
-      },
-      {
-        "type": "STRING",
-        "value": "type"
       },
       {
         "type": "STRING",
