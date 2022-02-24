@@ -510,7 +510,7 @@ module.exports = grammar({
       ,repeat1($.select)
     ))
     ,enum_type: $ => prec.left('enum_type', seq('enum', $.tuple))
-    ,function_type: $ => prec.right('function_type', seq(
+    ,function_type: $ => prec.left('function_type', seq(
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
