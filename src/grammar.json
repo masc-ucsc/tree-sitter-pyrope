@@ -3725,6 +3725,10 @@
                     },
                     {
                       "type": "SYMBOL",
+                      "name": "array_type"
+                    },
+                    {
+                      "type": "SYMBOL",
                       "name": "enum_type"
                     },
                     {
@@ -3744,7 +3748,8 @@
             ]
           },
           {
-            "type": "REPEAT1",
+            "type": "FIELD",
+            "name": "length",
             "content": {
               "type": "SYMBOL",
               "name": "select"

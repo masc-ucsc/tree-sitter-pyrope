@@ -474,9 +474,9 @@ module.exports = grammar({
     ,expression_type: $ => prec.left('expression_type', choice(
       $.identifier
       ,$.constant
-      // NOTE: No restriction on expressions enclosed in a tuple (potentially avoids ambiguity)
-      //       ` :some_type[2] ` means an array of `some_type` with a size of 2
-      //       `:(some_type[2])` means the type of the item at position 2 of `some_type`
+      // NOTE: Use dot instead of select to avoid ambiguity
+      //       `:  some_type[2]  ` means an array of `some_type` with a size of 2
+      //       `:  some_type.2   ` means the type of the element at position 2 of `some_type`
       ,$.tuple
       ,$.for_expression
       ,$.if_expression
@@ -503,11 +503,12 @@ module.exports = grammar({
     ,array_type: $ => prec.left('array_type', seq(
       optional(field('base', choice(
         $.primitive_type
+        ,$.array_type
         ,$.enum_type
         ,$.function_type
         ,$.expression_type
       )))
-      ,repeat1($.select)
+      ,field('length', $.select)
     ))
     ,enum_type: $ => prec.left('enum_type', seq('enum', $.tuple))
     ,function_type: $ => prec.left('function_type', seq(

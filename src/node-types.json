@@ -96,6 +96,10 @@
         "required": false,
         "types": [
           {
+            "type": "array_type",
+            "named": true
+          },
+          {
             "type": "enum_type",
             "named": true
           },
@@ -112,17 +116,17 @@
             "named": true
           }
         ]
+      },
+      "length": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "select",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "select",
-          "named": true
-        }
-      ]
     }
   },
   {
