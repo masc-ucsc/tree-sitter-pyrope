@@ -1,0 +1,16 @@
+
+type Length = (
+  ,pub var set = fun(str:String) ->(self) {
+    self.value = match str[0] {
+       == 'K' {      1024*to_i(str[1..]) }
+       == 'M' { 1024*1024*to_i(str[1..]) }
+       else   {           to_i(str)      }
+      }
+  }
+  ,pub var get = fun() {
+    ret self.value
+  }
+)
+
+var xx:Length = "3K"
+

@@ -47,7 +47,7 @@ find_one = (
   }
 )
 
-freelist = (
+pub let freelist = (
   ,top
   ,empty:bool
 
