@@ -1,0 +1,23 @@
+
+type Room = (model:string)
+type Car  = (model:string)
+
+var volvo:Car(model="V40")
+
+var xx:Room(model="2 bedroom")
+
+
+let either = fun(arg:Room) { // Structural type check (Room equivalent o Car)
+  puts("you have model {}", arg.model)
+}
+
+either(volvo)
+either(xx)
+
+let only_car = fun(arg is Car) {
+  puts("you have a nice car model {}", arg.model)
+}
+
+only_car(volvo) // OK
+only_car(xx)    // compile error
+

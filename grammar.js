@@ -350,7 +350,7 @@ module.exports = grammar({
     ))
     ,type_specification: $ => prec.left('type_spec', seq(
       field('argument', $._restricted_expression)
-      ,choice(':', '::')
+      ,choice(':', 'is')
       ,field('type', $._type)
       ,field('optional', optional('?'))
     ))
@@ -460,7 +460,7 @@ module.exports = grammar({
 
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
-      choice(':', '::')
+      choice(':', 'is')
       ,field('type', $._type)
       ,field('optional', optional('?'))
     ))
