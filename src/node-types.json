@@ -1089,9 +1089,13 @@
         ]
       },
       "mutable": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
           {
             "type": "mut",
             "named": false
@@ -1126,7 +1130,7 @@
       },
       "data": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression_list",
@@ -1145,9 +1149,13 @@
         ]
       },
       "mutable": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
           {
             "type": "mut",
             "named": false

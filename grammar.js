@@ -162,7 +162,8 @@ module.exports = grammar({
       ,$._semicolon
     ))
     ,type_declaration: $ => prec.left(seq(
-      'type'
+      optional('pub')
+      ,'type'
       ,field('name', $.identifier)
       ,field('definition', optseq('=', choice(
         $._expression
@@ -171,7 +172,8 @@ module.exports = grammar({
       ,$._semicolon
     ))
     ,type_extension: $ => prec.left(seq(
-      'type'
+      optional('pub')
+      ,'type'
       ,field('name', $.identifier)
       ,'extends'
       ,field('parent', $._expression)
@@ -196,10 +198,17 @@ module.exports = grammar({
     ))
     ,for_statement: $ => seq(
       'for'
-      ,field('mutable', optional('mut'))
-      ,field('index', $.identifier_list)
+      ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
       ,'in'
-      ,field('data', $.expression_list)
+      ,choice(
+        field('mutable',
+          seq(
+            'mut'
+            ,$.identifier  // not allowed in for expression
+          )
+        )
+        ,field('data', $.expression_list)
+      )
       ,field('code', $.scope_statement)
     )
     ,while_statement: $ => seq(
