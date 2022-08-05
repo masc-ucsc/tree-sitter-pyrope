@@ -201,9 +201,9 @@ module.exports = grammar({
       ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
       ,'in'
       ,choice(
-        field('mutable',
+        field('ref',
           seq(
-            'mut'
+            'ref'
             ,$.identifier  // not allowed in for expression
           )
         )
@@ -465,7 +465,7 @@ module.exports = grammar({
     ,cycle_select: $ => seq('#', $.select)
 
     // Variable Properties
-    ,type_qualifier: $ => choice('var', 'mut', 'let', 'reg', 'ref', 'loc')
+    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref', 'loc')
 
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
@@ -616,7 +616,7 @@ module.exports = grammar({
     ,decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
     ,octal_number:   $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)
     ,binary_number:  $ => token(/0(s|S)?(b|B)[0-1\?][0-1_\?]*/)
-    
+
     // Booleans
     ,bool_literal:   $ => token(choice('true', 'false'))
 

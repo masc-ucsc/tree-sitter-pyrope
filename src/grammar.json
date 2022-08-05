@@ -634,13 +634,13 @@
           "members": [
             {
               "type": "FIELD",
-              "name": "mutable",
+              "name": "ref",
               "content": {
                 "type": "SEQ",
                 "members": [
                   {
                     "type": "STRING",
-                    "value": "mut"
+                    "value": "ref"
                   },
                   {
                     "type": "SYMBOL",
@@ -3506,10 +3506,6 @@
         {
           "type": "STRING",
           "value": "var"
-        },
-        {
-          "type": "STRING",
-          "value": "mut"
         },
         {
           "type": "STRING",

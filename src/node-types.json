@@ -1088,7 +1088,7 @@
           }
         ]
       },
-      "mutable": {
+      "ref": {
         "multiple": true,
         "required": false,
         "types": [
@@ -1097,7 +1097,7 @@
             "named": true
           },
           {
-            "type": "mut",
+            "type": "ref",
             "named": false
           }
         ]
@@ -1148,7 +1148,7 @@
           }
         ]
       },
-      "mutable": {
+      "ref": {
         "multiple": true,
         "required": false,
         "types": [
@@ -1157,7 +1157,7 @@
             "named": true
           },
           {
-            "type": "mut",
+            "type": "ref",
             "named": false
           }
         ]
@@ -2931,10 +2931,6 @@
   },
   {
     "type": "min",
-    "named": false
-  },
-  {
-    "type": "mut",
     "named": false
   },
   {
