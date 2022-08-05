@@ -3521,7 +3521,7 @@
         },
         {
           "type": "STRING",
-          "value": "loc"
+          "value": "alias"
         }
       ]
     },

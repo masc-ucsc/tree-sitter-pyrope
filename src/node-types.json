@@ -2770,6 +2770,10 @@
     "named": false
   },
   {
+    "type": "alias",
+    "named": false
+  },
+  {
     "type": "and",
     "named": false
   },
@@ -2915,10 +2919,6 @@
   },
   {
     "type": "let",
-    "named": false
-  },
-  {
-    "type": "loc",
     "named": false
   },
   {

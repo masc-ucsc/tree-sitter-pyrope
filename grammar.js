@@ -465,7 +465,7 @@ module.exports = grammar({
     ,cycle_select: $ => seq('#', $.select)
 
     // Variable Properties
-    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref', 'loc')
+    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref', 'alias')
 
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
