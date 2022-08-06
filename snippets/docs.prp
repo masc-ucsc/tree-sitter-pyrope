@@ -56,9 +56,10 @@ a = 3 // another comment
 33      // 33 in decimal
 0o111   // 73 in octal
 0111    // 111 in decimal (some languages use octal here)
-assert 1k == 1K == 1024
-assert 1m == 1M == 1024*1024
-assert 1g == 1G == 1024*1024*1024
+assert 1K == 1024
+assert 1M == 1024*1024
+assert 1G == 1024*1024*1024
+assert 1T == 1024*1024*1024*1024
 0b?             // 0 or 1 in decimal
 0sb?            // 0 or -1 in decimal
 0b?0            // 0 or 2 in decimal
@@ -89,8 +90,9 @@ let x = nonpure() + a       // error, `a` is mutable and `nonpure` is unpure
 let b = pure(a) + 10 + nonpure(a) // OK
 var d = t.nonpure() + pure(b)     // OK, b is immutable
 let y = t.nonpure() + nonpure()   // error, multiple non pure calls
-var a = {var d=3 ; last d+1} + 100 // OK
-assert a == (3+1+100)
+var a =       {var d=3 ; last d+1}    + 100 // OK
+var b = (fun(){var d=3 ; last d+1})() + 100 // same with functions
+assert a == (3+1+100) == b
 
 
 
@@ -133,10 +135,10 @@ assert a.0.1     == 2
 let a = (foo = 3)
 assert a has 'foo'
 assert !(a has 'bar')
-assert a has no 'bar' // "has no" is the opposite of "has"
+assert a !has 'bar' // "has no" is the opposite of "has"
 assert a has 0
-assert !(a has 1)
-assert a has no 1
+assert a !has 1
+assert a !has 1
 let val = 4
 let x = (
   ,field1=1         // field1 with implicit type and 1 value
@@ -290,6 +292,45 @@ assert join1 == (1,2,3)
 assert(((1,a=2,c=3) ++ (a=20,33,c=30,4)) == (1,a=(2,20),c=(3,30),33,4))
 reg counter = 10
 var not_count = 20
+let x1  = (pub let b=3, pub var d=4, let e=5, var f=6)
+
+let x2  = (pub let b=3,         d=4, let e=5, var f=6)
+
+var x3  = (pub let b=3,         d=4, let e=5, var f=6)
+
+type x4 = (pub let b=3,         d=4, let e=5, var f=6)
+
+// x1,x2,x3,x4 have identical tuple entry modifiers
+    var a = 3
+    {
+      assert a == 3
+      a = 33         // OK
+      let b = 4
+    }
+    var a = 3
+    let f1 = fun() {
+      assert a == 3
+      let b = 4
+      let a = 3333   // OK, shadowing allowed
+      assert a == 3333
+    }
+    let f2 = fun[]() { // restrict scope
+    }
+    let f3 = fun[ff=a]() { // restrict scope
+      assert ff == 3 // OK
+    }
+    // a is not visible
+    var a = 3
+    let r1 = (
+      // b is not visible
+      ,b=a+1
+      ,c = {assert a == 3; assert b==4; 50}
+    )
+
+    let r2 = (a=100, c=(a=a+1, e=a+30))
+    assert r2 == (a=100,c=(a==101, e=131))
+
+    // b is not visible
 var a:int          // any value, no constrain
 var b:unsigned     // only positive values
 var c:u13          // only from 0 to 1<<13
@@ -443,16 +484,16 @@ g2= (1 + 3)
 
 i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
-var v1:u32
-var v2:u32?
+var v1:u32                      // valid and zero every cycle
+var v2:u32 = (__valid=false, 3) // not valid and 3 every cycle
 
 comptime assert v1?
 comptime assert not v2?
 
-comptime assert v1 == 0 and v2 == 0 // data still same as usual
+comptime assert v1 == 0 and v2 == 3 // data still same as usual
 
 v1 = 0sb?                      // OK, poison data
-v2 = 0sb?                      // OK, poison data, do not touch valid
+v2 = 0sb?                      // OK, poison data, and update valid
 comptime assert v2?            // valid even though data is not
 
 comptime assert v1 != 0        // usual verilog x logic
@@ -485,7 +526,7 @@ type complex = (
 )
 
 var x1:complex
-var x2:complex?
+var x2:complex = (__valid=false)  // toggle valid, keep zero
 
 comptime assert x1.v1 == "" and x1.v2 == ""
 comptime assert not x2?  and not x2.v1? and not v2.v2?
@@ -526,8 +567,6 @@ verify a == 0, "the same error" unless cond
 reg memory:u33[] = (1,2,3) // may take cycles to load this contents
 
 assert memory[0] == 1 unless memory.reset 
-disable.assert = memory.reset or foo_reset
-assert false   // never fails during reset
 // coverage case NUM group states that random should be odd or even
 covecase NUM,   random&1 , "odd number"
 covecase NUM, !(random&1), "even number"
@@ -608,6 +647,12 @@ var d = for i in 0..<5 { i }
 var 2 = for i in 0..<5 { brk i }
 assert c == (0,1,2,3,4) == d
 assert e == (0)
+b = (1,2,3,4,5)
+
+for x in ref b {
+  x += 1
+}
+assert b == (2,3,4,5,6)
 var total
 for a in 1..=10 {
   continue when a == 2
@@ -728,6 +773,199 @@ comptime if runtime == 1 {
     }
 
     assert total == 3 and a_cond
+let a_3   = {   3 }     // just scope, not a lambda. Scope is evaluate now
+let a_fun = fun() { 4 } // local function, when just_4 is called 4 is returned
+
+pub let fun3 = fun(){ 5 } // public lambda that can be imported by other files
+
+let x = a_fun()           // OK, explicit call
+
+assert a_3 equals 3
+assert a_fun equals :fun()
+assert a_fun() == 4       // calls to eval the function
+var add
+add = fun (...x) { x.0+x.1+x.2 }       // no IO specified
+add = fun (a,b,c){ a+b+c }            // constrain inputs to a,b,c
+add = fun (a,b,c){ a+b+c }            // same
+add = fun (a:u32,b:s3,c){ a+b+c }     // constrain some input types
+add = fun (a,b,c) -> (x:u32){ a+b+c } // constrain result to u32
+add = fun (a,b,c) -> (res){ a+b+c }   // constrain result to be named res
+add = fun (a,b:a,c:a){ a+b+c }        // constrain inputs to have same type
+add = fun <T>(a:T,b:T,c:T){ a+b+c }   // same
+
+x = 2
+var add2
+add2 = fun       (a){   x + a }    // implicit capture x
+add2 = fun[x    ](a){   x + a }    // explicit capture x
+add2 = fun[foo=x](a){ foo + a }    // capture x but rename to something else
+
+var y = (
+  ,val:u32 = 1
+  ,inc1 = fun (self)->(self) { self.val = u32(self.val + 1) }
+)
+
+debug let my_log = fun (...inp) {
+  print "loging:"
+  for i in inp {
+    print " {}", i
+  }
+  puts
+}
+
+let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
+assert f(33:u22,100:u22)
+
+my_log a, false, x+1
+div  = fun (a,b) { a / b }          // named input tuple
+div2 = fun (...x){ x.0 / x.1 }   // unnamed input tuple
+
+noarg = fun () { ret 33 }         // explicit no args
+
+assert noarg == 33 == noarg()
+
+b=div(a=8, b=4)          // OK, 2
+d=(a=8).div(b=2)         // OK, 4
+
+h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
+i=8.div2(4,3)            // OK, same as div2(8,4,2)
+
+j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
+k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
+l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
+
+var tup = (
+  ,let f1 = fun(self) { ret 1 }
+)
+
+let f1 = fun (self){ ret 2 }
+let f2 = fun (self){ ret 3 }
+
+assert f1()     == 2
+assert f1(tup)  == 2
+assert 4.f2()   == 3  // UFCS call
+assert tup.f1() == 1
+var tup = (
+  ,var x = 3
+  ,let f1 = fun(self, ...rest){ assert rest.size == 0 ; ret self.x }
+)
+
+let fun2 = fun(self){ ret self.x       }
+let fun3 = fun(self,z){ ret self.x + z }
+
+assert tup.f1() == 3   // tup.fun call
+assert tup.f1 == 3     // explicit no args, so () is optional in call
+assert fun2(tup) == 3
+assert tup.fun2() == 3  // UFCS
+
+assert fun3(tup,2) == 5
+assert tup.fun3(2) == 5
+let inc1 = fun(ref a) { a += 1 }
+
+let x = 3
+
+var y = 3
+inc1(ref y)
+assert y == 4
+
+let banner = fun() { puts "hello"  }
+let execute_method = fun(ref fn) {
+  fn() // prints hello
+}
+
+execute_method(ref banner) // OK
+let f1 = fun() { puts "here" }
+
+let f2 = f1 // prints here
+
+alias f3 = f1
+f3          // prints here
+type Nested_call = (
+  ,var x = 1
+  ,let outter= proc(ref self) {  self.x = 100 ; self.inner(); self.x = 5 }
+  ,let inner = fun(self) { assert self.x == 100 }
+)
+var a_1 = (
+  ,x:u10
+  ,let f1 = fun(ref self,x)->(self) { 
+    self.x = x 
+    ret self
+  }
+)
+
+a_1.f1(3)
+var a_2 = a_1.f1(4)  // a_2 is updated, not a_1
+assert a_1.x == 3 and a_2.x == 4
+
+// Same behavior as in a function with UFCS
+fun2 = fun (ref self, x) { self.x = x }
+
+a_1.fun2(10)    
+var a_3 = a_1.fun2(20)
+assert a_1 == 10 and a_3 == 20
+var counter = (
+  ,var val:i32
+  ,let inc = fun (ref self, v){ self.var += v }
+)
+
+assert counter.val == 0
+counter.inc(3)
+assert counter.val == 3
+
+let inc = fun (ref self, v) { self.var *= v } // NOT INC but multiply
+assert 44.inc(2) == 8
+
+counter.val = 5
+alias mul = inc
+counter.mul(2)   // call the new mul method with UFCS
+assert counter.val == 10
+
+mul(counter, 2) // also legal
+assert counter.val == 20
+    foo = fun () { puts "fun.foo" }
+    a = (
+      ,foo = fun () {
+         bar = fun() { puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    a.foo(3)  // prints "mem.foo", arg passed (but not used by foo)
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo.bar()   // prints "bar", passes a.foo as argument to bar
+    a.foo().bar() // prints "mem.foo" (foo gets a) and then "bar" (has no input)
+
+    foo()         // prints "fun.foo"
+    b.foo()       // prints "fun.foo"
+    foo = fun (self){ puts "fun.foo" }  // explicit self
+    a = (
+      ,foo = fun (){                    // implicit self 
+         bar = fun (){ puts "bar" }
+         puts "mem.foo"
+         ret (bar=bar)
+      }
+    )
+    b = 3
+
+    puts "start"
+    b.foo()   // prints "fun.foo"
+    a.foo()   // prints "mem.foo"
+    x = a.foo // Nothing printed, just lambda in x
+    y = x()   // prints "foo"
+    y()       // prints "bar"
+    z = y     // nothing printed
+
+    a.foo().bar() // prints "mem.foo" and then "bar"
+
+    b.foo()       // prints "fun.foo"
 var res
 if cond {
   res = a
@@ -816,58 +1054,53 @@ lec res, res2
 
     lec lhs , lhs2
     lec lhs?, lhs2_v
-let work = fun(a,b)->(c,d) {
-   c = a+b
-   if c==0 { 
-    d = a-b 
-  }
-}
+    pub case_1_counter = proc(runtime)->(res) {
 
-if cond {
-  c,d = work(a,b)
-}
+      reg r:(
+        ,reg total
+        ,increase = fun(a) {
+          puts "hello"
 
-// RTL equivalent
-let tmp_a = a
-let tmp_b = b
-tmp_a? = __and(a?, cond)   // adjust the call arg valids
-tmp_b? = __and(b?, cond)
+          let res = self.total
+          self.total = u16(res+a)
 
-tmp_c, tmp_d = work(tmp_a,tmp_b)
+          ret res
+        }
+      )
 
-let c2 = __mux(cond, c, tmp_c)
-let d2 = __mux(cond, d, tmp_d)
-
-let c2_v = __mux(cond, c?, tmp_c?)
-let d2_v = __mux(cond, d?, tmp_d?)
-
-lec c, c2
-lec d, d2
-
-lec c?, c2_v
-lec d?, d2_v
-    let div = fun(a,b) {
-
-      assert b!=0 or b?  // OK if invalid too
-      out = a / b
-    }
-    let work = fun(a,b) {
-      out = a + b
-      if out? {          // we may want to print only when valid
-        puts "{} + {} is {}", a, b, out
+      if runtime == 2 {
+        res = r.increase(3)
+      }elif runtime == 4 {
+        res = r.increase(9)
       }
     }
-    let div = fun(a,b) {
-      disable.assert = not b?
-      assert b!=0 
-      out = a / b
-    }
+    pub case_1_counter = proc(runtime)->(res) {
 
-    let fun2 = fun(a,b) {
-      out = a + b
+      reg r:(
+        ,reg total
+        ,increase = fun(a) {
+          puts "hello"
 
-      disable.puts = not out?
-      puts "{} + {} is {}", a, b, out
+          let res = self.total
+          self.total = u16(res+a)
+
+          ret res
+        }
+      )
+
+      if runtime == 2 {
+        puts "hello"
+
+        let res = r.total
+        r.total = u16(res+3)
+        res = res
+      }elif runtime == 4 {
+        puts "hello"
+
+        let res = r.total
+        r.total = u16(res+9)
+        res = res
+      }
     }
 reg r:u16 = 3 // reset sets r to 3
 r = 2         // non-reset assignment
@@ -880,7 +1113,7 @@ reg array:[] = conf.get("some.conf.hex.dump")
 reg array:tag[1024] = (
   ,clock=my_clock
 
-  ,always_reset = fun()->(self) {
+  ,always_reset = fun(self)->(self) {
      reg reset_iter:u10 = (reset="") // no reset flop
 
      self[reset_iter].state = I
@@ -899,11 +1132,11 @@ reg array:tag[1024] = (
       d = x.h
     }
     type inner_t = (
-      ,pub set = fun(z,y)->(self) {
+      ,pub set = fun(self, z,y)->(self) {
         self.z = z
         self.y = y
       }
-      ,always_after = fun()->(self) {
+      ,always_after = fun(self)->(self) {
         self.a =   self.y & self.z
         self.h = !(self.y & self.z)
       }
@@ -914,6 +1147,60 @@ reg array:tag[1024] = (
       c = foo.a
       d = foo.h
     }
+if cond {
+  var p1 = inp1
+  var out
+
+  {
+    var l1 = inp1 + 1
+
+    pub var p2 = inp1 + 2
+  } #> {
+    out = p1 + p2
+  }
+
+  res = out
+}
+
+// Non pipestage equivalent
+if cond {
+  var p1 = inp1
+  var out
+
+  {
+    reg p1r
+    reg p2r
+
+    var l1 = inp1 + 1
+    pub var p2 = inp1 + 2 // now pub has no special meaning
+
+    out = p1r + p2r       // registered values
+
+    p1r = p1
+    p2r = p2
+  }
+
+  res = out
+}
+reg a = 3
+a = u16(a+1)
+
+reg b = 4
+if cond {
+  reg c
+  c = b + 1
+  b = 5
+}
+
+// RTL equivalent
+a_qpin = __flop(reset=reset, clk=clk, reset_value=3, din=a.__last_value)
+a      = __sum(A=(a_qpin, 1))
+
+b_qpin = __flop(reset=reset, clk=clk, reset_value=4, din=b.__last_value)
+b      = __mux(cond, b_qpin, 5)
+
+c_cond_qpin = __flop(reset=reset, clk=clk, din=c_cond.__last_value)
+c_cond      = __sum(A=(b, 1))
 my_flop1_q = __flop(din=my_din, reset=my_rst, clock=my_clk
                    ,enable=my_enable, posclk=true, initial=3, async=false)
 
@@ -1013,185 +1300,403 @@ out  =#[1..<4] add1(x,in3) // OK
     x =# mul3(in1, in2)
     y = in1#[-3]
     out =# add1(a=x,b=y)    // connect in1 from -3 cycles
-let a_3   = {   3 }     // just scope, not a lambda. Scope is evaluate now
-let a_fun = fun() { 4 } // local function, when just_4 is called 4 is returned
+    var b = "hello"
 
-pub let fun3 = fun(){ 5 } // public lambda that can be imported by other files
+    var a:u32
 
-let x = a_fun()           // OK, explicit call
+    a += 1
 
-assert a_3 equals 3
-assert a_fun equals :fun()
-assert a_fun() == 4       // calls to eval the function
-var add
-add = fun (...x) { x.0+x.1+x.2 }       // no IO specified
-add = fun (a,b,c){ a+b+c }            // constrain inputs to a,b,c
-add = fun (a,b,c){ a+b+c }            // same
-add = fun (a:u32,b:s3,c){ a+b+c }     // constrain some input types
-add = fun (a,b,c) -> (x:u32){ a+b+c } // constrain result to u32
-add = fun (a,b,c) -> (res){ a+b+c }   // constrain result to be named res
-add = fun (a,b:a,c:a){ a+b+c }        // constrain inputs to have same type
-add = fun <T>(a:T,b:T,c:T){ a+b+c }   // same
+    a = b                       // incorrect
 
-x = 2
-var add2
-add2 = fun       (a){   x + a }    // implicit capture x
-add2 = fun[x    ](a){   x + a }    // explicit capture x
-add2 = fun[foo=x](a){ foo + a }    // capture x but rename to something else
 
-var y = (
-  ,val:u32 = 1
-  ,inc1 = fun (self)->(self){ self.val = u32(self.val + 1) }
+    var dest:u32
+
+    dest = foo:u16 + v:u8
+    var b = "hello"
+
+    var a:u32
+
+    a += 1
+    comptime assert a does u32
+    a = b                       // incorrect
+    comptime assert a does u32
+
+    var dest:u32
+    comptime assert (dest does u32) and (foo does u16) and (v does u8)
+    dest = foo:u16 + v:u8
+type t1 = (a:int=1  , b:string)
+type t2 = (a:int=100, b:string)
+var  v1 = (a=33     , b="hello")
+
+comptime assert t1 equals t2
+comptime assert t1 equals v1
+type a1 = u32                 // same as 'type a1:u32'
+type a2 = int(max=33,min=-5)  // same as 'type a2:int(-5,33)'
+type a3 = (
+    ,var name:string
+    ,var age:u8
+    )
+type at=int(33..)     // number bigger than 32
+type bt=(
+  ,var c:string
+  ,var d=100
+  ,let set = fun(ref self, ...args) { self.c = args }
 )
 
-debug let my_log = fun (...inp) {
-  print "loging:"
-  for i in inp {
-    print " {}", i
+var a:at=40
+var v:bt="hello"
+puts "a:{} or {}", a, at // a:40 or 33
+puts "b:{}", b           // b:(c="hello",d=100)
+assert     (a:int(max=33,min=0) does (a:int(20,5)))
+assert not (a:int(max=33,min=0) does (a:int(50,5)))
+
+assert     (a:string,b:int) does (a:"hello", b:33)
+assert not ((b:int,a:string) does (a:"hello", b:33)) // order maters in tuples
+
+assert      :fun(x,xxx2)->(y,z) does :fun(x     )->(y,z)
+assert not (:fun(x     )->(y,z) does :fun(x,xxx2)->(y,z))
+type t1 = (a:string, b:int)
+type t2 = (b:int, a:string)
+
+var a:t1  = ("hello", 3)     // OK
+var b:t1  = (a="hello", 3)   // OK
+var c:t1  = (a="hello", b=3) // OK
+var c1:t1 = (b=3, a="hello") // OK
+
+var d:t2 = c                 // OK, both fully named
+assert d.0 == c.1 and c.0 == d.1
+assert d.a == c.a and d.b == c.b
+let a = fun() { ret 1 }
+let b = fun() { ret 2 }
+assert a equals :fun()
+assert a != b
+assert a equals b
+assert not (a equals fun() { ret 1 }) // different arguments
+type Rgb = (
+  ,let c:u24
+  ,let set = proc(ref self, c) { self.c = c }
+)
+
+enum Color:Rgb = (
+  ,Yellow   = 0xffff00
+  ,Red      = 0xff0000
+  ,Green    = Rgb(0x00ff00) // alternative redundant syntax
+  ,Blue     = Rgb(0x0000ff)
+)
+
+var y:Color = Color.Red
+if y == Color.Red {
+  puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
+}
+var val:u8 // designer constraints a to be between 0 and 255
+val = 3    // val has 3 bits (0sb011 all the numbers are signed)
+
+
+val = 0x1F0@[0..<val.__ubits] // explicitly select bits to not overflow
+assert val == 240
+
+wrap val = 0x1F0   // Drop bits from 0x1F0 to fit in maximum 'val' allowed bits
+assert val == 240
+
+val = u8(0x1F0)    // same
+assert val == 0xF0
+a = 3                      // max:3, min:3
+if b {
+  c = a+1                  // max:4, min:4
+}else{
+  c = a                    // max:3, min:3
+}
+e.__sbits = 4              // max:3, min:-4
+e = 3                      // max:3, min:3
+d = c                      // max:4, min:3
+if d==4 {
+  d = e + 1                // max:4, min:4
+}
+g = d                      // max:4, min:3
+h = c@[0,1]                // max:3, min:0
+if cmd? {
+  x,y = cmd     // x.max=cmd.a.max; x.min = 0 (uint) ; ....
+}elif x > y {
+                // narrowing: x.min = y.min + 1 = 1
+                // narrowing: y.max = x.min - 1
+  x = x - y     // x.max = x.max - x.min = x.max - 1
+                // x.min = x.min - y.max = 1
+}else{          // x <= y
+                // narrowing: x.max = y.min
+                // narrowing: y.min = x.min
+  y = y - x     // y.max = y.max - x.min = y.max
+                // y.min = y.min - x.max = 0
+}
+                // merging: x.max = x.max ; x.min = 0
+                // merging: y.max = y.max ; y.min = 0
+                // converged becauze x and y is same or smaller at beginning
+reg x,y
+if cmd? {
+  x,y = cmd
+}elif x > y {
+  x = x - y
+}else{
+  y = y - x
+}
+wrap x:cmd.a = x  // use cmd.a type for x, and drop bits as needed
+y = cmd.b(y)  // typecast y to cmd.b type (this can add a mux)
+var a:u32=100
+var b:u10
+var c:u5
+var d:u5
+
+b = a      // OK done automatically. No precision lost
+wrap c = a // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
+
+saturate c = a  // OK, c == 31
+c = 31
+
+wrap d = c + 1   // OK d == 0
+saturate d = c+1 // OK, d==31
+saturate d = c+1 // OK, d==31
+
+saturate x:boolean = c // same as x = c!=0
+
+var lhs:(x1:u8, x2:u12) // 9 + 13 bits in signed == 22bits
+lhs@[] = 0x1FF:u22
+assert lhs.x1 == 0xFF and lhs.x2==1
+type at=(c:string,d:u32)
+type bt=(c:string,d:u100)
+
+type ct=(
+  ,var d:u32
+  ,var c:string
+) // different order
+type dt=(
+  ,var d:u32
+  ,var c:string
+  ,let set = proc (ref self, x:at) { self.d = x.d ; self.c = x.c }
+)
+
+var b:bt=(c="hello", d=10000)
+var a:at
+
+a = b // OK c is string, and 10000 fits in u32
+
+var c:ct
+
+var d:dt
+d = a // OK, call intitial to type cast
+type Say_mixin = (
+  ,let say = fun(s) { puts s }
+)
+
+type Say_hi_mixin = (
+  ,let say_hi  = fun() {self.say("hi {}", self.name) }
+  ,let say_bye = fun() {self.say("bye {}", self.name) }
+)
+
+type User = (
+  ,var name:string
+  ,let set = proc(ref self, n:string) { self.name = n }
+)
+
+type Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
+
+var a:Mixing_all("Julius Caesar")
+a.say_hi()
+type Shape = (
+  ,name:string
+  ,area         :fun (self )->(:i32)     // defined but unimplemented 
+  ,increase_size:proc(ref self, x:i12)   // defined but unimplemented 
+
+  ,set =proc(ref self, name ) { self.name = name } // implemented, use =
+)
+
+type Circle extends Shape with (
+  ,set = proc(ref self) { super("circle") }
+  ,increase_size = proc(ref self, x:i12) { self.rad *= x }
+  ,rad:i32
+  ,area = fun(self) -> (:i32) {
+     let pi = import("math").pi
+     ret pi * self.rad * self.rad
   }
-  puts
+)
+type Circle = (
+  ,rad:i32
+  ,name = "Circle"
+  ,area = fun() -> (:i32) {
+     let pi = import("math").pi
+     ret pi * self.rad * self.rad
+  }
+  ,increase_size = proc(ref self, a:i12) { self.rad *= a }
+)
+comptime assert Circle does Shape
+a = (b=1,c:u32=2)
+var b = a
+b.c=100
+
+assert a equals b
+assert a.size == 2
+assert a['b'] == 1
+assert a['c'] equals u32
+
+assert   a has 'c'
+assert !(a has 'foo')
+
+assert a.__id == 'a'
+assert a.0.__id == ':0:b' and a.b.__id == ':0:b'
+assert a.1.__id == ':1:c' and a.c.__id == ':1:c'
+let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
+assert fu.__inp equals (a,b)
+assert fu.__out equals (c)
+assert fu.__where(a=200) and !fu.__where(a=1)
+let x = fn(args)
+
+let x = for i in fn { last i(args) when (i.__inp does :args) 
+                                    and (i.__out does :x   ) 
+                                    and (i.__where(args)   ) }
+randomize = debug fun(ref self) {
+  let rnd = import "prp/rnd"
+  for i in ref self {
+    if i equals :int {
+      i = rnd.between(i.__max,i.__min)
+    }elif i equals :boolean {
+      i = rnd.boolean()
+    }
+  }
+  ret self
 }
 
-let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
-assert f(33:u22,100:u22)
+let x = (a=1,b=true,c="hello")
+let y = x.randomize()
 
-my_log a, false, x+1
-div  = fun (a,b) { a / b }          // named input tuple
-div2 = fun (...x){ x.0 / x.1 }   // unnamed input tuple
+assert x.a==1 and x.b==true and x.c=="hello"
+cover  y.a!=1
+cover  y.b!=true
+assert y.c=="hello"  // string is not supposed to mutate in randomize()
+// file: src/my_fun.prp
+pub let fun1    = fun(a,b) { a+b }
+pub let fun2    = fun(a) {
+  pub let inside = fun() { ret 3 }
+  ret a
+}
+pub let another = fun(a) { ret a }
 
-noarg = fun () { ret 33 }         // explicit no args
+pub let mytup = (
+  ,pub let call3 = fun() { puts "call called" }
+)
+// file: src/user.prp
+a = import "my_fun/*fun*"
+a.fun1(a=1,b=2)         // OK
 
-assert noarg == 33 == noarg()
+let fun1 = import "my_fun/fun1"
+lec fun1, a.fun1
 
-b=div(a=8, b=4)          // OK, 2
-d=(a=8).div(b=2)         // OK, 4
+x = import "my_fun/mytup"
 
-h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
-i=8.div2(4,3)            // OK, same as div2(8,4,2)
+x.call3()                // prints call called
+a = import "prj1/file1"
+b = import "file1"        // import xxx_fun from file1 in the local project
+c = import "file2"        // import the functions from local file2
+d = import "prj2/file3"   // import the functions from project prj2 and file3
+b = import "prp/Number"
+a = import "fancy/Number_mixin"
 
-j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
-k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
-l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
+type Number = b ++ a // patch the default Number class
 
-var tup = (
-  ,let f1 = fun() { ret 1 }
+var x:Number = 3
+let do_increase = proc() {
+  reg counter("MY_COUNTER")
+
+  wrap counter:u32 = counter + 1
+}
+
+let do_debug = proc() {
+  reg counter("MY_COUNTER")
+  puts "The counter value is {}", counter
+}
+// file remote.prp
+reg uart_addr("MY_ADDR")
+assert 0x400 > uart_addr >= 0x300
+
+// file local.prp
+pub let setup_xx = proc() {
+  reg xx(instance="MY_ADDR") // creates a var that drives remote uart_addr
+  for i,index in ref xx {
+    i = 0x300+index*0x10     //  sets uart_addr to 0x300, 0x310, 0x320...
+  }
+}
+type bpred = ( // complex predictor
+  ,pub let taken = fun(){ ret self.some_table[som_var] >=0 }
 )
 
-let f1 = fun (b){ ret 2 }
+test "mocking taken branches" {
+  poke "bpred_file/taken", true
 
-assert f1()     == 2
-assert f1(tup)  == 2
-assert 4.f1()   == 2
-assert tup.f1() == 1
-var tup = (
-  ,var x = 3
-  ,let f1 = fun(...rest){ assert rest.size == 0 ; ret self.x }
-)
+  var l = core.fetch.predict(0xFFF)
+}
+var f1:XXX = (3,2)
+var f2:XXX = XXX(3,2)
+var f3:XXX
 
-let fun2 = fun(b){ ret b.x             } // no self, but it is the same
-let fun3 = fun(self,b){ ret self.x + b }
+f3 = (3,2)
+assert f3 == f2 == f1
+type some_obj = (
+  ,a1:string
+  ,pub a2 = (
+    ,_val:u32                                  // hidden field
 
-assert tup.f1() == 3   // tup.fun call
-assert tup.f1 == 3     // explicit no args, so () is optional in call
-assert fun2(tup) == 3
-assert tup.fun2() == 3  // UFCS
-
-assert fun3(tup,2) == 5
-assert tup.fun3(2) == 5
-var a_1 = (
-  ,x:u10
-  ,let f1 = fun(self,x)->(self) {
-    self.x = x 
+    ,pub var get=fun() { self._val + 100 }     // getter
+    ,set=proc(ref self, x) { self._val = x+1 } // setter
+  )
+  ,pub var set = proc(ref self, a,b){          // setter
+    self.a1      = a
+    self.a2._val = b
   }
 )
 
-a_1.f1(3)            // syntax sugar for a_1 = a_1.f1(3)
-var a_2 = a_1.f1(4)  // a_2 is updated, not a_1
-assert a_1.x == 3 and a_2.x == 4
+var x:some_obj = ("hello", 3)
 
-// Same behavior as in a function with UFCS
-fun2 = fun (self, x)->(self){ self.x = x }
-
-a_1.fun2(10)    
-var a_3 = a_1.fun2(20)
-assert a_1 == 10 and a_3 == 20
-var counter = (
-  ,var val:i32
-  ,let inc = fun (self, v){ self.var += v }
+assert x.a1 == "hello"
+assert x.a2 == 103
+x.a2 = 5
+assert x.a2.get == 106
+type showcase = (
+  ,pub var v:int
+  ,pub var get ++= fun()->(:string) where self.i>100 {
+    ret "this is a big number" ++ string(v)
+  }
+  ,pub var get ++= fun()->(:int) {
+    ret v
+  }
 )
 
-assert counter.val == 0
-counter.inc(3)
-assert counter.val == 3
+var s:showcase
+s.v = 3
+s.v = 100
 
-let inc = fun (self, v)->(self){ self.var *= v } // NOT INC but multiply
-counter.inc(2)
-assert counter.val == 5
+type my_obj = (
+  ,val:u32
+  ,pub var get 
+    = fun()->(:string ){ ret string(self.val) }
+   ++ fun()->(:boolean){ ret self.val != 0    }
+   ++ fun()->(:int    ){ ret self.val         }
+)
+type t=(
+  ,pub var v
+  ,pub let set = proc(ref self) { self.v = a }
+  ,pub let lt = fun(other)->(:boolean){ self.v  < other.v }
+  ,pub let eq = fun(other)          { self.v == other.v } // infer ret type
+)
 
-let mul = inc
-counter = counter.mul(2)   // call the new mul method with UFCS
-assert counter.val == 10
+var m1:t = 10
+var m2:t = 4
+assert m1 < m2 and !(m1==m2)
+assert m1 <= m2 and m1 != m2 and m2 > m1 and m2 >= m1
+let cfg = __read_json()
 
-let other = counter.mul(2) // UFCS no self update return
-assert counter.val == 10
-assert other.val   == 20
-
-mul(counter, 2) // also legal, but no self update
-assert counter.val == 20
-    // equivalent code due to automatic `self` insertion
-    let fun1 = proc(self)->(self){ self.foo = self.bar + 1}
-    let fun2 = proc(    )->(self){ self.foo = self.bar + 1}
-    let fun3 = proc(self)        { self.foo = self.bar + 1}
-    let fun4 = proc(    )        { self.foo = self.bar + 1}
-
-    // NOT equivalent because () means no input/output
-    let non2 = proc()    ->(self){ self.foo = self.bar + 1}
-    let non3 = proc(self)->()    { self.foo = self.bar + 1}
-    foo = fun () { puts "fun.foo" }
-    a = (
-      ,foo = fun () {
-         bar = fun() { puts "bar" }
-         puts "mem.foo"
-         ret (bar=bar)
-      }
-    )
-    b = 3
-
-    puts "start"
-    b.foo()   // prints "fun.foo"
-    a.foo()   // prints "mem.foo"
-    a.foo(3)  // prints "mem.foo", arg passed (but not used by foo)
-    x = a.foo // Nothing printed, just lambda in x
-    y = x()   // prints "foo"
-    y()       // prints "bar"
-    z = y     // nothing printed
-
-    a.foo.bar()   // prints "bar", passes a.foo as argument to bar
-    a.foo().bar() // prints "mem.foo" (foo gets a) and then "bar" (has no input)
-
-    foo()         // prints "fun.foo"
-    b.foo()       // prints "fun.foo"
-    foo = fun (self){ puts "fun.foo" }  // explicit self
-    a = (
-      ,foo = fun (){                    // implicit self 
-         bar = fun (){ puts "bar" }
-         puts "mem.foo"
-         ret (bar=bar)
-      }
-    )
-    b = 3
-
-    puts "start"
-    b.foo()   // prints "fun.foo"
-    a.foo()   // prints "mem.foo"
-    x = a.foo // Nothing printed, just lambda in x
-    y = x()   // prints "foo"
-    y()       // prints "bar"
-    z = y     // nothing printed
-
-    a.foo().bar() // prints "mem.foo" and then "bar"
-
-    b.foo()       // prints "fun.foo"
+pub let ext = if cfg.foo.bar == 3 {
+   foo
+}else{
+   bar
+}
+type __my_typed_cpp = fun(a,b)->(e)
 type Animal = (
   ,pub let legs:int
   ,var name= "unnamed"
@@ -1199,16 +1704,16 @@ type Animal = (
 )
 
 type Dog extends Animal with (
-  ,pub var set = proc()->(self) { self.legs = 4 }
+  ,pub var set = proc(ref self) { self.legs = 4 }
   ,bark = fun() { puts "bark bark" }
 )
 
 type Bird extends Animal with (
   ,seeds_eaten:int
 
-  ,pub var set = proc()->(self) { self.legs = 2 }
-  ++ proc(a:Animal)->(self) { self.legs = 2 ; name = "bird animal" }
-  ,eat_seeds = proc(n)->(self) { self.seeds_eaten += n }
+  ,pub var set = proc(ref self)  { self.legs = 2 }
+  ++ proc(ref self, a:Animal)    { self.legs = 2 ; name = "bird animal" }
+  ,eat_seeds = proc(ref self, n) { self.seeds_eaten += n }
 )
 
 type Greyhound = Dog ++ ( // also extends Dog
@@ -1403,402 +1908,6 @@ let rotate = fun(a) where a has 'x' and a has 'y' {
   r.y = a.x
   ret r
 }
-    var b = "hello"
-
-    var a:u32
-
-    a += 1
-
-    a = b                       // incorrect
-
-
-    var dest:u32
-
-    dest = foo:u16 + v:u8
-    var b = "hello"
-
-    var a:u32
-
-    a += 1
-    comptime assert a does u32
-    a = b                       // incorrect
-    comptime assert a does u32
-
-    var dest:u32
-    comptime assert (dest does u32) and (foo does u16) and (v does u8)
-    dest = foo:u16 + v:u8
-type t1 = (a:int=1  , b:string)
-type t2 = (a:int=100, b:string)
-var  v1 = (a=33     , b="hello")
-
-comptime assert t1 equals t2
-comptime assert t1 equals v1
-type a1 = u32                 // same as 'type a1:u32'
-type a2 = int(max=33,min=-5)  // same as 'type a2:int(-5,33)'
-type a3 = (
-    ,var name:string
-    ,var age:u8
-    )
-type at=int(33..)     // number bigger than 32
-type bt=(
-  ,var c:string
-  ,var d=100
-  ,let set = fun(...args)->(self) { self.c = args }
-)
-
-var a:at=40
-var v:bt="hello"
-puts "a:{} or {}", a, at // a:40 or 33
-puts "b:{}", b           // b:(c="hello",d=100)
-assert     (a:int(max=33,min=0) does (a:int(20,5)))
-assert not (a:int(max=33,min=0) does (a:int(50,5)))
-
-assert     (a:string,b:int) does (a:"hello", b:33)
-assert not ((b:int,a:string) does (a:"hello", b:33)) // order maters in tuples
-
-assert      :fun(x,xxx2)->(y,z) does :fun(x     )->(y,z)
-assert not (:fun(x     )->(y,z) does :fun(x,xxx2)->(y,z))
-type t1 = (a:string, b:int)
-type t2 = (b:int, a:string)
-
-var a:t1  = ("hello", 3)     // OK
-var b:t1  = (a="hello", 3)   // OK
-var c:t1  = (a="hello", b=3) // OK
-var c1:t1 = (b=3, a="hello") // OK
-
-var d:t2 = c                 // OK, both fully named
-assert d.0 == c.1 and c.0 == d.1
-assert d.a == c.a and d.b == c.b
-let a = fun() { ret 1 }
-let b = fun() { ret 2 }
-assert a equals :fun()
-assert a != b
-assert a equals b
-assert not (a equals fun() { ret 1 }) // different arguments
-type Rgb = (
-  ,let c:u24
-  ,let set = proc(c)->(self) { self.c = c }
-)
-
-enum Color:Rgb = (
-  ,Yellow   = 0xffff00
-  ,Red      = 0xff0000
-  ,Green    = Rgb(0x00ff00) // alternative redundant syntax
-  ,Blue     = Rgb(0x0000ff)
-)
-
-var y:Color = Color.Red
-if y == Color.Red {
-  puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
-}
-var val:u8 // designer constraints a to be between 0 and 255
-val = 3    // val has 3 bits (0sb011 all the numbers are signed)
-
-
-val = 0x1F0@[0..<val.__ubits] // explicitly select bits to not overflow
-assert val == 240
-
-wrap val = 0x1F0   // Drop bits from 0x1F0 to fit in maximum 'val' allowed bits
-assert val == 240
-
-val = u8(0x1F0)    // same
-assert val == 0xF0
-a = 3                      // max:3, min:3
-if b {
-  c = a+1                  // max:4, min:4
-}else{
-  c = a                    // max:3, min:3
-}
-e.__sbits = 4              // max:3, min:-4
-e = 3                      // max:3, min:3
-d = c                      // max:4, min:3
-if d==4 {
-  d = e + 1                // max:4, min:4
-}
-g = d                      // max:4, min:3
-h = c@[0,1]                // max:3, min:0
-if cmd? {
-  x,y = cmd     // x.max=cmd.a.max; x.min = 0 (uint) ; ....
-}elif x > y {
-                // narrowing: x.min = y.min + 1 = 1
-                // narrowing: y.max = x.min - 1
-  x = x - y     // x.max = x.max - x.min = x.max - 1
-                // x.min = x.min - y.max = 1
-}else{          // x <= y
-                // narrowing: x.max = y.min
-                // narrowing: y.min = x.min
-  y = y - x     // y.max = y.max - x.min = y.max
-                // y.min = y.min - x.max = 0
-}
-                // merging: x.max = x.max ; x.min = 0
-                // merging: y.max = y.max ; y.min = 0
-                // converged becauze x and y is same or smaller at beginning
-reg x,y
-if cmd? {
-  x,y = cmd
-}elif x > y {
-  x = x - y
-}else{
-  y = y - x
-}
-wrap x:cmd.a = x  // use cmd.a type for x, and drop bits as needed
-y = cmd.b(y)  // typecast y to cmd.b type (this can add a mux)
-var a:u32=100
-var b:u10
-var c:u5
-var d:u5
-
-b = a      // OK done automatically. No precision lost
-wrap c = a // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
-
-saturate c = a  // OK, c == 31
-c = 31
-
-wrap d = c + 1   // OK d == 0
-saturate d = c+1 // OK, d==31
-saturate d = c+1 // OK, d==31
-
-saturate x:boolean = c // same as x = c!=0
-
-var lhs:(x1:u8, x2:u12) // 9 + 13 bits in signed == 22bits
-lhs@[] = 0x1FF:u22
-assert lhs.x1 == 0xFF and lhs.x2==1
-type at=(c:string,d:u32)
-type bt=(c:string,d:u100)
-
-type ct=(
-  ,var d:u32
-  ,var c:string
-) // different order
-type dt=(
-  ,var d:u32
-  ,var c:string
-  ,let set = proc (x:at)->(self) { self.d = x.d ; self.c = x.c }
-)
-
-var b:bt=(c="hello", d=10000)
-var a:at
-
-a = b // OK c is string, and 10000 fits in u32
-
-var c:ct
-
-var d:dt
-d = a // OK, call intitial to type cast
-type Say_mixin = (
-  ,let say = fun(s) { puts s }
-)
-
-type Say_hi_mixin = (
-  ,let say_hi  = fun() {self.say("hi {}", self.name) }
-  ,let say_bye = fun() {self.say("bye {}", self.name) }
-)
-
-type User = (
-  ,var name:string
-  ,let set = proc(n:string)->(self) { self.name = n }
-)
-
-type Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
-
-var a:Mixing_all("Julius Caesar")
-a.say_hi()
-type Shape = (
-  ,name:string
-  ,area         :fun (self )->(:i32)     // defined but unimplemented 
-  ,increase_size:proc(x:i12)->(self)     // defined but unimplemented 
-  ,set          =proc(name )->(self) { self.name = name } // implemented, use =
-)
-
-type Circle extends Shape with (
-  ,set = proc()->(self) { super("circle") }
-  ,increase_size = proc(x:i12)->(self) { self.rad *= x }
-  ,rad:i32
-  ,area = fun(self) -> (:i32) {
-     let pi = import("math").pi
-     ret pi * self.rad * self.rad
-  }
-)
-type Circle = (
-  ,rad:i32
-  ,name = "Circle"
-  ,area = fun() -> (:i32) {
-     let pi = import("math").pi
-     ret pi * self.rad * self.rad
-  }
-  ,increase_size = proc(a:i12)->(self){ self.rad *= a }
-)
-comptime assert Circle does Shape
-a = (b=1,c:u32=2)
-var b = a
-b.c=100
-
-assert a equals b
-assert a.size == 2
-assert a['b'] == 1
-assert a['c'] equals u32
-
-assert   a has 'c'
-assert !(a has 'foo')
-
-assert a.__id == 'a'
-assert a.0.__id == ':0:b' and a.b.__id == ':0:b'
-assert a.1.__id == ':1:c' and a.c.__id == ':1:c'
-let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
-assert fu.__inp equals (a,b)
-assert fu.__out equals (c)
-assert fu.__where(a=200) and !fu.__where(a=1)
-let x = fn(args)
-
-let x = for i in fn { last i(args) when (i.__inp does :args) 
-                                    and (i.__out does :x   ) 
-                                    and (i.__where(args)   ) }
-randomize = debug fun(self)->(self) {
-  let rnd = import "prp/rnd"
-  for i in ref self {
-    if i equals :int {
-      i = rnd.between(i.__max,i.__min)
-    }elif i equals :boolean {
-      i = rnd.boolean()
-    }
-  }
-  ret self
-}
-
-let x = (a=1,b=true,c="hello")
-let y = x.randomize()
-
-assert x.a==1 and x.b==true and x.c=="hello"
-cover  y.a!=1
-cover  y.b!=true
-assert y.c=="hello"  // string is not supposed to mutate in randomize()
-// file: src/my_fun.prp
-pub let fun1    = fun(a,b) { a+b }
-pub let fun2    = fun(a) {
-  pub let inside = fun() { ret 3 }
-  ret a
-}
-pub let another = fun(a) { ret a }
-
-pub let mytup = (
-  ,pub let call3 = fun() { puts "call called" }
-)
-// file: src/user.prp
-a = import "my_fun/*fun*"
-a.fun1(a=1,b=2)         // OK
-
-let fun1 = import "my_fun/fun1"
-lec fun1, a.fun1
-
-x = import "my_fun/mytup"
-
-x.call3()                // prints call called
-a = import "prj1/file1"
-b = import "file1"        // import xxx_fun from file1 in the local project
-c = import "file2"        // import the functions from local file2
-d = import "prj2/file3"   // import the functions from project prj2 and file3
-b = import "prp/Number"
-a = import "fancy/Number_mixin"
-
-type Number = b ++ a // patch the default Number class
-
-var x:Number = 3
-let do_increase = proc() {
-  reg counter("MY_COUNTER")
-
-  wrap counter:u32 = counter + 1
-}
-
-let do_debug = proc() {
-  reg counter("MY_COUNTER")
-  puts "The counter value is {}", counter
-}
-// file remote.prp
-reg uart_addr("MY_ADDR")
-assert 0x400 > uart_addr >= 0x300
-
-// file local.prp
-pub let setup_xx = proc() {
-  reg xx(instance="MY_ADDR") // creates a var that drives remote uart_addr
-  for i,index in ref xx {
-    i = 0x300+index*0x10     //  sets uart_addr to 0x300, 0x310, 0x320...
-  }
-}
-type bpred = ( // complex predictor
-  ,pub let taken = fun(){ ret self.some_table[som_var] >=0 }
-)
-
-test "mocking taken branches" {
-  poke "bpred_file/taken", true
-
-  var l = core.fetch.predict(0xFFF)
-}
-var f1:XXX = (3,2)
-var f2:XXX = XXX(3,2)
-var f3:XXX
-
-f3 = (3,2)
-assert f3 == f2 == f1
-type some_obj = (
-  ,a1:string
-  ,pub a2 = (
-    ,_val:u32                                // hidden field
-
-    ,pub var get=fun(){ self._val + 100 }    // getter
-    ,set=proc(x)->(self){ self._val = x+1 }  // setter
-  )
-  ,pub var set = proc(a,b)->(self){          // setter
-    self.a1      = a
-    self.a2._val = b
-  }
-)
-
-var x:some_obj = ("hello", 3)
-
-assert x.a1 == "hello"
-assert x.a2 == 103
-x.a2 = 5
-assert x.a2.get == 106
-type showcase = (
-  ,pub var v:int
-  ,pub var get ++= fun()->(:string) where self.i>100 {
-    ret "this is a big number" ++ string(v)
-  }
-  ,pub var get ++= fun()->(:int) {
-    ret v
-  }
-)
-
-var s:showcase
-s.v = 3
-s.v = 100
-
-type my_obj = (
-  ,val:u32
-  ,pub var get 
-    = fun()->(:string ){ ret string(self.val) }
-   ++ fun()->(:boolean){ ret self.val != 0    }
-   ++ fun()->(:int    ){ ret self.val         }
-)
-type t=(
-  ,pub var v
-  ,pub let set = proc()->(self){ self.v = a }
-  ,pub let lt = fun(other)->(:boolean){ self.v  < other.v }
-  ,pub let eq = fun(other)          { self.v == other.v } // infer ret type
-)
-
-var m1:t = 10
-var m2:t = 4
-assert m1 < m2 and !(m1==m2)
-assert m1 <= m2 and m1 != m2 and m2 > m1 and m2 >= m1
-let cfg = __read_json()
-
-pub let ext = if cfg.foo.bar == 3 {
-   foo
-}else{
-   bar
-}
-type __my_typed_cpp = fun(a,b)->(e)
 reg mem:[]
 mem[3]   = something // async memory
 var array:[]
@@ -2107,6 +2216,43 @@ assert a2.a == 2 and a2.b == 3
 
 let x1,x2 = ret2()
 assert x1 == 2 and x2 == 3
+pub type AnObject = (
+  ,v:i32
+)
+
+pub type AnObject2 extends AnObject2 with (
+  ,pub f1 = proc(ref self) -> (:i32) {
+    let res = self.v
+    self.v += 1
+    ret res
+  }
+  ,pub f2 = fun(self) -> (:i32) {
+    ret self.v
+  }
+)
+pub type AnObject = (
+  ,v:i32
+  ,pub f1 = proc(ref self) -> (:i32) {
+    let res = self.v
+    self.v += 1
+    ret res
+  }
+  ,pub f2 = fun(self) -> (:i32) {
+    ret self.v
+  }
+)
+pub type AnObject = (
+  ,v:i32
+)
+
+pub f1 = proc(ref self:AbObject) -> (:i32) {
+  let res = self.v
+  self.v += 1
+  ret res
+}
+pub f2 = fun(self:AbObject) -> (:i32) {
+  ret self.v
+}
     type Person = (name:string, age:u32)
     var a = (one:Person, two:Person)
 

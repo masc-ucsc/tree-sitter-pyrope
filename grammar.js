@@ -59,10 +59,15 @@ module.exports = grammar({
       ,'binary_compare'
       ,'binary_equal'
       ,'scalar_and'
+      ,'scalar_nand'
       ,'scalar_or'
+      ,'scalar_nor'
       ,'scalar_xor'
+      ,'scalar_xnor'
       ,'logical_and'
+      ,'logical_nand'
       ,'logical_or'
+      ,'logical_nor'
       ,'induction'
       ,'sequential_condition'
       ,'cycle_condition'
@@ -320,7 +325,7 @@ module.exports = grammar({
     )
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
-      ,field('capture', optseq('[', $.capture_list, ']'))
+      ,field('capture', optseq('[', optional($.capture_list), ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
       ,field('output', optseq('->', $.tuple))
@@ -364,7 +369,7 @@ module.exports = grammar({
       ,field('optional', optional('?'))
     ))
     ,unary_expression: $ => prec.left('unary', seq(
-      field('operator', choice('!', 'not', '~', '-', '...', 'no', 'unless', 'when'))
+      field('operator', choice('!', 'not', '~', '-', '...', 'unless', 'when'))
       ,field('argument', $._expression)
     ))
     ,optional_expression: $ => prec.right(seq(
@@ -378,8 +383,11 @@ module.exports = grammar({
         ,['..+', 'range']
         ,['by', 'step']
         ,['and', 'logical_and']
+        ,['!and', 'logical_nand']
         ,['or', 'logical_or']
+        ,['!or', 'logical_nor']
         ,['implies', 'induction']
+        ,['!implies', 'induction']
         ,['and_then', 'sequential_condition']
         ,['or_else', 'sequential_condition']
         ,['>>', 'binary_shift']
@@ -387,6 +395,9 @@ module.exports = grammar({
         ,['&', 'scalar_and']
         ,['^', 'scalar_xor']
         ,['|', 'scalar_or']
+        ,['!&', 'scalar_nand']
+        ,['!^', 'scalar_xnor']
+        ,['!|', 'scalar_nor']
         ,['*', 'binary_times']
         ,['/', 'binary_times']
         ,['+', 'binary_plus']
@@ -402,10 +413,13 @@ module.exports = grammar({
         ,['|>', 'pipe_concat']
         ,['++', 'tuple_concat']
         ,['has', 'tuple_relation']
+        ,['!has', 'tuple_relation']
         ,['in', 'tuple_relation']
+        ,['!in', 'tuple_relation']
         ,['equals', 'type_equal']
+        ,['!equals', 'type_equal']
         ,['does', 'type_compare']
-        ,['doesnt', 'type_compare']
+        ,['!does', 'type_compare']
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('left', $._expression)
@@ -611,7 +625,7 @@ module.exports = grammar({
       ,$.binary_number
     )
     ,simple_number:  $ => token(/0|[1-9][0-9]*/)
-    ,scaled_number:  $ => token(/(0|[1-9][0-9]*)[kKmMgG]/)
+    ,scaled_number:  $ => token(/(0|[1-9][0-9]*)[KMGT]/)
     ,hex_number:     $ => token(/0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)
     ,decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
     ,octal_number:   $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)

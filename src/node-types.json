@@ -245,7 +245,47 @@
         "required": true,
         "types": [
           {
+            "type": "!&",
+            "named": false
+          },
+          {
             "type": "!=",
+            "named": false
+          },
+          {
+            "type": "!^",
+            "named": false
+          },
+          {
+            "type": "!and",
+            "named": false
+          },
+          {
+            "type": "!does",
+            "named": false
+          },
+          {
+            "type": "!equals",
+            "named": false
+          },
+          {
+            "type": "!has",
+            "named": false
+          },
+          {
+            "type": "!implies",
+            "named": false
+          },
+          {
+            "type": "!in",
+            "named": false
+          },
+          {
+            "type": "!or",
+            "named": false
+          },
+          {
+            "type": "!|",
             "named": false
           },
           {
@@ -330,10 +370,6 @@
           },
           {
             "type": "does",
-            "named": false
-          },
-          {
-            "type": "doesnt",
             "named": false
           },
           {
@@ -2575,10 +2611,6 @@
             "named": false
           },
           {
-            "type": "no",
-            "named": false
-          },
-          {
             "type": "not",
             "named": false
           },
@@ -2634,7 +2666,47 @@
     "named": false
   },
   {
+    "type": "!&",
+    "named": false
+  },
+  {
     "type": "!=",
+    "named": false
+  },
+  {
+    "type": "!^",
+    "named": false
+  },
+  {
+    "type": "!and",
+    "named": false
+  },
+  {
+    "type": "!does",
+    "named": false
+  },
+  {
+    "type": "!equals",
+    "named": false
+  },
+  {
+    "type": "!has",
+    "named": false
+  },
+  {
+    "type": "!implies",
+    "named": false
+  },
+  {
+    "type": "!in",
+    "named": false
+  },
+  {
+    "type": "!or",
+    "named": false
+  },
+  {
+    "type": "!|",
     "named": false
   },
   {
@@ -2846,10 +2918,6 @@
     "named": false
   },
   {
-    "type": "doesnt",
-    "named": false
-  },
-  {
     "type": "elif",
     "named": false
   },
@@ -2931,10 +2999,6 @@
   },
   {
     "type": "min",
-    "named": false
-  },
-  {
-    "type": "no",
     "named": false
   },
   {
