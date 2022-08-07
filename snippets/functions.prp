@@ -1,0 +1,4 @@
+pub let f1 = fun(xx:A) -> yy:Foo {}
+pub let f1 = proc(xx:A) -> yy {}
+type f1 = fun(x:A) -> y:B[3]
+type f1 = (fun(x:A) -> y:B)[3]

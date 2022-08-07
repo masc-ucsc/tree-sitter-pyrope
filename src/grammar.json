@@ -1109,6 +1109,10 @@
           {
             "type": "SYMBOL",
             "name": "_assignment_or_declaration"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "function_type"
           }
         ]
       }
@@ -1509,8 +1513,21 @@
                       "value": "->"
                     },
                     {
-                      "type": "SYMBOL",
-                      "name": "tuple"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "tuple"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "type_specification"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "identifier"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -4209,8 +4226,21 @@
                         "value": "->"
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "tuple"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "tuple"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "identifier"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "type_specification"
+                          }
+                        ]
                       }
                     ]
                   }
@@ -4782,6 +4812,14 @@
     ],
     [
       "declaration"
+    ],
+    [
+      "_restricted_expression",
+      "function_type"
+    ],
+    [
+      "_expression",
+      "function_type"
     ]
   ],
   "precedences": [

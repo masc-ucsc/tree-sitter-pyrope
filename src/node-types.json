@@ -1408,7 +1408,15 @@
             "named": false
           },
           {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_specification",
             "named": true
           }
         ]
@@ -1456,7 +1464,15 @@
             "named": false
           },
           {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "type_specification",
             "named": true
           }
         ]
@@ -2340,6 +2356,10 @@
           },
           {
             "type": "declaration",
+            "named": true
+          },
+          {
+            "type": "function_type",
             "named": true
           }
         ]

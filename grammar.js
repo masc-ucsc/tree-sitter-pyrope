@@ -23,7 +23,12 @@ module.exports = grammar({
   name: 'pyrope'
 
   ,externals: $ => [ $._automatic_semicolon ]
-  ,conflicts: $ => [ [$.assignment], [$.declaration] ]
+  ,conflicts: $ => [
+    [$.assignment]
+    ,[$.declaration]
+    ,[$._restricted_expression, $.function_type]
+    ,[$._expression, $.function_type]
+  ]
   ,extras:    $ => [ $._space, $._comment ]
   ,word:      $ => $.identifier
   ,inline:    $ => []
@@ -290,6 +295,7 @@ module.exports = grammar({
     ,_tuple_item: $ => prec.left(choice(
       $._expression
       ,$._assignment_or_declaration
+      ,$.function_type
     ))
     
     // Assignment/Declaration
@@ -328,7 +334,7 @@ module.exports = grammar({
       ,field('capture', optseq('[', optional($.capture_list), ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
-      ,field('output', optseq('->', $.tuple))
+      ,field('output', optseq('->', choice($.tuple, $.type_specification, $.identifier)))
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     )
@@ -538,7 +544,7 @@ module.exports = grammar({
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
-      ,field('output', optseq('->', $.tuple))
+      ,field('output', optseq('->', choice($.tuple, $.identifier, $.type_specification)))
     ))
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
