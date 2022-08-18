@@ -1521,11 +1521,28 @@
                         },
                         {
                           "type": "SYMBOL",
-                          "name": "type_specification"
+                          "name": "type_cast"
                         },
                         {
-                          "type": "SYMBOL",
-                          "name": "identifier"
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "SYMBOL",
+                              "name": "identifier"
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "type_cast"
+                                },
+                                {
+                                  "type": "BLANK"
+                                }
+                              ]
+                            }
+                          ]
                         }
                       ]
                     }
@@ -4234,11 +4251,28 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "identifier"
+                            "name": "type_cast"
                           },
                           {
-                            "type": "SYMBOL",
-                            "name": "type_specification"
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "identifier"
+                              },
+                              {
+                                "type": "CHOICE",
+                                "members": [
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "type_cast"
+                                  },
+                                  {
+                                    "type": "BLANK"
+                                  }
+                                ]
+                              }
+                            ]
                           }
                         ]
                       }

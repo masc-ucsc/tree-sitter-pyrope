@@ -334,7 +334,7 @@ module.exports = grammar({
       ,field('capture', optseq('[', optional($.capture_list), ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
-      ,field('output', optseq('->', choice($.tuple, $.type_specification, $.identifier)))
+      ,field('output', optseq('->', choice($.tuple, $.type_cast, seq($.identifier, optional($.type_cast)))))
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     )
@@ -544,7 +544,7 @@ module.exports = grammar({
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.tuple))
-      ,field('output', optseq('->', choice($.tuple, $.identifier, $.type_specification)))
+      ,field('output', optseq('->', choice($.tuple, $.type_cast, seq($.identifier, optional($.type_cast)))))
     ))
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type

@@ -1416,7 +1416,7 @@
             "named": true
           },
           {
-            "type": "type_specification",
+            "type": "type_cast",
             "named": true
           }
         ]
@@ -1472,7 +1472,7 @@
             "named": true
           },
           {
-            "type": "type_specification",
+            "type": "type_cast",
             "named": true
           }
         ]
