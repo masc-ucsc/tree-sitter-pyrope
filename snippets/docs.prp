@@ -91,7 +91,7 @@ let b = pure(a) + 10 + nonpure(a) // OK
 var d = t.nonpure() + pure(b)     // OK, b is immutable
 let y = t.nonpure() + nonpure()   // error, multiple non pure calls
 var a =       {var d=3 ; last d+1}    + 100 // OK
-var b = (fun(){var d=3 ; last d+1})() + 100 // same with functions
+// var b = (fun(){var d=3 ; last d+1})() + 100 // same with functions
 assert a == (3+1+100) == b
 
 

@@ -34,7 +34,7 @@ module.exports = grammar({
   ,inline:    $ => []
 
   ,precedences: $ => [
-    [  
+    [
       'dot_type'
       ,'dot_type_sub'
       ,'array_type'
@@ -46,6 +46,7 @@ module.exports = grammar({
       ,'mixin_type_sub'
       ,'expression_type'
       ,'type'
+      ,'typed_identifier'
     // Expressions
       ,'dot_sub'
       ,'dot'
@@ -166,9 +167,7 @@ module.exports = grammar({
     ))
     ,enum_declaration: $ => prec.left(seq(
       'enum'
-      ,field('name', $.identifier)
-      ,field('type', optional($.type_cast))
-      ,field('definition', optseq('=', $._expression))
+      ,$.arg_item
       ,$._semicolon
     ))
     ,type_declaration: $ => prec.left(seq(
@@ -214,7 +213,7 @@ module.exports = grammar({
         field('ref',
           seq(
             'ref'
-            ,$.identifier  // not allowed in for expression
+            ,$.typed_identifier  // not allowed in for expression
           )
         )
         ,field('data', $.expression_list)
@@ -245,17 +244,18 @@ module.exports = grammar({
     ,expression_statement: $ => prec.right(seq(
       choice(
         $.identifier
+        ,$.type_cast
+        //$.type_or_identifier
         ,$.constant
         ,$.selection
+        ,$.dot_expression
         ,$.type_specification
-        ,$.type_cast
         ,$.function_call
         ,$.function_definition
         ,$.tuple
         ,$.unary_expression
         ,$.optional_expression
         ,$.binary_expression
-        ,$.dot_expression
       )
       ,$._semicolon
     ))
@@ -278,7 +278,8 @@ module.exports = grammar({
 
     // Function Call
     ,simple_function_call: $ => prec.left('simple_function_call', seq(
-      field('function', $._restricted_expression)
+      field('function', choice($.identifier, $.dot_expression, $.selection))
+      //field('function', $._restricted_expression)
       ,field('argument', $.expression_list)
     ))
 
@@ -297,7 +298,7 @@ module.exports = grammar({
       ,$._assignment_or_declaration
       ,$.function_type
     ))
-    
+
     // Assignment/Declaration
     ,_assignment_or_declaration: $ => choice($.assignment, $.declaration)
     ,assignment: $ => prec.right(seq(
@@ -333,15 +334,39 @@ module.exports = grammar({
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
-      ,field('input', optional($.tuple))
-      ,field('output', optseq('->', choice($.tuple, $.type_cast, seq($.identifier, optional($.type_cast)))))
+      ,field('input', optional($.arg_list))
+      ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     )
     ,capture_list: $ => listseq1(
-      field('identifier', $.identifier), optseq('=', field('expression', $._expression))
+      $.typed_identifier, optseq('=', field('expression', $._expression))
     )
-    ,identifier_list: $ => prec.left(listseq1(field('item', $.identifier)))
+    ,identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
+    ,arg_list: $ => prec.left(seq(
+      '(', optional($.arg_item_list), ')'
+    ))
+    ,arg_item_list: $ => seq(
+      repeat(',')
+      ,$.arg_item
+      ,repeat(seq(repeat1(',') ,$.arg_item))
+      ,repeat(',')
+    )
+    ,arg_item: $ => seq(
+      field('mod', optional(choice('...','ref')))
+      ,$.type_or_identifier
+      ,field('definition', optseq('=', $._expression))
+    )
+
+    ,type_or_identifier: $ => choice(
+      field('type', $.type_cast)
+      ,$.typed_identifier
+    )
+
+    ,typed_identifier: $ => seq(
+      field('identifier', $.identifier)
+      ,field('type', optional($.type_cast))
+    )
 
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
@@ -370,9 +395,7 @@ module.exports = grammar({
     ))
     ,type_specification: $ => prec.left('type_spec', seq(
       field('argument', $._restricted_expression)
-      ,choice(':', 'is')
-      ,field('type', $._type)
-      ,field('optional', optional('?'))
+      ,$.type_cast
     ))
     ,unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...', 'unless', 'when'))
@@ -439,7 +462,7 @@ module.exports = grammar({
       ,repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
     ))
     ,function_call: $ => prec.right('function', seq(
-      field('function', $._restricted_expression)
+      field('function', choice($.identifier, $.dot_expression, $.selection))
       ,field('argument', $.tuple)
     ))
     ,for_expression: $ => prec.right('expression', alias($.for_statement, $.for_expression))
@@ -450,17 +473,16 @@ module.exports = grammar({
       $.identifier
       ,$.constant
       ,$.selection
+      ,$.dot_expression
       ,$.function_call
       ,$.function_definition
       ,$.tuple
       ,$.optional_expression
-      ,$.dot_expression
       ,$.for_expression
       ,$.if_expression
       ,$.match_expression
       ,$.scope_expression
     ))
-
     // Operators
     ,assignment_operator: $ => token(choice(
       '=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', '<<=', '>>=', '++=', 'or=', 'and='
@@ -522,7 +544,8 @@ module.exports = grammar({
       ,repeat1(prec.right('dot_type_sub', seq('.', field('item', $.expression_type))))
     ))
     ,function_call_type: $ => prec.right('function_call_type', seq(
-      field('function', $.expression_type)
+      field('function', choice($.identifier, $.dot_expression, $.selection))
+      //field('function', $.expression_type)
       ,field('argument', $.tuple)
     ))
     ,mixin_type: $ => prec.left('mixin_type', seq(
@@ -543,8 +566,8 @@ module.exports = grammar({
     ,function_type: $ => prec.left('function_type', seq(
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
-      ,field('input', optional($.tuple))
-      ,field('output', optseq('->', choice($.tuple, $.type_cast, seq($.identifier, optional($.type_cast)))))
+      ,field('input', optional($.arg_list))
+      ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
     ))
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
