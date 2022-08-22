@@ -690,28 +690,319 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SEQ",
+                  "type": "CHOICE",
                   "members": [
                     {
-                      "type": "STRING",
-                      "value": "=="
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "and"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
                     },
                     {
-                      "type": "SYMBOL",
-                      "name": "_expression"
-                    }
-                  ]
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "in"
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!and"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
                     },
                     {
-                      "type": "SYMBOL",
-                      "name": "expression_list"
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "or"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!or"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "&"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "^"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "|"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!&"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!^"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!|"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "<"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "<="
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ">"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ">="
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "=="
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!="
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "has"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!has"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "in"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!in"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "equals"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!equals"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "does"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!does"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "expression_list"
+                        }
+                      ]
                     }
                   ]
                 },

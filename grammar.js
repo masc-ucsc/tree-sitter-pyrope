@@ -234,8 +234,12 @@ module.exports = grammar({
     )
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
-        seq('==', $._expression)
-        ,seq('in', $.expression_list)
+        choice(
+          ...['and', '!and', 'or', '!or', '&', '^', '|', '!&', '!^', '!|',
+              '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'in', '!in',
+              'equals', '!equals', 'does', '!does'].map(operator =>
+          seq(operator, $.expression_list)
+        ))
         ,$._expression
         ,'else'
       ))

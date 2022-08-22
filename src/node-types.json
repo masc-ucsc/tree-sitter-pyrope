@@ -1682,7 +1682,71 @@
         "required": true,
         "types": [
           {
+            "type": "!&",
+            "named": false
+          },
+          {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "!^",
+            "named": false
+          },
+          {
+            "type": "!and",
+            "named": false
+          },
+          {
+            "type": "!does",
+            "named": false
+          },
+          {
+            "type": "!equals",
+            "named": false
+          },
+          {
+            "type": "!has",
+            "named": false
+          },
+          {
+            "type": "!in",
+            "named": false
+          },
+          {
+            "type": "!or",
+            "named": false
+          },
+          {
+            "type": "!|",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
             "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
             "named": false
           },
           {
@@ -1690,7 +1754,19 @@
             "named": true
           },
           {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "does",
+            "named": false
+          },
+          {
             "type": "else",
+            "named": false
+          },
+          {
+            "type": "equals",
             "named": false
           },
           {
@@ -1698,7 +1774,19 @@
             "named": true
           },
           {
+            "type": "has",
+            "named": false
+          },
+          {
             "type": "in",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "|",
             "named": false
           }
         ]
