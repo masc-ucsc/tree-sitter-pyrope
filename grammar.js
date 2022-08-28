@@ -159,9 +159,9 @@ module.exports = grammar({
     ))
     ,control_statement: $ => prec.right(seq(
       field('type', choice(
-        // TODO: Decide which keywords to use
         'ret', 'return', 'cont', 'continue', 'brk', 'break', 'last'
       ))
+      ,field('ref', optional('ref'))
       ,field('argument', optional($._expression))
       ,$._semicolon
     ))

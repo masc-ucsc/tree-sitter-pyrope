@@ -91,8 +91,7 @@ let b = pure(a) + 10 + nonpure(a) // OK
 var d = t.nonpure() + pure(b)     // OK, b is immutable
 let y = t.nonpure() + nonpure()   // error, multiple non pure calls
 var a =       {var d=3 ; last d+1}    + 100 // OK
-// var b = (fun(){var d=3 ; last d+1})() + 100 // same with functions
-assert a == (3+1+100) == b
+assert a == (3+1+100)
 
 
 
@@ -816,8 +815,8 @@ let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
 assert f(33:u22,100:u22)
 
 my_log a, false, x+1
-div  = fun (a,b) { a / b }          // named input tuple
-div2 = fun (...x){ x.0 / x.1 }   // unnamed input tuple
+div  = fun (a,b) { a / b }        // named input tuple
+div2 = fun (...x){ x.0 / x.1 }    // unnamed input tuple
 
 noarg = fun () { ret 33 }         // explicit no args
 
@@ -879,6 +878,30 @@ let f2 = f1 // prints here
 
 alias f3 = f1
 f3          // prints here
+let ret1 = fun()->(a:int) { // named
+  a = 1
+}
+
+let ret2 = fun()->a:int {   // unnamed
+  a = 2
+}
+
+let ret3 = fun()->(a,b) {   // named
+  a = 3
+  b = 4
+}
+
+let a1 = ret1()
+assert a1.a == 1 // NOT a1 == 1
+
+let a2 = ret2()
+assert a2 == 1   // NOT a2.a == 1
+
+let a3 = ret3()
+assert a3.a == 3 and a2.b == 4
+
+let x1,x2 = ret3()
+assert x1 == 3 and x2 == 4
 type Nested_call = (
   ,var x = 1
   ,let outter= proc(ref self) {  self.x = 100 ; self.inner(); self.x = 5 }
@@ -1372,6 +1395,16 @@ assert a equals :fun()
 assert a != b
 assert a equals b
 assert not (a equals fun() { ret 1 }) // different arguments
+type X1 = (b:u32)
+type X2 = (b:u32)
+
+let t1 = (b=3):X1  // OK
+let t2 = (b=3):X2  // OK
+let t4:X1 = (b=3)
+
+y1 = t4:X1    // OK
+y2 = t4:X2    // OK
+y3 = t4 is X1 // OK
 type Rgb = (
   ,let c:u24
   ,let set = proc(ref self, c) { self.c = c }
@@ -1642,7 +1675,7 @@ type some_obj = (
   ,pub a2 = (
     ,_val:u32                                  // hidden field
 
-    ,pub var get=fun() { self._val + 100 }     // getter
+    ,pub var get=fun(self) { self._val + 100 } // getter
     ,set=proc(ref self, x) { self._val = x+1 } // setter
   )
   ,pub var set = proc(ref self, a,b){          // setter
@@ -1659,10 +1692,10 @@ x.a2 = 5
 assert x.a2.get == 106
 type showcase = (
   ,pub var v:int
-  ,pub var get ++= fun()->(:string) where self.i>100 {
+  ,pub var get ++= fun(self)->(:string) where self.i>100 {
     ret "this is a big number" ++ string(v)
   }
-  ,pub var get ++= fun()->(:int) {
+  ,pub var get ++= fun(self)->(:int) {
     ret v
   }
 )
@@ -1674,15 +1707,15 @@ s.v = 100
 type my_obj = (
   ,val:u32
   ,pub var get 
-    = fun()->(:string ){ ret string(self.val) }
-   ++ fun()->(:boolean){ ret self.val != 0    }
-   ++ fun()->(:int    ){ ret self.val         }
+    = fun(self)->(:string ){ ret string(self.val) }
+   ++ fun(self)->(:boolean){ ret self.val != 0    }
+   ++ fun(self)->(:int    ){ ret self.val         }
 )
 type t=(
   ,pub var v
   ,pub let set = proc(ref self) { self.v = a }
-  ,pub let lt = fun(other)->(:boolean){ self.v  < other.v }
-  ,pub let eq = fun(other)          { self.v == other.v } // infer ret type
+  ,pub let lt = fun(self,other)->(:boolean){ self.v  < other.v }
+  ,pub let eq = fun(self,other)            { self.v == other.v } // infer ret
 )
 
 var m1:t = 10
@@ -1997,6 +2030,25 @@ let flatten = fun(...arr) {
 
 assert flatten(d2) == (1,2,3,4)
 assert flatten((((1),2),3),4) == (1,2,3,4)
+var x1:u3[2] = (0,1)
+assert x1[0] == 0 and x1[1] == 1
+
+enum X = (
+  ,t1
+  ,t2
+  ,t3
+)
+
+var x2:u3[X]
+x2[X.t1] = 0
+x2[X.t2] = 1
+
+
+var x3:u3[-8..<7]  // accept signed values
+
+var x4:u3[100..<132]
+
+assert x4[100] == 0
     assume sel==1 or sel==2 or sel==4 // not needed. match sets it
     match sel {
       == 0b001 { f = i0 }
@@ -2199,23 +2251,6 @@ let http:8080//masc.soe.ucsc.edu
 assert http == 8080
 let v = (3)--3
 assert v == 6
-let ret1 = fun()->(a) {
-  a = 1
-}
-
-let ret2 = fun()->(a,b) {
-  a = 2
-  b = 3
-}
-
-let a1 = ret1()
-assert a1 == 1 // NOT a1.a == 1
-
-let a2 = ret2()
-assert a2.a == 2 and a2.b == 3
-
-let x1,x2 = ret2()
-assert x1 == 2 and x2 == 3
 pub type AnObject = (
   ,v:i32
 )

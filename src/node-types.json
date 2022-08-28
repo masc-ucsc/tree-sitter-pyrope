@@ -687,6 +687,16 @@
           }
         ]
       },
+      "ref": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "ref",
+            "named": false
+          }
+        ]
+      },
       "type": {
         "multiple": false,
         "required": true,
