@@ -235,7 +235,7 @@ module.exports = grammar({
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
         choice(
-          ...['and', '!and', 'or', '!or', '&', '^', '|', '!&', '!^', '!|',
+          ...['and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
               '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'in', '!in',
               'equals', '!equals', 'does', '!does'].map(operator =>
           seq(operator, $.expression_list)
@@ -511,7 +511,7 @@ module.exports = grammar({
     ,cycle_select: $ => seq('#', $.select)
 
     // Variable Properties
-    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref', 'alias')
+    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref')
 
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
