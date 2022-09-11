@@ -1,32 +1,35 @@
 
-let f1 = fun (a:u32,b:u6)->(:u33) {
+f1 := fun (a:u32,b:u6)->(:u33) {
   ret a+b
 }
 
-type Args = (
+Args <- (
   ,a:u32
   ,b:u6
 )
 
-let fun2 = fun (...x:Args)->(:u33) {
+fun2 <- fun (...x:Args)->(:u33) {
   ret x.a+x.b
 }
 
-comptime assert fun2(a=2,b=4) == f1(2,4) == f1(a=2,b=4)
+$(comptime)
+assert fun2(a=2,b=4) == f1(2,4) == f1(a=2,b=4)
 
-let fun3 = fun (...x:Args)->(res:u33) {
+fun3 <- fun (...x:Args)->(res:u33) {
   res = x.a+x.b
 }
 
-comptime assert fun2(a=3,b=10) == fun3(a=3,b=10).res
+$(comptime)
+assert fun2(a=3,b=10) == fun3(a=3,b=10).res
 
-type Res_arg = (
+Res_arg <- (
   ,total:u33
 )
 
-let fun4 = fun (...x:Args)->(...res:Res_arg) {
+fun4 <- fun (...x:Args)->(...res:Res_arg) {
   res.total = a+b
 }
 
-comptime assert fun3(a=3,b=10).res == fun4(a=3,b=10).total
+$(comptime)
+assert fun3(a=3,b=10).res == fun4(a=3,b=10).total
 

@@ -24,8 +24,7 @@ module.exports = grammar({
 
   ,externals: $ => [ $._automatic_semicolon ]
   ,conflicts: $ => [
-    [$.assignment]
-    ,[$.declaration]
+    [$._assignment_or_declaration]
     ,[$._restricted_expression, $.function_type]
     ,[$._expression, $.function_type]
   ]
@@ -114,12 +113,7 @@ module.exports = grammar({
 
     // Statements
     ,statement: $ => prec.left('statement', seq(
-      optional(choice(
-        'debug'
-        ,'defer_read'
-        ,'defer_write'
-        ,'comptime'
-      ))
+      field('attribute', optional($.attributes))
       ,choice(
         // Synthesizable
         $.scope_statement
@@ -132,8 +126,6 @@ module.exports = grammar({
         ,$.while_statement
         ,$.match_statement
         ,$.enum_declaration
-        ,$.type_declaration
-        ,$.type_extension
         ,$.expression_statement
         // Verification Only
         ,$.test_statement
@@ -170,30 +162,14 @@ module.exports = grammar({
       ,$.arg_item
       ,$._semicolon
     ))
-    ,type_declaration: $ => prec.left(seq(
-      optional('pub')
-      ,'type'
-      ,field('name', $.identifier)
-      ,field('definition', optseq('=', choice(
-        $._expression
-        ,$._type
-      )))
-      ,$._semicolon
-    ))
-    ,type_extension: $ => prec.left(seq(
-      optional('pub')
-      ,'type'
-      ,field('name', $.identifier)
-      ,'extends'
-      ,field('parent', $._expression)
-      ,'with'
-      ,$.tuple
-      ,$._semicolon
+    ,stmt_list: $ => prec.left('tuple_list', seq(
+      field('item', $._tuple_item)
+      ,repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
     ,if_statement: $ => prec.left('statement', seq(
       optional('unique')
       ,'if'
-      ,field('condition', $._expression)
+      ,field('condition', $.stmt_list)
       ,field('code', $.scope_statement)
       ,field('elif', repseq(
         'elif'
@@ -222,12 +198,12 @@ module.exports = grammar({
     )
     ,while_statement: $ => seq(
       'while'
-      ,field('condition', $._expression)
+      ,field('condition', $.stmt_list)
       ,field('code', $.scope_statement)
     )
     ,match_statement: $ => seq(
       'match'
-      ,$.expression_list
+      ,$.stmt_list
       ,'{'
       ,optional($.match_list)
       ,'}'
@@ -237,7 +213,7 @@ module.exports = grammar({
         choice(
           ...['and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
               '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'in', '!in',
-              'equals', '!equals', 'does', '!does'].map(operator =>
+              'equals', '!equals', 'does', '!does', 'is', '!is'].map(operator =>
           seq(operator, $.expression_list)
         ))
         ,$._expression
@@ -246,26 +222,12 @@ module.exports = grammar({
       ,field('code', $.scope_statement)
     ))
     ,expression_statement: $ => prec.right(seq(
-      choice(
-        $.identifier
-        ,$.type_cast
-        //$.type_or_identifier
-        ,$.constant
-        ,$.selection
-        ,$.dot_expression
-        ,$.type_specification
-        ,$.function_call
-        ,$.function_definition
-        ,$.tuple
-        ,$.unary_expression
-        ,$.optional_expression
-        ,$.binary_expression
-      )
+      $._expression
       ,$._semicolon
     ))
     ,test_statement: $ => prec.right(seq(
       'test'
-      ,field('name', $.string_literal)
+      ,field('args', $.expression_list)
       ,field('condition', optseq('when', $._expression))
       ,field('code', $.scope_statement)
     ))
@@ -291,6 +253,9 @@ module.exports = grammar({
     ,tuple: $ => prec.left(seq(
       '(', optional($.tuple_list), ')'
     ))
+    ,attributes: $ => prec.left(seq(
+      '$(', $.tuple_list, ')'
+    ))
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
       ,field('item', $._tuple_item)
@@ -304,12 +269,8 @@ module.exports = grammar({
     ))
 
     // Assignment/Declaration
-    ,_assignment_or_declaration: $ => choice($.assignment, $.declaration)
-    ,assignment: $ => prec.right(seq(
-      choice(
-        field('debug', optional('debug'))
-        ,field('overflow', optional(choice('wrap', 'saturate')))
-      )
+    ,_assignment_or_declaration: $ => prec.right(seq(
+      field('decl',optional($.var_or_let))
       ,field('lvalue', $.expression_list)
       ,field('operator', $.assignment_operator)
       ,field('delay', optional(choice($.cycle_select, '#')))
@@ -318,22 +279,7 @@ module.exports = grammar({
         ,$.simple_function_call
       ))
     ))
-    ,declaration: $ => seq(
-      field('comptime', optional('comptime'))
-      ,choice(
-        seq(field('scope', optional('pub')), field('qualifier', $.type_qualifier))
-        ,seq(field('scope', 'pub'))
-      )
-      ,field('lvalue', $.expression_list)
-      ,optseq(
-        field('operator', $.assignment_operator)
-        ,field('delay', optional(choice($.cycle_select, '#')))
-        ,field('rvalue', choice(
-          $._expression
-          ,$.simple_function_call
-        ))
-      )
-    )
+    ,var_or_let: $ => choice('var','let')
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))
@@ -453,6 +399,8 @@ module.exports = grammar({
         ,['!equals', 'type_equal']
         ,['does', 'type_compare']
         ,['!does', 'type_compare']
+        ,['is', 'type_compare']
+        ,['!is', 'type_compare']
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('left', $._expression)
@@ -463,7 +411,10 @@ module.exports = grammar({
     )
     ,dot_expression: $ => prec.left('dot', seq(
       field('item', $._restricted_expression)
-      ,repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
+      ,choice(
+        repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
+        ,prec.left('dot_sub', seq('.', field('attr', $.dollar_identifier)))
+      )
     ))
     ,function_call: $ => prec.right('function', seq(
       field('function', choice($.identifier, $.dot_expression, $.selection))
@@ -510,15 +461,20 @@ module.exports = grammar({
     ,bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
     ,cycle_select: $ => seq('#', $.select)
 
-    // Variable Properties
-    ,type_qualifier: $ => choice('var', 'let', 'reg', 'ref')
-
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
-      choice(':', 'is')
-      ,field('type', $._type)
+      ':'
+      ,field('register', optional('reg'))
+      ,field('attribute', optional($.attributes))
+      ,field('type', optional($._type))
       ,field('optional', optional('?'))
     ))
+    ,trivial_identifier_list: $ => seq(
+      repeat(',')
+      ,$.identifier
+      ,repeat(seq(repeat1(',') ,$.identifier))
+      ,repeat(',')
+    )
     ,_type: $ => prec.left('type', choice(
       $.primitive_type
       ,$.array_type
@@ -557,14 +513,14 @@ module.exports = grammar({
       ,repeat1(prec.left('mixin_type_sub', seq('++', $._type)))
     ))
     ,array_type: $ => prec.left('array_type', seq(
-      optional(field('base', choice(
+      field('length', $.select)
+      ,optional(field('base', choice(
         $.primitive_type
         ,$.array_type
         ,$.enum_type
         ,$.function_type
         ,$.expression_type
       )))
-      ,field('length', $.select)
     ))
     ,enum_type: $ => prec.left('enum_type', seq('enum', $.tuple))
     ,function_type: $ => prec.left('function_type', seq(
@@ -630,7 +586,7 @@ module.exports = grammar({
       choice(
         // \p{L}  : Letter
         // \p[Nd} : Decimal Digit Number
-        /[\p{L}_$][\p{L}\p{Nd}_$]*/
+        /[\p{L}_][\p{L}\p{Nd}_$]*/
         // To support all Verilog identifiers. Example:
         //   `foo is . strange!\nidentifier` = 4
         ,seq(
@@ -640,6 +596,7 @@ module.exports = grammar({
         )
       )
     )
+    ,dollar_identifier: $ => token(/\$[\p{L}_][\p{L}\p{Nd}_$]*/)
 
     // Constants
     ,constant: $ => choice(

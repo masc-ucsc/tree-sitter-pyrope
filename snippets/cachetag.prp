@@ -1,5 +1,5 @@
 
 
-let cache_hit = (opcode in (load_op, store_op)) and for i in dcache_tag_rdata {
+cache_hit = (opcode in (load_op, store_op)) and for i in dcache_tag_rdata {
   last true when i == alu_result[DCACHE_TAG_BITS]
 }

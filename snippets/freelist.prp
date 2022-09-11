@@ -1,5 +1,5 @@
 
-find_one = (
+_find_one = (
 
   ,set = fun (x)->(self) {
     self = pick(x)
@@ -34,7 +34,7 @@ find_one = (
   }
 
   ,pick = fun (x)->(pos,found:boolean) {
-    let list = for i in 0..<x.__ubits by 4 {
+    list <- for i in 0..<x.__ubits by 4 {
       cont pick(x[i..+4])
     }
 
@@ -47,12 +47,12 @@ find_one = (
   }
 )
 
-pub let freelist = (
+freelist := (
   ,top
   ,empty:bool
 
   ,pop = fun (self)->(self) {
-    let f = find_one(self.bitmask)
+    f = _find_one(self.bitmask)
 
     self.empty = !f.found
     self.top   =  f.pos
@@ -77,7 +77,7 @@ pub let freelist = (
 
     self.bitmask |= mask
     if empty {
-      let f = find_one(mask)
+      f <- find_one(mask)
 
       self.empty = !f.found
       self.top   =  f.pos

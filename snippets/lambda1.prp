@@ -1,6 +1,6 @@
 
 dispatch = fun (a,b,c) {
-  comptime assert a equals string
+  $(comptime) assert a equals string
   ret match a {
     == 'add' { b + c }
     == 'sub' { b - c }
@@ -10,17 +10,17 @@ dispatch = fun (a,b,c) {
 }
 
 dispatch2 = fun <T>(a:string,b:T,c:T) {
-  let s = (
-    ,add = fun ()    { a + b } // a & b captured
-    ,sub = fun (b)   { a - b } // a captured
-    ,mul = fun (a,b) { a * b } // no captured
-    ,div = fun (a)   { a / b } // b captured
+  s <- (
+    ,add = fun[b,c] () { b + c }
+    ,sub = fun[b,c] () { b - c }
+    ,mul = fun[b,c] () { b * c }
+    ,div = fun[b,c] () { b / c }
   )
   ret s[a]() // a,b are captured
 }
 
 dispatch3 = fun <T>(a:string,b:T,c:T) {
-  let s = (
+  s <- (
     ,add = fun (x,y) { ret x + y }
     ,sub = fun (x,y) { ret x - y }
     ,mul = fun (x,y) { ret x * y }
@@ -36,30 +36,30 @@ test "Check methods equivalence" {
     b = i44.rand()
 
     {
-      let x = dispatch('add',a,b)
-      let y = dispatch2('add',a,b)
-      let z = dispatch3('add',a,b)
+      x <- dispatch('add',a,b)
+      y <- dispatch2('add',a,b)
+      z <- dispatch3('add',a,b)
       assert x == y == z == (a+b)
     }
 
     {
-      let x = dispatch('sub',a,b)
-      let y = dispatch2('sub',a,b)
-      let z = dispatch3('sub',a,b)
+      x := dispatch('sub',a,b)
+      y := dispatch2('sub',a,b)
+      z := dispatch3('sub',a,b)
       assert x == y == z == (a-b)
     }
 
     {
-      let x = dispatch('mul',a,b)
-      let y = dispatch2('mul',a,b)
-      let z = dispatch3('mul',a,b)
+      x <- dispatch('mul',a,b)
+      y <- dispatch2('mul',a,b)
+      z <- dispatch3('mul',a,b)
       assert x == y == z == (a*b)
     }
 
     {
-      let x = dispatch('div',a,b)
-      let y = dispatch2('div',a,b)
-      let z = dispatch3('div',a,b)
+      x <- dispatch('div',a,b)
+      y <- dispatch2('div',a,b)
+      z <- dispatch3('div',a,b)
       assert x == y == z == (a/b)
     }
   }

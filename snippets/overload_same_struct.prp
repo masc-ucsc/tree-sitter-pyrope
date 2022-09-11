@@ -1,26 +1,27 @@
 
 
-let A = (
-  ,pub x:string
-  ,pub set = fun (x)->(self) {
+A <- (
+  ,x:string
+  ,set = fun (x)->(self) {
     self.x = x + "A"
   }
 )
 
-let B_same_as_A = (
-  ,pub x:string
-  ,pub set = fun (self,x)->(self) {
+B_same_as_A <- (
+  ,x:string
+  ,set = fun (self,x)->(self) {
     self.x = x + "B"
   }
 )
 
-comptime assert A equals B_same_as_A   // same fields in tuple, and each field has same type
+$(comptime)
+assert A equals B_same_as_A   // same fields in tuple, and each field has same type
 
-var funA = fun(x:A) { ret x.x }
+funA := fun(x:A) { ret x.x }
 
-comptime assert funA(A("aa")) == "aaA"
-comptime assert funA(B("bb")) == "bbB"
+$(comptime) assert funA(A("aa")) == "aaA"
+$(comptime) assert funA(B("bb")) == "bbB"
 
 funA ++= fun (x:B) { assert false }
 
-comptime assert funA(B("bb")) == "bbB"  // funA is earlier in the list and satisfies the overloading
+$(comptime) assert funA(B("bb")) == "bbB"  // funA is earlier in the list and satisfies the overloading

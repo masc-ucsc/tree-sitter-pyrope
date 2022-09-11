@@ -1,10 +1,10 @@
 
 // Fetch Target Queue
 
-let ftq = punch "ftq"  // punch does not create a new instance
+ftq = punch "ftq"  // punch does not create a new instance
 
-reg pc
-reg ftq_head:ftq.size
+pc:reg
+ftq_head:reg(ftq.size)  // same type as ftq.size
 
 // Branch miss, the clear FTQ and start again
 if flush_pc {
@@ -15,16 +15,16 @@ if flush_pc {
 }
 
 // Do uBTB prediction (pure combinational)
-let ubtb  = import "btb"
+ubtb <- import "btb"
 
-let ubtb_pc = ubtb.predict(pc)
+ubtb_pc <- ubtb.predict(pc)
 if ubtb_pc? and !ftq.full {
   ftq.insert(ftq_head, ubtb_pc)
   ftq_head += 1
 }
 
 // Fast TAGE+BTB predictor (1 or 2 predictions per cycle)
-let ftage_pc   =# fast_tage.predict(pc)
+ftage_pc   <-# fast_tage.predict(pc)
 // repipe ftage_ftq =  (head=ftq_head , pc=stage_pc)
 
 if ftage_pc? {
@@ -38,7 +38,7 @@ if ftage_pc? {
 }
 
 // Slow TAGE+BTB predictor (1 predictions per cycle)
-let stage_pc    =# slow_tage.predict(pc)
+stage_pc    <-# slow_tage.predict(pc)
 //repipe stage_ftq  = (head=ftq_head , pc=stage_pc)
 
 if stage_pc? {

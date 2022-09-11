@@ -1,11 +1,11 @@
-type Delegate = (
-  ,var thing = fun() { ret 'delegate implement' }
+Delegate <- (
+  ,thing = fun() { ret 'DEL here' }
 )
 
-type Delegator = (
-  ,var delegate
-  ,let operation = fun () {
-    comptime if delegate has 'thing' {
+Delegator <- (
+  ,delegate
+  ,operation :$(comptime) = fun () {
+    if delegate has 'thing' {
       delegate.thing()
     }else{
       'default implementation'
@@ -13,12 +13,12 @@ type Delegator = (
   }
 )
 
-var a:Delegator
-puts a.operation() // prints "default implementation"
+a:Delegator
+puts a.operation // prints "default implementation"
 
 a.delegate = 'A delegate may be any object'
-puts a.operation() // prints "default implementation"
+puts a.operation // prints "default implementation"
 
 a.delegate = :Delegate
-puts a.operation() // prints "delegate implementation"
+puts a.operation // prints "DEL here"
 
