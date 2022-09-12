@@ -88,11 +88,11 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "enum_declaration"
+                "name": "expression_statement"
               },
               {
                 "type": "SYMBOL",
-                "name": "expression_statement"
+                "name": "defer_statement"
               },
               {
                 "type": "SYMBOL",
@@ -293,27 +293,6 @@
         ]
       }
     },
-    "enum_declaration": {
-      "type": "PREC_LEFT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "enum"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "arg_item"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_semicolon"
-          }
-        ]
-      }
-    },
     "stmt_list": {
       "type": "PREC_LEFT",
       "value": "tuple_list",
@@ -412,7 +391,7 @@
                       "name": "condition",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "_expression"
+                        "name": "stmt_list"
                       }
                     },
                     {
@@ -578,6 +557,28 @@
         {
           "type": "STRING",
           "value": "}"
+        }
+      ]
+    },
+    "defer_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "defer_read"
+            },
+            {
+              "type": "STRING",
+              "value": "defer_write"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "statement"
         }
       ]
     },
@@ -1006,7 +1007,7 @@
                     "members": [
                       {
                         "type": "STRING",
-                        "value": "when"
+                        "value": "where"
                       },
                       {
                         "type": "SYMBOL",
@@ -1054,8 +1055,29 @@
             "type": "FIELD",
             "name": "condition",
             "content": {
-              "type": "SYMBOL",
-              "name": "_expression"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PREC_LEFT",
+                  "value": 0,
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "where"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "stmt_list"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           },
           {
@@ -1318,17 +1340,8 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "cycle_select"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "#"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "cycle_select_or_pound"
                 },
                 {
                   "type": "BLANK"
@@ -1355,6 +1368,19 @@
           }
         ]
       }
+    },
+    "cycle_select_or_pound": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "cycle_select"
+        },
+        {
+          "type": "STRING",
+          "value": "#"
+        }
+      ]
     },
     "var_or_let": {
       "type": "CHOICE",
@@ -1535,7 +1561,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "_expression"
+                      "name": "stmt_list"
                     }
                   ]
                 }
@@ -2091,14 +2117,6 @@
                 {
                   "type": "STRING",
                   "value": "..."
-                },
-                {
-                  "type": "STRING",
-                  "value": "unless"
-                },
-                {
-                  "type": "STRING",
-                  "value": "when"
                 }
               ]
             }
@@ -3134,72 +3152,6 @@
         },
         {
           "type": "PREC_LEFT",
-          "value": "cycle_condition",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "left",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_expression"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "operator",
-                "content": {
-                  "type": "STRING",
-                  "value": "when"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "right",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_expression"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "PREC_LEFT",
-          "value": "cycle_condition",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "left",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_expression"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "operator",
-                "content": {
-                  "type": "STRING",
-                  "value": "unless"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "right",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_expression"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "PREC_LEFT",
           "value": "pipe_concat",
           "content": {
             "type": "SEQ",
@@ -4058,8 +4010,8 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "reg"
+                  "type": "SYMBOL",
+                  "name": "reg_token"
                 },
                 {
                   "type": "BLANK"
@@ -4098,24 +4050,15 @@
                 }
               ]
             }
-          },
-          {
-            "type": "FIELD",
-            "name": "optional",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "?"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
           }
         ]
+      }
+    },
+    "reg_token": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "reg"
       }
     },
     "trivial_identifier_list": {
@@ -5070,15 +5013,62 @@
       }
     },
     "_semicolon": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_automatic_semicolon"
+          "type": "FIELD",
+          "name": "gate",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "when_unless_cond"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
         },
         {
-          "type": "STRING",
-          "value": ";"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_automatic_semicolon"
+            },
+            {
+              "type": "STRING",
+              "value": ";"
+            }
+          ]
+        }
+      ]
+    },
+    "when_unless_cond": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "when"
+            },
+            {
+              "type": "STRING",
+              "value": "unless"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "stmt_list"
+          }
         }
       ]
     }

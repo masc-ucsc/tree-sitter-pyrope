@@ -125,8 +125,8 @@ module.exports = grammar({
         ,$.for_statement
         ,$.while_statement
         ,$.match_statement
-        ,$.enum_declaration
         ,$.expression_statement
+        ,$.defer_statement
         // Verification Only
         ,$.test_statement
         ,$.restrict_statement
@@ -157,11 +157,6 @@ module.exports = grammar({
       ,field('argument', optional($._expression))
       ,$._semicolon
     ))
-    ,enum_declaration: $ => prec.left(seq(
-      'enum'
-      ,$.arg_item
-      ,$._semicolon
-    ))
     ,stmt_list: $ => prec.left('tuple_list', seq(
       field('item', $._tuple_item)
       ,repeat(seq(repeat1(';'), field('item', $._tuple_item)))
@@ -173,7 +168,7 @@ module.exports = grammar({
       ,field('code', $.scope_statement)
       ,field('elif', repseq(
         'elif'
-        ,field('condition', $._expression)
+        ,field('condition', $.stmt_list)
         ,field('code', $.scope_statement)
       ))
       ,field('else', optseq(
@@ -208,6 +203,10 @@ module.exports = grammar({
       ,optional($.match_list)
       ,'}'
     )
+    ,defer_statement: $ => seq(
+      choice('defer_read','defer_write')
+      ,$.statement
+    )
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
         choice(
@@ -228,13 +227,13 @@ module.exports = grammar({
     ,test_statement: $ => prec.right(seq(
       'test'
       ,field('args', $.expression_list)
-      ,field('condition', optseq('when', $._expression))
+      ,field('condition', optseq('where', $._expression))
       ,field('code', $.scope_statement)
     ))
     ,restrict_statement: $ => prec.right(seq(
       'restrict'
       ,field('name', $.string_literal)
-      ,field('condition', $._expression)
+      ,field('condition', optseq('where', $.stmt_list))
       ,field('code', $.scope_statement)
     ))
     ,expression_list: $ => prec.left(seq(
@@ -273,12 +272,13 @@ module.exports = grammar({
       field('decl',optional($.var_or_let))
       ,field('lvalue', $.expression_list)
       ,field('operator', $.assignment_operator)
-      ,field('delay', optional(choice($.cycle_select, '#')))
+      ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
       ))
     ))
+    ,cycle_select_or_pound: $=> choice($.cycle_select, '#')
     ,var_or_let: $ => choice('var','let')
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
@@ -286,7 +286,7 @@ module.exports = grammar({
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
-      ,field('condition', optseq('where', $._expression))
+      ,field('condition', optseq('where', $.stmt_list))
       ,field('code', $.scope_statement)
     )
     ,capture_list: $ => listseq1(
@@ -348,7 +348,7 @@ module.exports = grammar({
       ,$.type_cast
     ))
     ,unary_expression: $ => prec.left('unary', seq(
-      field('operator', choice('!', 'not', '~', '-', '...', 'unless', 'when'))
+      field('operator', choice('!', 'not', '~', '-', '...'))
       ,field('argument', $._expression)
     ))
     ,optional_expression: $ => prec.right(seq(
@@ -387,8 +387,6 @@ module.exports = grammar({
         ,['>=', 'binary_compare']
         ,['==', 'binary_equal']
         ,['!=', 'binary_equal']
-        ,['when', 'cycle_condition']
-        ,['unless', 'cycle_condition']
         ,['|>', 'pipe_concat']
         ,['++', 'tuple_concat']
         ,['has', 'tuple_relation']
@@ -464,11 +462,11 @@ module.exports = grammar({
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
       ':'
-      ,field('register', optional('reg'))
+      ,field('register', optional($.reg_token))
       ,field('attribute', optional($.attributes))
       ,field('type', optional($._type))
-      ,field('optional', optional('?'))
     ))
+    ,reg_token: $ => token('reg')
     ,trivial_identifier_list: $ => seq(
       repeat(',')
       ,$.identifier
@@ -640,6 +638,13 @@ module.exports = grammar({
       /\/\/.*/
       ,seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     ))
-    ,_semicolon: $ => choice($._automatic_semicolon, ';')
+    ,_semicolon: $ => seq(
+      field('gate', optional($.when_unless_cond))
+      ,choice($._automatic_semicolon, ';')
+    )
+    ,when_unless_cond: $ => seq(
+      choice('when','unless')
+      ,field('condition', $.stmt_list)
+    )
   }
 });

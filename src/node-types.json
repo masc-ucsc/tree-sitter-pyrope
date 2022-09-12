@@ -222,11 +222,17 @@
         "required": false,
         "types": [
           {
-            "type": "#",
-            "named": false
-          },
+            "type": "cycle_select_or_pound",
+            "named": true
+          }
+        ]
+      },
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
           {
-            "type": "cycle_select",
+            "type": "when_unless_cond",
             "named": true
           }
         ]
@@ -461,14 +467,6 @@
             "named": false
           },
           {
-            "type": "unless",
-            "named": false
-          },
-          {
-            "type": "when",
-            "named": false
-          },
-          {
             "type": "|",
             "named": false
           },
@@ -677,6 +675,16 @@
           }
         ]
       },
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      },
       "ref": {
         "multiple": false,
         "required": false,
@@ -733,6 +741,21 @@
       "types": [
         {
           "type": "select",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "cycle_select_or_pound",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "cycle_select",
           "named": true
         }
       ]
@@ -806,6 +829,21 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "defer_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "statement",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -910,21 +948,6 @@
     }
   },
   {
-    "type": "enum_declaration",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "arg_item",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "enum_type",
     "named": true,
     "fields": {},
@@ -958,7 +981,18 @@
   {
     "type": "expression_statement",
     "named": true,
-    "fields": {},
+    "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -1168,7 +1202,18 @@
   {
     "type": "function_call_statement",
     "named": true,
-    "fields": {},
+    "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -1251,7 +1296,7 @@
         "required": false,
         "types": [
           {
-            "type": "_expression",
+            "type": "stmt_list",
             "named": true
           },
           {
@@ -1423,10 +1468,6 @@
         "required": false,
         "types": [
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "stmt_list",
             "named": true
           }
@@ -1437,15 +1478,15 @@
         "required": false,
         "types": [
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "elif",
             "named": false
           },
           {
             "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "stmt_list",
             "named": true
           }
         ]
@@ -1491,10 +1532,6 @@
         "required": true,
         "types": [
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "stmt_list",
             "named": true
           }
@@ -1505,15 +1542,15 @@
         "required": false,
         "types": [
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "elif",
             "named": false
           },
           {
             "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "stmt_list",
             "named": true
           }
         ]
@@ -1992,12 +2029,16 @@
         ]
       },
       "condition": {
-        "multiple": false,
-        "required": true,
+        "multiple": true,
+        "required": false,
         "types": [
           {
-            "type": "_expression",
+            "type": "stmt_list",
             "named": true
+          },
+          {
+            "type": "where",
+            "named": false
           }
         ]
       },
@@ -2184,7 +2225,7 @@
           "named": true
         },
         {
-          "type": "enum_declaration",
+          "type": "defer_statement",
           "named": true
         },
         {
@@ -2249,11 +2290,7 @@
         "required": false,
         "types": [
           {
-            "type": "#",
-            "named": false
-          },
-          {
-            "type": "cycle_select",
+            "type": "cycle_select_or_pound",
             "named": true
           }
         ]
@@ -2263,10 +2300,6 @@
         "required": true,
         "types": [
           {
-            "type": "#",
-            "named": false
-          },
-          {
             "type": "_expression",
             "named": true
           },
@@ -2275,7 +2308,7 @@
             "named": true
           },
           {
-            "type": "cycle_select",
+            "type": "cycle_select_or_pound",
             "named": true
           },
           {
@@ -2384,7 +2417,7 @@
             "named": true
           },
           {
-            "type": "when",
+            "type": "where",
             "named": false
           }
         ]
@@ -2425,11 +2458,7 @@
         "required": false,
         "types": [
           {
-            "type": "#",
-            "named": false
-          },
-          {
-            "type": "cycle_select",
+            "type": "cycle_select_or_pound",
             "named": true
           }
         ]
@@ -2439,10 +2468,6 @@
         "required": true,
         "types": [
           {
-            "type": "#",
-            "named": false
-          },
-          {
             "type": "_expression",
             "named": true
           },
@@ -2451,7 +2476,7 @@
             "named": true
           },
           {
-            "type": "cycle_select",
+            "type": "cycle_select_or_pound",
             "named": true
           },
           {
@@ -2522,23 +2547,13 @@
           }
         ]
       },
-      "optional": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "?",
-            "named": false
-          }
-        ]
-      },
       "register": {
         "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "reg",
-            "named": false
+            "type": "reg_token",
+            "named": true
           }
         ]
       },
@@ -2727,14 +2742,6 @@
             "named": false
           },
           {
-            "type": "unless",
-            "named": false
-          },
-          {
-            "type": "when",
-            "named": false
-          },
-          {
             "type": "~",
             "named": false
           }
@@ -2751,6 +2758,22 @@
     "type": "var_or_let",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "when_unless_cond",
+    "named": true,
+    "fields": {
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "stmt_list",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "while_statement",
@@ -3019,6 +3042,14 @@
     "named": true
   },
   {
+    "type": "defer_read",
+    "named": false
+  },
+  {
+    "type": "defer_write",
+    "named": false
+  },
+  {
     "type": "does",
     "named": false
   },
@@ -3135,8 +3166,8 @@
     "named": false
   },
   {
-    "type": "reg",
-    "named": false
+    "type": "reg_token",
+    "named": true
   },
   {
     "type": "restrict",

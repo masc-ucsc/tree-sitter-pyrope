@@ -60,7 +60,15 @@ bool tree_sitter_pyrope_external_scanner_scan(void *payload, TSLexer *lexer,
 
   for (;;) {
     if (lexer->lookahead == 0) return true;
-    if (lexer->lookahead == '}') return true;
+
+
+    // For code like:
+    // a = { d } + 1
+    // The 'd' is a statement, so it needs a \n before \}
+    if (lexer->lookahead == '}') {
+      return true;
+    }
+
     if (lexer->is_at_included_range_start(lexer)) return true;
     if (!iswspace(lexer->lookahead)) return false;
     if (lexer->lookahead == '\n') break;
@@ -69,7 +77,7 @@ bool tree_sitter_pyrope_external_scanner_scan(void *payload, TSLexer *lexer,
 
   advance(lexer);
 
-  if (!scan_whitespace_and_comments(lexer)) return false;
+  scan_whitespace_and_comments(lexer);
 
   switch (lexer->lookahead) {
     case ',':
@@ -86,6 +94,24 @@ bool tree_sitter_pyrope_external_scanner_scan(void *payload, TSLexer *lexer,
     case '-':
       return false;
 
+    case 'e': { // else or elif
+      advance(lexer);
+      if (lexer->lookahead != 'l')
+        return true;
+      advance(lexer);
+      if (lexer->lookahead != 's' && lexer->lookahead != 'i')
+        return true;
+      if (lexer->lookahead == 's') {
+        advance(lexer);
+        if (lexer->lookahead == 'e')
+          return false;
+      }else{
+        advance(lexer);
+        if (lexer->lookahead == 'f')
+          return false;
+      }
+    }
+
     // Don't insert a semicolon before `!=`, but do insert one before a unary `!`.
     case '!':
       advance(lexer);
@@ -93,5 +119,4 @@ bool tree_sitter_pyrope_external_scanner_scan(void *payload, TSLexer *lexer,
   }
 
   return true;
-  
 }
