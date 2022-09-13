@@ -262,7 +262,10 @@ module.exports = grammar({
       ,repeat(',')
     ))
     ,_tuple_item: $ => prec.left(choice(
-      $._expression
+      seq(
+        optional('ref')
+        ,$._expression
+      )
       ,$._assignment_or_declaration
       ,$.function_type
     ))

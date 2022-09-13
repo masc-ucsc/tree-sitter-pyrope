@@ -2320,6 +2320,10 @@
             "named": true
           },
           {
+            "type": "ref",
+            "named": false
+          },
+          {
             "type": "simple_function_call",
             "named": true
           },
@@ -2486,6 +2490,10 @@
           {
             "type": "function_type",
             "named": true
+          },
+          {
+            "type": "ref",
+            "named": false
           },
           {
             "type": "simple_function_call",
