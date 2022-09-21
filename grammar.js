@@ -150,13 +150,15 @@ module.exports = grammar({
       ,$._semicolon
     ))
     ,control_statement: $ => prec.right(seq(
-      field('type', choice(
-        'ret', 'return', 'cont', 'continue', 'brk', 'break', 'last'
-      ))
-      ,field('ref', optional('ref'))
+      field('type', $.ret_type)
+      ,field('ref', optional($.ref_token))
       ,field('argument', optional($._expression))
       ,$._semicolon
     ))
+    ,ret_type: $ => choice(
+      'ret', 'return', 'cont', 'continue', 'brk', 'break', 'last'
+    )
+    ,ref_token: $ => 'ref'
     ,stmt_list: $ => prec.left('tuple_list', seq(
       field('item', $._tuple_item)
       ,repeat(seq(repeat1(';'), field('item', $._tuple_item)))

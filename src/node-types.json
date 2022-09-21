@@ -690,8 +690,8 @@
         "required": false,
         "types": [
           {
-            "type": "ref",
-            "named": false
+            "type": "ref_token",
+            "named": true
           }
         ]
       },
@@ -700,32 +700,8 @@
         "required": true,
         "types": [
           {
-            "type": "break",
-            "named": false
-          },
-          {
-            "type": "brk",
-            "named": false
-          },
-          {
-            "type": "cont",
-            "named": false
-          },
-          {
-            "type": "continue",
-            "named": false
-          },
-          {
-            "type": "last",
-            "named": false
-          },
-          {
-            "type": "ret",
-            "named": false
-          },
-          {
-            "type": "return",
-            "named": false
+            "type": "ret_type",
+            "named": true
           }
         ]
       }
@@ -2015,6 +1991,11 @@
     }
   },
   {
+    "type": "ref_token",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "restrict_statement",
     "named": true,
     "fields": {
@@ -2053,6 +2034,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "ret_type",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "scope_expression",

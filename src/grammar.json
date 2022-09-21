@@ -221,37 +221,8 @@
             "type": "FIELD",
             "name": "type",
             "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "ret"
-                },
-                {
-                  "type": "STRING",
-                  "value": "return"
-                },
-                {
-                  "type": "STRING",
-                  "value": "cont"
-                },
-                {
-                  "type": "STRING",
-                  "value": "continue"
-                },
-                {
-                  "type": "STRING",
-                  "value": "brk"
-                },
-                {
-                  "type": "STRING",
-                  "value": "break"
-                },
-                {
-                  "type": "STRING",
-                  "value": "last"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "ret_type"
             }
           },
           {
@@ -261,8 +232,8 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "ref"
+                  "type": "SYMBOL",
+                  "name": "ref_token"
                 },
                 {
                   "type": "BLANK"
@@ -292,6 +263,43 @@
           }
         ]
       }
+    },
+    "ret_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ret"
+        },
+        {
+          "type": "STRING",
+          "value": "return"
+        },
+        {
+          "type": "STRING",
+          "value": "cont"
+        },
+        {
+          "type": "STRING",
+          "value": "continue"
+        },
+        {
+          "type": "STRING",
+          "value": "brk"
+        },
+        {
+          "type": "STRING",
+          "value": "break"
+        },
+        {
+          "type": "STRING",
+          "value": "last"
+        }
+      ]
+    },
+    "ref_token": {
+      "type": "STRING",
+      "value": "ref"
     },
     "stmt_list": {
       "type": "PREC_LEFT",
