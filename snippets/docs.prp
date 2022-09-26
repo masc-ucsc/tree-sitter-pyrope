@@ -24,8 +24,8 @@ test "my first test" {
   puts "hello world"
 }
     var gcd = proc (cmd:(a:uint,b:uint))->(z:uint) {
-      var x:reg = 0
-      var y:reg = 0
+      reg x = 0
+      reg y = 0
       if cmd? {
         x,y = cmd
       }elif x > y { 
@@ -431,83 +431,96 @@ assert z !is typ
 assert z !is bund1
 var a = true  // infer a is a boolean
 
-foo = a:boolean or false // checks that 'a' is a boolean
+foo = a:bool or false // checks that 'a' is a boolean
 // attribute set
-var foo:$(comptime=true) = xx      // enforce that foo is comptime true always
-var bar:$(comptime) = xx           // same as previous statement
+var foo::[comptime=true] = xx      // enforce that foo is comptime true always
+var bar::[comptime] = xx           // same as previous statement
 yyy = xx                           // yyy does not check comptime
-yyy.$comptime = true               // now, checks that 'yyy` is comptime
+yyy::[comptime=true] = xx          // now, checks that 'yyy` is comptime
 
 // attribute check
 if bar == 3 {
-  tmp = bar:$(comptime == true)    // check that this use of bar is comptime
-  tmp = bar:$(comptime)            // same as previous statement
-  tmp = bar ; assert bar.$comptime // same as previous statements
+  tmp = bar::[comptime == true]    // check that this use of bar is comptime
+  tmp = bar::[comptime]            // same as previous statement
+  tmp = bar ; assert bar.::[comptime] // same as previous statements
 }
                                    // bar/foo may not be comptime
 
 // attribute read
-assert tmp.$bits < 30 and !tmp.$comptime
+assert tmp.::[bits] < 30 and !tmp.::[comptime]
 read_state = fun(x) {
-  let f:$(comptime) u32 = x // f is compile time or a error is generated
-  ret f                     // f should be compile time constant
+  let f:u32:[comptime] = x // f is compile time or a error is generated
+  ret f                    // f should be compile time constant
 }
 
 var foo = read_state(zz) // foo will be compile time constant
-    $(comptime)
-    if cond {                // cond is checked to be compile time constant
-      x = a + 1              // x is set to be compile time constant
-    }else{
-      x = b                  // x is set to be compile time constant
-    }
-    
-    if cond:$(comptime) {    // cond is checked to be compile time constant
-      x:$(comptime) = a +1   // x is set to be compile time constant
-    }else{
-      x:$(comptime) = b      // x is set to be compile time constant
-    }
-let bad = (a=3,b:$(poison)=4)
+if cond::[comptime] {    // cond is checked to be compile time constant
+  x::[comptime] = a +1   // x is set to be compile time constant
+}else{
+  x::[comptime] = b      // x is set to be compile time constant
+}
+
+
+if cond.::[comptime] {  // checks if cond is compute at comptime
+  let v = cond
+  if cond {
+    puts "cond is compile time and true"
+  }
+}
+let bad = (a=3,b::[poison]=4)
 
 let b = bad.b
 
-assert b.$poison and b==4
-opt1:uint(300) = 0
-opt2:$(min=0,max=300) = 0     // same
-opt3:int(0..=300) = 0         // same
+assert b.::[poison] and b==4
+let counter = proc(en, width) {
+  reg value:uint:[bits=width] = 0
+  value = value + 1
+  ret value
+}
 
-assert opt1.$ubits == 0       // opt1 initialized to 0, so 0 bits
+let counter2::[clock=clk1]=counter
+let counter3::[reset=rst2]=counter
+
+var ctr2 =# counter2(my_enable)
+var ctr3 =# counter3(my_enable)
+opt1:uint(300) = 0
+opt2:int:[min=0,max=300] = 0  // same
+opt3::[min=0,max=300] = 0     // same
+opt4:int(0..=300) = 0         // same
+
+assert opt1.::[ubits] == 0    // opt1 initialized to 0, so 0 bits
 opt1 = 200
-assert opt1.$ubits == 8       // last assignment needs 9 sbits or 8 ubits
-tmp  = opt1:$(ubits==8) + 1   // expression AND assert opt1.$ubits==8 check
+assert opt1.::[ubits] == 8    // last assignment needs 9 sbits or 8 ubits
+tmp  = opt1::[ubits==8] + 1   // expression AND assert opt1.::[ubits]==8 check
 a:u32 = 100
 b:u10 = 0
 c:u5  = 0
 d:u5  = 0
-w:$(wrap) u5 = 0    // attribute set for all the 'w' uses
+w:u5:[wrap] = 0     // attribute set for all the 'w' uses
 
 b = a               // OK, o precision lost
-c:$(wrap) = a       // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
+c::[wrap] = a       // OK, same as c = a@[0..<5] (Since 100 is 0b1100100, c==4)
 w = a               // OK, 'w' has a wrap set at declaration
 
-c:$(saturate) = a   // OK, c == 31
+c::[saturate] = a   // OK, c == 31
 c = 31
 
-d:$(wrap) = c + 1   // OK d == 0
-d:$(saturate) = c+1 // OK, d==31
-d:$(saturate) = c+1 // OK, d==31
+d::[wrap] = c + 1   // OK d == 0
+d::[saturate] = c+1 // OK, d==31
+d::[saturate] = c+1 // OK, d==31
 
-let a:$(comptime) = 1     // obviously comptime
-b:$(comptime) = a + 2  // OK too
+let a::[comptime] = 1     // obviously comptime
+b::[comptime] = a + 2     // OK too
 var Xconst1 = 1      // obvious comptime
-var a = (b:$(debug)=2, c = 3) // a.b is a debug variable
-let c:$(debug) = 3
+var a = (b::[debug]=2, c = 3) // a.b is a debug variable
+let c::[debug] = 3
 x:(_priv=3, zz=4) = _
 
-let tmp:$(debug) = x.priv // OK
+let tmp::[debug] = x.priv // OK
 
 assert x._priv == 3    // OK, assert is a debug statement
-var counter:reg u32 = 10
-var not_a_reg:u32   = 20
+reg counter:u32   = 10
+var not_a_reg:u32 = 20
 x = 0b1_0110   // positive
 y = 0s1_0110   // negative
 assert x@[0,2] == 0b10
@@ -593,14 +606,12 @@ g2= (1 + 3)
 i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
 var v1:u32 = _                 // v1 is zero every cycle AND not $valid
-assert v1.$valid == false
+assert v1.::[valid] == false
 var v2:u32 = 0                 // v2 is zero every cycle AND     $valid
-assert v2.$valid == true
-v2.$valid=false                // set valid attribute directly
+assert v2.::[valid] == true
 
-$(comptime)
-assert v1?
-assert not v2?
+cassert v1?
+cassert not v2?
 
 assert v1 == 0 and v2 == 3     // data still same as usual
 
@@ -617,7 +628,7 @@ let res2 = v2 + 0              // valid with just unknown 0sb? data
 assert res1?
 assert res2?
 
-counter:reg u32 = 0
+reg counter:u32 = 0
 
 always_assert counter.reset implies !counter?
 let custom = (
@@ -628,11 +639,12 @@ let custom = (
 )
 
 var x:custom = _
-$(comptime) assert x?
+
+cassert x?       // compile time assert
 x.data = 33
-$(comptime) assert not x?
+cassert not x?
 let complex = (
-  ,v1:reg string = "foo"
+  ,reg v1:string = "foo"
   ,v2:string = _
 
   ,set = proc(ref self,v) {
@@ -642,9 +654,9 @@ let complex = (
 )
 
 var x1:complex = _
-var x2:$(valid = false) complex = 0  // toggle invalid forever, and set zero
+var x2:complex:[valid = false] = 0  // toggle invalid forever, and set zero
 var x3:complex = 0
-x3.$valid = false                 // toggle invalid
+x3.::[valid] = false                // toggle invalid
 
 assert x1.v1 == "" and x1.v2 == ""
 assert not x2? and not x2.v1? and not v2.v2?
@@ -661,9 +673,11 @@ assert not x2? and x2.v1 == "" and x2.v2 == "hello"
 x2 = "world"
 
 assert x2? and x2?.v1 == "world" and x2.v1 == "world"
+let cassert::[comptime] = assert
+let cassume::[comptime] = assume
 a = 3
 assert a == 3          // checked at runtime (or compile time)
-$(comptime) assert a == 3 // checked at compile time
+cassert a == 3         // checked at compile time
 
 verify a < 4           // checked at runtime and verification
 assume b > 3           // may optimize and perform a runtime check
@@ -682,7 +696,7 @@ if cond {
 assert cond implies a == 3, "the branch was taken, so it must be 3??"
 assert a == 3, "the same error" when   cond
 assert a == 0, "the same error" unless cond
-var memory:reg []u33 = (1,2,3) // may take cycles to load this contents
+reg memory:[]u33 = (1,2,3) // may take cycles to load this contents
 
 assert memory[0] == 1 // not checked during reset
 
@@ -737,7 +751,7 @@ a += 1 when false             // never executes
 assert a == 3
 assert a == 1000 when a > 10  // assert never executed either
 
-var my:reg = 3 when some_condition  // no register declared otherwise
+reg my = 3 when some_condition  // no register declared otherwise
 
 ret "fail" unless success_condition
 {
@@ -843,7 +857,7 @@ defer_read f1 = ring(a, f4)
 f2 = ring(b, f1)
 f3 = ring(c, f2)
 f4 = ring(d, f3)
-var counter:reg u32 = _
+reg counter:u32 = _
 
 let counter_m1 = counter#[-1] // last cycle
 let counter_0  = counter#[0]  // current cycle 
@@ -870,7 +884,7 @@ var x = 100
 defer_write x = a
 a = 200
 
-$(comptime) assert x == 100
+cassert x == 100
 defer_read assert x == 1
 test "my test {}", 1 {
   assert true
@@ -921,12 +935,12 @@ test "my test {}", 1 {
     }
 
     assert total == 3 and a_cond
-let _a_3   = {   3 }     // just scope, not a lambda. Scope is evaluate now
-let _a_fun = fun() { 4 } // local function, when just_4 is called 4 is returned
+let a_3   = {   3 }      // just scope, not a lambda. Scope is evaluate now
+let a_fun = fun() { 4 }  // local function, when just_4 is called 4 is returned
 
 let fun3 = fun(){ 5 }    // public lambda that can be imported by other files
 
-let x = a_fun()          // OK, explicit call
+let x = a_fun()          // OK, explicit call needed when no arguments
 
 assert a_3 equals 3
 assert :a_fun equals :fun()
@@ -952,7 +966,7 @@ var y = (
   ,inc1 = fun (ref self) { self.val = u32(self.val + 1) }
 )
 
-let my_log:$(debug) = fun (...inp) {
+let my_log::[debug] = fun (...inp) {
   print "loging:"
   for i in inp {
     print " {}", i
@@ -969,7 +983,8 @@ let div2 = fun (...x){ x.0 / x.1 }    // unnamed input tuple
 
 let noarg = fun () { ret 33 }         // explicit no args
 
-assert noarg == 33 == noarg()
+assert 33 == noarg()
+                      
 
 b=div(self=8, b=4)       // OK, 2
 d=(self=8).div(b=2)      // OK, 4
@@ -979,6 +994,7 @@ d=8.div(2)               // OK, single character inputs no need to be named
 h=div2(8, 4, 3)          // OK, 2 (3rd arg is not used)
 
 j=(8,4)  |> div2         // OK, 2, same as div2(8,4)
+j=(8,4)  |> div2()       // OK, 2, same as div2(8,4)
 k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
 l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
 
@@ -996,9 +1012,22 @@ assert 4.f2()       == 3  // UFCS call
 assert tup.f1()     == 1
 var tup2 = (
   ,val:u8 = _
-  ,upd = proc(ref self) { self.val:$(saturate) += 1 }
+  ,upd = proc(ref self) { self.val::[saturate] += 1 }
   ,calc = fun(self) { self.val}
 )
+no_arg_fun()     // must use explicit parenthesis/called
+arg_fun 1,2      // parenthesis are optional
+arg_fun(1,2)     // OK too
+(1,2) |> arg_fun // OK too, it is after |>
+
+var intercepted:(
+ ,field:u32
+ ,get=fun(self) { ret self.field + 1 }
+ ,set=fun(ref self,v ) { self.field = v }
+) = 0
+
+cassert intercepted == 1  // will call get method without explicit call
+cassert intercepted.field == 0
 let inc1 = fun(ref a) { a += 1 }
 
 let x = 3
@@ -1008,17 +1037,11 @@ inc1(ref y)
 assert y == 4
 
 let banner = fun() { puts "hello"  }
-let execute_method = fun(ref fn) {
-  fn() // prints hello
+let execute_method = fun(fn) {
+  fn() // prints hello when banner passed as argument
 }
 
-execute_method(ref banner) // OK
-let f1 = fun() { puts "here" }
-
-let f2a = f1      // prints here
-
-let f2b = ref f1  // no call
-let xx = f2b      // prints here
+execute_method(banner)     // OK
 let ret1 = fun()->(a:int) { // named
   a = 1
 }
@@ -1080,7 +1103,7 @@ let inc = fun (ref self, v) { self.var *= v } // NOT INC but multiply
 assert 44.inc(2) == 8
 
 counter.val = 5
-let mul = ref inc
+let mul = inc
 counter.mul(2)             // call the new mul method with UFCS
 assert counter.val == 10
 
@@ -1277,13 +1300,13 @@ lec res, res2
     lec lhs?, lhs2_v
     let case_1_counter = proc(runtime)->(res) {
 
-      var r:reg (
-        ,total:reg u16           // r is reg, everything is reg
+      reg r (
+        ,reg total:u16           // r is reg, everything is reg
         ,increase = fun(a) {
           puts "hello"
 
           let res = self.total
-          self.total:$(wrap) = res+a
+          self.total::[wrap] = res+a
 
           ret res
         }
@@ -1297,13 +1320,13 @@ lec res, res2
     }
     let case_1_counter = proc(runtime)->(res) {
 
-      var r:reg (
-        ,total:reg u16
+      reg r (
+        ,reg total:u16
         ,increase = fun(a) {
           puts "hello"
 
           let res = self.total
-          self.total:$(wrap) = res+a
+          self.total::[wrap] = res+a
 
           ret res
         }
@@ -1313,39 +1336,39 @@ lec res, res2
         puts "hello"
 
         let res = r.total
-        r.total:$(wrap) = res+3
+        r.total::[wrap] = res+3
         res = res
       }elif runtime == 4 {
         puts "hello"
 
         let res = r.total
-        r.total:$(wrap)= res+9
+        r.total::[wrap]= res+9
         res = res
       }
     }
-var r:reg u16 = 3 // reset sets r to 3
+reg r:u16 = 3 // reset sets r to 3
 r = 2             // non-reset assignment
 
-var array:reg []u16 = (1,2,3,4)  // reset values
+reg array:[]u16 = (1,2,3,4)  // reset values
 
-var r2:reg u128 = conf.get("my_data.for.r2")
+reg r2:u128 = conf.get("my_data.for.r2")
 
-var array:reg[] = conf.get("some.conf.hex.dump")
-var array:reg $(clock=my_clock) [1024]tag = proc(ref self) {
-  reset_iter:reg $(reset=false) u10 = 0sb? // no reset flop
+reg array:[] = conf.get("some.conf.hex.dump")
+reg array:[1024]tag:[clock=my_clock] = proc(ref self) {
+  reg reset_iter:u10:[reset=false] = 0sb? // no reset flop
 
   self[reset_iter].state = I
 
-  reset_iter:$(wrap) = reset_iter + 1
+  reset_iter::[wrap] = reset_iter + 1
 }
-var my_flop:reg [8]u32 = proc(ref self) {
-  var reset_counter:reg $(async=true) u3 = _ // async is only posedge reset
+reg my_flop:[8]u32 = proc(ref self) {
+  reg reset_counter:u3:[async=true] = _ // async is only posedge reset
 
   self[reset_counter] = reset_counter
-  reset_counter:$(wrap) += 1
+  reset_counter::[wrap] += 1
 }
     let Mix_tup = (
-      ,flag:reg boolean
+      ,reg flag:bool = false
       ,state: u2
     )
 
@@ -1359,8 +1382,8 @@ var my_flop:reg [8]u32 = proc(ref self) {
     }
     x.flag = true
     let Mix_tup = (
-      ,flag:reg boolean
-      ,state: u2
+      ,reg flag:bool = false
+      ,state:u2
     )
 
     var x:Mux_tup = proc(ref self) {
@@ -1374,11 +1397,11 @@ var my_flop:reg [8]u32 = proc(ref self) {
     if x.flag {
       x.state = 2
     }
-var my_asyn_other_reg:reg $(
+reg my_asyn_other_reg:u8:[
   ,async = true
   ,clock = ref clk2    // ref to connect, not read clk2 value
   ,reset = ref reset33 // ref to connect, not read current reset33 value
-) u8 = 33 // initialized to 33 at reset
+] = 33 // initialized to 33 at reset
 
 
 if my_async_other_reg == 33 {
@@ -1449,8 +1472,8 @@ if cond {
   var out = _
 
   {
-    var p1r:reg = _
-    var p2r:reg = _
+    reg p1r = _
+    reg p2r = _
 
     var _l1 = inp1 + 1    // private
     var p2 = inp1 + 2     // public
@@ -1463,12 +1486,12 @@ if cond {
 
   res = out
 }
-var a:reg u4 = 3
-a:$(saturate) = a+1
+reg a:u4 = 3
+a::[saturate] = a+1
 
-var b:reg = 4
+reg b = 4
 if cond {
-  var c:reg = _           // weird as reg, but legal syntax
+  reg c = _           // weird as reg, but legal syntax
   c = b + 1
   b = 5
 }
@@ -1483,15 +1506,15 @@ b      = __mux(cond, b_qpin, 5)
 
 c_cond_qpin = __flop(reset=ref reset, clk=ref clk, initial=0, din=c_cond.__last_value)
 c_cond      = __sum(A=(b, 1))
-    defer_read var counter_next:$(wrap) u8 = counter_q + 1
+    defer_read var counter_next:u8:[wrap] = counter_q + 1
 
     let counter_q = __flop(din=counter_next, reset=my_rst, clock=my_clk
                        ,enable=my_enable, posclk=true, initial=3, async=false)
-    var counter:reg $(reset=my_rst, clock=my_clk, posclk=true, async=false) u8 = 3
+    reg counter:u8:[reset=my_rst, clock=my_clk, posclk=true, async=false]= 3
     assert counter == counter#[0]  // counter still has the q value
 
     if my_enable {
-      counter:$(wrap) = counter + 1
+      counter::[wrap] = counter + 1
     }
 var my_latch_q = __latch(din=my_din, enable=my_enable, posclk=true)
 assert i==0 or (i#[-1] + 1 == i)
@@ -1501,8 +1524,8 @@ let i_let = i
 var i_var0 = i
 var i_var1 = i
 
-var i_reg0:reg = i        // initialization only
-var i_reg1:reg i_reg0 = _
+reg i_reg0 = i        // initialization only
+reg i_reg1:i_reg0 = _
 
 i_reg1 = i                // every cycle
 
@@ -1533,7 +1556,7 @@ i_reg1 = i                // every cycle
   assert i == 0 or (i == i#[0]+1)  // i#[0] is the unflop original
 }
 
-var my_reg:reg $(retime=true,clock=my_clk) = 0
+reg my_reg::[retime=true,clock=my_clk] = 0
     let block = proc(in1,in2)->(out) {
       {
         let tmp = in1 * in2
@@ -1548,15 +1571,15 @@ var my_reg:reg $(retime=true,clock=my_clk) = 0
       }
     }
     add1 = proc(a,b) {     // 1 cycle add
-      var r:reg = _
+      reg r  = _
       let rr = r           // get flop value
       r = a+b
       ret rr
     }
     let mul3 = proc(a,b) { // 3 cycle multiply
-      var reg1:reg = _
-      var reg2:reg = _
-      var reg3:reg = _
+      reg reg1 = _
+      reg reg2 = _
+      reg reg3 = _
       reg3 = reg2
       reg2 = reg1
       reg1 = a * b
@@ -1601,12 +1624,12 @@ out  =#[1..<4] add1(x,in3) // OK
     var a:u32 = 0
 
     a += 1
-    $(comptime) assert a does u32
+    cassert a does u32
     a = b                       // incorrect
-    $(comptime) assert b does u32  // fails
+    cassert b does u32  // fails
 
     var dest:u32 = 0
-    $(comptime) assert (dest does u32) and (foo does u16) and (v does u8)
+    cassert (dest does u32) and (foo does u16) and (v does u8)
     dest = foo:u16 + v:u8
 let t1 = (a:int=1  , b:string)
 let t2 = (a:int=100, b:string)
@@ -1626,7 +1649,7 @@ let At = :int(33..)      // number bigger than 32
 let Bt=(
   ,c:string
   ,d=100
-  ,let set = fun(ref self, ...args) { self.c = args }
+  ,set = fun(ref self, ...args) { self.c = args }
 )
 
 var a:At=40
@@ -1715,15 +1738,15 @@ match ee {
 
 
 var val:u8 = 0   // designer constraints a to be between 0 and 255
-assert val.$sbits == 0
+assert val.::[sbits] == 0
 
 val = 3          // val has 3 bits (0sb011 all the numbers are signed)
 
 
 val = 1          // max=1,min=1 sbits=2, ubits=1
-assert val.$ubits == 1 and val.$min==1 and val.$max==1 and val.$sbits==2
+assert val.::[ubits] == 1 and val.::[min]==1 and val.::[max]==1 and val.::[sbits]==2
 
-val:$(wrap) = 0x1F0 // Drop bits from 0x1F0 to fit in constrained type 
+val::[wrap] = 0x1F0 // Drop bits from 0x1F0 to fit in constrained type 
 assert val == 240 == 0xF0
 
 val = u8(0x1F0)    // same
@@ -1737,7 +1760,7 @@ if b {
 }
                            // c: current(max=4,min=3) constrain(max=10,min=0)
 
-var e:$(sbits = 4) = _     // e: current(max=0,min=0) constrain(max=7,min=-8)
+var e::[sbits = 4] = _     // e: current(max=0,min=0) constrain(max=7,min=-8)
 e = 2                      // e: current(max=2,min=2) constrain(max=7,min=-8)
 var d = c                  // d: current(max=4,min=3) constrain()
 if d==4 {
@@ -1761,8 +1784,8 @@ if cmd? {
                 // merging: x.max = x.max ; x.min = 0
                 // merging: y.max = y.max ; y.min = 0
                 // converged because x and y is same or smaller at beginning
-var x:reg = 0
-var y:reg = 0
+reg x = 0
+reg y = 0
 if cmd? {
   x,y = cmd
 }elif x > y {
@@ -1770,8 +1793,8 @@ if cmd? {
 }else{
   y = y - x
 }
-x:$(wrap) cmd.a = x  // use cmd.a type for x, and drop bits as needed
-y = cmd.b(y)         // typecast y to cmd.b type (this can add a mux)
+x:cmd.a:[wrap] = x  // use cmd.a type for x, and drop bits as needed
+y = cmd.b(y)        // typecast y to cmd.b type (this can add a mux)
 let at=(c:string,d:u32)
 let bt=(c:string,d:u100)
 
@@ -1841,7 +1864,7 @@ let Circle = (
   ,increase_size = proc(ref self, a:i12) { self.rad *= a }
   ,say_name=fun(self) { puts "name:{}", name }
 )
-$(comptime) assert Circle does Shape
+cassert Circle does Shape
 a = (b=1,c:u32=2)
 var b = a
 b.c=100
@@ -1866,12 +1889,12 @@ let x = fn(args)
 let x = for i in fn { last i(args) when (i.__inp does :args) 
                                     and (i.__out does :x   ) 
                                     and (i.__where(args)   ) }
-let randomize:$(debug) = fun(ref self) {
+let randomize::[debug] = fun(ref self) {
   let rnd = import "prp/rnd"
   for i in ref self {
     if i equals :int {
       i = rnd.between(i.__max,i.__min)
-    }elif i equals :boolean {
+    }elif i equals :bool {
       i = rnd.boolean()
     }
   }
@@ -1917,9 +1940,9 @@ let Number = b ++ a // patch the default Number class
 
 var x:Number = 3
 let do_increase = proc() {
-  reg counter
+  reg counter = 0
 
-  counter:$(wrap) u32 = counter + 1
+  counter:u32:[wrap] = counter + 1
 }
 
 let do_debug = proc() {
@@ -1928,7 +1951,7 @@ let do_debug = proc() {
   puts "The counter value is {}", cntr
 }
 // file remote.prp
-reg uart_addr:u32
+reg uart_addr:u32 = _
 assert 0x400 > uart_addr >= 0x300
 
 // file local.prp
@@ -1956,7 +1979,7 @@ assert f3 == f2 == f1
 let some_obj = (
   ,a1:string
   ,a2 = (
-    ,_val:u32 = _                              // hidden field
+    ,_val:u32 = _                               // hidden field
 
     ,get=fun(self) { self._val + 100 }         // getter
     ,set=proc(ref self, x) { self._val = x+1 } // setter
@@ -1972,7 +1995,6 @@ var x:some_obj = ("hello", 3)
 assert x.a1 == "hello"
 assert x.a2 == 103
 x.a2 = 5
-assert x.a2.get == 106
 let showcase = (
   ,v:int = _
   ,get ++= fun(self)->(:string) where self.i>100 {
@@ -1990,13 +2012,13 @@ s.v = 100
 let my_obj = (
   ,val:u32 = _
   ,get = fun(self)->(:string ){ ret string(self.val) }
-      ++ fun(self)->(:boolean){ ret self.val != 0    }
-      ++ fun(self)->(:int    ){ ret self.val         }
+       ++ fun(self)->(:bool){ ret self.val != 0    }
+       ++ fun(self)->(:int    ){ ret self.val         }
 )
 let t=(
   ,v:string = _
   ,set = proc(ref self) { self.v = a }
-  ,lt = fun(self,other)->(:boolean){ self.v  < other.v }
+  ,lt = fun(self,other)->(:bool){ self.v  < other.v }
   ,eq = fun(self,other)            { self.v == other.v } // infer ret
 )
 
@@ -2081,12 +2103,12 @@ assert a == a.age == a.0 == 3
 var w:Weight = 100
 
 let fa_t = :fun(a:Animal)->()
-let fd_t:fun(d:Dog)->() = _    // same, different style
+let fd_t = :fun(d:Dog)->()
 
 let call_animal = fun(a:Animal)->() {
    puts a.name // OK
 }
-let call_dog = fun(d:Dog)->() {
+let call_dog:fd_t = fun(d:Dog)->() {    // OK to add type in lhs
    d.bark()    // OK
 }
 
@@ -2154,7 +2176,7 @@ var fun_list = fun(a,b){ ret a+b}
 fun_list ++= fun(a,b,c){ ret a+b+c }
 fun_list ++= fun(a,b,c,d){ ret a+b+c+d }
 
-assert fun_list.$size
+assert fun_list.::[size]
 
 assert fun_list(1,2) == 3
 assert fun_list(1,2,4) == 7
@@ -2221,7 +2243,7 @@ let rotate = fun(a) where a has 'x' and a has 'y' {
   r.y = a.x
   ret r
 }
-var mem:reg [] = 0
+reg mem:[] = 0
 mem[3]   = something // async memory
 var array:[] = _
 array[3] = something // array no cross cycles persistence
@@ -2230,8 +2252,8 @@ var index2:u6 = _
 
 array[index] = something
 some_result  = array[index2+3]
-var mem1:reg [16]i8 = 3   // mem 16bit memory initialized to 3 with type i8
-var mem2:reg [16]i8 = _   // mem 16bit memory initialized to 0 with type i8
+reg mem1:[16]i8 = 3   // mem 16bit memory initialized to 3 with type i8
+reg mem2:[16]i8 = _   // mem 16bit memory initialized to 0 with type i8
 var mem3:[] = 0sb?        // array infer size and type, 0sb? initialized
 var mem4:[13] = 0         // array 13 entries size, initialized to zero
 x1 = array[first..<last]  // from first to last, last not included
@@ -2243,27 +2265,27 @@ var b:[4][8]u8 = 13
 
 assert b[2][7] == 13
     var mem1:[4][8]u5 = 0
-    var reset_value:$(comptime) [3][8]u5 = _ // only used during reset
+    var reset_value:[3][8]u5:[comptime] = _ // only used during reset
     for i in 0..<3 {
       for j in 0..<8 {
         reset_value[i][j] = j
       }
     }
-    var mem2:reg = reset_value   // infer async mem u5[3][8]
+    reg mem2 = reset_value   // infer async mem u5[3][8]
     var mem = ( 
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
     )
-    var mem2:reg = ( 
+    reg mem2 = ( 
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
     )
-    var rf:reg [32]i64 = 0sb?   // random initialized
+    reg rf:[32]i64 = 0sb?   // random initialized
 
-    var a:reg (addr1:u5, addr2:u5) = (0,0)
+    reg a:(addr1:u5, addr2:u5) = (0,0)
 
     data_rs1 = rf[a.addr1]
     data_rs2 = rf[a.addr2]
@@ -2271,7 +2293,7 @@ assert b[2][7] == 13
     a = (insn[8..=11], insn[0..=4])
     var rf:[32]i64 = 0sb?
 
-    var a:reg (data1:i64, data2:i64) = _
+    reg a:(data1:i64, data2:i64) = _
 
     data_rs1 = a.data1
     data_rs2 = a.data2
@@ -2577,9 +2599,9 @@ let reverse = fun(x:uint)->(total:uint) {
   }
 }
 assert reverse(0b10110) == 0b01101
-var r_ver:reg = 0sb?
+reg r_ver = 0sb?
 
-var r:reg = _
+reg r = _
 var v = _
 
 assert v == 0 and r == 0
@@ -2592,7 +2614,7 @@ var arr:[] = (0,1,2,3,4,5,6,7)
 
 assert_always arr[0] == 0 and arr[7] == 7  // always works
 
-var mem:reg [] = (0,1,2,3,4,5,6,7)
+reg mem:[] = (0,1,2,3,4,5,6,7)
 
 assert_always mem[7] == 7                  // FAIL, this may fail during reset
 assert_always mem[7] == 7 unless mem.reset // OK
@@ -2600,11 +2622,11 @@ assert mem[7] == 7                         // OK, not checked during reset
 let args = fun(x) { puts "args:{}", b ; ret 1}
 let here = fun()  { puts "here" ; ret 3}
 
-let call_now   = fun(f:fun){ ret f } 
-let call_defer = fun(f:fun){ ret ref f } 
+let call_now   = fun(f:fun){ ret f() } 
+let call_defer = fun(f:fun){ ret f   } 
 
 let x0 = call_now here           // prints "here"
-let x1 = call_defer here         // prints "here"
+let x1 = call_defer here         // nothing printed
 assert x0  == 3                  // nothing printed
 assert x1  == 3                  // nothing printed
 
@@ -2612,11 +2634,9 @@ let x2 = call_now(ref here)      // prints "here"
 let x3 = call_defer(ref here)    // nothing printed
 let x4 = call_defer(ref args)    // nothing printed
 assert x2  == 3                  // nothing printed
-assert x3  == 3                  // prints "here"
+assert x3()  == 3                // prints "here"
 assert x4("xx") == 1             // prints "args:xx"
 
-let x5 = call_now(fun() {here})  // nothing printed
-assert x3 == 3                   // prints here
 if if x == 3 { true }else{ false } {
   puts "x is 3"
 }
@@ -2651,16 +2671,16 @@ let AnObject = (
     a[y].age = 10
 let telescope_unit = fun(a:u32,b:u32,start:bool) -> (res:u32) {
 
-  var result_done:reg = 0
-  var result_flop:reg = 0
+  reg result_done = 0
+  reg result_flop = 0
 
   if result_done {
     res = result_flop
   }
 
-  var int_done:reg = _
-  var int_flop:reg = _
-  var int_b:reg = _
+  reg int_done = _
+  reg int_flop = _
+  reg int_b = _
 
   if int_done {  // pending work (2 cycle op, can not telescope)
     result_flop = int_flop-int_b

@@ -212,7 +212,7 @@
         "required": false,
         "types": [
           {
-            "type": "var_or_let",
+            "type": "var_or_let_or_reg",
             "named": true
           }
         ]
@@ -271,6 +271,21 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "attribute_identifier",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -846,7 +861,7 @@
         "required": false,
         "types": [
           {
-            "type": "dollar_identifier",
+            "type": "attribute_identifier",
             "named": true
           }
         ]
@@ -2186,18 +2201,7 @@
   {
     "type": "statement",
     "named": true,
-    "fields": {
-      "attribute": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "attributes",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": false,
       "required": true,
@@ -2266,7 +2270,7 @@
         "required": false,
         "types": [
           {
-            "type": "var_or_let",
+            "type": "var_or_let_or_reg",
             "named": true
           }
         ]
@@ -2314,7 +2318,7 @@
             "named": true
           },
           {
-            "type": "var_or_let",
+            "type": "var_or_let_or_reg",
             "named": true
           }
         ]
@@ -2438,7 +2442,7 @@
         "required": false,
         "types": [
           {
-            "type": "var_or_let",
+            "type": "var_or_let_or_reg",
             "named": true
           }
         ]
@@ -2486,7 +2490,7 @@
             "named": true
           },
           {
-            "type": "var_or_let",
+            "type": "var_or_let_or_reg",
             "named": true
           }
         ]
@@ -2537,16 +2541,6 @@
         "types": [
           {
             "type": "attributes",
-            "named": true
-          }
-        ]
-      },
-      "register": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "reg_token",
             "named": true
           }
         ]
@@ -2749,7 +2743,7 @@
     "fields": {}
   },
   {
-    "type": "var_or_let",
+    "type": "var_or_let_or_reg",
     "named": true,
     "fields": {}
   },
@@ -2856,10 +2850,6 @@
     "named": false
   },
   {
-    "type": "$(",
-    "named": false
-  },
-  {
     "type": "&",
     "named": false
   },
@@ -2925,6 +2915,14 @@
   },
   {
     "type": ":",
+    "named": false
+  },
+  {
+    "type": "::[",
+    "named": false
+  },
+  {
+    "type": ":[",
     "named": false
   },
   {
@@ -3048,10 +3046,6 @@
     "named": false
   },
   {
-    "type": "dollar_identifier",
-    "named": true
-  },
-  {
     "type": "elif",
     "named": false
   },
@@ -3160,8 +3154,8 @@
     "named": false
   },
   {
-    "type": "reg_token",
-    "named": true
+    "type": "reg",
+    "named": false
   },
   {
     "type": "restrict",

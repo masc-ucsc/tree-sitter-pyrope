@@ -1,5 +1,5 @@
 
-var a:u32
-var b:s3
+var a:u32 = 0
+var b:s3 = 0
 
 a,b = (222,3)

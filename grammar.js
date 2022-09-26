@@ -97,6 +97,11 @@ module.exports = grammar({
       ,'simple_function_call'
     ]
     ,[
+      'expression'
+      ,'function_call'
+      ,'function_call_type'
+    ]
+    ,[
       'type_spec'
       ,'type_cast'
     ]
@@ -112,9 +117,7 @@ module.exports = grammar({
     description: $ => repseq($.statement, repeat(';'))
 
     // Statements
-    ,statement: $ => prec.left('statement', seq(
-      field('attribute', optional($.attributes))
-      ,choice(
+    ,statement: $ => prec.left('statement', choice(
         // Synthesizable
         $.scope_statement
         ,$.pipestage_statement
@@ -131,7 +134,7 @@ module.exports = grammar({
         ,$.test_statement
         ,$.restrict_statement
       )
-    ))
+    )
     ,scope_statement: $ => prec.left('statement', seq(
       '{'
       ,repseq($.statement)
@@ -255,7 +258,7 @@ module.exports = grammar({
       '(', optional($.tuple_list), ')'
     ))
     ,attributes: $ => prec.left(seq(
-      '$(', $.tuple_list, ')'
+      ':[', $.tuple_list, ']'
     ))
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
@@ -274,7 +277,7 @@ module.exports = grammar({
 
     // Assignment/Declaration
     ,_assignment_or_declaration: $ => prec.right(seq(
-      field('decl',optional($.var_or_let))
+      field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', $.expression_list)
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
@@ -284,7 +287,7 @@ module.exports = grammar({
       ))
     ))
     ,cycle_select_or_pound: $=> choice($.cycle_select, '#')
-    ,var_or_let: $ => choice('var','let')
+    ,var_or_let_or_reg: $ => choice('var','let','reg')
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))
@@ -416,10 +419,10 @@ module.exports = grammar({
       field('item', $._restricted_expression)
       ,choice(
         repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
-        ,prec.left('dot_sub', seq('.', field('attr', $.dollar_identifier)))
+        ,prec.left('dot_sub', seq('.', field('attr', $.attribute_identifier)))
       )
     ))
-    ,function_call: $ => prec.right('function', seq(
+    ,function_call: $ => prec.left('function_call', seq(
       field('function', choice($.identifier, $.dot_expression, $.selection))
       ,field('argument', $.tuple)
     ))
@@ -467,11 +470,9 @@ module.exports = grammar({
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
       ':'
-      ,field('register', optional($.reg_token))
-      ,field('attribute', optional($.attributes))
       ,field('type', optional($._type))
+      ,field('attribute', optional($.attributes))
     ))
-    ,reg_token: $ => token('reg')
     ,trivial_identifier_list: $ => seq(
       repeat(',')
       ,$.identifier
@@ -599,7 +600,8 @@ module.exports = grammar({
         )
       )
     )
-    ,dollar_identifier: $ => token(/\$[\p{L}_][\p{L}\p{Nd}_$]*/)
+    //,dollar_identifier: $ => token(/\$[\p{L}_][\p{L}\p{Nd}_$]*/)
+    ,attribute_identifier: $ => seq('::[', $.identifier, ']')
 
     // Constants
     ,constant: $ => choice(
