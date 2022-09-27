@@ -216,7 +216,7 @@ module.exports = grammar({
       field('condition', choice(
         choice(
           ...['and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-              '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'in', '!in',
+              '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
               'equals', '!equals', 'does', '!does', 'is', '!is'].map(operator =>
           seq(operator, $.expression_list)
         ))
@@ -403,6 +403,8 @@ module.exports = grammar({
         ,['!in', 'tuple_relation']
         ,['equals', 'type_equal']
         ,['!equals', 'type_equal']
+        ,['case', 'type_compare']
+        ,['!case', 'type_compare']
         ,['does', 'type_compare']
         ,['!does', 'type_compare']
         ,['is', 'type_compare']
