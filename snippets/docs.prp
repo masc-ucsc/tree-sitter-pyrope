@@ -433,7 +433,7 @@ var a = true  // infer a is a boolean
 
 foo = a:bool or false // checks that 'a' is a boolean
 // attribute set
-var foo::[comptime=true] = xx      // enforce that foo is comptime true always
+var foo:u32:[comptime=true] = xx   // enforce that foo is comptime true always
 var bar::[comptime] = xx           // same as previous statement
 yyy = xx                           // yyy does not check comptime
 yyy::[comptime=true] = xx          // now, checks that 'yyy` is comptime
@@ -1684,6 +1684,23 @@ assert a != b              // 1 != 2
 assert a equals b          // 1 equals 2
 
 assert :a equals :fun()
+cassert (a:u32=0, b:bool) does (a:u32, c:string="hello", b=false)
+cassert (a:u32=0, c:string="hello", b=false) case (a = 0, b:bool=_)
+
+cassert (a:u32=0, c:string="hello", b=false) !case (a:u32 = 1 , b:bool=_   )
+cassert (a:u32=0, c:string="hello", b=false) !case (a:bool = _, b:bool=_   )
+cassert (a:u32=0, c:string="hello", b=false) !case (a = 0     , b     =true)
+
+match (a=1,b=3) {
+  case (a=1) { cassert true }
+  else { cassert false }
+}
+
+match let t=(a=1,b=3); t {
+  case (a=1,c=4) { cassert false }
+  case (b=_,a=1) { cassert t.b==3 and t.a==1 }
+  else { cassert false }
+}
 let X1 = (b:u32)
 let X2 = (b:u32)
 
