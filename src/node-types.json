@@ -1567,6 +1567,22 @@
     }
   },
   {
+    "type": "loop_statement",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "match_expression",
     "named": true,
     "fields": {},
@@ -2248,6 +2264,10 @@
         },
         {
           "type": "if_statement",
+          "named": true
+        },
+        {
+          "type": "loop_statement",
           "named": true
         },
         {
@@ -3135,6 +3155,10 @@
   },
   {
     "type": "let",
+    "named": false
+  },
+  {
+    "type": "loop",
     "named": false
   },
   {

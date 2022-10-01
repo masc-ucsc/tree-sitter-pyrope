@@ -65,6 +65,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "loop_statement"
+          },
+          {
+            "type": "SYMBOL",
             "name": "match_statement"
           },
           {
@@ -503,6 +507,23 @@
             "type": "SYMBOL",
             "name": "stmt_list"
           }
+        },
+        {
+          "type": "FIELD",
+          "name": "code",
+          "content": {
+            "type": "SYMBOL",
+            "name": "scope_statement"
+          }
+        }
+      ]
+    },
+    "loop_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "loop"
         },
         {
           "type": "FIELD",

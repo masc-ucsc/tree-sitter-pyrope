@@ -74,6 +74,8 @@ assert b == 0x7F
 a = 1
   + 3         // 1st stmt
 b,c = (1,3)   // 2nd stmt
+cassert a == 4 and b == 1 and c == 3
+
 `foo is . strange!\nidentifier` = 4
 `for` = 3
 a = 1 ; b = 2
@@ -125,6 +127,17 @@ e:u32 = 33       // OK
 
 var Foo = 33     // compiler error, 'let Foo = 33'
 Foo  = 33        // compiler error, `Foo` already declared as immutable
+var tup = nil
+
+if cond::[comptime] {
+  tup = (a=1,b=2)
+}else{
+  tup = (a=1,b:u4=3,c=3)
+}
+
+cassert tup.a == 1
+cassert cond implies tup.b==2
+cassert !cond implies tup.b==3
 var b = (f1=3,f2=4) // b is named and ordered
 var c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
 var a = (
@@ -267,8 +280,14 @@ let addb = fun(a,b:u32)-> a:u32 { // same as: letaddb = fun(a,b:u32)->(a:u32)
 var a,b = (2,3)
 assert a==2 and b==3
 
+var c = 1..=2      // OK
 var c,d = (1,2)    // OK
 assert c == 1 and d == 2
+let c = 4
+let x,b = (true, c:u3) // assign x=true, b=4 AND check that c is type u3
+
+cassert x == true
+cassert b == 4 
 let a = "foo"
 let Good = :enum(a=_,'b',c)  // OK
 let a = "field"
@@ -536,22 +555,6 @@ assert y@[0..=6]@+[] == 4
 var z     = 0b0110
 z@[0] = 1
 assert z == 0b0111
-var tup = (a=0xf:u128, b=0x1:int)  // explicit sizes are ignored if optimized
-assert tup@[] == 0b001_01111
-
-assert (0xF:s8,0x1:s16)@[] == 0x0001_0F 
-assert (0xF:u8,0x1:u16)@[] == 0x0002_0F  // 0xF needs 9 signed bits
-
-assert (true,false,true,false,false,true )@[]     == 0sb0100101 == 0b100101
-assert (true,false,true,false,false,true )@sext[] == 0sb100101
-assert (true)@[]     == 0sb01
-assert (true)@sext[] == -1   
-res:u12 = _
-
-res@[0..<8]= 0x0F
-res@[9..]  = 0x1
-
-assert res == 0b1_00001111 == 0x1_0F
 var v = 0b10
 assert v@[0,1] == v@[1,2] == v@[] == v@[0..=1] == v@[..=1] == 0b10
 
@@ -847,6 +850,16 @@ let y = {         // expr scope1
   assert false
 }
 assert y == (33+200)
+// a do while contruct does not exist, but a loop is quite clean/close
+
+var a = 0
+loop {
+  puts "a:{}",a
+
+  a += 1
+
+  break unless a < 10 
+} // do{ ... }while(a<10)
 var c = 10
 defer_read assert b == 33    // behaves like a postcondition
 defer_read b = c
@@ -1735,25 +1748,6 @@ var y:Color = Color.Red
 if y == Color.Red {
   puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
 }
-let e_type = :enum(str:String = "hello",num=22)
-let u_type = :union(str:String, num:int)         // No default value in union
-
-var uu:u_type = (str="hello2")
-assert uu.str == "hello2"
-assert uu.num == 0x32_6f_6c_6c_65_68 // ASCII for 2 e l l o h
-
-uu.num = 0x65
-assert uu.str == "o"
-assert uu.num == 0x65
-var ee:e_type = e_type.str
-ee = u_type.String          // OK
-
-match ee {
- == e_type.str { }
- == e_type.num { }
-}
-
-
 var val:u8 = 0   // designer constraints a to be between 0 and 255
 assert val.::[sbits] == 0
 
@@ -1812,6 +1806,35 @@ if cmd? {
 }
 x:cmd.a:[wrap] = x  // use cmd.a type for x, and drop bits as needed
 y = cmd.b(y)        // typecast y to cmd.b type (this can add a mux)
+let e_type = :enum(str:String = "hello",num=22)
+let u_type = :union(str:String, num:int)         // No default value in union
+
+var uu:u_type = (str="hello2")
+assert uu.str == "hello2"
+assert uu.num == 0x32_6f_6c_6c_65_68 // ASCII for 2 e l l o h
+
+uu.num = 0x65
+assert uu.str == "o"
+assert uu.num == 0x65
+var ee:e_type = e_type.str
+ee = u_type.String          // OK
+
+match ee {
+ == e_type.str { }
+ == e_type.num { }
+}
+let Conv_t = :union(
+  ,f1:u6
+  ,a=(msb:u1, mid:u4, lsb:s1)
+)
+
+var b:Conv_t = (f1=0b1_0010_1)
+cassert b.a.msb == 1
+cassert b.a.mid == 2
+cassert b.a.lsb == -1
+
+b.a.mid = 7
+cassert b.f1 == 0b1_0111_1
 let at=(c:string,d:u32)
 let bt=(c:string,d:u100)
 

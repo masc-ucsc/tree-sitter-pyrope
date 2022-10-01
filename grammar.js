@@ -127,6 +127,7 @@ module.exports = grammar({
         ,$.if_statement
         ,$.for_statement
         ,$.while_statement
+        ,$.loop_statement
         ,$.match_statement
         ,$.expression_statement
         ,$.defer_statement
@@ -199,6 +200,10 @@ module.exports = grammar({
     ,while_statement: $ => seq(
       'while'
       ,field('condition', $.stmt_list)
+      ,field('code', $.scope_statement)
+    )
+    ,loop_statement: $ => seq(
+      'loop'
       ,field('code', $.scope_statement)
     )
     ,match_statement: $ => seq(
