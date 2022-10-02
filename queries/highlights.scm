@@ -1,28 +1,15 @@
 ; Operators
 
 ; Keywords
-[
-  "debug"
-  "defer_read"
-  "defer_write"
-  "comptime"
-] @keyword
 
 [
   "enum"
-  "extends"
-  "with"
   "in"
   "when"
-  "wrap"
-  "saturate"
-  "pub"
   "let"
   "var"
   "reg"
   "ref"
-  "loc"
-  "mut"
   "where"
 ] @keyword
 
@@ -86,5 +73,3 @@
 (declaration
   (type_qualifier) @Type
 )
-
-

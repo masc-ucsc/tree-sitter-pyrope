@@ -358,7 +358,9 @@ module.exports = grammar({
     ))
     ,type_specification: $ => prec.left('type_spec', seq(
       field('argument', $._restricted_expression)
-      ,$.type_cast
+      ,':'
+      ,field('type', optional($._type))
+      ,field('attribute', optional($.attributes))
     ))
     ,unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...'))
