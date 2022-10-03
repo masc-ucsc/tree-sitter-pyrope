@@ -1,24 +1,26 @@
-Delegate <- (
+
+let Delegate = (
   ,thing = fun() { ret 'DEL here' }
 )
 
-Delegator <- (
-  ,delegate
-  ,operation :$(comptime) = fun () {
-    if delegate has 'thing' {
-      delegate.thing()
+let Delegator = (
+  ,delegate = nil
+  ,operation::[comptime,get] = fun (self) {
+    ret if self.delegate has 'thing' {
+      self.delegate.thing()
     }else{
       'default implementation'
     }
   }
 )
 
-a:Delegator
-puts a.operation // prints "default implementation"
+let a:Delegator = _
+
+cassert a.operation == "default implementation"
 
 a.delegate = 'A delegate may be any object'
-puts a.operation // prints "default implementation"
+cassert a.operation == "default implementation"
 
 a.delegate = :Delegate
-puts a.operation // prints "DEL here"
+cassert a.operation == "DEL here"
 

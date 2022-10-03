@@ -1,19 +1,18 @@
 
 
-accumulate <- fun (...a) {
-  add  := fun (a:string,b:string) { ret a ++ b }
-  add ++= fun (a:int   ,b:int   ) { ret a +  b }
-
-  total := a[0]
+let accumulate = fun (...a, acc:fun(a,b)->(:bool)) -> total {
+  total = a[0]
   for i in a[1..] {
     total = acc(total,i)
   }
   ret total
 }
 
-$(comptime)
-assert accumulate(1,2,3, add) == 6
-$(comptime) assert accumulate("a","b","c", add) == "abc"
+let add  = fun (a:string,b:string) { ret a ++ b }
+   add ++= fun (a:int   ,b:int   ) { ret a +  b }
 
-accumulate(true,false,true) // compile error, 'add' does not have a valid function
+cassert accumulate(1,2,3, acc=add) == 6
+cassert accumulate("a","b","c", acc=add).total == "abc"
+
+let x= accumulate(true,false,true, acc=add) // compile error, 'add' does not have a valid function
 
