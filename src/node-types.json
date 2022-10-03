@@ -274,6 +274,56 @@
     }
   },
   {
+    "type": "attr_list",
+    "named": true,
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "attribute_declaration",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "attribute_declaration",
+    "named": true,
+    "fields": {
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "rvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "simple_function_call",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "attribute_identifier",
     "named": true,
     "fields": {},
@@ -297,7 +347,7 @@
       "required": true,
       "types": [
         {
-          "type": "tuple_list",
+          "type": "attr_list",
           "named": true
         }
       ]

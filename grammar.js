@@ -262,9 +262,6 @@ module.exports = grammar({
     ,tuple: $ => prec.left(seq(
       '(', optional($.tuple_list), ')'
     ))
-    ,attributes: $ => prec.left(seq(
-      ':[', $.tuple_list, ']'
-    ))
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
       ,field('item', $._tuple_item)
@@ -279,6 +276,24 @@ module.exports = grammar({
       ,$._assignment_or_declaration
       ,$.function_type
     ))
+    ,attributes: $ => prec.left(seq(
+      ':[', $.attr_list, ']'
+    ))
+    ,attr_list: $ => prec.left(seq(
+      repeat(',')
+      ,field('item', $._attr_item)
+      ,repeat(seq(repeat1(','), field('item', $._attr_item)))
+      ,repeat(',')
+    ))
+    ,_attr_item: $ => choice(
+      $._expression
+      ,$.attribute_declaration
+    )
+    ,attribute_declaration: $ => prec.left(seq(
+      field('lvalue', $.identifier)
+      ,'='
+      ,field('rvalue', choice($._expression, $.simple_function_call))
+    ))
 
     // Assignment/Declaration
     ,_assignment_or_declaration: $ => prec.right(seq(
@@ -289,8 +304,8 @@ module.exports = grammar({
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
-      ))
-    ))
+      )
+    )))
     ,cycle_select_or_pound: $=> choice($.cycle_select, '#')
     ,var_or_let_or_reg: $ => choice('var','let','reg')
     ,function_definition: $ => seq(
