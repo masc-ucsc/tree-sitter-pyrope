@@ -5,13 +5,15 @@ let Delegate = (
 
 let Delegator = (
   ,delegate = nil
-  ,operation::[comptime,get] = fun (self) {
-    ret if self.delegate has 'thing' {
-      self.delegate.thing()
-    }else{
-      'default implementation'
+  ,operation::[comptime] = (
+    ,get =fun (self) {
+      ret if self.delegate has 'thing' {
+        self.delegate.thing()
+      }else{
+        'default implementation'
+      }
     }
-  }
+  )
 )
 
 let a:Delegator = _
