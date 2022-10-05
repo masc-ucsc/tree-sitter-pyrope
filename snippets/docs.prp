@@ -966,6 +966,18 @@ test "my test {}", 1 {
     }
 
     assert total == 3 and a_cond
+    let add=fun(a,b)->(res) {
+      res = a+b
+    }
+    let add=proc(a,b)->(res) {  // nicer to use fun, but proc works
+      res = a+b
+    }
+    let add=proc(reg a, reg b)->(res) {
+      res = a+b
+    }
+    let add=proc(a, b)->(reg res) {
+      res = a+b
+    }
 let a_3   = {   3 }      // just scope, not a lambda. Scope is evaluate now
 let a_fun = fun() { 4 }  // local function, when just_4 is called 4 is returned
 
