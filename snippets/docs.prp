@@ -950,7 +950,7 @@ test "my test {}", 1 {
       {
         let a = 1 + input
         puts "printed every cycle input={}", a
-      } []#> {
+      } #>[] {
         puts "also every cycle a={}",a  // printed on cycle later
       }
     }
@@ -1482,6 +1482,35 @@ assert my_async_other_reg in (4,33)
     )
 
     let top:Top2_t = (a,b)
+    let mul3=proc(a,b)->res {
+      let tmp = a*b
+      #>[3] {
+        res = tmp
+      }
+    }
+    let mul_slow=proc(a,b)->res {
+
+      let result  = 0
+      let rest    = a
+
+      while rest >= b #>[4]{
+        rest = rest - b
+        result += 1
+      }
+
+      res = result
+    }
+    let mul1=proc(a,b)->(reg res) {
+      res = a*b
+    }
+    let mul1=proc(a,b)->(res) {
+      #>[1] {
+        res = a*b
+      }
+    }
+    let mul0=proc(a,b)->(res) {
+      res = a*b
+    }
 if cond {
   var p1 = inp1
   var out = _
@@ -1490,7 +1519,7 @@ if cond {
     var _l1 = inp1 + 1
 
     var p2 = inp1 + 2
-  } []#> {
+  } #>[] {
     out = p1 + p2
   }
 
@@ -1573,7 +1602,7 @@ i_reg1 = i                // every cycle
 
   let pub_var = 100 + i
 
-} []#> {
+} #>[] {
   assert pub_var == 100 + i // pipelined pub_var
 
   // both inputs and variables flop, so asserts hold
@@ -1592,7 +1621,7 @@ let bad_code = proc(inp)->(o1,o2) {
   {
     o1 = 1
     o2 = inp + 1  // o2? iff bad_code called this cycle and inp? is valid
-  } [1]#> {
+  } #>[1] {
     o2 = inp + 2  // may be OK if inp is not valid every cycle
   }
 
@@ -1601,7 +1630,7 @@ reg my_reg::[retime=true,clock=my_clk] = 0
     let block = proc(in1,in2)->(out) {
       {
         let tmp = in1 * in2
-      } [3]#> {
+      } #>[3] {
         out = tmp + in1#[0]
       }
     }
@@ -1630,7 +1659,7 @@ out  =# add1(x,in3)        // OK (in3 has 0 cycles, x has 3 cycles)
 out  =#[1..<4] add1(x,in3) // OK
     {
       let tmp = in1 * in2
-    } [3]#> {
+    } #>[3] {
       out = tmp + in1
     }
     x =# mul3(in1, in2)
@@ -2773,12 +2802,12 @@ let telescope_unit3 = fun(a:u32,b:u32) -> (:u32) {
 
   {
     let tmp = a+1
-  } []#> {
+  } #>[] {
     if b == 0 {
       ret tmp
     }
     let tmp2 = tmp-b
-  } []#> {
+  } #>[] {
     ret tmp2
   }
 }
