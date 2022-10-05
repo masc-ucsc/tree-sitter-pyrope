@@ -143,7 +143,7 @@ module.exports = grammar({
     ))
     ,pipestage_statement: $ => prec.left('statement', seq(
       field('scope', $.scope_statement)
-      ,repeat1(seq('#>', field('scope', $.scope_statement)))
+      ,repeat1(seq($.select, '#>', field('scope', $.scope_statement)))
     ))
     ,assignment_or_declaration_statement: $ => prec.right(seq(
       $._assignment_or_declaration

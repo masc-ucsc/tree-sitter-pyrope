@@ -143,6 +143,10 @@
               "type": "SEQ",
               "members": [
                 {
+                  "type": "SYMBOL",
+                  "name": "select"
+                },
+                {
                   "type": "STRING",
                   "value": "#>"
                 },
