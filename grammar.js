@@ -120,7 +120,7 @@ module.exports = grammar({
     ,statement: $ => prec.left('statement', choice(
         // Synthesizable
         $.scope_statement
-        ,$.pipestage_statement
+        ,$.pipestage_scope_statement
         ,$.assignment_or_declaration_statement
         ,$.function_call_statement
         ,$.control_statement
@@ -140,10 +140,6 @@ module.exports = grammar({
       '{'
       ,repseq($.statement)
       ,'}'
-    ))
-    ,pipestage_statement: $ => prec.left('statement', seq(
-      field('scope', $.scope_statement)
-      ,repeat1(seq($.select, '#>', field('scope', $.scope_statement)))
     ))
     ,assignment_or_declaration_statement: $ => prec.right(seq(
       $._assignment_or_declaration
@@ -200,11 +196,20 @@ module.exports = grammar({
     ,while_statement: $ => seq(
       'while'
       ,field('condition', $.stmt_list)
-      ,field('code', $.scope_statement)
+      ,choice(
+        field('code', $.scope_statement)
+        ,field('pipe', $.pipestage_scope_statement)
+      )
     )
     ,loop_statement: $ => seq(
       'loop'
-      ,field('code', $.scope_statement)
+      ,choice(
+        field('code', $.scope_statement)
+        ,field('pipe', $.pipestage_scope_statement)
+      )
+    )
+    ,pipestage_scope_statement: $ => seq(
+      '#>', $.select, field('scope', $.scope_statement)
     )
     ,match_statement: $ => seq(
       'match'
@@ -331,7 +336,7 @@ module.exports = grammar({
       ,repeat(',')
     )
     ,arg_item: $ => seq(
-      field('mod', optional(choice('...','ref')))
+      field('mod', optional(choice('...','ref','reg')))
       ,$.type_or_identifier
       ,field('definition', optseq('=', $._expression))
     )

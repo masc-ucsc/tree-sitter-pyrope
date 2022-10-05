@@ -116,6 +116,10 @@
           {
             "type": "ref",
             "named": false
+          },
+          {
+            "type": "reg",
+            "named": false
           }
         ]
       }
@@ -1622,10 +1626,20 @@
     "fields": {
       "code": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "pipe": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "pipestage_scope_statement",
             "named": true
           }
         ]
@@ -2014,11 +2028,11 @@
     }
   },
   {
-    "type": "pipestage_statement",
+    "type": "pipestage_scope_statement",
     "named": true,
     "fields": {
       "scope": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
@@ -2029,7 +2043,7 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
@@ -2335,7 +2349,7 @@
           "named": true
         },
         {
-          "type": "pipestage_statement",
+          "type": "pipestage_scope_statement",
           "named": true
         },
         {
@@ -2891,7 +2905,7 @@
     "fields": {
       "code": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "scope_statement",
@@ -2905,6 +2919,16 @@
         "types": [
           {
             "type": "stmt_list",
+            "named": true
+          }
+        ]
+      },
+      "pipe": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "pipestage_scope_statement",
             "named": true
           }
         ]

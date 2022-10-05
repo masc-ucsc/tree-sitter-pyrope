@@ -37,7 +37,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "pipestage_statement"
+            "name": "pipestage_scope_statement"
           },
           {
             "type": "SYMBOL",
@@ -119,47 +119,6 @@
           {
             "type": "STRING",
             "value": "}"
-          }
-        ]
-      }
-    },
-    "pipestage_statement": {
-      "type": "PREC_LEFT",
-      "value": "statement",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "scope",
-            "content": {
-              "type": "SYMBOL",
-              "name": "scope_statement"
-            }
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "select"
-                },
-                {
-                  "type": "STRING",
-                  "value": "#>"
-                },
-                {
-                  "type": "FIELD",
-                  "name": "scope",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "scope_statement"
-                  }
-                }
-              ]
-            }
           }
         ]
       }
@@ -513,12 +472,25 @@
           }
         },
         {
-          "type": "FIELD",
-          "name": "code",
-          "content": {
-            "type": "SYMBOL",
-            "name": "scope_statement"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "code",
+              "content": {
+                "type": "SYMBOL",
+                "name": "scope_statement"
+              }
+            },
+            {
+              "type": "FIELD",
+              "name": "pipe",
+              "content": {
+                "type": "SYMBOL",
+                "name": "pipestage_scope_statement"
+              }
+            }
+          ]
         }
       ]
     },
@@ -530,8 +502,42 @@
           "value": "loop"
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "code",
+              "content": {
+                "type": "SYMBOL",
+                "name": "scope_statement"
+              }
+            },
+            {
+              "type": "FIELD",
+              "name": "pipe",
+              "content": {
+                "type": "SYMBOL",
+                "name": "pipestage_scope_statement"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pipestage_scope_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "#>"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "select"
+        },
+        {
           "type": "FIELD",
-          "name": "code",
+          "name": "scope",
           "content": {
             "type": "SYMBOL",
             "name": "scope_statement"
@@ -2018,6 +2024,10 @@
                   {
                     "type": "STRING",
                     "value": "ref"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "reg"
                   }
                 ]
               },
