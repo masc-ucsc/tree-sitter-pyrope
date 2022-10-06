@@ -2028,6 +2028,21 @@
     }
   },
   {
+    "type": "pipestage_attributes",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "attr_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "pipestage_scope_statement",
     "named": true,
     "fields": {
@@ -2043,11 +2058,15 @@
       }
     },
     "children": {
-      "multiple": false,
-      "required": true,
+      "multiple": true,
+      "required": false,
       "types": [
         {
-          "type": "select",
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "pipestage_attributes",
           "named": true
         }
       ]

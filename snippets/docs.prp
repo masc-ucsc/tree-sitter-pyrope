@@ -23,18 +23,17 @@
 test "my first test" {
   puts "hello world"
 }
-    var gcd = proc (cmd:(a:uint,b:uint))->(z:uint) {
-      reg x = 0
-      reg y = 0
-      if cmd? {
-        x,y = cmd
-      }elif x > y { 
-        x = x - y 
-      }else{ 
-        y = y - x 
+    var gcd = proc (cmd:(a:uint,b:uint))->(reg x:uint) {
+      x = a
+      y = b
+
+      while y!=0 #> {
+        if x > y { 
+          x -= y 
+        }else{ 
+          y -= x 
+        }
       }
-      z  = x
-      z? = y == 0
     }
 
     for a in 1..=100 {
@@ -950,7 +949,7 @@ test "my test {}", 1 {
       {
         let a = 1 + input
         puts "printed every cycle input={}", a
-      } #>[] {
+      } #> {
         puts "also every cycle a={}",a  // printed on cycle later
       }
     }
@@ -1110,6 +1109,30 @@ assert a3.a == 3 and a2.b == 4
 let x1,x2 = ret3()
 assert x1   == 3 and x2   == 4
 assert x1.a == 3 and x2.b == 4
+let p1 = proc(a)->(res) {
+  ::[zero_found] = ::[zero_found] or a == 0
+
+   res = a + 1
+}
+
+let p2 = p1      // copy
+let p3 = ref p1  // reference
+
+test "testing p1" {
+  assert p1.::[zero_found] == false
+  assert p2.::[zero_found] == false
+
+  cassert p1(3) == 4
+  assert p1.::[zero_found] == false
+
+  cassert p1(0) == 1
+  assert p1.zero_found == true
+
+  cassert p1(50) == 51
+  assert p1.::[zero_found] == true
+  assert p2.::[zero_found] == false
+  assert p3.::[zero_found] == true
+}
 let Nested_call = (
   ,var x = 1
   ,let outter= proc(ref self) {  self.x = 100 ; self.inner(); self.x = 5 }
@@ -1494,70 +1517,6 @@ assert my_async_other_reg in (4,33)
     )
 
     let top:Top2_t = (a,b)
-    let mul3=proc(a,b)->res {
-      let tmp = a*b
-      #>[3] {
-        res = tmp
-      }
-    }
-    let mul_slow=proc(a,b)->res {
-
-      let result  = 0
-      let rest    = a
-
-      while rest >= b #>[4]{
-        rest = rest - b
-        result += 1
-      }
-
-      res = result
-    }
-    let mul1=proc(a,b)->(reg res) {
-      res = a*b
-    }
-    let mul1=proc(a,b)->(res) {
-      #>[1] {
-        res = a*b
-      }
-    }
-    let mul0=proc(a,b)->(res) {
-      res = a*b
-    }
-if cond {
-  var p1 = inp1
-  var out = _
-
-  {
-    var _l1 = inp1 + 1
-
-    var p2 = inp1 + 2
-  } #>[] {
-    out = p1 + p2
-  }
-
-  res = out
-}
-
-// Non pipestage equivalent
-if cond {
-  var p1 = inp1
-  var out = _
-
-  {
-    reg p1r = _
-    reg p2r = _
-
-    var _l1 = inp1 + 1    // private
-    var p2 = inp1 + 2     // public
-
-    out = p1r + p2r       // registered values
-
-    p1r = p1
-    p2r = p2
-  }
-
-  res = out
-}
 reg a:u4 = 3
 a::[saturate] = a+1
 
@@ -1614,7 +1573,7 @@ i_reg1 = i                // every cycle
 
   let pub_var = 100 + i
 
-} #>[] {
+} #> {
   assert pub_var == 100 + i // pipelined pub_var
 
   // both inputs and variables flop, so asserts hold
@@ -1628,15 +1587,79 @@ i_reg1 = i                // every cycle
   assert i == 0 or (i == i#[0]+1)  // i#[0] is the unflop original
 }
 
-let bad_code = proc(inp)->(o1,o2) {
+let bad_code = proc(my_clk, inp)->(o1,o2) {
 
   {
     o1 = 1
     o2 = inp + 1  // o2? iff bad_code called this cycle and inp? is valid
-  } #>[1] {
+  } #>[1,clock=my_clk] {
     o2 = inp + 2  // may be OK if inp is not valid every cycle
   }
 
+}
+    let mul3=proc(a,b)->res {
+      let tmp = a*b
+      #>[3] {
+        res = tmp
+      }
+    }
+    let mul_slow=proc(a,b)->res {
+
+      let result  = 0
+      let rest    = a
+
+      while rest >= b #>[4]{
+        rest = rest - b
+        result += 1
+      }
+
+      res = result
+    }
+    let mul1=proc(a,b)->(reg res) {
+      res = a*b
+    }
+    let mul1=proc(a,b)->(res) {
+      #>[1] {
+        res = a*b
+      }
+    }
+    let mul0=proc(a,b)->(res) {
+      res = a*b
+    }
+if cond {
+  var p1 = inp1
+  var out = _
+
+  {
+    var _l1 = inp1 + 1
+
+    var p2 = inp1 + 2
+  } #> {
+    out = p1 + p2
+  }
+
+  res = out
+}
+
+// Non pipestage equivalent
+if cond {
+  var p1 = inp1
+  var out = _
+
+  {
+    reg p1r = _
+    reg p2r = _
+
+    var _l1 = inp1 + 1    // private
+    var p2 = inp1 + 2     // public
+
+    out = p1r + p2r       // registered values
+
+    p1r = p1
+    p2r = p2
+  }
+
+  res = out
 }
 reg my_reg::[retime=true,clock=my_clk] = 0
     let block = proc(in1,in2)->(out) {
@@ -1677,6 +1700,77 @@ out  =#[1..<4] add1(x,in3) // OK
     x =# mul3(in1, in2)
     y = in1#[-3]
     out =# add1(a=x,b=y)    // connect in1 from -3 cycles
+let quick_log2 = fun(a) {
+
+  cassert a>=1
+
+  var i = 1
+  var v = 0
+  while i < a::[bits] {
+    v |= i
+    i *= 2
+  }
+
+  ret v
+}
+
+let div=proc(a,b,id)->(res,id) {
+  loop #>free_div_units[4] {
+    ret (a >> quick_log2(b), id) when b@+[] == 1
+    #>[5] {
+      res = (a/b, id)
+    }
+  }
+}
+
+let mul=proc(a,b,id)->(res, id) {
+  #>pending_counter[3] {
+    res = a*b
+    id  = id
+  }
+}
+
+let add=proc(a,b,id)->(res,id) {
+  #>[1] {
+    res = a+b
+    id  = id
+  }
+}
+
+let alu = proc(a,b,op, id)->(res,id) {
+
+  ::[total_free_units] = 1 + mul::[pending_counter] + div::[free_div_units]
+  ::[div_units] = div::[free_div_units]
+
+  match op {
+    == OP.div {
+      assert div::[free_div_units]>0
+      res,id = div(a,b,id)
+    }
+    == OP.mul { res,id = mul(a,b,id) }
+    == OP.add { res,id = add(a,b,id) }
+  }
+
+}
+
+test "alu too many div" {
+
+ cassert alu::[total_free_units] == (1+3+4)
+
+ let r1 = alu(13,3, OP.div, 1)
+ assert alu.div_units==3
+ let r2 = alu(13,3, OP.div, 2)
+ assert alu.div_units==2
+ let r3 = alu(13,3, OP.div, 3)
+ assert alu.div_units==1
+ let r4 = alu(13,3, OP.div, 4)
+ assert alu.div_units==0
+
+ assert !r1? and !r2? and !r3? and !r4? // still invalid
+
+ let r5 = alu(13,4, OP.mul,5)
+ cassert mul::[pending_counter] == 2
+}
     var b = "hello"
 
     var a:u32 = 0
@@ -2048,14 +2142,17 @@ let do_debug = proc() {
   puts "The counter value is {}", cntr
 }
 // file remote.prp
-reg uart_addr:u32 = _
-assert 0x400 > uart_addr >= 0x300
+
+let xxx = proc(some,code) {
+  reg uart_addr:u32 = _
+  assert 0x400 > uart_addr >= 0x300
+}
 
 // file local.prp
 let setup_xx = proc() {
-  var xx = regref "uart_addr"
-  for i,index in ref xx {    // ref in for to allow element updates
-    i = 0x300+index*0x10     // sets uart_addr to 0x300, 0x310, 0x320...
+  var xx = regref "uart_addr" // match xxx.uart_addr if xxx is in hierarchy
+  for i,index in ref xx {     // ref in for to allow element updates
+    i = 0x300+index*0x10      // sets uart_addr to 0x300, 0x310, 0x320...
   }
 }
 let bpred = ( // complex predictor
@@ -2814,12 +2911,12 @@ let telescope_unit3 = fun(a:u32,b:u32) -> (:u32) {
 
   {
     let tmp = a+1
-  } #>[] {
+  } #>[1] {
     if b == 0 {
       ret tmp
     }
     let tmp2 = tmp-b
-  } #>[] {
+  } #> {
     ret tmp2
   }
 }

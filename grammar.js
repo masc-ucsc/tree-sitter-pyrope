@@ -209,8 +209,11 @@ module.exports = grammar({
       )
     )
     ,pipestage_scope_statement: $ => seq(
-      '#>', $.select, field('scope', $.scope_statement)
+      '#>', optional($.identifier), optional($.pipestage_attributes), field('scope', $.scope_statement)
     )
+    ,pipestage_attributes: $ => prec.left(seq(
+      '[', $.attr_list, ']'
+    ))
     ,match_statement: $ => seq(
       'match'
       ,$.stmt_list
