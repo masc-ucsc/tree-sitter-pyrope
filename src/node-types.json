@@ -286,41 +286,15 @@
         "required": true,
         "types": [
           {
-            "type": "_expression",
+            "type": "expression_list",
             "named": true
           },
           {
-            "type": "attribute_declaration",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "attribute_declaration",
-    "named": true,
-    "fields": {
-      "lvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "rvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "_expression",
+            "type": "simple_assignment",
             "named": true
           },
           {
-            "type": "simple_function_call",
+            "type": "simple_declaration",
             "named": true
           }
         ]
@@ -2290,6 +2264,100 @@
     }
   },
   {
+    "type": "simple_assignment",
+    "named": true,
+    "fields": {
+      "decl": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "var_or_let_or_reg",
+            "named": true
+          }
+        ]
+      },
+      "delay": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "cycle_select_or_pound",
+            "named": true
+          }
+        ]
+      },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "assignment_operator",
+            "named": true
+          }
+        ]
+      },
+      "rvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "simple_function_call",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "simple_declaration",
+    "named": true,
+    "fields": {
+      "decl": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "var_or_let_or_reg",
+            "named": true
+          }
+        ]
+      },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "simple_function_call",
     "named": true,
     "fields": {
@@ -2394,44 +2462,12 @@
     "type": "stmt_list",
     "named": true,
     "fields": {
-      "decl": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "delay": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "cycle_select_or_pound",
-            "named": true
-          }
-        ]
-      },
       "item": {
         "multiple": true,
         "required": true,
         "types": [
           {
             "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "assignment_operator",
-            "named": true
-          },
-          {
-            "type": "cycle_select_or_pound",
-            "named": true
-          },
-          {
-            "type": "expression_list",
             "named": true
           },
           {
@@ -2443,45 +2479,11 @@
             "named": false
           },
           {
-            "type": "simple_function_call",
+            "type": "simple_assignment",
             "named": true
           },
           {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "lvalue": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          }
-        ]
-      },
-      "operator": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "assignment_operator",
-            "named": true
-          }
-        ]
-      },
-      "rvalue": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "simple_function_call",
+            "type": "simple_declaration",
             "named": true
           }
         ]
@@ -2566,44 +2568,12 @@
     "type": "tuple_list",
     "named": true,
     "fields": {
-      "decl": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "delay": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "cycle_select_or_pound",
-            "named": true
-          }
-        ]
-      },
       "item": {
         "multiple": true,
         "required": true,
         "types": [
           {
             "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "assignment_operator",
-            "named": true
-          },
-          {
-            "type": "cycle_select_or_pound",
-            "named": true
-          },
-          {
-            "type": "expression_list",
             "named": true
           },
           {
@@ -2615,45 +2585,11 @@
             "named": false
           },
           {
-            "type": "simple_function_call",
+            "type": "simple_assignment",
             "named": true
           },
           {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "lvalue": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          }
-        ]
-      },
-      "operator": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "assignment_operator",
-            "named": true
-          }
-        ]
-      },
-      "rvalue": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "simple_function_call",
+            "type": "simple_declaration",
             "named": true
           }
         ]

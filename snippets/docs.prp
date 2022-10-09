@@ -1366,7 +1366,7 @@ lec res, res2
     lec lhs?, lhs2_v
     let case_1_counter = proc(runtime)->(res) {
 
-      reg r (
+      let r = (
         ,reg total:u16           // r is reg, everything is reg
         ,increase = fun(a) {
           puts "hello"
@@ -1376,7 +1376,7 @@ lec res, res2
 
           ret res
         }
-      ) = _
+      )
 
       if runtime == 2 {
         res = r.increase(3)
@@ -1386,7 +1386,7 @@ lec res, res2
     }
     let case_1_counter = proc(runtime)->(res) {
 
-      reg r (
+      let r = (
         ,reg total:u16
         ,increase = fun(a) {
           puts "hello"
@@ -1396,7 +1396,7 @@ lec res, res2
 
           ret res
         }
-      ) = _
+      )
 
       if runtime == 2 {
         puts "hello"

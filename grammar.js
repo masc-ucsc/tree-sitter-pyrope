@@ -281,7 +281,8 @@ module.exports = grammar({
         optional('ref')
         ,$._expression
       )
-      ,$._assignment_or_declaration
+      ,$.simple_assignment
+      ,$.simple_declaration
       ,$.function_type
     ))
     ,attributes: $ => prec.left(seq(
@@ -294,16 +295,26 @@ module.exports = grammar({
       ,repeat(',')
     ))
     ,_attr_item: $ => choice(
-      $._expression
-      ,$.attribute_declaration
+      $.expression_list
+      ,$.simple_assignment
+      ,$.simple_declaration
     )
-    ,attribute_declaration: $ => prec.left(seq(
-      field('lvalue', $.identifier)
-      ,'='
-      ,field('rvalue', choice($._expression, $.simple_function_call))
-    ))
 
     // Assignment/Declaration
+    ,simple_assignment: $ => prec.right(seq(
+      field('decl',optional($.var_or_let_or_reg))
+      ,field('lvalue', choice($.identifier, $.type_specification))
+      ,field('operator', $.assignment_operator)
+      ,field('delay', optional($.cycle_select_or_pound))
+      ,field('rvalue', choice(
+        $._expression
+        ,$.simple_function_call
+      )
+    )))
+    ,simple_declaration: $ => prec.right(seq(
+      field('decl',$.var_or_let_or_reg)
+      ,field('lvalue', choice($.identifier, $.type_specification))
+    ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', $.expression_list)

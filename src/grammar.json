@@ -1367,7 +1367,11 @@
           },
           {
             "type": "SYMBOL",
-            "name": "_assignment_or_declaration"
+            "name": "simple_assignment"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "simple_declaration"
           },
           {
             "type": "SYMBOL",
@@ -1456,31 +1460,80 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_expression"
+          "name": "expression_list"
         },
         {
           "type": "SYMBOL",
-          "name": "attribute_declaration"
+          "name": "simple_assignment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "simple_declaration"
         }
       ]
     },
-    "attribute_declaration": {
-      "type": "PREC_LEFT",
+    "simple_assignment": {
+      "type": "PREC_RIGHT",
       "value": 0,
       "content": {
         "type": "SEQ",
         "members": [
           {
             "type": "FIELD",
-            "name": "lvalue",
+            "name": "decl",
             "content": {
-              "type": "SYMBOL",
-              "name": "identifier"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "var_or_let_or_reg"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           },
           {
-            "type": "STRING",
-            "value": "="
+            "type": "FIELD",
+            "name": "lvalue",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "type_specification"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "operator",
+            "content": {
+              "type": "SYMBOL",
+              "name": "assignment_operator"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "delay",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "cycle_select_or_pound"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
           },
           {
             "type": "FIELD",
@@ -1495,6 +1548,40 @@
                 {
                   "type": "SYMBOL",
                   "name": "simple_function_call"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "simple_declaration": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "decl",
+            "content": {
+              "type": "SYMBOL",
+              "name": "var_or_let_or_reg"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "lvalue",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "type_specification"
                 }
               ]
             }
