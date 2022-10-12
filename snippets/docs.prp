@@ -25,7 +25,7 @@ test "my first test" {
 }
     var gcd = proc (cmd:(a:uint,b:uint))->(reg x:uint) {
       x = a
-      y = b
+      reg y = b
 
       while y!=0 #> {
         if x > y { 
@@ -288,7 +288,7 @@ let x,b = (true, c:u3) // assign x=true, b=4 AND check that c is type u3
 cassert x == true
 cassert b == 4 
 let a = "foo"
-let Good = :enum(a=_,'b',c)  // OK
+let Good = ::enum(a=_,'b',c)  // OK
 let a = "field"
 let My_enum = :("x" ++ a, 'bar')
 assert My_enum.xfield != My_enum.bar
@@ -299,42 +299,51 @@ let c = 30
 let v = (a,b,c)
 assert v == (10,20,30)
 
-let En = :enum(a=1,b=2,c=300)
+let En = :int:enum(a=1,b=2,c=300)
 assert e.a == 1 and e.b == 2 and e.c == 300
 
 let x = e.a
 puts "x is {}", x  // prints: "x is e.a"
-let V3 = :enum(
+let V3 = ::enum(
    ,a
    ,b=5
    ,c
 )
-assert V3.a == 1
-assert V3.b == 5
-assert V3.c == 2
-let Animal = :enum(
+cassert V3.a == 1
+cassert V3.b == 5
+cassert V3.c == 2
+
+let V4 = :int:enum( // when integer is the enum type, it is the typical enum
+   ,a
+   ,b=5
+   ,c
+)
+cassert V4.a == 0
+cassert V4.b == 5
+cassert V4.c == 6
+let Animal = ::enum(
   ,bird=(eagle, parrot)
   ,mammal=(rat, human)
 )
 
-assert Animal.bird.eagle != Animal.mammal
-assert Animal.bird != Animal.mammal.human
-assert Animal.bird == Animal.bird.parrot
+cassert Animal.bird.eagle != Animal.mammal
+cassert Animal.bird != Animal.mammal.human
+cassert Animal.bird == Animal.bird.parrot
 
-assert Animal.bird         == 0b000001
-assert Animal.bird.eagle   == 0b000011
-assert Animal.bird.parrot  == 0b000101
-assert Animal.mammal       == 0b001000
-assert Animal.mammal.rat   == 0b011000
-assert Animal.mammal.human == 0b101000
-let V3:int = :enum( // V3 has type :int
+cassert Animal.bird         == 0b000001
+cassert Animal.bird.eagle   == 0b000011
+cassert Animal.bird.parrot  == 0b000101
+cassert Animal.mammal       == 0b001000
+cassert Animal.mammal.rat   == 0b011000
+cassert Animal.mammal.human == 0b101000
+let V5 = :int:enum( // V5 has type :int
    ,a
    ,b=5
    ,c
 )
-assert V3.a == 0
-assert V3.b == 5
-assert V3.c == 6
+cassert V5.a == 0
+cassert V5.b == 5
+cassert V5.c == 6
 let human_rat = Animal.mammal.rat | Animal.mammal.human  // union op
 
 assert Animal.mammal      in human_rat
@@ -466,12 +475,26 @@ if bar == 3 {
 
 // attribute read
 assert tmp.::[bits] < 30 and !tmp.::[comptime]
-read_state = fun(x) {
-  let f:u32:[comptime] = x // f is compile time or a error is generated
-  ret f                    // f should be compile time constant
-}
+    let x = y::[cond,bar==3] + 1
 
-var foo = read_state(zz) // foo will be compile time constant
+    read_state = fun(x) {
+      let f:u32:[comptime] = x // f is compile time or a error is generated
+      ret f                    // f should be compile time constant
+    }
+
+    var foo = read_state(zz) // foo will be compile time constant
+    let x = y + 1
+    cassert y.::[cond]
+    cassert y.::[bar]==3
+
+    read_state = fun(x) {
+      let f = x
+      cassert f does u32
+      cassert f.::[comptime]
+      ret f
+    }
+
+    var foo = read_state(zz) // foo will be compile time constant
 if cond::[comptime] {    // cond is checked to be compile time constant
   x::[comptime] = a +1   // x is set to be compile time constant
 }else{
@@ -1888,7 +1911,7 @@ let Rgb = (
   ,set = proc(ref self, c) { self.c = c }
 )
 
-let Color:Rgb = :enum(
+let Color = :Rgb:enum(
   ,Yellow   = 0xffff00
   ,Red      = 0xff0000
   ,Green    = Rgb(0x00ff00) // alternative redundant syntax
@@ -1898,6 +1921,21 @@ let Color:Rgb = :enum(
 var y:Color = Color.Red
 if y == Color.Red {
   puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
+}
+let ADT = :enum(
+  ,Person = :(eats:string)
+  ,Robot  = :(charges_with:string)
+)
+
+let nourish = fun(x:ADT) {
+  match x {
+    == ADT.Person { puts "eating:{}"  , x.eats         }
+    == ADT.Robot  { puts "charging:{}", x.charges_with }
+  }
+}
+
+test "my main" {
+  (_:Person="pizza", _:Robot="electricity").each(nourish)
 }
 var val:u8 = 0   // designer constraints a to be between 0 and 255
 assert val.::[sbits] == 0
@@ -2529,7 +2567,7 @@ assert flatten((((1),2),3),4) == (1,2,3,4)
 var x1:[2]u3 = (0,1)
 assert x1[0] == 0 and x1[1] == 1
 
-var X:int = :enum(  // sequential enum, not one hot enum
+var X = :int:enum(  // sequential enum, not one hot enum (explicit type)
   ,t1
   ,t2
   ,t3
@@ -2929,3 +2967,39 @@ while some_condition {
 
   step   // next cycle starts here
 }
+    let x = 3 + 1
+    var z = 4
+    `foo x` = x + z + 2
+    x = 3
+    a = (b=2, x=x+1, y=self.b+1)
+    var a = (b=2, let x=1+1)
+    var a = (2, 1+1)
+    let x = a ++ (c=3) ++ 1
+    a::[f=3,b] = 1
+    x = (x::[y=7]=2, 4)
+    let x = a::[f==3,b] + 1
+    var x = (let z=x::[y], 4::[foo])
+let foo::[attr1=2] = 3
+
+var foo2 = foo
+cassert foo2.::[attr1] == 2
+
+let foo3 = foo@[]
+cassert foo3 !has ::[attr1]
+
+var xx = 4
+xx::[attr2=5] = 1
+
+let xx2 = xx
+cassert xx2.::[attr2] == 5
+cassert xx2 has ::[attr2]
+
+let xx3 = xx + 0
+cassert xx3 !has ::[attr2]
+    foo@[1,2] = xx
+    yy = foo@[5] + xx@[1..<4]
+    let t1 = foo@sext[..=4]
+    let t2 = foo@|[..=4]
+    let t3 = foo@&[..=4]
+    let t4 = foo@^[..=4]
+    let t5 = foo@+[..=4]
