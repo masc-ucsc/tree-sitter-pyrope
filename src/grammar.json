@@ -1381,25 +1381,55 @@
       }
     },
     "attributes": {
-      "type": "PREC_LEFT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": ":["
-          },
-          {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "attr",
+          "content": {
             "type": "SYMBOL",
-            "name": "attr_list"
-          },
-          {
-            "type": "STRING",
-            "value": "]"
+            "name": "attribute_entry"
           }
-        ]
-      }
+        },
+        {
+          "type": "FIELD",
+          "name": "enum",
+          "content": {
+            "type": "SYMBOL",
+            "name": "attribute_enum"
+          }
+        }
+      ]
+    },
+    "attribute_entry": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ":["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "attr_list"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "attribute_enum": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ":enum"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tuple"
+        }
+      ]
     },
     "attr_list": {
       "type": "PREC_LEFT",
@@ -4496,10 +4526,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "enum_type"
-          },
-          {
-            "type": "SYMBOL",
             "name": "function_type"
           },
           {
@@ -4703,10 +4729,6 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "enum_type"
-                    },
-                    {
-                      "type": "SYMBOL",
                       "name": "function_type"
                     },
                     {
@@ -4720,23 +4742,6 @@
                 "type": "BLANK"
               }
             ]
-          }
-        ]
-      }
-    },
-    "enum_type": {
-      "type": "PREC_LEFT",
-      "value": "enum_type",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "enum"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "tuple"
           }
         ]
       }
@@ -5504,10 +5509,6 @@
       {
         "type": "STRING",
         "value": "function_type"
-      },
-      {
-        "type": "STRING",
-        "value": "enum_type"
       },
       {
         "type": "STRING",

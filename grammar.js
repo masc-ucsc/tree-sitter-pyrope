@@ -39,7 +39,6 @@ module.exports = grammar({
       ,'array_type'
       ,'range_type'
       ,'function_type'
-      ,'enum_type'
       ,'function_call_type'
       ,'mixin_type'
       ,'mixin_type_sub'
@@ -285,9 +284,13 @@ module.exports = grammar({
       ,$.simple_declaration
       ,$.function_type
     ))
-    ,attributes: $ => prec.left(seq(
-      ':[', $.attr_list, ']'
-    ))
+    ,attributes: $ => choice(
+      field('attr', $.attribute_entry)
+      ,field('enum', $.attribute_enum)
+    )
+    ,attribute_entry: $ => seq( ':[', $.attr_list, ']' )
+    ,attribute_enum: $ => seq( ':enum', $.tuple)
+
     ,attr_list: $ => prec.left(seq(
       repeat(',')
       ,field('item', $._attr_item)
@@ -525,7 +528,6 @@ module.exports = grammar({
     ,_type: $ => prec.left('type', choice(
       $.primitive_type
       ,$.array_type
-      ,$.enum_type
       ,$.function_type
       ,$.expression_type
     ))
@@ -564,12 +566,10 @@ module.exports = grammar({
       ,optional(field('base', choice(
         $.primitive_type
         ,$.array_type
-        ,$.enum_type
         ,$.function_type
         ,$.expression_type
       )))
     ))
-    ,enum_type: $ => prec.left('enum_type', seq('enum', $.tuple))
     ,function_type: $ => prec.left('function_type', seq(
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))

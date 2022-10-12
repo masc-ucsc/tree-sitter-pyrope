@@ -178,10 +178,6 @@
             "named": true
           },
           {
-            "type": "enum_type",
-            "named": true
-          },
-          {
             "type": "expression_type",
             "named": true
           },
@@ -302,6 +298,36 @@
     }
   },
   {
+    "type": "attribute_entry",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "attr_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "attribute_enum",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "tuple",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "attribute_identifier",
     "named": true,
     "fields": {},
@@ -319,16 +345,27 @@
   {
     "type": "attributes",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "attr_list",
-          "named": true
-        }
-      ]
+    "fields": {
+      "attr": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute_entry",
+            "named": true
+          }
+        ]
+      },
+      "enum": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute_enum",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -972,21 +1009,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "enum_type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "tuple",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1906,10 +1928,6 @@
           "named": true
         },
         {
-          "type": "enum_type",
-          "named": true
-        },
-        {
           "type": "expression_type",
           "named": true
         },
@@ -2619,10 +2637,6 @@
             "named": true
           },
           {
-            "type": "enum_type",
-            "named": true
-          },
-          {
             "type": "expression_type",
             "named": true
           },
@@ -2738,10 +2752,6 @@
         "types": [
           {
             "type": "array_type",
-            "named": true
-          },
-          {
-            "type": "enum_type",
             "named": true
           },
           {
@@ -3031,6 +3041,10 @@
     "named": false
   },
   {
+    "type": ":enum",
+    "named": false
+  },
+  {
     "type": ";",
     "named": false
   },
@@ -3160,10 +3174,6 @@
   },
   {
     "type": "else",
-    "named": false
-  },
-  {
-    "type": "enum",
     "named": false
   },
   {
