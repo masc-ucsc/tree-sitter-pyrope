@@ -672,7 +672,7 @@ let complex = (
   ,reg v1:string = "foo"
   ,v2:string = _
 
-  ,set = proc(ref self,v) {
+  ,setter = proc(ref self,v) {
      self.v1 = v
      self.v2 = v
   }
@@ -1087,8 +1087,8 @@ arg_fun(1,2)     // OK too
 
 var intercepted:(
  ,field:u32
- ,get=fun(self) { ret self.field + 1 }
- ,set=fun(ref self,v ) { self.field = v }
+ ,getter=fun(self) { ret self.field + 1 }
+ ,setter=fun(ref self,v ) { self.field = v }
 ) = 0
 
 cassert intercepted == 1  // will call get method without explicit call
@@ -1509,14 +1509,14 @@ assert my_async_other_reg in (4,33)
       d = x.h
     }
     let Inner_t = (
-      ,set = proc(ref self, z,y) {
+      ,setter = proc(ref self, z,y) {
         self.a =   y & z
         self.h = !(y & z)
       }
     )
 
     let Top2_t = (
-      ,set = proc(ref self,a,b) {
+      ,setter = proc(ref self,a,b) {
         let foo:Inner_t = (y=a,z=b)
         
         self.c = foo.a
@@ -1526,7 +1526,7 @@ assert my_async_other_reg in (4,33)
 
     let top:Top2_t = (a,b)
     let Inner_t = (
-      ,set = proc(ref self, z,y) {
+      ,setter = proc(ref self, z,y) {
         self.a =   y & z
         self.h = !(y & z)
       }
@@ -1534,7 +1534,7 @@ assert my_async_other_reg in (4,33)
 
     let Top2_t = (
       ,foo:Inner_t = _
-      ,set = proc(ref self,a,b) {
+      ,setter = proc(ref self,a,b) {
         self.c, self.d = self.foo(y=a,z=b)
       }
     )
@@ -1836,7 +1836,7 @@ let At = :int(33..)      // number bigger than 32
 let Bt=(
   ,c:string
   ,d=100
-  ,set = fun(ref self, ...args) { self.c = args }
+  ,setter = fun(ref self, ...args) { self.c = args }
 )
 
 var a:At=40
@@ -1908,7 +1908,7 @@ let f2 = fun(x) where x is :X1 {
 }
 let Rgb = (
   ,c:u24
-  ,set = proc(ref self, c) { self.c = c }
+  ,setter = proc(ref self, c) { self.c = c }
 )
 
 let Color = :Rgb:enum(
@@ -1946,7 +1946,7 @@ val = 3          // val has 3 bits (0sb011 all the numbers are signed)
 val = 1          // max=1,min=1 sbits=2, ubits=1
 assert val.::[ubits] == 1 and val.::[min]==1 and val.::[max]==1 and val.::[sbits]==2
 
-val::[wrap] = 0x1F0 // Drop bits from 0x1F0 to fit in constrained type 
+val::[wrap] = 0x1F0 // Drop bits from 0x1F0 to fit in constrained type
 assert val == 240 == 0xF0
 
 val = u8(0x1F0)    // same
@@ -2030,12 +2030,12 @@ let bt=(c:string,d:u100)
 let ct=(
   ,d:u32    = _
   ,c:string = _
-) 
+)
 // different order
 let dt=(
   ,d:u32    = _
   ,c:string = _
-  ,set = proc (ref self, x:at) { self.d = x.d ; self.c = x.c }
+  ,setter = proc (ref self, x:at) { self.d = x.d ; self.c = x.c }
 )
 
 var b:bt=(c="hello", d=10000)
@@ -2057,7 +2057,7 @@ let Say_hi_mixin = (
 
 let User = (
   ,name:string = _
-  ,set = proc(ref self, n:string) { self.name = n }
+  ,setter = proc(ref self, n:string) { self.name = n }
 )
 
 let Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
@@ -2066,15 +2066,15 @@ var a:Mixing_all="Julius Caesar"
 a.say_hi()
 let Shape = (
   ,name:string = _
-  ,area:fun (self )->(:i32)  = _            // defined but unimplemented 
-  ,increase_size:proc(ref self, x:i12) = _  // defined but unimplemented 
+  ,area:fun (self )->(:i32)  = _            // defined but unimplemented
+  ,increase_size:proc(ref self, x:i12) = _  // defined but unimplemented
 
-  ,set=proc(ref self, name ) { self.name = name } // implemented, use =
+  ,setter=proc(ref self, name ) { self.name = name } // implemented, use =
   ,say_name=fun(self) { puts "name:{}", name }
 )
 
 let Circle = (
-  ,set           = proc(ref self) { Shape.set("circle") }
+  ,setter           = proc(ref self) { super = "circle" }
   ,increase_size = proc(ref self, x:i12) { self.rad *= x }
   ,rad:i32       = _
   ,area = fun(self) -> (:i32) {
@@ -2083,7 +2083,7 @@ let Circle = (
   }
 ):Shape
 let Circle = (
-  ,set         = proc(ref self) { self.name = "circle" }
+  ,setter      = proc(ref self) { self.name = "circle" }
   ,name:string = _
   ,rad:i32     = _
   ,area = fun() -> (:i32) {
@@ -2115,8 +2115,8 @@ assert fu.__out equals (c)
 assert fu.__where(a=200) and !fu.__where(a=1)
 let x = fn(args)
 
-let x = for i in fn { last i(args) when (i.__inp does :args) 
-                                    and (i.__out does :x   ) 
+let x = for i in fn { last i(args) when (i.__inp does :args)
+                                    and (i.__out does :x   )
                                     and (i.__where(args)   ) }
 let randomize::[debug] = fun(ref self) {
   let rnd = import "prp/rnd"
@@ -2213,10 +2213,10 @@ let some_obj = (
   ,a2 = (
     ,_val:u32 = _                               // hidden field
 
-    ,get=fun(self) { self._val + 100 }         // getter
-    ,set=proc(ref self, x) { self._val = x+1 } // setter
+    ,getter=fun(self) { self._val + 100 }
+    ,setter=proc(ref self, x) { self._val = x+1 }
   )
-  ,set = proc(ref self, a,b){                  // setter
+  ,setter = proc(ref self, a,b){                  // setter
     self.a1      = a
     self.a2._val = b
   }
@@ -2229,10 +2229,10 @@ assert x.a2 == 103
 x.a2 = 5
 let showcase = (
   ,v:int = _
-  ,get ++= fun(self)->(:string) where self.i>100 {
+  ,getter ++= fun(self)->(:string) where self.i>100 {
     ret "this is a big number" ++ string(v)
   }
-  ,get ++= fun(self)->(:int) {
+  ,getter ++= fun(self)->(:int) {
     ret v
   }
 )
@@ -2243,13 +2243,34 @@ s.v = 100
 
 let my_obj = (
   ,val:u32 = _
-  ,get = fun(self)->(:string ){ ret string(self.val) }
+  ,getter = fun(self)->(:string ){ ret string(self.val) }
        ++ fun(self)->(:bool){ ret self.val != 0    }
        ++ fun(self)->(:int    ){ ret self.val         }
 )
+let fint:int = _
+cassert fint == 0
+
+var fbool:bool = _
+cassert fbool == 0
+
+let Tup = (
+  ,v:string = _  // default to empty
+  ,setter = fun(ref self) { // no args
+     cassert self.v == ""
+     self.v = "empty"
+  } ++ fun(ref self, v) {
+     self.v = v
+  }
+)
+
+var x:Tup = _
+cassert x.v == "empty"
+
+x = "Padua"
+cassert x.v == "Padua"
 let t=(
   ,v:string = _
-  ,set = proc(ref self) { self.v = a }
+  ,setter = proc(ref self) { self.v = a }
   ,lt = fun(self,other)->(:bool){ self.v  < other.v }
   ,eq = fun(self,other)            { self.v == other.v } // infer ret
 )
@@ -2273,14 +2294,14 @@ let Animal = (
 )
 
 let Dog = Animal ++ (
-  ,set = proc(ref self) { self.legs = 4 }
+  ,setter = proc(ref self) { self.legs = 4 }
   ,bark = fun() { puts "bark bark" }
 )
 
 let Bird = Animal ++ (
   ,seeds_eaten:int = _
 
-  ,set = proc(ref self)  { self.legs = 2 }
+  ,setter = proc(ref self)  { self.legs = 2 }
       ++ proc(ref self, a:Animal)    { self.legs = 2 ; name = "bird animal" }
   ,eat_seeds = proc(ref self, n) { self.seeds_eaten += n }
 )
@@ -2649,7 +2670,7 @@ let tup = (
 
       var addX = (
         ,a: i32 = a                        // copy value, runtime or comptime
-        ,get = fun(self, x: i32) {
+        ,getter = fun(self, x: i32) {
           ret x + self.a
         }
       )
@@ -2698,20 +2719,20 @@ let X_t = (
   ,i1 = (
     ,i1_field:u32 = 1
     ,i2_field:u32 = 2
-    ,set = proc(ref self, a) {
+    ,setter = proc(ref self, a) {
        self.i1_field = a
     }
   )
   ,i2 = (
     ,i1_field:i32 = 11
-    ,set = proc(ref self, a) {
+    ,setter = proc(ref self, a) {
        self.i1_field = a
     }
   )
 )
 
 var top = (
-  ,set = proc(ref self) {
+  ,setter = proc(ref self) {
     var x:X_t = _
     assert x.i1.i1_field == 1
     assert x.i1.i2_field == 2
