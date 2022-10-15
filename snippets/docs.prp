@@ -3024,3 +3024,25 @@ cassert xx3 !has ::[attr2]
     let t3 = foo@&[..=4]
     let t4 = foo@^[..=4]
     let t5 = foo@+[..=4]
+    var z = 0
+    match x {
+     == 3 { z = 1 }
+     in 4..<6 { z = 2 }
+    }
+
+    match x {
+     <  5 { z = 1 }
+     else { z = 3 }
+    }
+    if var x=3; x<4 {
+      cassert x==3
+    }
+    while var z=1; x {
+      x -= 1
+    }
+    var z=0
+    match var x=2 ; z+x {
+      == 2 { cassert true  }
+      != 7 { cassert true  }
+      else { cassert false }
+    }

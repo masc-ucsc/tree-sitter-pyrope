@@ -108,7 +108,6 @@ module.exports = grammar({
 
   ,supertypes: $ => [
     $._expression
-    ,$.constant
   ]
 
   ,rules: {
@@ -249,8 +248,8 @@ module.exports = grammar({
     ))
     ,restrict_statement: $ => prec.right(seq(
       'restrict'
-      ,field('name', $.string_literal)
-      ,field('condition', optseq('where', $.stmt_list))
+      ,field('name', $.expression_list)
+      ,field('condition', seq('where', $.stmt_list))
       ,field('code', $.scope_statement)
     ))
     ,expression_list: $ => prec.left(seq(
@@ -648,37 +647,37 @@ module.exports = grammar({
 
     // Constants
     ,constant: $ => choice(
-      $.number
-      ,$.bool_literal
-      ,$.string_literal
+      $._number
+      ,$._bool_literal
+      ,$._string_literal
     )
 
     // Numbers
-    ,number: $ => choice(
-      $.simple_number
-      ,$.scaled_number
-      ,$.hex_number
-      ,$.decimal_number
-      ,$.octal_number
-      ,$.binary_number
+    ,_number: $ => choice(
+      $._simple_number
+      ,$._scaled_number
+      ,$._hex_number
+      ,$._decimal_number
+      ,$._octal_number
+      ,$._binary_number
     )
-    ,simple_number:  $ => token(/0|[1-9][0-9]*/)
-    ,scaled_number:  $ => token(/(0|[1-9][0-9]*)[KMGT]/)
-    ,hex_number:     $ => token(/0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)
-    ,decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
-    ,octal_number:   $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)
-    ,binary_number:  $ => token(/0(s|S)?(b|B)[0-1\?][0-1_\?]*/)
+    ,_simple_number:  $ => token(/0|[1-9][0-9]*/)
+    ,_scaled_number:  $ => token(/(0|[1-9][0-9]*)[KMGT]/)
+    ,_hex_number:     $ => token(/0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)
+    ,_decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
+    ,_octal_number:   $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)
+    ,_binary_number:  $ => token(/0(s|S)?(b|B)[0-1\?][0-1_\?]*/)
 
     // Booleans
-    ,bool_literal:   $ => token(choice('true', 'false'))
+    ,_bool_literal:   $ => token(choice('true', 'false'))
 
     // Strings
-    ,string_literal: $ => choice(
-      $.simple_string_literal
-      ,$.complex_string_literal
+    ,_string_literal: $ => choice(
+      $._simple_string_literal
+      ,$._complex_string_literal
     )
-    ,simple_string_literal: $ => token(/\'[^\'\n]*\'/)
-    ,complex_string_literal: $ => token(
+    ,_simple_string_literal: $ => token(/\'[^\'\n]*\'/)
+    ,_complex_string_literal: $ => token(
       seq('"', repeat(choice(prec(1, /\\./), /[^"\\\n]+/)), '"')
     )
 

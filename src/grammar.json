@@ -1133,34 +1133,22 @@
             "name": "name",
             "content": {
               "type": "SYMBOL",
-              "name": "string_literal"
+              "name": "expression_list"
             }
           },
           {
             "type": "FIELD",
             "name": "condition",
             "content": {
-              "type": "CHOICE",
+              "type": "SEQ",
               "members": [
                 {
-                  "type": "PREC_LEFT",
-                  "value": 0,
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": "where"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "stmt_list"
-                      }
-                    ]
-                  }
+                  "type": "STRING",
+                  "value": "where"
                 },
                 {
-                  "type": "BLANK"
+                  "type": "SYMBOL",
+                  "name": "stmt_list"
                 }
               ]
             }
@@ -5213,90 +5201,90 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "number"
+          "name": "_number"
         },
         {
           "type": "SYMBOL",
-          "name": "bool_literal"
+          "name": "_bool_literal"
         },
         {
           "type": "SYMBOL",
-          "name": "string_literal"
+          "name": "_string_literal"
         }
       ]
     },
-    "number": {
+    "_number": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "simple_number"
+          "name": "_simple_number"
         },
         {
           "type": "SYMBOL",
-          "name": "scaled_number"
+          "name": "_scaled_number"
         },
         {
           "type": "SYMBOL",
-          "name": "hex_number"
+          "name": "_hex_number"
         },
         {
           "type": "SYMBOL",
-          "name": "decimal_number"
+          "name": "_decimal_number"
         },
         {
           "type": "SYMBOL",
-          "name": "octal_number"
+          "name": "_octal_number"
         },
         {
           "type": "SYMBOL",
-          "name": "binary_number"
+          "name": "_binary_number"
         }
       ]
     },
-    "simple_number": {
+    "_simple_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "0|[1-9][0-9]*"
       }
     },
-    "scaled_number": {
+    "_scaled_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "(0|[1-9][0-9]*)[KMGT]"
       }
     },
-    "hex_number": {
+    "_hex_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*"
       }
     },
-    "decimal_number": {
+    "_decimal_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "0(s|S)?(d|D)?[0-9][0-9_]*"
       }
     },
-    "octal_number": {
+    "_octal_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "0(s|S)?(o|O)[0-7][0-7_]*"
       }
     },
-    "binary_number": {
+    "_binary_number": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "0(s|S)?(b|B)[0-1\\?][0-1_\\?]*"
       }
     },
-    "bool_literal": {
+    "_bool_literal": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -5312,27 +5300,27 @@
         ]
       }
     },
-    "string_literal": {
+    "_string_literal": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "simple_string_literal"
+          "name": "_simple_string_literal"
         },
         {
           "type": "SYMBOL",
-          "name": "complex_string_literal"
+          "name": "_complex_string_literal"
         }
       ]
     },
-    "simple_string_literal": {
+    "_simple_string_literal": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
         "value": "\\'[^\\'\\n]*\\'"
       }
     },
-    "complex_string_literal": {
+    "_complex_string_literal": {
       "type": "TOKEN",
       "content": {
         "type": "SEQ",
@@ -5738,8 +5726,7 @@
   ],
   "inline": [],
   "supertypes": [
-    "_expression",
-    "constant"
+    "_expression"
   ]
 }
 
