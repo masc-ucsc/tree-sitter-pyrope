@@ -290,8 +290,8 @@ cassert b == 4
 let a = "foo"
 let Good = ::enum(a=_,'b',c)  // OK
 let a = "field"
-let My_enum = :("x" ++ a, 'bar')
-assert My_enum.xfield != My_enum.bar
+let My_non_enum = ("x" ++ a, 'bar')
+cassert My_non_enum[0] == "xfield"  and My_non_enum[1] == 'bar'
 let a = 10
 let b = 20
 let c = 30
@@ -562,6 +562,40 @@ let tmp::[debug] = x.priv // OK
 assert x._priv == 3    // OK, assert is a debug statement
 reg counter:u32   = 10
 var not_a_reg:u32 = 20
+cassert 1<<(1,4,3) == 0b01_1010
+cassert (1,2) in (0,1,3,2,4)
+cassert (1,2) in (a=0,b=1,c=3,2,e=4)
+cassert (a=2) !in (1,2,3)
+cassert (a=2) in (1,a=2,c=3)
+cassert (a=1,2) in (3,2,4,a=1)
+cassert (a=1,2) !in (1,2,4,a=4)
+cassert (a=1) !in (a=(1,2))
+cassert (x=nil,c=3) in (x=3,c=3)
+cassert (x=nil,c=3) in (x=nil,c=3,d=4)
+cassert (c=3)      !in (c=nil,d=4)
+cassert ((a=1,c=3) ++ (a=1,b=2,c=nil)) == (a=(1,1), c=3, b=2)
+cassert ((1,2) ++ (a=2,nil,5)) == (1,2,a=2,5)
+cassert ((x=1) ++ (a=2,nil,5)) == (x=1,a=2,nil,5)
+
+cassert ((x=1,b=2) ++ (x=0sb?,3)) == (x=1,b=2,3)
+cassert (1,b=2,...(3,c=3),6) == (1,b=2,3,c=3,6)
+cassert (1,b=2,...(nil,c=3),0sb?,6) == (1,b=2,nil,c=3,0sb?,6)
+cassert((a=1,b=2) has "a")
+cassert (a=1,b=3) does (b=100,a=333,e=40,5)
+cassert (a=1,3) does (a=100,300,b=333,e=40,5)
+cassert (a=1,3) !does (b=100,300,a=333,e=40,5)
+match (a=1,b=3) {
+  case (a=1) { cassert true }
+  else { cassert false }
+}
+
+match let t=(a=1,b=3); t {
+  case (a=1  ,c=4) { cassert false }
+  case (b=nil,a=1) { cassert t.b==3 and t.a==1 }
+  else { cassert false }
+}
+cassert b does a
+x = b in a
 x = 0b1_0110   // positive
 y = 0s1_0110   // negative
 assert x@[0,2] == 0b10
@@ -585,17 +619,6 @@ var trans = 0
 trans@[0] = v@[1]
 trans@[1] = v@[0]
 assert trans == 0b01
-assert((a=1,b=2) ++ (c=3    ) == (a=1    ,b=2,c=3))
-assert((a=1,b=2) ++ (a=3,c=4) == (a=(1,3),b=2,c=4))
-
-assert((a=1,b=2,3,...(e=4,5)) == (a=1,b=2,3,e=4,5))
-
-assert((a=1,b=2) has "a")
-
-assert(2 in (a=1,b=2))
-assert((2,5) in (a=1,b=2,4,5))
-
-assert 1<<(1,4,3) == 0b01_1010
 assert((x or !y) == (x or (!y)) == (x or not y))
 assert((3*5+5) == ((3*5) + 5) == 3*5 + 5)
 
@@ -630,6 +653,7 @@ g2= (1 + 3)
 
 i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
+assert a <= b <= c  // same as a<=b and b<=c
 var v1:u32 = _                 // v1 is zero every cycle AND not $valid
 assert v1.::[valid] == false
 var v2:u32 = 0                 // v2 is zero every cycle AND     $valid
@@ -698,6 +722,47 @@ assert not x2? and x2.v1 == "" and x2.v2 == "hello"
 x2 = "world"
 
 assert x2? and x2?.v1 == "world" and x2.v1 == "world"
+var a:int = _
+cassert a==0 and a.::[valid] == false and not a?
+
+var b:int = 0
+cassert b==0 and b::[valid] and b?
+b = nil
+cassert b==nil and b.::[valid] == false and not b?
+
+var c:fun(a1) = _
+cassert c == nil and c::[valid==false]
+c = fun(a1) { cassert true }
+cassert c!= nil and c::[valid]
+
+var d = ()                       // empty tuple
+cassert d != nil and d::[valid]
+
+var e:int = nil
+cassert e==nil and e::[valid==false] and not e?
+e = 0
+cassert e==0 and e::[valid] and e?
+let a = "foo"
+
+var at1 = (
+  ,a:string 
+)
+cassert at1[0] == "foo"
+cassert at1 !has "a"    // at1.a undefined
+
+var at2 = (
+  ,a:string = _
+)
+cassert at2.a == ""  and at2.a.::[valid]==false
+at2.a = "torrellas"
+cassert at2.a == "torrellas" and at2[0] == "torrellas"
+
+var at3:at2 = _
+cassert at3.a == ""  and at3.a.::[valid]==false
+
+var at4:at2 = (a="josep")
+cassert at4.a == "josep"  and at4.a.::[valid] and at4.::[valid]
+
     let add = fun(a,b) { ret a+b }
 
     for a in 0..=20 {
@@ -728,10 +793,6 @@ assume b > 3           // may optimize and perform a runtime check
 restrict "cond1" where foo < 1 and foo >3 {
    verify bar == 4  // only checked at verification, restricting conditions
 }
-
-let fun1 = fun(a,b) { ret a | b}
-let fun2 = fun(a,b) { ret ~(~a | ~b) }
-lec fun1, fun2
 a = 0
 if cond {
   a = 3
@@ -739,12 +800,20 @@ if cond {
 assert cond implies a == 3, "the branch was taken, so it must be 3??"
 assert a == 3, "the same error" when   cond
 assert a == 0, "the same error" unless cond
-reg memory:[]u33 = (1,2,3) // may take cycles to load this contents
+let fun1 = fun(a,b) { ret a | b}
+let fun2 = fun(a,b) { ret ~(~a | ~b) }
+lec fun1, fun2
+let mul2 = proc(a,b) -> (reg out) {
+  reg pipe1 = _
 
-assert memory[0] == 1 // not checked during reset
+  out = pipe1
 
-assert_always memory[1] == 2 // may fail during reset
-assert_always memory[1] == 2 unless memory.reset  // should not fail
+  pipe1 = a*b
+}
+
+let mul0 = fun(a,b)->(out) { out = a*b }
+
+lec_valid mul0, mult2
 // coverage case NUM group states that random should be odd or even
 covecase NUM,   random&1 , "odd number"
 covecase NUM, !(random&1), "even number"
@@ -755,6 +824,26 @@ covercase COND1, val>3, "bigger than 3"
 assert((!reset and val>3) or reset)  // less checks than COND1
 
 cover a==3, "at least a is 3 once in a while"
+reg memory:[]u33 = (1,2,3) // may take cycles to load this contents
+
+assert memory[0] == 1 // not checked during reset
+
+assert_always memory[1] == 2 // may fail during reset
+assert_always memory[1] == 2 unless memory.reset  // should not fail
+let x:u8 = _
+
+for i in 1..<100 {
+  cassert 0 <= x.::[crand]  <= 255
+}
+
+let get_rand_0_2556 = fun(a:u8) {
+  ret a.::[rand]
+}
+let a = (1,2,3,b=4)
+let x = a.::[rand]
+
+cassert x==1 or x==2 or x==3 or x==4
+cassert x.b==4 when x==4
 a = unique if cond == 1 {
     300
   }elif cond == 2 {
@@ -1133,7 +1222,7 @@ let x1,x2 = ret3()
 assert x1   == 3 and x2   == 4
 assert x1.a == 3 and x2.b == 4
 let p1 = proc(a)->(res) {
-  ::[zero_found] = ::[zero_found] or a == 0
+  ::[my_zero_found] = ::[my_zero_found] or a == 0
 
    res = a + 1
 }
@@ -1142,19 +1231,19 @@ let p2 = p1      // copy
 let p3 = ref p1  // reference
 
 test "testing p1" {
-  assert p1.::[zero_found] == false
-  assert p2.::[zero_found] == false
+  assert p1.::[my_zero_found] == false
+  assert p2.::[my_zero_found] == false
 
   cassert p1(3) == 4
-  assert p1.::[zero_found] == false
+  assert p1.::[my_zero_found] == false
 
   cassert p1(0) == 1
-  assert p1.zero_found == true
+  assert p1.my_zero_found == true
 
   cassert p1(50) == 51
-  assert p1.::[zero_found] == true
-  assert p2.::[zero_found] == false
-  assert p3.::[zero_found] == true
+  assert p1.::[my_zero_found] == true
+  assert p2.::[my_zero_found] == false
+  assert p3.::[my_zero_found] == true
 }
 let Nested_call = (
   ,var x = 1
@@ -1872,22 +1961,25 @@ assert a equals b          // 1 equals 2
 
 assert :a equals :fun()
 cassert (a:u32=0, b:bool) does (a:u32, c:string="hello", b=false)
-cassert (a:u32=0, c:string="hello", b=false) case (a = 0, b:bool=_)
+cassert (a:u32=0, c:string="hello", b=false) case (a = 0, b:bool) // b is nil
 
-cassert (a:u32=0, c:string="hello", b=false) !case (a:u32 = 1 , b:bool=_   )
-cassert (a:u32=0, c:string="hello", b=false) !case (a:bool = _, b:bool=_   )
+cassert (a:u32=0, c:string="hello", b=false) !case (a:u32 = 1 , b:bool=nil )
+cassert (a:u32=0, c:string="hello", b=false) !case (a:bool=nil, b:bool=nil )
 cassert (a:u32=0, c:string="hello", b=false) !case (a = 0     , b     =true)
+let a = 3
+let b = 200
+cassert a is b
 
-match (a=1,b=3) {
-  case (a=1) { cassert true }
-  else { cassert false }
-}
+let c:u32 = 10
+cassert a !is c
+cassert a::[typename] == "int" and c::[typename] == "u32"
 
-match let t=(a=1,b=3); t {
-  case (a=1,c=4) { cassert false }
-  case (b=_,a=1) { cassert t.b==3 and t.a==1 }
-  else { cassert false }
-}
+let d:u32 = nil
+cassert c is d
+
+let e = (a:u32=1)
+let f:(a:u32) = 33
+cassert e is f
 let X1 = (b:u32)
 let X2 = (b:u32)
 
@@ -2046,54 +2138,6 @@ a = b          // OK c is string, and 10000 fits in u32
 var c:ct= a    // OK even different order because all names match
 
 var d:dt = a   // OK, call intitial to type cast
-let Say_mixin = (
-  ,say = fun(s) { puts s }
-)
-
-let Say_hi_mixin = (
-  ,say_hi  = fun() {self.say("hi {}", self.name) }
-  ,say_bye = fun() {self.say("bye {}", self.name) }
-)
-
-let User = (
-  ,name:string = _
-  ,setter = proc(ref self, n:string) { self.name = n }
-)
-
-let Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
-
-var a:Mixing_all="Julius Caesar"
-a.say_hi()
-let Shape = (
-  ,name:string = _
-  ,area:fun (self )->(:i32)  = _            // defined but unimplemented
-  ,increase_size:proc(ref self, x:i12) = _  // defined but unimplemented
-
-  ,setter=proc(ref self, name ) { self.name = name } // implemented, use =
-  ,say_name=fun(self) { puts "name:{}", name }
-)
-
-let Circle = (
-  ,setter           = proc(ref self) { super = "circle" }
-  ,increase_size = proc(ref self, x:i12) { self.rad *= x }
-  ,rad:i32       = _
-  ,area = fun(self) -> (:i32) {
-     let pi = import("math").pi
-     ret pi * self.rad * self.rad
-  }
-):Shape
-let Circle = (
-  ,setter      = proc(ref self) { self.name = "circle" }
-  ,name:string = _
-  ,rad:i32     = _
-  ,area = fun() -> (:i32) {
-     let pi = import("math").pi
-     ret pi * self.rad * self.rad
-  }
-  ,increase_size = proc(ref self, a:i12) { self.rad *= a }
-  ,say_name=fun(self) { puts "name:{}", name }
-)
-cassert Circle does Shape
 a = (b=1,c:u32=2)
 var b = a
 b.c=100
@@ -2202,12 +2246,56 @@ test "mocking taken branches" {
 
   var l = core.fetch.predict(0xFFF)
 }
-var f1:XXX = (3,2)
-var f2:XXX = XXX(3,2)
-var f3:XXX = _
+let Typ1 = (
+  ,a:string = "none"
+  ,b:u32    = 0
+)
 
-f3 = (3,2)
-assert f3 == f2 == f1
+let v:Typ1 = Typ1(a="foo", b=33)
+let w      = Typ1(a="foo", b=33)
+let x:Typ1 = (a="foo", b=33)      // OK, named construction
+let y:Typ1 = ("foo", 33)          // OK, because no conflict by type
+var z:Typ1 = _                    // default values
+cassert z.a == "none" and z.b == 0
+z = ("foo",33)
+
+cassert v==w==x==y==z
+let Typ2 = (
+  ,a:string = "none"
+  ,b:u32    = 0
+  ,setter = proc(ref self, a, b) { self.a = a ; self.b = b }
+)
+
+var x:Typ2 = _
+var y:Typ2 = _
+
+x["hello"] = 44
+y = ("hello",44)
+cassert x==y
+let My_2_elem = (
+  ,data:[2]string = _
+  ,setter = proc(ref self, x:uint(0..<2), v:string) {
+    self.data[x] = v
+  } ++ proc(ref self, v:My_2_elem) {
+    self.data = v.data
+  }
+  ,getter = fun(self) { ret self.data 
+  } ++ fun(self, i:uint) {
+    ret self.data[i]
+  }
+)
+
+var v:My_2_elem = _
+var x:My_2_elem = _
+
+v = (x=0, "hello")
+v[1] = "world"
+
+cassert v[0] == "hello"
+cassert v == ("hello", "world")  // not 
+
+let z = v
+cassert z !equals v   // v has v.data, z does not
 let some_obj = (
   ,a1:string
   ,a2 = (
@@ -2229,18 +2317,20 @@ assert x.a2 == 103
 x.a2 = 5
 let showcase = (
   ,v:int = _
-  ,getter ++= fun(self)->(:string) where self.i>100 {
-    ret "this is a big number" ++ string(v)
-  }
-  ,getter ++= fun(self)->(:int) {
-    ret v
+  ,getter = fun(self)->(:string) where self.i>10 {
+    ret format("this is a big {} number", self.v)
+  } ++ fun(self)->(:int) {
+    ret self.v
   }
 )
 
 var s:showcase = _
 s.v = 3
-s.v = 100
+let r2:int    = s // OK
 
+s.v = 100
+let r3:string = s // OK
+cassert r3 == "this is a bit 100 number"
 let my_obj = (
   ,val:u32 = _
   ,getter = fun(self)->(:string ){ ret string(self.val) }
@@ -2255,7 +2345,7 @@ cassert fbool == 0
 
 let Tup = (
   ,v:string = _  // default to empty
-  ,setter = fun(ref self) { // no args
+  ,setter = fun(ref self) { // no args, default setter for _
      cassert self.v == ""
      self.v = "empty"
   } ++ fun(ref self, v) {
@@ -2279,6 +2369,38 @@ var m1:t = 10
 var m2:t = 4
 assert m1 < m2 and !(m1==m2)
 assert m1 <= m2 and m1 != m2 and m2 > m1 and m2 >= m1
+let t1=(
+  ,long_name:string = "foo"
+  ,b=33
+)
+let t2=(
+  ,b=33
+  ,long_name:string = "foo"
+)
+let t3=(
+  ,33
+  ,long_name:string = "foo"
+)
+
+cassert t1==t2
+cassert t1 !equals t3
+cassert (a==b) == ((a in b) and (b in a))
+cassert a equals b
+let t1=(
+  ,long_name:string = "foo"
+  ,b=33
+)
+let t2=(
+  ,xx_a=33
+  ,yy_b = "foo"
+  ,eq = fun(self, o:t1) {
+    ret self.xx_a == o.b and self.xx_y == o.long_name
+  } ++ fun(self, o:t2) {
+    ret self.xx_a == o.xx_a and self.xx_y == o.xx_y
+  }
+)
+
+cassert t1==t2 and t2==t1
 let cfg = __read_json()
 
 let ext = if cfg.foo.bar == 3 {
@@ -2355,6 +2477,8 @@ assert a == a.age == a.0 == 3
 
 var w:Weight = 100
 
+let f = fun(a,b) -> (r:int) { r = xx(a) + xx(b) }
+let f1 = fun<T:Some_type_class>(a:T,b:T) -> (r:int) { r = xx(a) + xx(b) }
 let fa_t = :fun(a:Animal)->()
 let fd_t = :fun(d:Dog)->()
 
@@ -2490,6 +2614,80 @@ test "check equiv" {
     }
   }
 }
+let Say_mixin = (
+  ,say = fun(s) { puts s }
+)
+
+let Say_hi_mixin = (
+  ,say_hi  = fun() {self.say("hi {}", self.name) }
+  ,say_bye = fun() {self.say("bye {}", self.name) }
+)
+
+let User = (
+  ,name:string = _
+  ,setter = proc(ref self, n:string) { self.name = n }
+)
+
+let Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
+
+var a:Mixing_all="Julius Caesar"
+a.say_hi()
+let Interface = (
+  ,let add:fun(ref self, x) = _ // nil or undefined method
+  ,let sub = fun(ref self,x ) { self.add(-x) }
+)
+
+
+let My_obj = (
+  ,val1:u8 = 0
+  ,let add = fun(ref self, x) { self.val += x }
+) ++ Interface                  // OK, but not recommended
+
+let My_obj2 = (
+  ,...Interface                 // recommended
+  ,val1:u8 = 0
+  ,let add = fun(ref self, x) { self.val += x }
+)
+cassert My_obj equals My_obj2   // same behavioir no defined overlap fiels
+
+let xx:My_obj = _               // default initialization
+
+cassert xx.val1 == 0
+xx.add(3)
+cassert xx.val1 == 3
+xx.sub(2)
+cassert xx.val1 == 1
+let exclude = fun(o,...a) {
+  let new_tup = ()
+  for e,idx,key in o {
+    // create single tupe and append to preserve key and position order
+    let sing_tup = ()
+    sing_tup[key] = e
+    new_tup ++= sing_tup unless key in o
+  }
+  ret new_tup
+}
+
+let Shape = (
+  ,name:string = _
+  ,area:fun (self )->(:i32)  = _            // undefined 
+  ,increase_size:proc(ref self, x:i12) = _  // undefined 
+
+  ,setter=proc(ref self, name ) { self.name = name } // implemented, use =
+  ,say_name=fun(self) { puts "name:{}", name }
+)
+
+let Circle = (
+  ,...exclude(Shape,'setter')
+  
+  ,setter        = proc(ref self) { Circle.setter(this, "circle") }
+  ,increase_size = proc(ref self, x:i12) { self.rad *= x }
+  ,rad:i32       = _
+  ,area = fun(self) -> (:i32) {
+     let pi = import("math").pi
+     ret pi * self.rad * self.rad
+  }
+):Shape  // extra check that the exclude did not remove too many fields
 let rotate = fun(a) where a has 'x' and a has 'y' {
   var r = a
   r.x = a.y
@@ -2603,6 +2801,40 @@ var x3:[-8..<7]u3 = _  // accept signed values
 var x4:[100..<132]u3 = _
 
 assert x4[100] == 0
+reg r_ver = 0sb?
+
+reg r = _
+var v = _
+
+assert v == 0 and r == 0
+
+assert !(r_ver != 0)    // it will randomly fail
+assert !(r_ver == 0)    // it will randomly fail
+assert !(r_ver != 0sb?) // it will randomly fail
+assert !(r_ver == 0sb?) // it will randomly fail
+var arr:[] = (0,1,2,3,4,5,6,7)
+
+assert_always arr[0] == 0 and arr[7] == 7  // may FAIL during reset
+
+reg mem:[] = (0,1,2,3,4,5,6,7)
+
+assert_always mem[7] == 7                  // may FAIL during reset
+assert_always mem[7] == 7 unless mem.reset // OK
+assert mem[7] == 7                         // OK, not checked during reset
+cassert (a=1) in (1,a=1,3)
+cassert (a=1) !does (1,a=1,3)
+
+let f = fun(a) { puts "{}",a }
+let g = fun(long, short) { puts "{}",long }
+
+f(a=1)             // OK
+f(1)               // OK
+
+g(long=1, short=1) // OK
+let long=1
+g(long, short=1)   // OK
+let short=1
+g(long, short)     // OK
     assume sel==1 or sel==2 or sel==4 // not needed. match sets it
     match sel {
       == 0b001 { f = i0 }
@@ -2852,26 +3084,6 @@ let reverse = fun(x:uint)->(total:uint) {
   }
 }
 assert reverse(0b10110) == 0b01101
-reg r_ver = 0sb?
-
-reg r = _
-var v = _
-
-assert v == 0 and r == 0
-
-assert !(r_ver != 0)    // it will randomly fail
-assert !(r_ver == 0)    // it will randomly fail
-assert !(r_ver != 0sb?) // it will randomly fail
-assert !(r_ver == 0sb?) // it will randomly fail
-var arr:[] = (0,1,2,3,4,5,6,7)
-
-assert_always arr[0] == 0 and arr[7] == 7  // always works
-
-reg mem:[] = (0,1,2,3,4,5,6,7)
-
-assert_always mem[7] == 7                  // FAIL, this may fail during reset
-assert_always mem[7] == 7 unless mem.reset // OK
-assert mem[7] == 7                         // OK, not checked during reset
 let args = fun(x) { puts "args:{}", b ; ret 1}
 let here = fun()  { puts "here" ; ret 3}
 
@@ -3017,6 +3229,11 @@ cassert xx2 has ::[attr2]
 
 let xx3 = xx + 0
 cassert xx3 !has ::[attr2]
+let d::[debug] = 3
+
+var a = d + 100
+
+cassert a.::[debug]  // debug is sticky
     foo@[1,2] = xx
     yy = foo@[5] + xx@[1..<4]
     let t1 = foo@sext[..=4]
@@ -3024,6 +3241,21 @@ cassert xx3 !has ::[attr2]
     let t3 = foo@&[..=4]
     let t4 = foo@^[..=4]
     let t5 = foo@+[..=4]
+    let foo = 3
+    let bar = 300
+    let b = __plus(1,2,foo,bar)
+    LNAST("let", ("ref", "x"), ("const", "5"))
+    a = b and_then c and_then (d or e)
+    a = b or_else c or_else (d and e)
+let tup=(1,2,3)
+let ran=1..<5
+let enu=::enum(a,b=(x,y),c)
+
+cassert 2 in tup
+cassert 3 in ran
+cassert enu.b.x in enu.b
+    c = a in b
+    d = a !in b
     var z = 0
     match x {
      == 3 { z = 1 }
