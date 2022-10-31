@@ -1097,66 +1097,6 @@
     "fields": {
       "code": {
         "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "scope_statement",
-            "named": true
-          }
-        ]
-      },
-      "data": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          }
-        ]
-      },
-      "index": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier_list",
-            "named": true
-          }
-        ]
-      },
-      "ref": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "ref",
-            "named": false
-          },
-          {
-            "type": "typed_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "for_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "for_statement",
-    "named": true,
-    "fields": {
-      "code": {
-        "multiple": false,
         "required": true,
         "types": [
           {
@@ -1491,70 +1431,6 @@
     "fields": {
       "code": {
         "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "scope_statement",
-            "named": true
-          }
-        ]
-      },
-      "condition": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "stmt_list",
-            "named": true
-          }
-        ]
-      },
-      "elif": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "elif",
-            "named": false
-          },
-          {
-            "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "stmt_list",
-            "named": true
-          }
-        ]
-      },
-      "else": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "else",
-            "named": false
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "if_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "if_statement",
-    "named": true,
-    "fields": {
-      "code": {
-        "multiple": true,
         "required": true,
         "types": [
           {
@@ -1632,24 +1508,27 @@
   {
     "type": "match_expression",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "match_list",
-          "named": true
-        },
-        {
-          "type": "stmt_list",
-          "named": true
-        }
-      ]
+    "fields": {
+      "match_list": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "match_list",
+            "named": true
+          }
+        ]
+      },
+      "stmt_list": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "stmt_list",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1796,25 +1675,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "match_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "match_list",
-          "named": true
-        },
-        {
-          "type": "stmt_list",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -2386,23 +2246,11 @@
           "named": true
         },
         {
-          "type": "for_statement",
-          "named": true
-        },
-        {
           "type": "function_call_statement",
           "named": true
         },
         {
-          "type": "if_statement",
-          "named": true
-        },
-        {
           "type": "loop_statement",
-          "named": true
-        },
-        {
-          "type": "match_statement",
           "named": true
         },
         {

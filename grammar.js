@@ -122,11 +122,8 @@ module.exports = grammar({
         ,$.assignment_or_declaration_statement
         ,$.function_call_statement
         ,$.control_statement
-        ,$.if_statement
-        ,$.for_statement
         ,$.while_statement
         ,$.loop_statement
-        ,$.match_statement
         ,$.expression_statement
         ,$.defer_statement
         // Verification Only
@@ -161,7 +158,7 @@ module.exports = grammar({
       field('item', $._tuple_item)
       ,repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
-    ,if_statement: $ => prec.left('statement', seq(
+    ,if_expression: $ => prec.left('statement', seq(
       optional('unique')
       ,'if'
       ,field('condition', $.stmt_list)
@@ -176,7 +173,7 @@ module.exports = grammar({
         ,field('code', $.scope_statement)
       ))
     ))
-    ,for_statement: $ => seq(
+    ,for_expression: $ => seq(
       'for'
       ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
       ,'in'
@@ -212,11 +209,11 @@ module.exports = grammar({
     ,pipestage_attributes: $ => prec.left(seq(
       '[', $.attr_list, ']'
     ))
-    ,match_statement: $ => seq(
+    ,match_expression: $ => seq(
       'match'
-      ,$.stmt_list
+      ,field('stmt_list', $.stmt_list)
       ,'{'
-      ,optional($.match_list)
+      ,field('match_list', optional($.match_list))
       ,'}'
     )
     ,defer_statement: $ => seq(
@@ -471,9 +468,6 @@ module.exports = grammar({
       field('function', choice($.identifier, $.dot_expression, $.selection))
       ,field('argument', $.tuple)
     ))
-    ,for_expression: $ => prec.right('expression', alias($.for_statement, $.for_expression))
-    ,if_expression: $ => prec.right('expression', alias($.if_statement, $.if_expression))
-    ,match_expression: $ => prec.right('expression', alias($.match_statement, $.match_expression))
     ,scope_expression: $ => prec.right('expression', alias($.scope_statement, $.scope_expression))
     ,_restricted_expression: $ => prec('expression', choice(
       $.identifier
