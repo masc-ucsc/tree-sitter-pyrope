@@ -1560,128 +1560,19 @@
           {
             "type": "expression_list",
             "named": true
-          }
-        ]
-      },
-      "operator": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "!=",
-            "named": false
           },
           {
-            "type": "!and",
-            "named": false
-          },
-          {
-            "type": "!case",
-            "named": false
-          },
-          {
-            "type": "!does",
-            "named": false
-          },
-          {
-            "type": "!equals",
-            "named": false
-          },
-          {
-            "type": "!has",
-            "named": false
-          },
-          {
-            "type": "!in",
-            "named": false
-          },
-          {
-            "type": "!is",
-            "named": false
-          },
-          {
-            "type": "!or",
-            "named": false
-          },
-          {
-            "type": "&",
-            "named": false
-          },
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": "<=",
-            "named": false
-          },
-          {
-            "type": "==",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": ">=",
-            "named": false
-          },
-          {
-            "type": "^",
-            "named": false
-          },
-          {
-            "type": "and",
-            "named": false
-          },
-          {
-            "type": "case",
-            "named": false
-          },
-          {
-            "type": "does",
-            "named": false
-          },
-          {
-            "type": "equals",
-            "named": false
-          },
-          {
-            "type": "has",
-            "named": false
-          },
-          {
-            "type": "in",
-            "named": false
-          },
-          {
-            "type": "is",
-            "named": false
-          },
-          {
-            "type": "or",
-            "named": false
-          },
-          {
-            "type": "|",
-            "named": false
-          },
-          {
-            "type": "~&",
-            "named": false
-          },
-          {
-            "type": "~^",
-            "named": false
-          },
-          {
-            "type": "~|",
-            "named": false
+            "type": "match_operator",
+            "named": true
           }
         ]
       }
     }
+  },
+  {
+    "type": "match_operator",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "member_select",

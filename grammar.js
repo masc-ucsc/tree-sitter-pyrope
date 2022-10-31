@@ -222,17 +222,17 @@ module.exports = grammar({
     )
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
-        choice(
-          ...['and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-              '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
-              'equals', '!equals', 'does', '!does', 'is', '!is'].map(operator =>
-          seq(field('operator', operator), $.expression_list)
-        ))
+        seq($.match_operator, $.expression_list)
         ,$._expression
         ,'else'
       ))
       ,field('code', $.scope_statement)
     ))
+    ,match_operator: $ => choice(
+      'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
+      '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
+      'equals', '!equals', 'does', '!does', 'is', '!is'
+    )
     ,expression_statement: $ => prec.right(seq(
       $._expression
       ,$._semicolon

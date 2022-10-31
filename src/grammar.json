@@ -649,483 +649,15 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "CHOICE",
+                  "type": "SEQ",
                   "members": [
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "and"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "match_operator"
                     },
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!and"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "or"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!or"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "&"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "^"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "|"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "~&"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "~^"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "~|"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "<"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "<="
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": ">"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": ">="
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "=="
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!="
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "has"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!has"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "case"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!case"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "in"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!in"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "equals"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!equals"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "does"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!does"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "is"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "operator",
-                          "content": {
-                            "type": "STRING",
-                            "value": "!is"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "expression_list"
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "expression_list"
                     }
                   ]
                 },
@@ -1150,6 +682,123 @@
           }
         ]
       }
+    },
+    "match_operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "and"
+        },
+        {
+          "type": "STRING",
+          "value": "!and"
+        },
+        {
+          "type": "STRING",
+          "value": "or"
+        },
+        {
+          "type": "STRING",
+          "value": "!or"
+        },
+        {
+          "type": "STRING",
+          "value": "&"
+        },
+        {
+          "type": "STRING",
+          "value": "^"
+        },
+        {
+          "type": "STRING",
+          "value": "|"
+        },
+        {
+          "type": "STRING",
+          "value": "~&"
+        },
+        {
+          "type": "STRING",
+          "value": "~^"
+        },
+        {
+          "type": "STRING",
+          "value": "~|"
+        },
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "STRING",
+          "value": "<="
+        },
+        {
+          "type": "STRING",
+          "value": ">"
+        },
+        {
+          "type": "STRING",
+          "value": ">="
+        },
+        {
+          "type": "STRING",
+          "value": "=="
+        },
+        {
+          "type": "STRING",
+          "value": "!="
+        },
+        {
+          "type": "STRING",
+          "value": "has"
+        },
+        {
+          "type": "STRING",
+          "value": "!has"
+        },
+        {
+          "type": "STRING",
+          "value": "case"
+        },
+        {
+          "type": "STRING",
+          "value": "!case"
+        },
+        {
+          "type": "STRING",
+          "value": "in"
+        },
+        {
+          "type": "STRING",
+          "value": "!in"
+        },
+        {
+          "type": "STRING",
+          "value": "equals"
+        },
+        {
+          "type": "STRING",
+          "value": "!equals"
+        },
+        {
+          "type": "STRING",
+          "value": "does"
+        },
+        {
+          "type": "STRING",
+          "value": "!does"
+        },
+        {
+          "type": "STRING",
+          "value": "is"
+        },
+        {
+          "type": "STRING",
+          "value": "!is"
+        }
+      ]
     },
     "expression_statement": {
       "type": "PREC_RIGHT",
