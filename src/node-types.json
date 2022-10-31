@@ -1550,6 +1550,24 @@
         "required": true,
         "types": [
           {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "else",
+            "named": false
+          },
+          {
+            "type": "expression_list",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
             "type": "!=",
             "named": false
           },
@@ -1614,10 +1632,6 @@
             "named": false
           },
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "and",
             "named": false
           },
@@ -1630,16 +1644,8 @@
             "named": false
           },
           {
-            "type": "else",
-            "named": false
-          },
-          {
             "type": "equals",
             "named": false
-          },
-          {
-            "type": "expression_list",
-            "named": true
           },
           {
             "type": "has",

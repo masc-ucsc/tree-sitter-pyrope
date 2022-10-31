@@ -226,7 +226,7 @@ module.exports = grammar({
           ...['and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
               '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
               'equals', '!equals', 'does', '!does', 'is', '!is'].map(operator =>
-          seq(operator, $.expression_list)
+          seq(field('operator', operator), $.expression_list)
         ))
         ,$._expression
         ,'else'
