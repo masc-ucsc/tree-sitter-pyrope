@@ -2023,6 +2023,10 @@
             "named": true
           },
           {
+            "type": "type_cast",
+            "named": true
+          },
+          {
             "type": "type_specification",
             "named": true
           }
@@ -2074,6 +2078,10 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "type_cast",
             "named": true
           },
           {

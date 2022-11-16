@@ -57,6 +57,7 @@ module.exports = grammar({
       ,'range'
       ,'step'
       ,'type_spec'
+      ,'pipe_concat'   // higher prio than == to allow a |> b == c 
       ,'binary_times'
       ,'binary_plus'
       ,'binary_shift'
@@ -75,7 +76,6 @@ module.exports = grammar({
       ,'induction'
       ,'sequential_condition'
       ,'cycle_condition'
-      ,'pipe_concat'
       ,'tuple_relation'
       ,'tuple_concat'
       ,'type_compare'
@@ -302,7 +302,7 @@ module.exports = grammar({
     // Assignment/Declaration
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
-      ,field('lvalue', choice($.identifier, $.type_specification))
+      ,field('lvalue', choice($.identifier, $.type_specification, $.type_cast))
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
@@ -312,7 +312,7 @@ module.exports = grammar({
     )))
     ,simple_declaration: $ => prec.right(seq(
       field('decl',$.var_or_let_or_reg)
-      ,field('lvalue', choice($.identifier, $.type_specification))
+      ,field('lvalue', choice($.identifier, $.type_specification, $.type_cast))
     ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))

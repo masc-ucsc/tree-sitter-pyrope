@@ -1282,6 +1282,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "type_specification"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "type_cast"
                 }
               ]
             }
@@ -1357,6 +1361,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "type_specification"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "type_cast"
                 }
               ]
             }
@@ -5286,6 +5294,10 @@
       },
       {
         "type": "STRING",
+        "value": "pipe_concat"
+      },
+      {
+        "type": "STRING",
         "value": "binary_times"
       },
       {
@@ -5355,10 +5367,6 @@
       {
         "type": "STRING",
         "value": "cycle_condition"
-      },
-      {
-        "type": "STRING",
-        "value": "pipe_concat"
       },
       {
         "type": "STRING",
