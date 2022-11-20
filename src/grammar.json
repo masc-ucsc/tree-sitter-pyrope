@@ -65,10 +65,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "defer_statement"
-          },
-          {
-            "type": "SYMBOL",
             "name": "test_statement"
           },
           {
@@ -612,19 +608,6 @@
         {
           "type": "STRING",
           "value": "}"
-        }
-      ]
-    },
-    "defer_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "defer"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "statement"
         }
       ]
     },
@@ -1303,22 +1286,6 @@
           },
           {
             "type": "FIELD",
-            "name": "type",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "type_cast"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
             "name": "rvalue",
             "content": {
               "type": "CHOICE",
@@ -1418,22 +1385,6 @@
                 {
                   "type": "SYMBOL",
                   "name": "cycle_select_or_pound"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "type",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "type_cast"
                 },
                 {
                   "type": "BLANK"
@@ -1709,18 +1660,6 @@
                         "value": "="
                       },
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "type_cast"
-                          },
-                          {
-                            "type": "BLANK"
-                          }
-                        ]
-                      },
-                      {
                         "type": "FIELD",
                         "name": "expression",
                         "content": {
@@ -1772,18 +1711,6 @@
                               {
                                 "type": "STRING",
                                 "value": "="
-                              },
-                              {
-                                "type": "CHOICE",
-                                "members": [
-                                  {
-                                    "type": "SYMBOL",
-                                    "name": "type_cast"
-                                  },
-                                  {
-                                    "type": "BLANK"
-                                  }
-                                ]
                               },
                               {
                                 "type": "FIELD",
@@ -2006,18 +1933,6 @@
                     {
                       "type": "STRING",
                       "value": "="
-                    },
-                    {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "type_cast"
-                        },
-                        {
-                          "type": "BLANK"
-                        }
-                      ]
                     },
                     {
                       "type": "SYMBOL",

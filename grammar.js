@@ -125,7 +125,6 @@ module.exports = grammar({
         ,$.while_statement
         ,$.loop_statement
         ,$.expression_statement
-        ,$.defer_statement
         // Verification Only
         ,$.test_statement
         ,$.restrict_statement
@@ -216,10 +215,6 @@ module.exports = grammar({
       ,field('match_list', optional($.match_list))
       ,'}'
     )
-    ,defer_statement: $ => seq(
-      'defer'
-      ,$.statement
-    )
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
         seq($.match_operator, $.expression_list)
@@ -305,7 +300,6 @@ module.exports = grammar({
       ,field('lvalue', choice($.identifier, $.type_specification))
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
-      ,field('type', optional($.type_cast))
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
@@ -320,7 +314,6 @@ module.exports = grammar({
       ,field('lvalue', $.expression_list)
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
-      ,field('type', optional($.type_cast))
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
@@ -338,7 +331,7 @@ module.exports = grammar({
       ,field('code', $.scope_statement)
     )
     ,capture_list: $ => listseq1(
-      $.typed_identifier, optseq('=', optional($.type_cast), field('expression', $._expression))
+      $.typed_identifier, optseq('=', field('expression', $._expression))
     )
     ,identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
     ,arg_list: $ => prec.left(seq(
@@ -353,7 +346,7 @@ module.exports = grammar({
     ,arg_item: $ => seq(
       field('mod', optional(choice('...','ref','reg')))
       ,$.type_or_identifier
-      ,field('definition', optseq('=', optional($.type_cast), $._expression))
+      ,field('definition', optseq('=', $._expression))
     )
 
     ,type_or_identifier: $ => choice(
@@ -369,7 +362,6 @@ module.exports = grammar({
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
       $.type_specification
-      //,$.type_cast
       ,$.unary_expression
       ,$.binary_expression
       ,$._restricted_expression
