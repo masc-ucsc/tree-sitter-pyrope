@@ -56,10 +56,6 @@
         "named": true
       },
       {
-        "type": "type_cast",
-        "named": true
-      },
-      {
         "type": "type_specification",
         "named": true
       },
@@ -83,6 +79,10 @@
           },
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "type_cast",
             "named": true
           }
         ]
@@ -249,6 +249,16 @@
           },
           {
             "type": "simple_function_call",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
             "named": true
           }
         ]
@@ -724,6 +734,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "type_cast",
+          "named": true
+        },
         {
           "type": "typed_identifier",
           "named": true
@@ -2023,10 +2037,6 @@
             "named": true
           },
           {
-            "type": "type_cast",
-            "named": true
-          },
-          {
             "type": "type_specification",
             "named": true
           }
@@ -2055,6 +2065,16 @@
             "named": true
           }
         ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
       }
     }
   },
@@ -2078,10 +2098,6 @@
         "types": [
           {
             "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "type_cast",
             "named": true
           },
           {
@@ -2711,15 +2727,15 @@
     "named": false
   },
   {
+    "type": ".[",
+    "named": false
+  },
+  {
     "type": "/",
     "named": false
   },
   {
     "type": ":",
-    "named": false
-  },
-  {
-    "type": "::[",
     "named": false
   },
   {
@@ -2827,11 +2843,7 @@
     "named": false
   },
   {
-    "type": "defer_read",
-    "named": false
-  },
-  {
-    "type": "defer_write",
+    "type": "defer",
     "named": false
   },
   {
@@ -2904,14 +2916,6 @@
   },
   {
     "type": "match",
-    "named": false
-  },
-  {
-    "type": "max",
-    "named": false
-  },
-  {
-    "type": "min",
     "named": false
   },
   {

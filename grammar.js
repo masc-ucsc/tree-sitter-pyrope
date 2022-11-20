@@ -217,7 +217,7 @@ module.exports = grammar({
       ,'}'
     )
     ,defer_statement: $ => seq(
-      choice('defer_read','defer_write')
+      'defer'
       ,$.statement
     )
     ,match_list: $ => repeat1(seq(
@@ -302,9 +302,10 @@ module.exports = grammar({
     // Assignment/Declaration
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
-      ,field('lvalue', choice($.identifier, $.type_specification, $.type_cast))
+      ,field('lvalue', choice($.identifier, $.type_specification))
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
+      ,field('type', optional($.type_cast))
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
@@ -312,13 +313,14 @@ module.exports = grammar({
     )))
     ,simple_declaration: $ => prec.right(seq(
       field('decl',$.var_or_let_or_reg)
-      ,field('lvalue', choice($.identifier, $.type_specification, $.type_cast))
+      ,field('lvalue', choice($.identifier, $.type_specification))
     ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', $.expression_list)
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
+      ,field('type', optional($.type_cast))
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
@@ -336,7 +338,7 @@ module.exports = grammar({
       ,field('code', $.scope_statement)
     )
     ,capture_list: $ => listseq1(
-      $.typed_identifier, optseq('=', field('expression', $._expression))
+      $.typed_identifier, optseq('=', optional($.type_cast), field('expression', $._expression))
     )
     ,identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
     ,arg_list: $ => prec.left(seq(
@@ -351,7 +353,7 @@ module.exports = grammar({
     ,arg_item: $ => seq(
       field('mod', optional(choice('...','ref','reg')))
       ,$.type_or_identifier
-      ,field('definition', optseq('=', $._expression))
+      ,field('definition', optseq('=', optional($.type_cast), $._expression))
     )
 
     ,type_or_identifier: $ => choice(
@@ -367,7 +369,7 @@ module.exports = grammar({
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
       $.type_specification
-      ,$.type_cast
+      //,$.type_cast
       ,$.unary_expression
       ,$.binary_expression
       ,$._restricted_expression
@@ -591,13 +593,6 @@ module.exports = grammar({
       ,'('
       ,choice(
         seq(
-          optseq('max', '=')
-          ,field('max_value', $._expression)
-          ,','
-          ,optseq('min', '=')
-          ,field('min_value', $._expression)
-        )
-        ,seq(
           field('min_value', $._expression)
           ,'..'
         )
@@ -637,7 +632,7 @@ module.exports = grammar({
       )
     )
     //,dollar_identifier: $ => token(/\$[\p{L}_][\p{L}\p{Nd}_$]*/)
-    ,attribute_identifier: $ => seq('::[', $.identifier, ']')
+    ,attribute_identifier: $ => seq('.[', $.identifier, ']')
 
     // Constants
     ,constant: $ => choice(
