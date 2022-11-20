@@ -145,14 +145,12 @@ module.exports = grammar({
     ))
     ,control_statement: $ => prec.right(seq(
       field('type', $.ret_type)
-      ,field('ref', optional($.ref_token))
       ,field('argument', optional($._expression))
       ,$._semicolon
     ))
     ,ret_type: $ => choice(
       'ret', 'return', 'cont', 'continue', 'brk', 'break', 'last'
     )
-    ,ref_token: $ => 'ref'
     ,stmt_list: $ => prec.left('tuple_list', seq(
       field('item', $._tuple_item)
       ,repeat(seq(repeat1(';'), field('item', $._tuple_item)))
@@ -267,13 +265,11 @@ module.exports = grammar({
       ,repeat(',')
     ))
     ,_tuple_item: $ => prec.left(choice(
-      seq(
-        optional('ref')
-        ,$._expression
-      )
+      seq('ref', $.typed_identifier)
+      ,$._expression
       ,$.simple_assignment
-      ,$.simple_declaration
-      ,$.function_type
+      //,$.simple_declaration
+      //,$.function_type
     ))
     ,attributes: $ => choice(
       field('attr', $.attribute_entry)
@@ -297,7 +293,7 @@ module.exports = grammar({
     // Assignment/Declaration
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
-      ,field('lvalue', choice($.identifier, $.type_specification))
+      ,field('lvalue', choice($.type_cast, $.type_specification))
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
@@ -307,7 +303,7 @@ module.exports = grammar({
     )))
     ,simple_declaration: $ => prec.right(seq(
       field('decl',$.var_or_let_or_reg)
-      ,field('lvalue', choice($.identifier, $.type_specification))
+      ,field('lvalue', $.type_specification)
     ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
@@ -345,7 +341,7 @@ module.exports = grammar({
     )
     ,arg_item: $ => seq(
       field('mod', optional(choice('...','ref','reg')))
-      ,$.type_or_identifier
+      ,$.typed_identifier
       ,field('definition', optseq('=', $._expression))
     )
 
@@ -386,8 +382,13 @@ module.exports = grammar({
     ,type_specification: $ => prec.left('type_spec', seq(
       field('argument', $._restricted_expression)
       ,':'
-      ,field('type', optional($._type))
-      ,field('attribute', optional($.attributes))
+      ,choice(
+        seq(
+          field('type', $._type,)
+          ,field('attribute', optional($.attributes))
+        )
+        ,field('attribute', $.attributes)
+      )
     ))
     ,unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...'))
@@ -485,13 +486,15 @@ module.exports = grammar({
     // Selects
     ,select: $ => seq(
       '['
-      ,optional(choice(
-        field('list', $.expression_list)
-        // TODO: clean this up
-        ,field('open_range', seq($._expression, '..'))
-        ,field('from_zero', seq(choice('..=', '..<', '..+'), $._expression))
-      ))
+      ,optional($.select_options)
       ,']'
+    )
+    ,select_options: $=> seq(
+      choice(
+        field('list', $.expression_list)
+        ,field('open_range', seq($._expression, '..'))
+        ,field('from_zero', seq(choice('..=', '..<'), $._expression))
+      )
     )
     ,member_select: $ => prec.right('select', repeat1($.select))
     ,bit_select: $ => prec.right('select', seq(
@@ -566,7 +569,6 @@ module.exports = grammar({
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
       ,$.sized_integer_type
-      ,$.parameter_sized_integer_type
       ,$.bounded_integer_type
       ,$.range_type
       ,$.string_type
@@ -582,28 +584,10 @@ module.exports = grammar({
     )
     ,bounded_integer_type: $ => seq(
       $.unsized_integer_type
-      ,'('
-      ,choice(
-        seq(
-          field('min_value', $._expression)
-          ,'..'
-        )
-        ,seq(
-          '..'
-          ,field('max_value', $._expression)
-        )
-        ,field('expression', $._expression)
-      )
-      ,')'
+      ,field('constrained', seq('(', $.select_options, ')'))
     )
     ,sized_integer_type: $ => token(/[siu]\d+/)
-    ,parameter_sized_integer_type: $ => seq(
-      field('sign', /[siu]/)
-      ,'('
-      ,field('parameter', $._expression)
-      ,')'
-    )
-    ,range_type: $ => prec.left('range_type', seq('range', '(', $._expression, ')'))
+    ,range_type: $ => prec.left('range_type', seq('range', '(', $.select_options, ')'))
     ,string_type: $ => token('string')
     ,boolean_type: $ => token('boolean')
     ,type_type: $ => token('type')
