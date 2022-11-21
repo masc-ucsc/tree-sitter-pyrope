@@ -39,7 +39,7 @@ test "my first test" {
     for a in 1..=100 {
       for b in 1..=100 {
         test "check.gcd({},{})",a,b {
-          let z =# gcd(a,b)
+          let z =#[..] gcd(a,b)
 
           waitfor z?
 
@@ -174,6 +174,18 @@ var x = (
   ,field3:int = 3     // field3 with explicit type and 3 value
   ,val                // unnamed field with value `val` (4)
 )
+var x=100
+
+var tup1 = ('x',y=4) // 
+var tup2 = (x,y=4)
+
+cassert tup1[0] == 'x'
+cassert tup2[0] == 100
+var x=100
+
+var tup1 = ('x', y=4)
+var tup3 = [x,y=4]
+cassert tup1 == tup3
 var a = (1,2)   // tuple of 2 entries, 1 and 2
 var b = (1)     // tuple of 1 entry, 1
 var c = 1       // tuple of 1 entry, 1
@@ -288,7 +300,8 @@ let x,b = (true, c:u3) // assign x=true, b=4 AND check that c is type u3
 cassert x == true
 cassert b == 4 
 let a = "foo"
-let Good = ::enum(a=_,'b',c)  // OK
+let test1:enum = [a  ,b  ,c]    // OK
+let test2:enum = (a=_,'b','c')  // OK, but conversome (not recommended)
 let a = "field"
 let My_non_enum = ("x" ++ a, 'bar')
 cassert My_non_enum[0] == "xfield"  and My_non_enum[1] == 'bar'
@@ -299,56 +312,66 @@ let c = 30
 let v = (a,b,c)
 assert v == (10,20,30)
 
-let En = :int:enum(a=1,b=2,c=300)
+let En:enum = (a=1,b=2,c=300)
 assert e.a == 1 and e.b == 2 and e.c == 300
 
 let x = e.a
 puts "x is {}", x  // prints: "x is e.a"
-let V3 = ::enum(
+let V3:enum = [
    ,a
-   ,b=5
+   ,b
    ,c
-)
+]
 cassert V3.a == 1
-cassert V3.b == 5
-cassert V3.c == 2
+cassert V3.b == 2
+cassert V3.c == 4
 
-let V4 = :int:enum( // when integer is the enum type, it is the typical enum
+let V4:enum = [
    ,a
    ,b=5
    ,c
-)
+]
 cassert V4.a == 0
 cassert V4.b == 5
 cassert V4.c == 6
-let Animal = ::enum(
-  ,bird=(eagle, parrot)
-  ,mammal=(rat, human)
-)
+let Animal:enum = [
+  ,bird  =[eagle, parrot]
+  ,mammal=[rat  , human ]
+]
 
 cassert Animal.bird.eagle != Animal.mammal
 cassert Animal.bird != Animal.mammal.human
 cassert Animal.bird == Animal.bird.parrot
 
-cassert Animal.bird         == 0b000001
-cassert Animal.bird.eagle   == 0b000011
-cassert Animal.bird.parrot  == 0b000101
-cassert Animal.mammal       == 0b001000
-cassert Animal.mammal.rat   == 0b011000
-cassert Animal.mammal.human == 0b101000
-let V5 = :int:enum( // V5 has type :int
+cassert int(Animal.bird        ) == 0b000001
+cassert int(Animal.bird.eagle  ) == 0b000011
+cassert int(Animal.bird.parrot ) == 0b000101
+cassert int(Animal.mammal      ) == 0b001000
+cassert int(Animal.mammal.rat  ) == 0b011000
+cassert int(Animal.mammal.human) == 0b101000
+let V5:enum = [
    ,a
    ,b=5
    ,c
-)
-cassert V5.a == 0
-cassert V5.b == 5
-cassert V5.c == 6
+]
+cassert int(V5.a) == 0
+cassert int(V5.b) == 5
+cassert int(V5.c) == 6
 let human_rat = Animal.mammal.rat | Animal.mammal.human  // union op
 
 assert Animal.mammal      in human_rat
 assert Animal.mammal.rat  in human_rat
 assert Animal.bird       !in human_rat
+let E3:enum = [
+  ,l1=[
+    ,l1a
+    ,l1b
+    ]
+  ,l2
+  ]
+cassert string(E3.l1.l1a) == "E3.l1.l1a"
+cassert string(E3.l1) == "E3.l1"
+cassert E3("l1.l2") == E3.l1.l2
     var a = 3
     {
       assert a == 3
@@ -424,12 +447,12 @@ assert range(0b01_1100) == 2..=4
 assert((0..<30 by 10) == (0,10,20)) // ranges and tuples can combined
 assert((1..=3) ++ 4 == (1,2,3,4))   // tuple and range ops become a tuple
 assert 1..=3 == (1,2,3)
-assert((1..=3)@[] == 0b1110)        // convert range to integer with @[]
+assert((1..=3)@[..] == 0b1110)      // convert range to integer with @[..]
 a = 'cad'              // c is 0x63, a is 0x61, and d is 0x64
 b = 0x64_61_63
 assert a == string(b)  // typecast number to string
 assert int(a) == b     // typecast string to number
-assert a@[] == b       // typecast string to number
+assert a@[..] == b     // typecast string to number
 assert "hello" == ('h','e','l','l','o')
 assert "h" ++ "ell" == ('h','e','l','l') == "hell"
 var bund1 = (color:string, value:s33)
@@ -469,12 +492,12 @@ yyy::[comptime=true] = xx          // now, checks that 'yyy` is comptime
 if bar == 3 {
   tmp = bar::[comptime == true]    // check that this use of bar is comptime
   tmp = bar::[comptime]            // same as previous statement
-  tmp = bar ; assert bar.::[comptime] // same as previous statements
+  tmp = bar ; assert bar.[comptime] // same as previous statements
 }
                                    // bar/foo may not be comptime
 
 // attribute read
-assert tmp.::[bits] < 30 and !tmp.::[comptime]
+assert tmp.[bits] < 30 and !tmp.[comptime]
     let x = y::[cond,bar==3] + 1
 
     read_state = fun(x) {
@@ -484,13 +507,13 @@ assert tmp.::[bits] < 30 and !tmp.::[comptime]
 
     var foo = read_state(zz) // foo will be compile time constant
     let x = y + 1
-    cassert y.::[cond]
-    cassert y.::[bar]==3
+    cassert y.[cond]
+    cassert y.[bar]==3
 
     read_state = fun(x) {
       let f = x
       cassert f does u32
-      cassert f.::[comptime]
+      cassert f.[comptime]
       ret f
     }
 
@@ -502,7 +525,7 @@ if cond::[comptime] {    // cond is checked to be compile time constant
 }
 
 
-if cond.::[comptime] {  // checks if cond is compute at comptime
+if cond.[comptime] {  // checks if cond is compute at comptime
   let v = cond
   if cond {
     puts "cond is compile time and true"
@@ -512,7 +535,7 @@ let bad = (a=3,b::[poison]=4)
 
 let b = bad.b
 
-assert b.::[poison] and b==4
+assert b.[poison] and b==4
 let counter = proc(en, width) {
   reg value:uint:[bits=width] = 0
   value = value + 1
@@ -522,17 +545,17 @@ let counter = proc(en, width) {
 let counter2::[clock=clk1]=counter
 let counter3::[reset=rst2]=counter
 
-var ctr2 =# counter2(my_enable)
-var ctr3 =# counter3(my_enable)
+var ctr2 =#[..] counter2(my_enable)
+var ctr3 =#[..] counter3(my_enable)
 opt1:uint(300) = 0
 opt2:int:[min=0,max=300] = 0  // same
 opt3::[min=0,max=300] = 0     // same
 opt4:int(0..=300) = 0         // same
 
-assert opt1.::[ubits] == 0    // opt1 initialized to 0, so 0 bits
+assert opt1.[ubits] == 0    // opt1 initialized to 0, so 0 bits
 opt1 = 200
-assert opt1.::[ubits] == 8    // last assignment needs 9 sbits or 8 ubits
-tmp  = opt1::[ubits==8] + 1   // expression AND assert opt1.::[ubits]==8 check
+assert opt1.[ubits] == 8    // last assignment needs 9 sbits or 8 ubits
+tmp  = opt1::[ubits==8] + 1   // expression AND assert opt1.[ubits]==8 check
 a:u32 = 100
 b:u10 = 0
 c:u5  = 0
@@ -601,18 +624,18 @@ y = 0s1_0110   // negative
 assert x@[0,2] == 0b10
 assert y@[100,200]       == 0b11   and x@[100,200]       == 0
 assert y@sext[0,100,200] == 0sb110 and x@sext[1,100,200] == 0b001
-assert x@|[] == -1
+assert x@|[..] == -1
 assert x@&[0,1] == 0
 assert x@+[0..=5] == x@+[0..<100] == 3
-assert y@[]@+[] == 3
-assert y@[0..=5]@+[] == 3
-assert y@[0..=6]@+[] == 4
+assert y@[..]@+[..] == 3
+assert y@[0..=5]@+[..] == 3
+assert y@[0..=6]@+[..] == 4
 
 var z     = 0b0110
 z@[0] = 1
 assert z == 0b0111
 var v = 0b10
-assert v@[0,1] == v@[1,2] == v@[] == v@[0..=1] == v@[..=1] == 0b10
+assert v@[0,1] == v@[1,2] == v@[..] == v@[0..=1] == v@[..=1] == 0b10
 
 var trans = 0
 
@@ -655,9 +678,9 @@ i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
 assert a <= b <= c  // same as a<=b and b<=c
 var v1:u32 = _                 // v1 is zero every cycle AND not $valid
-assert v1.::[valid] == false
+assert v1.[valid] == false
 var v2:u32 = 0                 // v2 is zero every cycle AND     $valid
-assert v2.::[valid] == true
+assert v2.[valid] == true
 
 cassert v1?
 cassert not v2?
@@ -705,7 +728,7 @@ let complex = (
 var x1:complex = _
 var x2:complex:[valid = false] = 0  // toggle invalid forever, and set zero
 var x3:complex = 0
-x3.::[valid] = false                // toggle invalid
+x3.[valid] = false                // toggle invalid
 
 assert x1.v1 == "" and x1.v2 == ""
 assert not x2? and not x2.v1? and not v2.v2?
@@ -723,12 +746,12 @@ x2 = "world"
 
 assert x2? and x2?.v1 == "world" and x2.v1 == "world"
 var a:int = _
-cassert a==0 and a.::[valid] == false and not a?
+cassert a==0 and a.[valid] == false and not a?
 
 var b:int = 0
 cassert b==0 and b::[valid] and b?
 b = nil
-cassert b==nil and b.::[valid] == false and not b?
+cassert b==nil and b.[valid] == false and not b?
 
 var c:fun(a1) = _
 cassert c == nil and c::[valid==false]
@@ -753,15 +776,15 @@ cassert at1 !has "a"    // at1.a undefined
 var at2 = (
   ,a:string = _
 )
-cassert at2.a == ""  and at2.a.::[valid]==false
+cassert at2.a == ""  and at2.a.[valid]==false
 at2.a = "torrellas"
 cassert at2.a == "torrellas" and at2[0] == "torrellas"
 
 var at3:at2 = _
-cassert at3.a == ""  and at3.a.::[valid]==false
+cassert at3.a == ""  and at3.a.[valid]==false
 
 var at4:at2 = (a="josep")
-cassert at4.a == "josep"  and at4.a.::[valid] and at4.::[valid]
+cassert at4.a == "josep"  and at4.a.[valid] and at4.[valid]
 
     let add = fun(a,b) { ret a+b }
 
@@ -833,14 +856,14 @@ assert_always memory[1] == 2 unless memory.reset  // should not fail
 let x:u8 = _
 
 for i in 1..<100 {
-  cassert 0 <= x.::[crand]  <= 255
+  cassert 0 <= x.[crand]  <= 255
 }
 
 let get_rand_0_2556 = fun(a:u8) {
-  ret a.::[rand]
+  ret a.[rand]
 }
 let a = (1,2,3,b=4)
-let x = a.::[rand]
+let x = a.[rand]
 
 cassert x==1 or x==2 or x==3 or x==4
 cassert x.b==4 when x==4
@@ -990,12 +1013,12 @@ loop {
   break unless a < 10 
 } // do{ ... }while(a<10)
 var c = 10
-defer_read assert b == 33    // behaves like a postcondition
-defer_read b = c
+assert b.[defer] == 33    // behaves like a postcondition
+b = c.[defer]
 assert b == 33
 c += 20
 c += 3
-defer_read f1 = ring(a, f4)
+f1 = ring(a, f4.[defer])
 f2 = ring(b, f1)
 f3 = ring(c, f2)
 f4 = ring(d, f3)
@@ -1006,7 +1029,7 @@ let counter_0  = counter#[0]  // current cycle
 let counter_1  = counter#[1]  // last cycle
 let counter_2  = counter#[2]  // last last cycle cycle 
 
-defer_read deferred = counter
+var deferred = counter.[defer]
 
 if counter < 100 {
   counter += 1
@@ -1022,12 +1045,20 @@ if counter == 10 {
   assert counter_m1 ==  9
 }
 var a = 1
+assert a == 1 and a.[defer] == 200
+
+a::[defer] = 100
+assert a == 1 and a.[defer] == 200
+
+a::[defer] = 200
+assert a == 1 and a.[defer] == 200
+var a = 1
 var x = 100
-defer_write x = a
+x::[defer] = a
 a = 200
 
 cassert x == 100
-defer_read assert x == 1
+assert x.[defer] == 1
 test "my test {}", 1 {
   assert true
 }
@@ -1090,17 +1121,17 @@ test "my test {}", 1 {
       res = a+b
     }
 let a_3   = {   3 }      // just scope, not a lambda. Scope is evaluate now
-let a_fun = fun() { 4 }  // local function, when just_4 is called 4 is returned
+let a_fun = fun() { 4 }  // when a_fun is called 4 is returned
 
 let fun3 = fun(){ 5 }    // public lambda that can be imported by other files
 
 let x = a_fun()          // OK, explicit call needed when no arguments
 
-assert a_3 equals 3
-assert :a_fun equals :fun()
+assert a_3() equals 3
+assert a_fun equals _:fun()
 assert a_fun() equals 4
 assert a_fun() == 4      // calls to eval the function
-var add:fun() = _
+var add:fun(...x) = _
 add = fun (...x) { x.0+x.1+x.2 }      // no IO specified
 add = fun (a,b,c){ a+b+c }            // constrain inputs to a,b,c
 add = fun (a,b,c){ a+b+c }            // same
@@ -1111,7 +1142,7 @@ add = fun (a,b:a,c:a){ a+b+c }        // constrain inputs to have same type
 add = fun <T>(a:T,b:T,c:T){ a+b+c }   // same
 
 x = 2
-var add2:fun2() = _
+var add2:fun2(a) = _
 add2 = fun[x    ](a){   x + a }    // explicit capture x
 add2 = fun[foo=x](a){ foo + a }    // capture x but rename to something else
 
@@ -1156,11 +1187,12 @@ var tup = (
   ,let f1 = fun(self) { ret 1 }
 )
 
-let f1 = fun (self){ ret 2 }
 let f2 = fun (self){ ret 3 }
 
-assert f1(tup)      == 2
-assert 4.f1()       == 2
+
+let xx = fun[tup] { tup.f1() } // OK, function restricted scope for f1
+assert xx()
+
 assert (4:tup).f1() == 1
 assert 4.f2()       == 3  // UFCS call
 assert tup.f1()     == 1
@@ -1222,28 +1254,28 @@ let x1,x2 = ret3()
 assert x1   == 3 and x2   == 4
 assert x1.a == 3 and x2.b == 4
 let p1 = proc(a)->(res) {
-  ::[my_zero_found] = ::[my_zero_found] or a == 0
+  self.[my_zero_found] or= (a == 0)
 
-   res = a + 1
+  res = a + 1
 }
 
 let p2 = p1      // copy
 let p3 = ref p1  // reference
 
 test "testing p1" {
-  assert p1.::[my_zero_found] == false
-  assert p2.::[my_zero_found] == false
+  assert p1.[my_zero_found] == false
+  assert p2.[my_zero_found] == false
 
   cassert p1(3) == 4
-  assert p1.::[my_zero_found] == false
+  assert p1.[my_zero_found] == false
 
   cassert p1(0) == 1
   assert p1.my_zero_found == true
 
   cassert p1(50) == 51
-  assert p1.::[my_zero_found] == true
-  assert p2.::[my_zero_found] == false
-  assert p3.::[my_zero_found] == true
+  assert p1.[my_zero_found] == true
+  assert p2.[my_zero_found] == false
+  assert p3.[my_zero_found] == true
 }
 let Nested_call = (
   ,var x = 1
@@ -1402,9 +1434,9 @@ unique if cond1 {
 } // no res in else
 
 // RTL equivalent
-var sel = (!cond1 and !cond2, cond1, cond2)@[]  // one hot encode
+var sel = (!cond1 and !cond2, cond1, cond2)@[..]  // one hot encode
 var res2= __hotmux(sel, a, b, c)
-assume !(cond1 and cond2)                       // one hot check
+assume !(cond1 and cond2)                         // one hot check
 
 lec res, res2
 var res = a
@@ -1418,7 +1450,7 @@ match x {
 let cond1 = x == c1
 let cond2 = x == c2
 let cond3 = x == c3
-var sel = (cond1, cond2, !cond1 and !cond2)@[]  // one hot encode (no cond3)
+var sel = (cond1, cond2, !cond1 and !cond2)@[..]  // one hot encode (no cond3)
 var res2= __hotmux(sel, b, c, d)
 assume  ( cond1 and !cond2 and !cond3)
      or (!cond1 and  cond2 and !cond3)
@@ -1479,7 +1511,7 @@ lec res, res2
     let case_1_counter = proc(runtime)->(res) {
 
       let r = (
-        ,reg total:u16           // r is reg, everything is reg
+        ,reg total:u16 = _          // r is reg, everything is reg
         ,increase = fun(a) {
           puts "hello"
 
@@ -1499,7 +1531,7 @@ lec res, res2
     let case_1_counter = proc(runtime)->(res) {
 
       let r = (
-        ,reg total:u16
+        ,reg total:u16 = _
         ,increase = fun(a) {
           puts "hello"
 
@@ -1640,19 +1672,25 @@ if cond {
 }
 
 // RTL equivalent
-a_qpin = __flop(reset=ref reset, clk=ref clk, initial=3, din=a.__last_value)
+a_qpin = __flop(reset=ref reset, clk=ref clk, initial=3, din=a.[defer])
 tmp    = __sum(A=(a_qpin, 1))
 a      = __mux(tmp[4], tmp@[0..=3], 0xF)    // saturate, not wrap
 
-b_qpin = __flop(reset=ref reset, clk=ref clk, initial=4, din=b.__last_value)
+b_qpin = __flop(reset=ref reset, clk=ref clk, initial=4, din=b.[defer])
 b      = __mux(cond, b_qpin, 5)
 
-c_cond_qpin = __flop(reset=ref reset, clk=ref clk, initial=0, din=c_cond.__last_value)
+c_cond_qpin = __flop(reset=ref reset, clk=ref clk, initial=0, din=c_cond.[defer])
 c_cond      = __sum(A=(b, 1))
-    defer_read var counter_next:u8:[wrap] = counter_q + 1
+    var counter_next:u8:[wrap] = _
 
-    let counter_q = __flop(din=counter_next, reset=my_rst, clock=my_clk
-                       ,enable=my_enable, posclk=true, initial=3, async=false)
+    let counter_q = __flop(din=counter_next.[defer] // defer to get last update
+                       ,reset=my_rst, clock=my_clk
+                       ,enable=my_enable            // enable control
+                       ,posclk=true
+                       ,initial=3                   // reset value
+                       ,async=false)
+
+    counter_next = counter_q + 1
     reg counter:u8:[reset=my_rst, clock=my_clk, posclk=true, async=false]= 3
     assert counter == counter#[0]  // counter still has the q value
 
@@ -1798,27 +1836,27 @@ reg my_reg::[retime=true,clock=my_clk] = 0
     }
 
     let block = proc(in1,in2)->(out) {
-      let x =# mul3(in1, in2)
-      out   =# add1(x,in3)
+      let x =#[..] mul3(in1, in2)
+      out   =#[..] add1(x,in3)
     }
-let x =# mul3(in1, in2)    // OK
-out  =# add1(x,in3)        // OK (in3 has 0 cycles, x has 3 cycles)
-out  =#[1..<4] add1(x,in3) // OK
+let x =#[..] mul3(in1, in2) // OK
+out  =#[..] add1(x,in3)     // OK (in3 has 0 cycles, x has 3 cycles)
+out  =#[1..<4] add1(x,in3)  // OK
     {
       let tmp = in1 * in2
     } #>[3] {
       out = tmp + in1
     }
-    x =# mul3(in1, in2)
+    x =#[..] mul3(in1, in2)
     y = in1#[-3]
-    out =# add1(a=x,b=y)    // connect in1 from -3 cycles
+    out =#[..] add1(a=x,b=y)    // connect in1 from -3 cycles
 let quick_log2 = fun(a) {
 
   cassert a>=1
 
   var i = 1
   var v = 0
-  while i < a::[bits] {
+  while i < a.[bits] {
     v |= i
     i *= 2
   }
@@ -1828,7 +1866,7 @@ let quick_log2 = fun(a) {
 
 let div=proc(a,b,id)->(res,id) {
   loop #>free_div_units[4] {
-    ret (a >> quick_log2(b), id) when b@+[] == 1
+    ret (a >> quick_log2(b), id) when b@+[..] == 1
     #>[5] {
       res = (a/b, id)
     }
@@ -1851,12 +1889,12 @@ let add=proc(a,b,id)->(res,id) {
 
 let alu = proc(a,b,op, id)->(res,id) {
 
-  ::[total_free_units] = 1 + mul::[pending_counter] + div::[free_div_units]
-  ::[div_units] = div::[free_div_units]
+  self.[total_free_units] = 1 + mul.[pending_counter] + div.[free_div_units]
+  self.[div_units] = div.[free_div_units]
 
   match op {
     == OP.div {
-      assert div::[free_div_units]>0
+      assert div.[free_div_units]>0
       res,id = div(a,b,id)
     }
     == OP.mul { res,id = mul(a,b,id) }
@@ -1867,7 +1905,7 @@ let alu = proc(a,b,op, id)->(res,id) {
 
 test "alu too many div" {
 
- cassert alu::[total_free_units] == (1+3+4)
+ cassert alu.[total_free_units] == (1+3+4)
 
  let r1 = alu(13,3, OP.div, 1)
  assert alu.div_units==3
@@ -1881,7 +1919,7 @@ test "alu too many div" {
  assert !r1? and !r2? and !r3? and !r4? // still invalid
 
  let r5 = alu(13,4, OP.mul,5)
- cassert mul::[pending_counter] == 2
+ cassert mul.[pending_counter] == 2
 }
     var b = "hello"
 
@@ -1917,13 +1955,12 @@ let f1 = fun() {
 
 assert t1    equals t2
 assert t1    equals v1
-assert f1    equals t1
 assert f1()  equals t1
-assert :f1  !equals t1
-assert :t1   equals t2
-let At = :int(33..)      // number bigger than 32
+assert _:f1 !equals t1
+assert _:t1  equals t2
+let At:int(33..) = _      // number bigger than 32
 let Bt=(
-  ,c:string
+  ,c:string = _
   ,d=100
   ,setter = fun(ref self, ...args) { self.c = args }
 )
@@ -1932,14 +1969,14 @@ var a:At=40
 var b:Bt="hello"
 puts "a:{} or {}", a, at // a:40 or 33
 puts "b:{}", b           // b:(c="hello",d=100)
-assert (a:int(max=33,min=0) does (a:int(20,5)))
-assert (a:int(max=33,min=0) !does (a:int(50,5)))
+assert (a:int:(max=33,min=0) does (a:int(20,5)))
+assert (a:int(0..=33)       !does (a:int(50,5)))
 
 assert  (a:string,b:int) does (a:"hello", b:33)
 assert ((b:int,a:string) !does (a:"hello", b:33)) // order maters in tuples
 
-assert  :fun(x,xxx2)->(y,z) does :fun(x     )->(y,z)
-assert (:fun(x     )->(y,z) !does :fun(x,xxx2)->(y,z))
+assert  _:fun(x,xxx2)->(y,z) does _:fun(x     )->(y,z)
+assert (_:fun(x     )->(y,z) !does _:fun(x,xxx2)->(y,z))
 let t1 = (a:string, b:int)
 let t2 = (b:int, a:string)
 
@@ -1953,13 +1990,12 @@ assert d.0 == c.1 and c.0 == d.1
 assert d.a == c.a and d.b == c.b
 let a = fun() { ret 1 }
 let b = fun() { ret 2 }
-assert a !equals :fun()    // 1 !equals :fun()
-assert :a equals :fun()    // :fun() { ret 1 } equals :fun()
+assert a equals _:fun()    // 1 !equals :fun()
 
-assert a != b              // 1 != 2
-assert a equals b          // 1 equals 2
+assert a() != b()              // 1 != 2
+assert a() equals b()          // 1 equals 2
 
-assert :a equals :fun()
+assert _:a equals _:fun()
 cassert (a:u32=0, b:bool) does (a:u32, c:string="hello", b=false)
 cassert (a:u32=0, c:string="hello", b=false) case (a = 0, b:bool) // b is nil
 
@@ -1985,7 +2021,7 @@ let X2 = (b:u32)
 
 let t1:X1 = (b=3)
 let t2:X2 = (b=3)
-assert (b=3) !is :X2     // same as (b=3) !is X2
+assert (b=3) !is X2  // same as (b=3) !is X2
 assert t1 equals t2
 assert t1 !is t2
 
@@ -1995,7 +2031,7 @@ assert t4  equals t1
 assert t4  is     t1
 assert t4 !is     t2
 
-let f2 = fun(x) where x is :X1 {
+let f2 = fun(x) where x is X1 {
   ret x.b + 1
 }
 let Rgb = (
@@ -2003,20 +2039,20 @@ let Rgb = (
   ,setter = proc(ref self, c) { self.c = c }
 )
 
-let Color = :Rgb:enum(
-  ,Yellow   = 0xffff00
-  ,Red      = 0xff0000
-  ,Green    = Rgb(0x00ff00) // alternative redundant syntax
-  ,Blue     = Rgb(0x0000ff)
+let Color:enum = (
+  ,Yellow:Rgb = 0xffff00
+  ,Red:Rgb    = 0xff0000
+  ,Green      = Rgb(0x00ff00) // alternative 
+  ,Blue       = Rgb(0x0000ff)
 )
 
 var y:Color = Color.Red
 if y == Color.Red {
   puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
 }
-let ADT = :enum(
-  ,Person = :(eats:string)
-  ,Robot  = :(charges_with:string)
+let ADT:enum = (
+  ,Person:(eats:string) = _
+  ,Robot:(charges_with:string) = _
 )
 
 let nourish = fun(x:ADT) {
@@ -2030,13 +2066,13 @@ test "my main" {
   (_:Person="pizza", _:Robot="electricity").each(nourish)
 }
 var val:u8 = 0   // designer constraints a to be between 0 and 255
-assert val.::[sbits] == 0
+assert val.[sbits] == 0
 
 val = 3          // val has 3 bits (0sb011 all the numbers are signed)
 
 
 val = 1          // max=1,min=1 sbits=2, ubits=1
-assert val.::[ubits] == 1 and val.::[min]==1 and val.::[max]==1 and val.::[sbits]==2
+assert val.[ubits] == 1 and val.[min]==1 and val.[max]==1 and val.[sbits]==2
 
 val::[wrap] = 0x1F0 // Drop bits from 0x1F0 to fit in constrained type
 assert val == 240 == 0xF0
@@ -2087,8 +2123,8 @@ if cmd? {
 }
 x:cmd.a:[wrap] = x  // use cmd.a type for x, and drop bits as needed
 y = cmd.b(y)        // typecast y to cmd.b type (this can add a mux)
-let e_type = :enum(str:String = "hello",num=22)
-let u_type = :union(str:String, num:int)         // No default value in union
+let e_type:enum  = (str:String = "hello",num=22)
+let u_type:union = [str:String, num:int]         // No default value in union
 
 var uu:u_type = (str="hello2")
 assert uu.str == "hello2"
@@ -2104,10 +2140,10 @@ match ee {
  == e_type.str { }
  == e_type.num { }
 }
-let Conv_t = :union(
+let Conv_t:union = [
   ,f1:u6
-  ,a=(msb:u1, mid:u4, lsb:s1)
-)
+  ,a=[msb:u1, mid:u4, lsb:s1]
+]
 
 var b:Conv_t = (f1=0b1_0010_1)
 cassert b.a.msb == 1
@@ -2150,24 +2186,24 @@ assert a['c'] equals u32
 assert   a has 'c'
 assert !(a has 'foo')
 
-assert a.__id == 'a'
-assert a.0.__id == ':0:b' and a.b.__id == ':0:b'
-assert a.1.__id == ':1:c' and a.c.__id == ':1:c'
+assert a.[id] == 'a'
+assert a.0.[id] == ':0:b' and a.b.[id] == ':0:b'
+assert a.1.[id] == ':1:c' and a.c.[id] == ':1:c'
 let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
-assert fu.__inp equals (a,b)
-assert fu.__out equals (c)
-assert fu.__where(a=200) and !fu.__where(a=1)
+assert fu.[inp] equals (a,b)
+assert fu.[out] equals (c)
+assert fu.[where](a=200) and !fu.[where](a=1)
 let x = fn(args)
 
-let x = for i in fn { last i(args) when (i.__inp does :args)
-                                    and (i.__out does :x   )
-                                    and (i.__where(args)   ) }
+let x = for i in fn { last i(args) when (i.[inp] does args)
+                                    and (i.[out] does x   )
+                                    and (i.[where](args)   ) }
 let randomize::[debug] = fun(ref self) {
   let rnd = import "prp/rnd"
   for i in ref self {
-    if i equals :int {
-      i = rnd.between(i.__max,i.__min)
-    }elif i equals :bool {
+    if i equals _:int {
+      i = rnd.between(i.[max],i.[min])
+    }elif i equals _:bool {
       i = rnd.boolean()
     }
   }
@@ -2251,11 +2287,13 @@ let Typ1 = (
   ,b:u32    = 0
 )
 
-let v:Typ1 = Typ1(a="foo", b=33)
-let w      = Typ1(a="foo", b=33)
-let x:Typ1 = (a="foo", b=33)      // OK, named construction
+let w      = Typ1(a="foo", b=33)  // OK
+let x:Typ1 = (a="foo", b=33)      // OK, same as before
+
+let v:Typ1 = Typ1(a="foo", b=33)  // OK, but redundant Typ1
 let y:Typ1 = ("foo", 33)          // OK, because no conflict by type
-var z:Typ1 = _                    // default values
+
+var z:Typ1 = _                    // OK, default field values
 cassert z.a == "none" and z.b == 0
 z = ("foo",33)
 
@@ -2266,8 +2304,8 @@ let Typ2 = (
   ,setter = proc(ref self, a, b) { self.a = a ; self.b = b }
 )
 
-var x:Typ2 = _
-var y:Typ2 = _
+var x:Typ2 = (a="x", b=0)
+var y:Typ2 = (a="x", b=0)
 
 x["hello"] = 44
 y = ("hello",44)
@@ -2278,11 +2316,11 @@ let My_2_elem = (
     self.data[x] = v
   } ++ proc(ref self, v:My_2_elem) {
     self.data = v.data
-  }
-  ,getter = fun(self) { ret self.data 
-  } ++ fun(self, i:uint) {
-    ret self.data[i]
-  }
+    } ++ proc(ref self) { // default _ assignment
+      self.data = _
+    }
+  ,getter = fun(self)         { ret self.data    } 
+         ++ fun(self, i:uint) { ret self.data[i] }
 )
 
 var v:My_2_elem = _
@@ -2317,9 +2355,9 @@ assert x.a2 == 103
 x.a2 = 5
 let showcase = (
   ,v:int = _
-  ,getter = fun(self)->(:string) where self.i>10 {
+  ,getter = fun(self)->(_:string) where self.i>10 {
     ret format("this is a big {} number", self.v)
-  } ++ fun(self)->(:int) {
+  } ++ fun(self)->(_:int) {
     ret self.v
   }
 )
@@ -2333,9 +2371,9 @@ let r3:string = s // OK
 cassert r3 == "this is a bit 100 number"
 let my_obj = (
   ,val:u32 = _
-  ,getter = fun(self)->(:string ){ ret string(self.val) }
-       ++ fun(self)->(:bool){ ret self.val != 0    }
-       ++ fun(self)->(:int    ){ ret self.val         }
+  ,getter = fun(self)->(_:string ){ ret string(self.val) }
+       ++ fun(self)->(_:bool){ ret self.val != 0    }
+       ++ fun(self)->(_:int    ){ ret self.val         }
 )
 let fint:int = _
 cassert fint == 0
@@ -2347,21 +2385,41 @@ let Tup = (
   ,v:string = _  // default to empty
   ,setter = fun(ref self) { // no args, default setter for _
      cassert self.v == ""
-     self.v = "empty"
+     self.v = "empty33"
   } ++ fun(ref self, v) {
      self.v = v
   }
 )
 
 var x:Tup = _
-cassert x.v == "empty"
+cassert x.v == "empty33"
 
 x = "Padua"
 cassert x.v == "Padua"
+
+var y = Tup()
+cassert y.v == "empty33"
+
+y = "ucsc"
+cassert y.v == "ucsc"
+var my_arr = (
+  ,vector:[16]u8 = 0
+  ,getter = fun(self, idx:u4) {
+     ret self.vector[idx]
+  }
+  ,setter = proc(ref self, idx:u4, val:u8) {
+     self.vector[idx] = val
+  } ++ proc(ref self) {
+     // default
+  }
+)
+
+my_arr[3] = 300           // calls setter
+cassert my_add[3] == 300  // calls getter
 let t=(
   ,v:string = _
   ,setter = proc(ref self) { self.v = a }
-  ,lt = fun(self,other)->(:bool){ self.v  < other.v }
+  ,lt = fun(self,other)->(_:bool){ self.v  < other.v }
   ,eq = fun(self,other)            { self.v == other.v } // infer ret
 )
 
@@ -2408,7 +2466,7 @@ let ext = if cfg.foo.bar == 3 {
 }else{
    bar
 }
-let __my_typed_cpp = :fun(a,b)->(e)
+let __my_typed_cpp:fun(a,b)->(e) = _
 let Animal = (
   ,legs:int = _
   ,name= "unnamed"
@@ -2462,7 +2520,7 @@ let do_animal_vec = fun(a_vec:[]Animal)->(r:[]Animal) {
 }
 
 var x = do_animal_vec(b_vec:[]Bird) // OK
-assert x does :[]Animal  // not :[]Bird
+assert x does _:[]Animal  // not :[]Bird
 let Age = (
   ,age:int = _
 )
@@ -2479,8 +2537,8 @@ var w:Weight = 100
 
 let f = fun(a,b) -> (r:int) { r = xx(a) + xx(b) }
 let f1 = fun<T:Some_type_class>(a:T,b:T) -> (r:int) { r = xx(a) + xx(b) }
-let fa_t = :fun(a:Animal)->()
-let fd_t = :fun(d:Dog)->()
+let fa_t:fun(a:Animal)->() = _
+let fd_t:fun(d:Dog)->() = _
 
 let call_animal = fun(a:Animal)->() {
    puts a.name // OK
@@ -2504,12 +2562,12 @@ let f_d = fun(fd:fd_t) {
 }
 f_d(call_animal) // OK, `fd_t does call_animal` is true
 f_d(call_dog)    // OK
-let m = fun(a:integer,...x:(:string,c:int,d), y:integer)->() { 
+let m = fun(a:integer,...x:(_:string,c:int,d), y:integer)->() { 
   assert a == 1
   assert x.0 == "here"
   assert x.1 == 2 == x.c
   assert y == 3
-  if d does :integer { // inferred type
+  if d does _:integer { // inferred type
     assert d == 33
   }else{
     assert d == "x"
@@ -2553,7 +2611,7 @@ var fun_list = fun(a,b){ ret a+b}
 fun_list ++= fun(a,b,c){ ret a+b+c }
 fun_list ++= fun(a,b,c,d){ ret a+b+c+d }
 
-assert fun_list.::[size]
+assert fun_list.[size] == 3    // 3 lambda entries in fun_list
 
 assert fun_list(1,2) == 3
 assert fun_list(1,2,4) == 7
@@ -2571,9 +2629,9 @@ var f1 = fun(a,b){ ret a+b+100 }
 assert f1(a=1,b=2) == 103
 assert f1(x=1,y=2) == 203
 assert f1(  1,  2) == 103  // first in list
-var fo = fun(a:int,b:string)->(:bool)  { ret true    }
-  fo ++= fun(a:int,b:int   )->(:bool)  { ret false   }
-  fo ++= fun(a:int,b:int   )->(:string){ ret "hello" }
+var fo = fun(a:int,b:string)->(_:bool)  { ret true    }
+  fo ++= fun(a:int,b:int   )->(_:bool)  { ret false   }
+  fo ++= fun(a:int,b:int   )->(_:string){ ret "hello" }
 
 let a = fo(3,hello)
 assert a == true
@@ -2670,7 +2728,7 @@ let exclude = fun(o,...a) {
 
 let Shape = (
   ,name:string = _
-  ,area:fun (self )->(:i32)  = _            // undefined 
+  ,area:fun (self )->(_:i32)  = _            // undefined 
   ,increase_size:proc(ref self, x:i12) = _  // undefined 
 
   ,setter=proc(ref self, name ) { self.name = name } // implemented, use =
@@ -2683,7 +2741,7 @@ let Circle = (
   ,setter        = proc(ref self) { Circle.setter(this, "circle") }
   ,increase_size = proc(ref self, x:i12) { self.rad *= x }
   ,rad:i32       = _
-  ,area = fun(self) -> (:i32) {
+  ,area = fun(self) -> (_:i32) {
      let pi = import("math").pi
      ret pi * self.rad * self.rad
   }
@@ -2764,7 +2822,7 @@ mem.latency = (1, 1, 1)
 mem.wensize = 1 // we bit (no write mask)
 mem.rdport  = (-1,1,0) // 0 WR, !=0 -> RD
 
-res =# __memory(mem)
+res =#[..] __memory(mem)
 
 q0 = res.0
 q1 = res.1
@@ -2786,11 +2844,11 @@ assert flatten((((1),2),3),4) == (1,2,3,4)
 var x1:[2]u3 = (0,1)
 assert x1[0] == 0 and x1[1] == 1
 
-var X = :int:enum(  // sequential enum, not one hot enum (explicit type)
-  ,t1
+var X:enum = [  
+  ,t1 = 0 // sequential enum, not one hot enum (explicit assign)
   ,t2
   ,t3
-)
+]
 
 var x2:[X]u3 = _
 x2[X.t1] = 0
@@ -2926,11 +2984,11 @@ let tup = (
     }
 var x = 3
 
-let f1 = fun[x]()->(:int){
+let f1 = fun[x]()->(_:int){
    assert x == 3
    ret 200
 }
-let f2 = fun()->(:int){
+let f2 = fun()->(_:int){
    var x = _    // OK, no captures 'x' variable
    x = 100
    ret x
@@ -2938,7 +2996,7 @@ let f2 = fun()->(:int){
 var x = 3
 var y = 10
 
-let fun2 = fun[y]()->(:int){
+let fun2 = fun[y]()->(_:int){
   var x  = 200
   ret y + x
 }
@@ -3057,22 +3115,22 @@ assert v@[3..=4] == 0b010 == v@[3,4]
 assert v@[4..=3 by -1] == 0b010
 assert v@[4,3] == v@[3,4] == 0b010
 
-let tmp1 = (v@[4], v@[3])@[]  // typecast from 
-let tmp2 = (v@[3], v@[4])@[]
+let tmp1 = (v@[4], v@[3])@[..]  // typecast from 
+let tmp2 = (v@[3], v@[4])@[..]
 let tmp3 = v@[3,4]
 assert tmp1 == 0b01
 assert tmp2 == 0b100
 assert tmp3 == 0b10
 
-let tmp1s = (v@sext[4], v@sext[3])@[]  // typecast from 
-let tmp2s = (v@sext[3], v@sext[4])@[]
+let tmp1s = (v@sext[4], v@sext[3])@[..]  // typecast from 
+let tmp2s = (v@sext[3], v@sext[4])@[..]
 let tmp3s = v@[4,3]
 assert tmp1s == 0b01
 assert tmp2s == 0b10
 assert tmp3s == 0b10
 
-let tmp1ss = (v@sext[4], v@sext[3])@sext[]  // typecast from 
-let tmp2ss = (v@sext[3], v@sext[4])@sext[]
+let tmp1ss = (v@sext[4], v@sext[3])@sext[..]  // typecast from 
+let tmp2ss = (v@sext[3], v@sext[4])@sext[..]
 let tmp3ss = v@sext[3,4]
 assert tmp1ss == 0b01  ==  1
 assert tmp2ss == 0sb10 == -2
@@ -3107,6 +3165,14 @@ if if x == 3 { true }else{ false } {
 }
 let v = (3)--3
 assert v == 6
+var a = 1
+var b = 2
+
+cassert a==1 and b==2
+b::[defer] = a
+cassert a==1 and b==2
+
+cassert b.[defer] == 1
 let AnObject = (
   ,v:i32 = _
 )
@@ -3178,7 +3244,7 @@ let telescope_unit = fun(a:u32,b:u32,start:bool) -> (res:u32) {
  // code executed 1 or 2 cycles after telescope_unit is called
  puts "{}-{}+1 is {}", a, b, res1.res
 // implicit start/end (starts when called)
-let telescope_unit3 = fun(a:u32,b:u32) -> (:u32) {
+let telescope_unit3 = fun(a:u32,b:u32) -> (_:u32) {
 
   {
     let tmp = a+1
@@ -3205,6 +3271,10 @@ while some_condition {
     `foo x` = x + z + 2
     x = 3
     a = (b=2, x=x+1, y=self.b+1)
+    x = tup[1].foo[xx]
+    tup[4].foo[yy] = y
+
+    z = (foo=(bar=1))
     var a = (b=2, let x=1+1)
     var a = (2, 1+1)
     let x = a ++ (c=3) ++ 1
@@ -3212,28 +3282,28 @@ while some_condition {
     x = (x::[y=7]=2, 4)
     let x = a::[f==3,b] + 1
     var x = (let z=x::[y], 4::[foo])
+let d::[debug] = 3
+
+var a = d + 100
+
+cassert a.[debug]  // debug is sticky
 let foo::[attr1=2] = 3
 
 var foo2 = foo
-cassert foo2.::[attr1] == 2
+cassert foo2.[attr1] == 2
 
-let foo3 = foo@[]
-cassert foo3 !has ::[attr1]
+let foo3 = foo@[..]
+cassert foo3 !has _::[attr1]
 
 var xx = 4
 xx::[attr2=5] = 1
 
 let xx2 = xx
-cassert xx2.::[attr2] == 5
-cassert xx2 has ::[attr2]
+cassert xx2.[attr2] == 5
+cassert xx2 has _::[attr2]
 
 let xx3 = xx + 0
-cassert xx3 !has ::[attr2]
-let d::[debug] = 3
-
-var a = d + 100
-
-cassert a.::[debug]  // debug is sticky
+cassert xx3 !has _::[attr2]
     foo@[1,2] = xx
     yy = foo@[5] + xx@[1..<4]
     let t1 = foo@sext[..=4]
@@ -3249,13 +3319,56 @@ cassert a.::[debug]  // debug is sticky
     a = b or_else c or_else (d and e)
 let tup=(1,2,3)
 let ran=1..<5
-let enu=::enum(a,b=(x,y),c)
+let enu:enum = [a,b=(x,y),c]
 
 cassert 2 in tup
 cassert 3 in ran
 cassert enu.b.x in enu.b
     c = a in b
     d = a !in b
+    var total=3
+    if var x=3; x<3 {
+      total+=x
+    }elif var z=3; z<4 {
+      total+=x+z
+    }
+    var total=3
+    {
+      var x=3
+      if x<3 {
+        total+=x
+      }else{
+        var z=3
+        if z<4 {
+          total+=x+z
+        }
+      }
+    }
+    if var x=a ; x<3 {
+      t = 100+x               // z not in scope
+    }elif var z = x+c ; z>5 {
+      t = 200+z+x             // z and x in scope
+    }
+
+
+
+
+
+    unique if a<3 {
+      y = 10
+    }elif a>40 {  // not allowed to do 'elif var z=40; a>z'
+      y = 20+x
+    }
+    let tmp1 = a<3
+    let tmp2 = a>40
+    let tmp3 = 1<<(tmp1,tmp2)
+    assume tmp3@+[..]<=1        // at most one bit set
+
+    if tmp1 {
+      y = 10
+    }elif tmp2 {
+      y = 20+x
+    }
     var z = 0
     match x {
      == 3 { z = 1 }
@@ -3270,7 +3383,7 @@ cassert enu.b.x in enu.b
       cassert x==3
     }
     while var z=1; x {
-      x -= 1
+      x -= z
     }
     var z=0
     match var x=2 ; z+x {
@@ -3278,3 +3391,50 @@ cassert enu.b.x in enu.b
       != 7 { cassert true  }
       else { cassert false }
     }
+    loop {
+      i += 1
+      break when i==3
+    }
+    while var i=0 ; i!=3 {
+      i += 1
+    }
+    for i,index,key in tup {
+      mycall(i,index,key)
+    }
+    for i,index,key in ref tup {
+      mycall(i,index,key)
+      i = 0
+    }
+let prp = import "prp"
+cassert prp.plus(1,2,3) == 6
+let plus = fun(...a:int)->(_:int) {
+  var r = 0
+  for e in a {
+    r += e
+  }
+  ret r
+}
+let x = (1,2,23)
+
+cassert p.len(x) == 3
+let len = fun(x) { ret x.[size] }
+let x = (1,2,3)
+
+cassert x.map(fun(i){ i+1 }) == (2,3,4)
+let map = fun<T>(f:fun(a:T),...x:[]T) {
+  ret for e in x { f(e) }
+}
+cassert (1,2,3).filter(fun(i){ i!=2 }) == (1,3)
+let map = fun<T>(f:fun(a:T),...x:[]T) {
+  ret for e in x { if f(e) { cont x } }
+}
+cassrt (1,2,3).reduce(prp.plus) == 6
+let reduce = fun(op:fun<T>(a:T,b:T)->(_:T), ...x) {
+  ret x when x.[size] <= 1
+
+  var res = x[0]
+  for i in x[1..] {
+    res = op(res, i)
+  }
+  ret res
+}

@@ -40,7 +40,6 @@ module.exports = grammar({
       ,'range_type'
       ,'function_type'
       ,'function_call_type'
-      ,'mixin_type'
       ,'mixin_type_sub'
       ,'expression_type'
       ,'type'
@@ -201,11 +200,8 @@ module.exports = grammar({
       )
     )
     ,pipestage_scope_statement: $ => seq(
-      '#>', optional($.identifier), optional($.pipestage_attributes), field('scope', $.scope_statement)
+      '#>', optional($.identifier), optional(choice($.tuple,$.tuple_sq)), field('scope', $.scope_statement)
     )
-    ,pipestage_attributes: $ => prec.left(seq(
-      '[', $.attr_list, ']'
-    ))
     ,match_expression: $ => seq(
       'match'
       ,field('stmt_list', $.stmt_list)
@@ -255,9 +251,10 @@ module.exports = grammar({
     ))
 
     // Tuple
-    ,tuple: $ => prec.left(seq(
-      '(', optional($.tuple_list), ')'
-    ))
+    ,tuple: $ => seq('(', optional($.tuple_list), ')')
+
+    ,tuple_sq: $ => seq('[', optional($.tuple_list), ']')
+
     ,tuple_list: $ => prec.left('tuple_list', seq(
       repeat(',')
       ,field('item', $._tuple_item)
@@ -271,29 +268,12 @@ module.exports = grammar({
       //,$.simple_declaration
       //,$.function_type
     ))
-    ,attributes: $ => choice(
-      field('attr', $.attribute_entry)
-      ,field('enum', $.attribute_enum)
-    )
-    ,attribute_entry: $ => seq( ':[', $.attr_list, ']' )
-    ,attribute_enum: $ => seq( ':enum', $.tuple)
-
-    ,attr_list: $ => prec.left(seq(
-      repeat(',')
-      ,field('item', $._attr_item)
-      ,repeat(seq(repeat1(','), field('item', $._attr_item)))
-      ,repeat(',')
-    ))
-    ,_attr_item: $ => choice(
-      $.expression_list
-      ,$.simple_assignment
-      ,$.simple_declaration
-    )
+    ,attributes: $ => field('attr', seq(':' , choice($.tuple_sq,$.tuple)))
 
     // Assignment/Declaration
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
-      ,field('lvalue', choice($.type_cast, $.type_specification))
+      ,field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
@@ -303,7 +283,7 @@ module.exports = grammar({
     )))
     ,simple_declaration: $ => prec.right(seq(
       field('decl',$.var_or_let_or_reg)
-      ,field('lvalue', $.type_specification)
+      ,field('lvalue', choice($.identifier,$.type_specification))
     ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
@@ -315,7 +295,7 @@ module.exports = grammar({
         ,$.simple_function_call
       )
     )))
-    ,cycle_select_or_pound: $=> choice($.cycle_select, '#')
+    ,cycle_select_or_pound: $=> choice($.cycle_select)
     ,var_or_let_or_reg: $ => choice('var','let','reg')
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
@@ -384,7 +364,7 @@ module.exports = grammar({
       ,':'
       ,choice(
         seq(
-          field('type', $._type,)
+          field('type', $._type)
           ,field('attribute', optional($.attributes))
         )
         ,field('attribute', $.attributes)
@@ -456,7 +436,6 @@ module.exports = grammar({
       field('item', $._restricted_expression)
       ,choice(
         repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
-        ,prec.left('dot_sub', seq('.', field('attr', $.attribute_identifier)))
       )
     ))
     ,function_call: $ => prec.left('function_call', seq(
@@ -472,6 +451,7 @@ module.exports = grammar({
       ,$.function_call
       ,$.function_definition
       ,$.tuple
+      ,$.tuple_sq
       ,$.optional_expression
       ,$.for_expression
       ,$.if_expression
@@ -486,12 +466,13 @@ module.exports = grammar({
     // Selects
     ,select: $ => seq(
       '['
-      ,optional($.select_options)
+      ,$.select_options
       ,']'
     )
     ,select_options: $=> seq(
       choice(
         field('list', $.expression_list)
+        ,field('open_range', seq('..'))
         ,field('open_range', seq($._expression, '..'))
         ,field('from_zero', seq(choice('..=', '..<'), $._expression))
       )
@@ -506,8 +487,13 @@ module.exports = grammar({
     // Types
     ,type_cast: $ => prec.left('type_cast', seq(
       ':'
-      ,field('type', optional($._type))
-      ,field('attribute', optional($.attributes))
+      ,choice(
+        seq(
+          field('type', $._type)
+          ,field('attribute', optional($.attributes))
+        )
+        ,field('attribute', $.attributes)
+      )
     ))
     ,trivial_identifier_list: $ => seq(
       repeat(',')
@@ -528,6 +514,7 @@ module.exports = grammar({
       //       `:  some_type[2]  ` means an array of `some_type` with a size of 2
       //       `:  some_type.2   ` means the type of the element at position 2 of `some_type`
       ,$.tuple
+      ,$.tuple_sq
       ,$.for_expression
       ,$.if_expression
       ,$.match_expression
@@ -536,7 +523,6 @@ module.exports = grammar({
       //       `a: b:int.c`
       ,$.dot_expression_type
       ,$.function_call_type
-      ,$.mixin_type
     ))
     ,dot_expression_type: $ => prec.right('dot_type', seq(
       field('item', $.expression_type)
@@ -547,12 +533,8 @@ module.exports = grammar({
       //field('function', $.expression_type)
       ,field('argument', $.tuple)
     ))
-    ,mixin_type: $ => prec.left('mixin_type', seq(
-      $._type
-      ,repeat1(prec.left('mixin_type_sub', seq('++', $._type)))
-    ))
     ,array_type: $ => prec.left('array_type', seq(
-      field('length', $.select)
+      field('length', $.tuple_sq)
       ,optional(field('base', choice(
         $.primitive_type
         ,$.array_type
@@ -564,13 +546,14 @@ module.exports = grammar({
       field('type', choice('fun', 'proc'))
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.arg_list))
-      ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
+      ,field('output', optseq('->', $.arg_list))
     ))
     ,primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
       ,$.sized_integer_type
       ,$.bounded_integer_type
       ,$.range_type
+      //,$.enum_type
       ,$.string_type
       ,$.boolean_type
       ,$.type_type
@@ -587,7 +570,8 @@ module.exports = grammar({
       ,field('constrained', seq('(', $.select_options, ')'))
     )
     ,sized_integer_type: $ => token(/[siu]\d+/)
-    ,range_type: $ => prec.left('range_type', seq('range', '(', $.select_options, ')'))
+    ,range_type: $ => seq('range', '(', $.select_options, ')')
+    //,enum_type: $ => seq('enum', $.tuple)
     ,string_type: $ => token('string')
     ,boolean_type: $ => token('boolean')
     ,type_type: $ => token('type')
@@ -607,8 +591,6 @@ module.exports = grammar({
         )
       )
     )
-    //,dollar_identifier: $ => token(/\$[\p{L}_][\p{L}\p{Nd}_$]*/)
-    ,attribute_identifier: $ => seq('.[', $.identifier, ']')
 
     // Constants
     ,constant: $ => choice(

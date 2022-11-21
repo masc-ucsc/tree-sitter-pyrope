@@ -56,6 +56,10 @@
         "named": true
       },
       {
+        "type": "tuple_sq",
+        "named": true
+      },
+      {
         "type": "type_specification",
         "named": true
       },
@@ -174,7 +178,7 @@
         "required": true,
         "types": [
           {
-            "type": "select",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -252,94 +256,23 @@
     }
   },
   {
-    "type": "attr_list",
-    "named": true,
-    "fields": {
-      "item": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          },
-          {
-            "type": "simple_assignment",
-            "named": true
-          },
-          {
-            "type": "simple_declaration",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "attribute_entry",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "attr_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "attribute_enum",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "tuple",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "attribute_identifier",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "attributes",
     "named": true,
     "fields": {
       "attr": {
-        "multiple": false,
-        "required": false,
+        "multiple": true,
+        "required": true,
         "types": [
           {
-            "type": "attribute_entry",
+            "type": ":",
+            "named": false
+          },
+          {
+            "type": "tuple",
             "named": true
-          }
-        ]
-      },
-      "enum": {
-        "multiple": false,
-        "required": false,
-        "types": [
+          },
           {
-            "type": "attribute_enum",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -640,6 +573,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -777,7 +714,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "cycle_select",
@@ -841,6 +778,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -875,16 +816,6 @@
     "type": "dot_expression",
     "named": true,
     "fields": {
-      "attr": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "attribute_identifier",
-            "named": true
-          }
-        ]
-      },
       "item": {
         "multiple": true,
         "required": true,
@@ -935,6 +866,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1036,15 +971,15 @@
           "named": true
         },
         {
-          "type": "mixin_type",
-          "named": true
-        },
-        {
           "type": "scope_expression",
           "named": true
         },
         {
           "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "tuple_sq",
           "named": true
         }
       ]
@@ -1345,10 +1280,6 @@
           {
             "type": "arg_list",
             "named": true
-          },
-          {
-            "type": "type_or_identifier",
-            "named": true
           }
         ]
       },
@@ -1603,6 +1534,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -1616,33 +1551,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "mixin_type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "array_type",
-          "named": true
-        },
-        {
-          "type": "expression_type",
-          "named": true
-        },
-        {
-          "type": "function_type",
-          "named": true
-        },
-        {
-          "type": "primitive_type",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1672,21 +1580,6 @@
     }
   },
   {
-    "type": "pipestage_attributes",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "attr_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "pipestage_scope_statement",
     "named": true,
     "fields": {
@@ -1710,7 +1603,11 @@
           "named": true
         },
         {
-          "type": "pipestage_attributes",
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "tuple_sq",
           "named": true
         }
       ]
@@ -1855,7 +1752,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "select_options",
@@ -1964,6 +1861,10 @@
         "required": true,
         "types": [
           {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "type_cast",
             "named": true
           },
@@ -1993,32 +1894,6 @@
           },
           {
             "type": "simple_function_call",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "simple_declaration",
-    "named": true,
-    "fields": {
-      "decl": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "lvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_specification",
             "named": true
           }
         ]
@@ -2222,6 +2097,21 @@
     }
   },
   {
+    "type": "tuple_sq",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "tuple_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "type_cast",
     "named": true,
     "fields": {
@@ -2339,6 +2229,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -2632,23 +2526,11 @@
     "named": false
   },
   {
-    "type": ".[",
-    "named": false
-  },
-  {
     "type": "/",
     "named": false
   },
   {
     "type": ":",
-    "named": false
-  },
-  {
-    "type": ":[",
-    "named": false
-  },
-  {
-    "type": ":enum",
     "named": false
   },
   {
