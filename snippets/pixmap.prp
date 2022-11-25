@@ -1,6 +1,6 @@
 
-type colour = (
-  ,let set = fun (r:u8,g:u8,b:u8)->(self) {
+let Colour = (
+  ,let setter = fun (ref self, r:u8,g:u8,b:u8) {
     self.r = r
     self.g = g
     self.b = b
@@ -13,32 +13,39 @@ let blue:Colour  = (  0,  0,255)
 let black:Colour = (  0,  0,  0)
 let white:Colour = (255,255,255)
 
-type Pixmap = (
-  ,var data = 3   // No type
-
-  ,let set = fun (width, height, c:Colour)->(self) {
+let Pixmap = (
+  ,let setter = proc(ref self, width, height, c:Colour) {
     let tmp:[width][height] = c
     self.data = tmp
+  } ++ proc (ref self,x,y,c:Colour)->(self) {
+    self.data[x][y] = c
   }
 
-  ,let fill = fun (self,c:Colour)->(self) {
-    if false { // one way to do it
-      self.data = for i in self.data {
-        c
-      }
-    }else{
-      for i,index in self.data {
-        self.data[index] = c
-      }
+  ,let fill = fun (ref self, c:Colour) {
+    // self.data = for i in self.data { c }
+    for i,index in self.data {
+      self.data[index] = c
     }
   }
 
-  ,let get_pixel = fun (self,x,y) {
+  ,let getter = fun (self,x,y) {
     ret self.data[x][y]
   }
 
-  ,let set_pixel = fun (self,x,y,c:Colour)->(self) {
-    self.data[x][y] = c
-  }
 )
 
+test "pixmap test" {
+
+  var p:Pixmap = (width=32,height=10,c=red)
+
+  cassert p[1][2] == red
+
+  p[1][2] = green
+  cassert p[1][2] == green
+  cassert p[2][2] == red
+
+  p.fill(blue)
+
+  cassert p[1][2] == blue
+  cassert p[2][2] == blue
+}

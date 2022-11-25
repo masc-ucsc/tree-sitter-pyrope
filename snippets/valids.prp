@@ -3,22 +3,25 @@
 // There are no pointers in Pyrope. Instead the data is left to behave like
 // without the optional, but there is a new "valid" field associated.
 
-v1:u32
-v2:u32?
+var v1:u32 = 0
+var v2:u32 = _
 
-$(comptime) assert v1 == 0 and v2 == 0 // data still same as usual
+cassert v1 == 0 and v2 == 0 // data still same as usual
 
-$(comptime) assert v1?            // compile error, no optional type
-$(comptime) assert not v2?
+cassert v1?
+cassert not v2?
 
 v1 = 0sb?                      // OK, poison data
 v2 = 0sb?                      // OK, poison data, and unset valid
 
-$(comptime) assert v1 != 0        // usual verilog x logic
-$(comptime) assert v2 != 0        // usual verilog x logic
+cassert v1?
+cassert v2?
 
-res1 <- v1 + 0              // OK, just unknown result
-res2 <- v2 + 0              // OK, just unknown result
+cassert v1 != 0        // usual verilog x logic
+cassert v2 != 0        // usual verilog x logic
+
+let res1 = v1 + 0              // OK, just unknown result
+let res2 = v2 + 0              // OK, just unknown result
 
 // nil in pyrope is a bit more strict and notifies on any usage error. nil
 // poisons the data. Any op with it is a compile or runtime error
@@ -26,49 +29,51 @@ res2 <- v2 + 0              // OK, just unknown result
 v1 = nil                       // OK, poison data
 v2 = nil                       // OK, poison data, and unset valid
 
-res3 <- v1 + 0              // compile or runtime error
-res4 <- v2 + 0              // compile or runtime error
+cassert not v1?
+cassert not v2?
 
-$(comptime) assert v1 == nil       // compile error, can not do ops with nil
-$(comptime) assert v2 == nil       // compile error, can not do ops with nil
+let res3 = v1 + 0              // compile or runtime error
+let res4 = v2 + 0              // compile or runtime error
+
+cassert v1 == nil       // compile error, can not do ops with nil
+cassert v2 == nil       // compile error, can not do ops with nil
 
 v2 = 100
-$(comptime) assert v2? and (v2 + 1) == 101
+cassert v2? and (v2 + 1) == 101
 
 v2? = false                    // keep data, just toggle valid
-$(comptime) assert not v2? and v2 == 101
+cassert not v2? and v2 == 101
 
 //--------------
 // optional for tuples
 
-Complex <- (
-  ,v1:string
-  ,v2:string
+let Complex = (
+  ,v1:string = _
+  ,v2:string = _
 
-  ,set = proc (self,v)->(self) {
+  ,setter = proc (ref self,v) {
      self.v1 = v
      self.v2 = v
   }
 )
 
-x1:Complex
-x2:Complex?
+var x1:Complex = ""
+var x2:Complex = _
 
-$(comptime) assert x1.v1 == "" and x1.v2 == ""
-$(comptime) assert not x2?  and x2.v1 == "" and x2.v2 == ""
+cassert x1.v1 == "" and x1.v2 == ""
+cassert not x2? and x2.v1 == "" and x2.v2 == ""
 
-$(comptime) assert x2?.v1 == "" and x2?.v1 != ""  // any comparison is false
+cassert x2?.v1 == "" and x2?.v1 != ""  // any comparison is false
 
 // When x2? is false, any x2?.foo returns 0sb? with the associated x rules
 
 x2.v2 = "hello" // direct access still OK
 
-$(comptime) assert not x2? and x2.v1 == "" and x2.v2 == "hello"
+cassert not x2? and x2.v2? and x2.v1 == "" and x2.v2 == "hello"
 
 x2 = "world"
 
-$(comptime) assert x2? and x2?.v1 == "world" and x2.v1 == "world"
-
+cassert x2? and x2?.v1 == "world" and x2.v1 == "world"
 
 //--------------
 // custom valid code
@@ -76,25 +81,24 @@ $(comptime) assert x2? and x2?.v1 == "world" and x2.v1 == "world"
 Custom_valid <- (
   ,v:string
 
-  ,set = proc (self,v)->(self) {
+  ,setter = proc (ref self,v) {
      self.v = v
-     self.my_valid = true
-  }
-
-  ,valid = fun  (self)->(:boolean){ self.v != 0 and self.my_valid }
-  ,valid = proc (self,v)->(self){ self.my_valid = v }
+     self.[valid] = v != "" and v != "potato"
+   } ++ proc(ref self) {
+     self.v = ""
+     self.[valid] = true
+   }
 )
 
-x:Custom_valid  // no need to say x:Custom_valid?, but legal
-
-$(comptime) assert not x?
+let x:Custom_valid = _  // calls proc(ref self) which sets to valid
+cassert x?
 
 x.v = "bypassed"
-$(comptime) assert not x? and x.v == "bypassed"
+cassert x? and x.v == "bypassed"
 
-x = "direct"
-$(comptime) assert x? and x.v == "direct" and x == Custom_valid("direct")
+x = "potato"
+cassert not x? and x.v == "potato"
 
-x? = false
-$(comptime) assert not x? and x.v == "direct" and x != Custom_valid("direct")
+x? = ""
+cassert not x? and x.v == "direct"
 

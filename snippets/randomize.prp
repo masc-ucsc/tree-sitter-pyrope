@@ -1,14 +1,12 @@
 
-debug let randomize = proc ()->(self) {
-  rnd = import "prp/rnd"
-  for i,index in self {
-    if i equals :int {
-      self[index] = rnd.between(i.__max,i.__min)
-    }elif i equals :boolean {
-      self[index] = rnd.boolean()
+let randomize = proc(ref self) {
+  for e in ref self {
+    if e is string {
+      e = "bye"
+    }else{
+      e = e.[rand]
     }
   }
-  ret self
 }
 
 x = (a=1,b=true,c="hello")
@@ -17,4 +15,5 @@ y = x.randomize()
 assert x.a==1 and x.b==true and x.c=="hello"
 cover  y.a!=1
 cover  y.b!=true
-assert y.c=="hello"
+cover  y.c=="hello"
+cover  y.c=="bye"

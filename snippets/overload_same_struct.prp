@@ -1,27 +1,26 @@
 
 
-A <- (
+var A = (
   ,x:string
-  ,set = fun (x)->(self) {
+  ,setter = proc(ref self, x) {
     self.x = x + "A"
   }
 )
 
-B_same_as_A <- (
+let B_same_as_A = (
   ,x:string
-  ,set = fun (self,x)->(self) {
+  ,setter = proc(self,x) {
     self.x = x + "B"
   }
 )
 
-$(comptime)
-assert A equals B_same_as_A   // same fields in tuple, and each field has same type
+cassert A equals B_same_as_A   // same fields in tuple, and each field has same type
 
-funA := fun(x:A) { ret x.x }
+var funA = fun(x:A) { ret x.x }
 
-$(comptime) assert funA(A("aa")) == "aaA"
-$(comptime) assert funA(B("bb")) == "bbB"
+cassert funA(A("aa")) == "aaA"
+cassert funA(B("bb")) == "bbB"
 
 funA ++= fun (x:B) { assert false }
 
-$(comptime) assert funA(B("bb")) == "bbB"  // funA is earlier in the list and satisfies the overloading
+cassert funA(B("bb")) == "bbB"  // funA is earlier in the list and satisfies the overloading

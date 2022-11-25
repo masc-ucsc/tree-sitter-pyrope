@@ -1,16 +1,17 @@
 
-type Length = (
-  ,pub var set = fun(str:String) ->(self) {
+let Length = (
+  ,setter = fun(ref self, str:string) {
     self.value = match str[0] {
-       == 'K' {      1024*to_i(str[1..]) }
-       == 'M' { 1024*1024*to_i(str[1..]) }
-       else   {           to_i(str)      }
+       == 'K' {      1024*int(str[1..]) }
+       == 'M' { 1024*1024*int(str[1..]) }
+       else   {           int(str)      }
       }
   }
-  ,pub var get = fun() {
+  ,getter = fun(self) {
     ret self.value
   }
 )
 
 var xx:Length = "3K"
+cassert xx == 3*1024 == 3K
 
