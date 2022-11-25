@@ -1,8 +1,8 @@
 
 _find_one = (
 
-  ,set = fun (x)->(self) {
-    self = pick(x)
+  ,setter = fun (x) {
+    ret pick(x)
   }
 
   ,pick = fun (x:u4)->(pos:u2,found:boolean) {
@@ -13,45 +13,39 @@ _find_one = (
       == 0b0001 { (0  ,true ) }
       == 0b0000 { (0b?,false) }
     }
-  }
-  ,pick = fun (x:u3)->(pos:u2,found:boolean) {
+  } ++ fun (x:u3)->(pos:u2,found:boolean) {
     match x {
       == 0b1?? { ret (2,true) }
       == 0b01? { ret (1,true) }
       == 0b001 { ret (0,true) }
       == 0b000 { ret (0b?,false) }
     }
-  }
-  ,pick = fun (x:u2)->(pos:u2,found:boolean) {
+  } ++ fun (x:u2)->(pos:u2,found:boolean) {
     ret match x {
       == 0b1? { (1  ,true ) }
       == 0b01 { (0  ,true ) }
       == 0b00 { (0b?,false) }
     }
-  }
-  ,pick = fun (x:u1)->(pos:u1,found:boolean) {
+  } ++ fun (x:u1)->(pos:u1,found:boolean) {
     ret (0, x)
-  }
-
-  ,pick = fun (x)->(pos,found:boolean) {
-    list <- for i in 0..<x.__ubits by 4 {
+  } ++ fun (x)->(pos,found:boolean) {
+    let list = for i in 0..<x.__ubits by 4 {
       cont pick(x[i..+4])
     }
 
     for e,index in list {
-      continue unless e.found
-      ret (pos=(i*4) | e.pos, found=true)
+      ret (pos=(i*4) | e.pos, found=true) when e.found
     }
 
     ret (pos=0,found=false)
   }
 )
 
-freelist := (
+let freelist = (
   ,top
   ,empty:bool
 
-  ,pop = fun (self)->(self) {
+  ,pop = proc(ref self)->(self) {
     f = _find_one(self.bitmask)
 
     self.empty = !f.found
@@ -60,7 +54,7 @@ freelist := (
     self.bitmask@[f.pos] = false
   }
 
-  ,push = fun (self, free)->(self) {
+  ,push = proc(ref self, free)->(self) {
     assert !self.bitmask@[free]
 
     if empty {

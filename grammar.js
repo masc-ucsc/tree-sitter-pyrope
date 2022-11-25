@@ -200,7 +200,10 @@ module.exports = grammar({
       )
     )
     ,pipestage_scope_statement: $ => seq(
-      '#>', optional($.identifier), optional(choice($.tuple,$.tuple_sq)), field('scope', $.scope_statement)
+      '#>'
+      ,field('fsm', optional(seq($.identifier, $.select)))
+      ,optional(choice($.tuple,$.tuple_sq))
+      ,field('scope', $.scope_statement)
     )
     ,match_expression: $ => seq(
       'match'
@@ -296,7 +299,10 @@ module.exports = grammar({
       )
     )))
     ,cycle_select_or_pound: $=> choice($.cycle_select)
-    ,var_or_let_or_reg: $ => choice('var','let','reg')
+    ,var_or_let_or_reg: $ => choice(
+      seq('private', choice('var','let','reg'))
+      ,choice('var','let','reg')
+    )
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))

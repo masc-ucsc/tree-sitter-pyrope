@@ -1,54 +1,56 @@
 
 // Fetch Target Queue
 
-ftq = punch "ftq"  // punch does not create a new instance
+var ftq_tage = (
+  ,ftq       = import "ftq.ftq"
+  ,ubtb      = import "btb"
+  ,fast_tage = import "tage.fast"
+  ,slow_tage = import "tage.slow"
 
-pc:reg
-ftq_head:reg(ftq.size)  // same type as ftq.size
+  ,reg pc       = 0x1000
+  ,reg ftq_head:int(0..<ftq.size):[wrap] = 0
 
-// Branch miss, the clear FTQ and start again
-if flush_pc {
-  pc = flush_pc
-  ftq.flush()
-  fast_tage.flush()
-  sast_tage.flush()
-}
-
-// Do uBTB prediction (pure combinational)
-ubtb <- import "btb"
-
-ubtb_pc <- ubtb.predict(pc)
-if ubtb_pc? and !ftq.full {
-  ftq.insert(ftq_head, ubtb_pc)
-  ftq_head += 1
-}
-
-// Fast TAGE+BTB predictor (1 or 2 predictions per cycle)
-ftage_pc   <-# fast_tage.predict(pc)
-// repipe ftage_ftq =  (head=ftq_head , pc=stage_pc)
-
-if ftage_pc? {
-  ftq.fix(ftage_ftq.head)
-  for f in ftage_pc {
-    ftq.append(ftage_ftq.head+i, ftage_pc[i])
+  ,flush_pc = proc(ref self, flush_pc) {
+    pc = flush_pc
+    ftq.flush()
+    fast_tage.flush()
+    slow_tage.flush()
   }
-  ftq_head = ftage_ftq.head + ftage_ftq.head.size
 
-  fast_tage.flush()
-}
+  ,cycle = proc() {
 
-// Slow TAGE+BTB predictor (1 predictions per cycle)
-stage_pc    <-# slow_tage.predict(pc)
-//repipe stage_ftq  = (head=ftq_head , pc=stage_pc)
+    let ubtb_pc = ubtb.predict(pc)
+    if ubtb_pc? and !ftq.full {
+      ftq.insert(self.ftq_head, ubtb_pc)
+      self.ftq_head += 1
+    }
 
-if stage_pc? {
-  ftq.fix(stage_ftq.head)
-  ftq.append(stage_ftq.head+i, ftage_pc[i])
-  ftq_head = stage_ftq.head + 1
+    // Fast TAGE+BTB predictor (1 or 2 predictions per cycle)
+    let ftage_pc  =#[1..] fast_tage.predict(pc)
+    if ftage_pc? {
+      ftq.fix(ftage_ftq.head)
+      for f in ftage_pc {
+        ftq.append(ftage_ftq.head+i, ftage_pc[i])
+      }
+      self.ftq_head = ftage_ftq.head + ftage_ftq.head.size
 
-  fast_tage.flush()
-  slow_tage.flush()
-}
+      fast_tage.flush()
+    }
 
-pc = ftq.head_pc
+    // Slow TAGE+BTB predictor (1 predictions per cycle)
+    stage_pc =#[2..] slow_tage.predict(pc)
+    if stage_pc? {
+      ftq.fix(stage_ftq.head)
+      ftq.append(stage_ftq.head+i, ftage_pc[i])
+      self.ftq_head = stage_ftq.head + 1
+
+      fast_tage.flush()
+      slow_tage.flush()
+    }
+
+    self.pc = ftq.head_pc
+  }
+)
+
+
 

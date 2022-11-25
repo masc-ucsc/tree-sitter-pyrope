@@ -1,7 +1,6 @@
 
-f1 <- fun(xx:A) -> yy:Foo {}
-f1 <- proc(xx:A) -> yy {}
+let f1 = fun(xx:A) -> (yy:Foo) {}
+let f2 = proc(xx:A) -> (yy) {}
 
-x1:fun(x:A) -> y:[3]B   // y is array type of 3 elements of B
+var x1:fun(x:A) -> (y:[3]B) = _  // y is array type of 3 elements of B
 
-x1 <- (y:B)[3] // pick 3rd entry of B

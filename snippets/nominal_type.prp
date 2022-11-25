@@ -1,20 +1,20 @@
 
-Room <- (model:string)
-Car  <- (model:string)
+let Room = (model:string)
+let Car  = (model:string)
 
-volvo:Car = (model="V40")
+let volvo:Car = (model="V40")
 
-xx:Room = (model="2 bedroom")
+let xx:Room = (model="2 bedroom")
 
-
-either <- fun(arg:Room) { // Structural type check (Room equivalent o Car)
-  puts("you have model {}", arg.model)
+let either = fun(arg:Room) { // Structural type check (Room equivalent o Car)
+  let m = arg.model
+  ret "model {m}"
 }
 
-either(volvo)
-either(xx)
+cassert either(volvo) == "mode V40"
+cassert either(xx) == "mode 2 bedroom"
 
-only_car <- fun(arg is Car) {
+let only_car = fun(arg) where arg.[typename] == "Car" {
   puts("you have a nice car model {}", arg.model)
 }
 

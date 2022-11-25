@@ -6,7 +6,7 @@ let Delegate = (
 let Delegator = (
   ,delegate = nil
   ,operation::[comptime] = (
-    ,get =fun (self) {
+    ,getter =fun (self) {
       ret if self.delegate has 'thing' {
         self.delegate.thing()
       }else{
@@ -23,6 +23,6 @@ cassert a.operation == "default implementation"
 a.delegate = 'A delegate may be any object'
 cassert a.operation == "default implementation"
 
-a.delegate = :Delegate
+a.delegate = Delegate()
 cassert a.operation == "DEL here"
 

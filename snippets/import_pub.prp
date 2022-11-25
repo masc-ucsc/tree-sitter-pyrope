@@ -2,20 +2,20 @@
 //------------------------------
 // file prj/code/a.prp
 
-// let b = import "b"  // Not needed, same directory file
+let b = import "b"  // needed even in same directory file
 
-result = a ++ b.calc()
+result = "a" ++ b.calc()
 
-$(comptime) assert result == "abc"
+cassert result == "abc"
 
 // b.c.calc() is a compile error
 
 //------------------------------
 // file prj/code/b.prp
 
-c := import "c"  // pub c = import "c" would re-export "c"
+private let c = import "c"  // let c = import "c" would re-export "c"
 
-calc <- fun[c] () { // capture c
+let calc = fun[c] () { // capture c
  ret "b" ++ c.calc()
 }
 
@@ -23,14 +23,14 @@ calc <- fun[c] () { // capture c
 //------------------------------
 // file prj/code/c.prp
 
-calc <- fun () {
+let calc = fun () {
  ret "c"
 }
 
 //------------------------------
 // file prj2/code/other.prp
 
-b <- import "prj/b"
+let b = import "prj/b"
 
-$comptime assert b.calc() == "bc"
+cassert b.calc() == "bc"
 

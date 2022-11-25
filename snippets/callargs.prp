@@ -1,5 +1,5 @@
 
-let f1 = fun (a:u32,b:u6)->(:u33) {
+let f1 = fun (a:u32,b:u6)->(_:u33) {
   ret a+b
 }
 
@@ -8,7 +8,7 @@ let Args = (
   ,b:u6 = 0
 )
 
-let fun2 = fun (...x:Args)->(:u33) {
+let fun2 = fun (...x:Args)->(_:u33) {
   ret x.a+x.b
 }
 

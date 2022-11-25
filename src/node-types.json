@@ -1583,6 +1583,20 @@
     "type": "pipestage_scope_statement",
     "named": true,
     "fields": {
+      "fsm": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "select",
+            "named": true
+          }
+        ]
+      },
       "scope": {
         "multiple": false,
         "required": true,
@@ -1595,13 +1609,9 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
         {
           "type": "tuple",
           "named": true
@@ -2711,6 +2721,10 @@
   },
   {
     "type": "or_else",
+    "named": false
+  },
+  {
+    "type": "private",
     "named": false
   },
   {
