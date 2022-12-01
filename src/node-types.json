@@ -16,6 +16,10 @@
         "named": true
       },
       {
+        "type": "enum_definition",
+        "named": true
+      },
+      {
         "type": "for_expression",
         "named": true
       },
@@ -535,6 +539,10 @@
             "named": true
           },
           {
+            "type": "enum_definition",
+            "named": true
+          },
+          {
             "type": "for_expression",
             "named": true
           },
@@ -740,6 +748,10 @@
             "named": true
           },
           {
+            "type": "enum_definition",
+            "named": true
+          },
+          {
             "type": "for_expression",
             "named": true
           },
@@ -829,6 +841,10 @@
             "named": true
           },
           {
+            "type": "enum_definition",
+            "named": true
+          },
+          {
             "type": "for_expression",
             "named": true
           },
@@ -886,6 +902,22 @@
         "types": [
           {
             "type": "expression_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "enum_definition",
+    "named": true,
+    "fields": {
+      "input": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "arg_list",
             "named": true
           }
         ]
@@ -1493,6 +1525,10 @@
           },
           {
             "type": "dot_expression",
+            "named": true
+          },
+          {
+            "type": "enum_definition",
             "named": true
           },
           {
@@ -2202,6 +2238,10 @@
             "named": true
           },
           {
+            "type": "enum_definition",
+            "named": true
+          },
+          {
             "type": "for_expression",
             "named": true
           },
@@ -2649,6 +2689,10 @@
   },
   {
     "type": "else",
+    "named": false
+  },
+  {
+    "type": "enum",
     "named": false
   },
   {

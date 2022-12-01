@@ -1554,6 +1554,23 @@
         }
       ]
     },
+    "enum_definition": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "enum"
+        },
+        {
+          "type": "FIELD",
+          "name": "input",
+          "content": {
+            "type": "SYMBOL",
+            "name": "arg_list"
+          }
+        }
+      ]
+    },
     "capture_list": {
       "type": "SEQ",
       "members": [
@@ -3754,6 +3771,10 @@
           {
             "type": "SYMBOL",
             "name": "function_definition"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "enum_definition"
           },
           {
             "type": "SYMBOL",

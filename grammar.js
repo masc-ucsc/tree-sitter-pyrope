@@ -312,6 +312,10 @@ module.exports = grammar({
       ,field('condition', optseq('where', $.stmt_list))
       ,field('code', $.scope_statement)
     )
+    ,enum_definition: $ => seq(
+      'enum'
+      ,field('input', $.arg_list)
+    )
     ,capture_list: $ => listseq1(
       $.typed_identifier, optseq('=', field('expression', $._expression))
     )
@@ -456,6 +460,7 @@ module.exports = grammar({
       ,$.dot_expression
       ,$.function_call
       ,$.function_definition
+      ,$.enum_definition
       ,$.tuple
       ,$.tuple_sq
       ,$.optional_expression
