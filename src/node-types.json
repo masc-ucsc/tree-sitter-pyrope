@@ -16,10 +16,6 @@
         "named": true
       },
       {
-        "type": "enum_definition",
-        "named": true
-      },
-      {
         "type": "for_expression",
         "named": true
       },
@@ -249,6 +245,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "enum_definition",
             "named": true
           },
           {
@@ -539,10 +539,6 @@
             "named": true
           },
           {
-            "type": "enum_definition",
-            "named": true
-          },
-          {
             "type": "for_expression",
             "named": true
           },
@@ -748,10 +744,6 @@
             "named": true
           },
           {
-            "type": "enum_definition",
-            "named": true
-          },
-          {
             "type": "for_expression",
             "named": true
           },
@@ -838,10 +830,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "enum_definition",
             "named": true
           },
           {
@@ -1198,7 +1186,7 @@
         "required": false,
         "types": [
           {
-            "type": "stmt_list",
+            "type": "expression_list",
             "named": true
           },
           {
@@ -1528,10 +1516,6 @@
             "named": true
           },
           {
-            "type": "enum_definition",
-            "named": true
-          },
-          {
             "type": "for_expression",
             "named": true
           },
@@ -1628,7 +1612,7 @@
             "named": true
           },
           {
-            "type": "select",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1643,20 +1627,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "tuple_sq",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1732,7 +1702,7 @@
         "required": true,
         "types": [
           {
-            "type": "stmt_list",
+            "type": "expression_list",
             "named": true
           },
           {
@@ -2088,7 +2058,7 @@
         "required": false,
         "types": [
           {
-            "type": "_expression",
+            "type": "expression_list",
             "named": true
           },
           {
@@ -2235,10 +2205,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "enum_definition",
             "named": true
           },
           {
@@ -2408,7 +2374,7 @@
         "required": true,
         "types": [
           {
-            "type": "stmt_list",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -2841,6 +2807,10 @@
   },
   {
     "type": "var",
+    "named": false
+  },
+  {
+    "type": "variant",
     "named": false
   },
   {

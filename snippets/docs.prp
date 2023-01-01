@@ -23,7 +23,7 @@
 test "my first test" {
   puts "hello world"
 }
-    var gcd = proc (cmd:(a:uint,b:uint))->(reg x:uint) {
+    var gcd = proc (a:uint,b:uint)->(reg x:uint) {
       x = a
       reg y = b
 
@@ -65,6 +65,12 @@ assert 1T == 1024*1024*1024*1024
 0sb0?0          // 0 or 2 in decimal
 a = "hello \n newline"
 b = 'simpler here'
+let num       = 2
+let color     = "blue"
+let extension = "s"
+
+let txt = "I have {num:d} {color} potato{extension}"
+cassert "I have 2 blue potatos"
 var a:string = "127"
 var b:int    = a     // same as var b = int(a)
 var c:string = b     // same as var c = string(b)
@@ -81,10 +87,10 @@ a = 1 ; b = 2
 a = 1
 puts "Hello a is {}", a
 // src/file1.prp
-puts(order=2, " world")
+puts(priority=2, " world")
 
 // src/file2.prp
-print(order=1, "hello")
+print(priority=1, "hello")
 var f = fun(a,b) { ret a + b }
 var a = fcall() + 1               // OK
 var x = pcall() + a               // OK, proc combined with variable read
@@ -137,6 +143,8 @@ if cond::[comptime] {
 cassert tup.a == 1
 cassert cond implies tup.b==2
 cassert !cond implies tup.b==3
+var A_xxx = something             // comptime
+var A_yyy::[comptime] = something // also comptime, redundant but legal
 var b = (f1=3,f2=4) // b is named and ordered
 var c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
 var a = (
@@ -176,15 +184,19 @@ var x = (
 )
 var x=100
 
-var tup1 = ('x',y=4) // 
+var tup1 = ('x',y=4)
 var tup2 = (x,y=4)
 
 cassert tup1[0] == 'x'
 cassert tup2[0] == 100
-var x=100
+let aa = 3
+let a = enum(aa,b=3)
+cassert a==b
 
-var tup1 = ('x', y=4)
-cassert tup1 == tup3
+cassert x.[size] == x.['size']
+
+let zz= "size"
+cassert x.[...zz] == x.[size]
 var a = (1,2)   // tuple of 2 entries, 1 and 2
 var b = (1)     // tuple of 1 entry, 1
 var c = 1       // tuple of 1 entry, 1
@@ -298,24 +310,21 @@ let x,b = (true, c:u3) // assign x=true, b=4 AND check that c is type u3
 
 cassert x == true
 cassert b == 4 
-let a = "foo"
-let test2:enum = (a=_,'b','c')  // OK, but conversome (not recommended)
+let b = "foo"
+let c = 1
+let test1     = enum(a=c,b)    // OK
+let something = (b)            // OK
+cassert something == "foo"
+cassert test1.a != test1.b
+cassert test1.a==1 and test1.b==2
 let a = "field"
-let My_non_enum = ("x" ++ a, 'bar')
-cassert My_non_enum[0] == "xfield"  and My_non_enum[1] == 'bar'
-let a = 10
-let b = 20
-let c = 30
-
-let v = (a,b,c)
-assert v == (10,20,30)
-
-let En:enum = (a=1,b=2,c=300)
-assert e.a == 1 and e.b == 2 and e.c == 300
-
-let x = e.a
-puts "x is {}", x  // prints: "x is e.a"
-let V3:enum = (
+let c = (foo=4)
+let my_other_enum = enum(...a,b=3,...c)
+cassert my_other_enum.field != my_other_enum.b
+cassert my_other_enum.b   == 3
+cassert my_other_enum.foo == 4
+cassert my_other_enum.foo != my_other_enum.b
+let V3 = enum(
    ,a
    ,b
    ,c
@@ -324,7 +333,7 @@ cassert V3.a == 1
 cassert V3.b == 2
 cassert V3.c == 4
 
-let V4:enum = (
+let V4 = enum(
    ,a
    ,b=5
    ,c
@@ -332,6 +341,10 @@ let V4:enum = (
 cassert V4.a == 0
 cassert V4.b == 5
 cassert V4.c == 6
+let Animal = enum(
+  ,bird  =(eagle, parrot)
+  ,mammal=(rat  , human )
+)
 
 cassert Animal.bird.eagle != Animal.mammal
 cassert Animal.bird != Animal.mammal.human
@@ -343,6 +356,11 @@ cassert int(Animal.bird.parrot ) == 0b000101
 cassert int(Animal.mammal      ) == 0b001000
 cassert int(Animal.mammal.rat  ) == 0b011000
 cassert int(Animal.mammal.human) == 0b101000
+let V5=enum(
+   ,a
+   ,b=5
+   ,c
+)
 cassert int(V5.a) == 0
 cassert int(V5.b) == 5
 cassert int(V5.c) == 6
@@ -351,6 +369,13 @@ let human_rat = Animal.mammal.rat | Animal.mammal.human  // union op
 assert Animal.mammal      in human_rat
 assert Animal.mammal.rat  in human_rat
 assert Animal.bird       !in human_rat
+let E3=enum(
+  ,l1=(
+    ,l1a
+    ,l1b
+    )
+  ,l2
+  )
 cassert string(E3.l1.l1a) == "E3.l1.l1a"
 cassert string(E3.l1) == "E3.l1"
 cassert E3("l1.l2") == E3.l1.l2
@@ -366,7 +391,6 @@ cassert E3("l1.l2") == E3.l1.l2
     let f1 = fun[a,x=a+1]() {
       assert a == 3
       let b = 4
-      assert a == 3333
     }
     f1()
     assert x == 10
@@ -379,7 +403,7 @@ cassert E3("l1.l2") == E3.l1.l2
     var a = 3
     let r1 = (
       ,a = a+1           // same as var a = a+1
-      ,c = {assert a == 3; assert self.a==4; 50}
+      ,c = {assert a == 3 and self.a==4; 50}
     )
 
     var r2 = (a=100, let c=(a=a+1, e=self.a+30))
@@ -659,9 +683,9 @@ g2= (1 + 3)
 i = a == 3 <= b == d
 assert i == (a==3 and 3<=b and b == d)
 assert a <= b <= c  // same as a<=b and b<=c
-var v1:u32 = _                 // v1 is zero every cycle AND not $valid
+var v1:u32 = _                 // v1 is zero every cycle AND not valid
 assert v1.[valid] == false
-var v2:u32 = 0                 // v2 is zero every cycle AND     $valid
+var v2:u32 = 0                 // v2 is zero every cycle AND     valid
 assert v2.[valid] == true
 
 cassert v1?
@@ -687,16 +711,19 @@ reg counter:u32 = 0
 always_assert counter.reset implies !counter?
 let custom = (
   ,data:i16 = _
-  ,valid = fun(self) {
-    ret self.data != 33
+  ,setter = proc(ref self, v) {
+    self.data = v
+    self.[valid] = v != 33
   }
 )
 
 var x:custom = _
 
-cassert x?       // compile time assert
+cassert x?
 x.data = 33
 cassert not x?
+x.data = 100
+cassert x?
 let complex = (
   ,reg v1:string = "foo"
   ,v2:string = _
@@ -708,9 +735,9 @@ let complex = (
 )
 
 var x1:complex = _
-var x2:complex:[valid = false] = 0  // toggle invalid forever, and set zero
+var x2:complex:[valid=false] = 0  // toggle valid, and set zero
 var x3:complex = 0
-x3.[valid] = false                // toggle invalid
+x3.[valid] = false                // set invalid
 
 assert x1.v1 == "" and x1.v2 == ""
 assert not x2? and not x2.v1? and not v2.v2?
@@ -1680,6 +1707,21 @@ c_cond      = __sum(A=(b, 1))
       counter::[wrap] = counter + 1
     }
 var my_latch_q = __latch(din=my_din, enable=my_enable, posclk=true)
+// variables/register before
+
+{
+  // stage 0 scope
+} #> {               // no identifier, 1 stage by default
+  // stage 1 scope
+} #>foo[2] {            // no identifier, 2 stages
+  // stage 2-3 scope
+} #>bar[1] {     // 'free_stage' identifier, 1 stages
+  // stage 4 scope
+} #> {
+  // stage 5 scope
+}
+
+// variables/register after pipestage
 assert i==0 or (i#[-1] + 1 == i)
 
 let i_let = i
@@ -1724,14 +1766,14 @@ let bad_code = proc(my_clk, inp)->(o1,o2) {
   {
     o1 = 1
     o2 = inp + 1  // o2? iff bad_code called this cycle and inp? is valid
-  } #>[1,clock=my_clk] {
+  } #>my_pipe[lat=1,clock=my_clk] {
     o2 = inp + 2  // may be OK if inp is not valid every cycle
   }
 
 }
     let mul3=proc(a,b)->res {
       let tmp = a*b
-      #>[3] {
+      #>full_case[lat=3,num=3] { // Same as full_case[lat=3]
         res = tmp
       }
     }
@@ -1740,7 +1782,7 @@ let bad_code = proc(my_clk, inp)->(o1,o2) {
       let result  = 0
       let rest    = a
 
-      while rest >= b #>[4]{
+      while rest >= b #>_[lat=1,num=4] {  // lat=1 is latency per iteration
         rest = rest - b
         result += 1
       }
@@ -1751,7 +1793,7 @@ let bad_code = proc(my_clk, inp)->(o1,o2) {
       res = a*b
     }
     let mul1=proc(a,b)->(res) {
-      #>[1] {
+      #>full_case_again[lat=1] { 
         res = a*b
       }
     }
@@ -1797,7 +1839,7 @@ reg my_reg::[retime=true,clock=my_clk] = 0
     let block = proc(in1,in2)->(out) {
       {
         let tmp = in1 * in2
-      } #>[3] {
+      } #>some_id[lat=3] {
         out = tmp + in1#[0]
       }
     }
@@ -1826,7 +1868,7 @@ out  =#[..] add1(x,in3)     // OK (in3 has 0 cycles, x has 3 cycles)
 out  =#[1..<4] add1(x,in3)  // OK
     {
       let tmp = in1 * in2
-    } #>[3] {
+    } #>fully_pipe[lat=3] {
       out = tmp + in1
     }
     x =#[..] mul3(in1, in2)
@@ -1849,21 +1891,21 @@ let quick_log2 = fun(a) {
 let div=proc(a,b,id)->(res,id) {
   loop #>free_div_units[4] {
     ret (a >> quick_log2(b), id) when b@+[..] == 1
-    #>[5] {
+    #>my_fsm[lat=5,num=1] {
       res = (a/b, id)
     }
   }
 }
 
 let mul=proc(a,b,id)->(res, id) {
-  #>pending_counter[3] {
+  #>pending_counter[lat=3,num=2] {
     res = a*b
     id  = id
   }
 }
 
 let add=proc(a,b,id)->(res,id) {
-  #>[1] {
+  #>add_counter[lat=1] {         // Fully pipeline, num not specified
     res = a+b
     id  = id
   }
@@ -1871,7 +1913,11 @@ let add=proc(a,b,id)->(res,id) {
 
 let alu = proc(a,b,op, id)->(res,id) {
 
-  self.[total_free_units] = 1 + mul.[pending_counter] + div.[free_div_units]
+  self.[total_free_units] = 1 
+     + mul.[pending_counter] 
+     + div.[free_div_units]
+     + add.[add_counter]
+
   self.[div_units] = div.[free_div_units]
 
   match op {
@@ -1882,7 +1928,6 @@ let alu = proc(a,b,op, id)->(res,id) {
     == OP.mul { res,id = mul(a,b,id) }
     == OP.add { res,id = add(a,b,id) }
   }
-
 }
 
 test "alu too many div" {
@@ -2021,7 +2066,7 @@ let Rgb = (
   ,setter = proc(ref self, c) { self.c = c }
 )
 
-let Color:enum = (
+let Color = enum(
   ,Yellow:Rgb = 0xffff00
   ,Red:Rgb    = 0xff0000
   ,Green      = Rgb(0x00ff00) // alternative 
@@ -2032,7 +2077,7 @@ var y:Color = Color.Red
 if y == Color.Red {
   puts "c1:{} c2:{}\n", y, y.c  // prints: c1:Color.Red c2:0xff0000
 }
-let ADT:enum = (
+let ADT=enum(
   ,Person:(eats:string) = _
   ,Robot:(charges_with:string) = _
 )
@@ -2105,35 +2150,18 @@ if cmd? {
 }
 x:cmd.a:[wrap] = x  // use cmd.a type for x, and drop bits as needed
 y = cmd.b(y)        // typecast y to cmd.b type (this can add a mux)
-let e_type:enum  = (str:String = "hello",num=22)
-let u_type:union = [str:String, num:int]         // No default value in union
+let e_type=enum(str:String = "hello",num=22)
+let v_type=variant(str:String, num:int)       // No default value in variant
 
-var uu:u_type = (str="hello2")
-assert uu.str == "hello2"
-assert uu.num == 0x32_6f_6c_6c_65_68 // ASCII for 2 e l l o h
-
-uu.num = 0x65
-assert uu.str == "o"
-assert uu.num == 0x65
-var ee:e_type = e_type.str
-ee = u_type.String          // OK
+var vv:v_type = (num=0x65)
+cassert vv.num == 0x64
+let xx = vv.str             // compile or simulation error
+var ee = e_type
 
 match ee {
  == e_type.str { }
  == e_type.num { }
 }
-let Conv_t:union = [
-  ,f1:u6
-  ,a=[msb:u1, mid:u4, lsb:s1]
-]
-
-var b:Conv_t = (f1=0b1_0010_1)
-cassert b.a.msb == 1
-cassert b.a.mid == 2
-cassert b.a.lsb == -1
-
-b.a.mid = 7
-cassert b.f1 == 0b1_0111_1
 let at=(c:string,d:u32)
 let bt=(c:string,d:u100)
 
@@ -2172,8 +2200,8 @@ assert a.[id] == 'a'
 assert a.0.[id] == ':0:b' and a.b.[id] == ':0:b'
 assert a.1.[id] == ':1:c' and a.c.[id] == ':1:c'
 let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
-assert fu.[inp] equals (a,b)
-assert fu.[out] equals (c)
+assert fu.[inp] equals ('a','b')
+assert fu.[out] equals ('c')
 assert fu.[where](a=200) and !fu.[where](a=1)
 let x = fn(args)
 
@@ -2392,12 +2420,35 @@ var my_arr = (
   ,setter = proc(ref self, idx:u4, val:u8) {
      self.vector[idx] = val
   } ++ proc(ref self) {
-     // default
+     // default constructor declaration
   }
 )
 
 my_arr[3] = 300           // calls setter
+my_arr.3  = 300           // calls setter
 cassert my_add[3] == 300  // calls getter
+cassert my_add.3  == 300  // calls getter
+let Point = (
+  ,_x:int = 0  // private
+  ,_y:int = 0  // private
+
+  ,setter = proc(ref self, x:int, y:int) {
+    self._x = x
+    self._y = y
+  }
+
+  ,getter = proc(self, idx:string) {
+    match idx {
+     == 'x' { self._x }
+     == 'y' { self._y }
+    }
+  }
+)
+
+let p:Point = (1,2)
+
+cassert p['x'] == 1 and p['y'] == 2
+cassert p.x == 1 and p.y == 2
 let t=(
   ,v:string = _
   ,setter = proc(ref self) { self.v = a }
@@ -2544,12 +2595,12 @@ let f_d = fun(fd:fd_t) {
 }
 f_d(call_animal) // OK, `fd_t does call_animal` is true
 f_d(call_dog)    // OK
-let m = fun(a:integer,...x:(_:string,c:int,d), y:integer)->() { 
+let m = fun(a:int,...x:(_:string,c:int,d), y:int)->() { 
   assert a == 1
   assert x.0 == "here"
   assert x.1 == 2 == x.c
   assert y == 3
-  if d does _:integer { // inferred type
+  if d does int { // inferred type
     assert d == 33
   }else{
     assert d == "x"
@@ -2826,11 +2877,11 @@ assert flatten((((1),2),3),4) == (1,2,3,4)
 var x1:[2]u3 = (0,1)
 assert x1[0] == 0 and x1[1] == 1
 
-var X:enum = [  
+var X=enum(
   ,t1 = 0 // sequential enum, not one hot enum (explicit assign)
   ,t2
   ,t3
-]
+)
 
 var x2:[X]u3 = _
 x2[X.t1] = 0
@@ -3230,7 +3281,7 @@ let telescope_unit3 = fun(a:u32,b:u32) -> (_:u32) {
 
   {
     let tmp = a+1
-  } #>[1] {
+  } #>one_pipe[lat=1] {
     if b == 0 {
       ret tmp
     }
@@ -3251,6 +3302,9 @@ while some_condition {
     let x = 3 + 1
     var z = 4
     `foo x` = x + z + 2
+    let a:u2:[foo] = b:u1:[bar]
+
+    x:u2:[foo] = y:u1:[bar]
     x = 3
     a = (b=2, x=x+1, y=self.b+1)
     x = tup[1].foo[xx]
@@ -3261,14 +3315,14 @@ while some_condition {
     var a = (2, 1+1)
     let x = a ++ (c=3) ++ 1
     a::[f=3,b] = 1
-    x = (x::[y=7]=2, 4)
-    let x = a::[f==3,b] + 1
-    var x = (let z=x::[y], 4::[foo])
-let d::[debug] = 3
+    x = (y::[z=7]=2, 4)
+    var x = (let z=x::[!y], 4::[foo])
+    let y = a::[f==3,b] + 1
+    let d::[debug] = 3
 
-var a = d + 100
+    var a = d + 100
 
-cassert a.[debug]  // debug is sticky
+    cassert a.[debug]  // debug is sticky
 let foo::[attr1=2] = 3
 
 var foo2 = foo
@@ -3301,7 +3355,7 @@ cassert xx3 !has _::[attr2]
     a = b or_else c or_else (d and e)
 let tup=(1,2,3)
 let ran=1..<5
-let enu:enum = [a,b=(x,y),c]
+let enu = enum(a,b=(x,y),c)
 
 cassert 2 in tup
 cassert 3 in ran
@@ -3387,6 +3441,12 @@ cassert enu.b.x in enu.b
       mycall(i,index,key)
       i = 0
     }
+    let num = 1
+    let color = "blue"
+    let extension = "s"
+
+    txt = "I have {num:d} {color} potato{extension}"
+    x = fcall(a,b=3,foo,1+2)
 let prp = import "prp"
 cassert prp.plus(1,2,3) == 6
 let plus = fun(...a:int)->(_:int) {

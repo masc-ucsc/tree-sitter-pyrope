@@ -201,8 +201,7 @@ module.exports = grammar({
     )
     ,pipestage_scope_statement: $ => seq(
       '#>'
-      ,field('fsm', optional(seq($.identifier, $.select)))
-      ,optional(choice($.tuple,$.tuple_sq))
+      ,field('fsm', optional(seq($.identifier,$.tuple_sq)))
       ,field('scope', $.scope_statement)
     )
     ,match_expression: $ => seq(
@@ -232,13 +231,13 @@ module.exports = grammar({
     ,test_statement: $ => prec.right(seq(
       'test'
       ,field('args', $.expression_list)
-      ,field('condition', optseq('where', $._expression))
+      ,field('condition', optseq('where', $.expression_list))
       ,field('code', $.scope_statement)
     ))
     ,restrict_statement: $ => prec.right(seq(
       'restrict'
       ,field('name', $.expression_list)
-      ,field('condition', seq('where', $.stmt_list))
+      ,field('condition', seq('where', $.expression_list))
       ,field('code', $.scope_statement)
     ))
     ,expression_list: $ => prec.left(seq(
@@ -268,7 +267,6 @@ module.exports = grammar({
       seq('ref', $.typed_identifier)
       ,$._expression
       ,$.simple_assignment
-      //,$.simple_declaration
       //,$.function_type
     ))
     ,attributes: $ => field('attr', seq(':' , choice($.tuple_sq,$.tuple)))
@@ -284,10 +282,6 @@ module.exports = grammar({
         ,$.simple_function_call
       )
     )))
-    ,simple_declaration: $ => prec.right(seq(
-      field('decl',$.var_or_let_or_reg)
-      ,field('lvalue', choice($.identifier,$.type_specification))
-    ))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', $.expression_list)
@@ -296,6 +290,7 @@ module.exports = grammar({
       ,field('rvalue', choice(
         $._expression
         ,$.simple_function_call
+        ,$.enum_definition
       )
     )))
     ,cycle_select_or_pound: $=> choice($.cycle_select)
@@ -309,11 +304,11 @@ module.exports = grammar({
       ,field('generic', optseq('<',  $.identifier_list, '>'))
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
-      ,field('condition', optseq('where', $.stmt_list))
+      ,field('condition', optseq('where', $.expression_list))
       ,field('code', $.scope_statement)
     )
     ,enum_definition: $ => seq(
-      'enum'
+      choice('enum', 'variant')
       ,field('input', $.arg_list)
     )
     ,capture_list: $ => listseq1(
@@ -460,7 +455,6 @@ module.exports = grammar({
       ,$.dot_expression
       ,$.function_call
       ,$.function_definition
-      ,$.enum_definition
       ,$.tuple
       ,$.tuple_sq
       ,$.optional_expression
@@ -651,7 +645,7 @@ module.exports = grammar({
     )
     ,when_unless_cond: $ => seq(
       choice('when','unless')
-      ,field('condition', $.stmt_list)
+      ,field('condition', $._expression)
     )
   }
 });

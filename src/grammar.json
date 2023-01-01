@@ -510,7 +510,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "select"
+                    "name": "tuple_sq"
                   }
                 ]
               },
@@ -519,27 +519,6 @@
               }
             ]
           }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "tuple"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "tuple_sq"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
         },
         {
           "type": "FIELD",
@@ -808,7 +787,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "_expression"
+                        "name": "expression_list"
                       }
                     ]
                   }
@@ -860,7 +839,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "stmt_list"
+                  "name": "expression_list"
                 }
               ]
             }
@@ -1202,40 +1181,6 @@
         ]
       }
     },
-    "simple_declaration": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "decl",
-            "content": {
-              "type": "SYMBOL",
-              "name": "var_or_let_or_reg"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "lvalue",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "identifier"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "type_specification"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
     "_assignment_or_declaration": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -1303,6 +1248,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "simple_function_call"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "enum_definition"
                 }
               ]
             }
@@ -1533,7 +1482,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "stmt_list"
+                      "name": "expression_list"
                     }
                   ]
                 }
@@ -1558,8 +1507,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "enum"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "enum"
+            },
+            {
+              "type": "STRING",
+              "value": "variant"
+            }
+          ]
         },
         {
           "type": "FIELD",
@@ -3774,10 +3732,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "enum_definition"
-          },
-          {
-            "type": "SYMBOL",
             "name": "tuple"
           },
           {
@@ -4889,7 +4843,7 @@
           "name": "condition",
           "content": {
             "type": "SYMBOL",
-            "name": "stmt_list"
+            "name": "_expression"
           }
         }
       ]
