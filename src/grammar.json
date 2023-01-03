@@ -1272,47 +1272,16 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "private"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "var"
-                },
-                {
-                  "type": "STRING",
-                  "value": "let"
-                },
-                {
-                  "type": "STRING",
-                  "value": "reg"
-                }
-              ]
-            }
-          ]
+          "type": "STRING",
+          "value": "var"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "var"
-            },
-            {
-              "type": "STRING",
-              "value": "let"
-            },
-            {
-              "type": "STRING",
-              "value": "reg"
-            }
-          ]
+          "type": "STRING",
+          "value": "let"
+        },
+        {
+          "type": "STRING",
+          "value": "reg"
         }
       ]
     },

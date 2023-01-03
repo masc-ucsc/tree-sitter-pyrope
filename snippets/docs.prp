@@ -1824,10 +1824,10 @@ if cond {
     reg p1r = _
     reg p2r = _
 
-    var _l1 = inp1 + 1    // private
-    var p2 = inp1 + 2     // public
+    var l1::[private] = inp1 + 1  // private
+    var p2 = inp1 + 2             // public
 
-    out = p1r + p2r       // registered values
+    out = p1r + p2r               // registered values
 
     p1r = p1
     p2r = p2
@@ -1993,7 +1993,13 @@ let Bt=(
 )
 
 var a:At=40
+var a2 = At(40)
+cassert a == a2
+
 var b:Bt="hello"
+var b2 = Bt("hello")
+cassert b == b2
+
 puts "a:{} or {}", a, at // a:40 or 33
 puts "b:{}", b           // b:(c="hello",d=100)
 assert (a:int:(max=33,min=0) does (a:int(20,5)))
@@ -2151,11 +2157,23 @@ if cmd? {
 x:cmd.a:[wrap] = x  // use cmd.a type for x, and drop bits as needed
 y = cmd.b(y)        // typecast y to cmd.b type (this can add a mux)
 let e_type=enum(str:String = "hello",num=22)
-let v_type=variant(str:String, num:int)       // No default value in variant
+let v_type=variant(str:String, num:int) // No default value in variant
 
 var vv:v_type = (num=0x65)
 cassert vv.num == 0x64
-let xx = vv.str             // compile or simulation error
+let xx = vv.str                         // compile or simulation error
+let Vtype=variant(str:String,num:int,b:bool)
+
+let x1a:Vtype = "hello"                 // implicit variant type
+let x1b:Vtype = (str="hello")           // explicit variant type
+
+var x2:Vtype:[comptime] = "hello"       // comptime
+
+cassert x1a.str == "hello" and x1a == "hello"
+cassert x1b.str == "hello" and x1b == "hello"
+
+let err1 = x1a.num                      // compile or simulation error
+let err2 = x1b.b                        // compile or simulation error
 var ee = e_type
 
 match ee {
@@ -2385,6 +2403,15 @@ let my_obj = (
        ++ fun(self)->(_:bool){ ret self.val != 0    }
        ++ fun(self)->(_:int    ){ ret self.val         }
 )
+var obj1::[attr1] = (
+  ,data:int = _
+  ,setter = fun(ref self, v) {
+    if v.[attr2] {
+      self.data.[attr3] = 33
+    }
+    cassert self.[attr1] 
+  }
+)
 let fint:int = _
 cassert fint == 0
 
@@ -2429,18 +2456,18 @@ my_arr.3  = 300           // calls setter
 cassert my_add[3] == 300  // calls getter
 cassert my_add.3  == 300  // calls getter
 let Point = (
-  ,_x:int = 0  // private
-  ,_y:int = 0  // private
+  ,priv_x:int:[private] = 0
+  ,priv_y:int:[private] = 0
 
   ,setter = proc(ref self, x:int, y:int) {
-    self._x = x
-    self._y = y
+    self.priv_x = x
+    self.priv_y = y
   }
 
   ,getter = proc(self, idx:string) {
     match idx {
-     == 'x' { self._x }
-     == 'y' { self._y }
+     == 'x' { self.priv_x }
+     == 'y' { self.priv_y }
     }
   }
 )
@@ -2448,7 +2475,6 @@ let Point = (
 let p:Point = (1,2)
 
 cassert p['x'] == 1 and p['y'] == 2
-cassert p.x == 1 and p.y == 2
 let t=(
   ,v:string = _
   ,setter = proc(ref self) { self.v = a }
@@ -2705,6 +2731,32 @@ test "check equiv" {
     }
   }
 }
+let Param_type = fun(a) { ret (xx:a = _) }
+
+let x:Param_type(string) = (xx="hello")
+let x:Param_type(int)    = (xx=130)
+let Animal = (
+  ,speak:fun(self) = _
+)
+let Cat: Animal = (
+  ,speak = fun(self) { puts "meaow" }
+)
+let Bird: Animal = (
+  ,speak = fun(self) { puts "pio pio" }
+)
+let smallest = fun(...a) {
+  let x = a[0]
+  for i in a[1..] {
+    x = i when i < x
+  }
+  ret x
+}
+let speak = fun(a:Bird) { puts "pio pio"  } 
+         ++ fun(a:Cat) { puts "meaow" }
+let Type1 = (
+  ,setter = fun(a:int) {  }
+)
+let a:Type1 = 33
 let Say_mixin = (
   ,say = fun(s) { puts s }
 )
@@ -2723,6 +2775,25 @@ let Mixing_all = Say_mixin ++ Say_hi_mixin ++ User
 
 var a:Mixing_all="Julius Caesar"
 a.say_hi()
+let Int1 = (
+  ,var counter:int:[private] = 0
+  ,add = proc(ref self, v) { self.counter += v }
+  ,get = fun(self) -> (_:int) { self.counter }
+  ,api_pending: proc(ref self, x:int) -> (o:string) = _
+)
+
+let Int2 = (
+  ,var counter:int:[private] = 0
+  ,accumulate = proc(ref self, v) { self.counter += v ; ret self.counter }
+  ,api_pending:proc(ref self, x:string) -> (o:string) = _
+)
+
+let Combined = (...Int1, ...Int2
+  ,api_pending = proc(ref self, x:int) -> (o:string) {
+    self.add(x)
+    ret string(self.accumulate(self.get()))
+  }
+)
 let Interface = (
   ,let add:fun(ref self, x) = _ // nil or undefined method
   ,let sub = fun(ref self,x ) { self.add(-x) }
@@ -2779,7 +2850,7 @@ let Circle = (
      ret pi * self.rad * self.rad
   }
 ):Shape  // extra check that the exclude did not remove too many fields
-let rotate = fun(a) where a has 'x' and a has 'y' {
+let rotate = fun(a) where a has 'x', a has 'y' and_then a.y!=30 {
   var r = a
   r.x = a.y
   r.y = a.x
@@ -3206,6 +3277,18 @@ b::[defer] = a
 cassert a==1 and b==2
 
 cassert b.[defer] == 1
+let add = fun(a,b) { a + b }            // OK, no constrains
+let add = fun<T:int>(a:T,b:T) { a + b } // constrain both to have same type
+let Shape = (
+  ,name:fun(self)->(_:string)    = _
+  ,area:fun(self)->(_:Float)     = _  // NOTE: Pyrope does not have float type
+  ,perimeter:fun(self)->(_:Float)= _
+)
+
+let Rectangle:(...Shape,...OtherAPI) = (...some_code_here)
+let Circle:Shape = (...some_code_here) 
+
+let print_share_info = fun(s:Shape) { }
 let AnObject = (
   ,v:i32 = _
 )

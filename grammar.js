@@ -294,10 +294,7 @@ module.exports = grammar({
       )
     )))
     ,cycle_select_or_pound: $=> choice($.cycle_select)
-    ,var_or_let_or_reg: $ => choice(
-      seq('private', choice('var','let','reg'))
-      ,choice('var','let','reg')
-    )
+    ,var_or_let_or_reg: $ => choice('var','let','reg')
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))

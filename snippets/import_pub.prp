@@ -13,7 +13,7 @@ cassert result == "abc"
 //------------------------------
 // file prj/code/b.prp
 
-private let c = import "c"  // let c = import "c" would re-export "c"
+let c::[private] = import "c"  // let c = import "c" would re-export "c"
 
 let calc = fun[c] () { // capture c
  ret "b" ++ c.calc()
