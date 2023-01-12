@@ -1,75 +1,112 @@
+; highlights.scm
+
 ; Operators
+
+[
+  "!"
+  "not"
+  "~"
+  "-"
+  "+"
+  "*"
+  "/"
+  "&"
+  "|"
+  "^"
+  "~&"
+  "~|"
+  "~^"
+  ">>"
+  "<<"
+  "and"
+  "or"
+  "implies"
+  "!and"
+  "!or"
+  "!implies"
+  "in"
+  "!in"
+  "++"
+  "=="
+  ">="
+  "<="
+  "!="
+  ">"
+  "<"
+
+ (assignment_operator)
+] @operator 
 
 ; Keywords
 
 [
-  "enum"
   "in"
-  "when"
+
   "let"
   "var"
   "reg"
-  "ref"
-  "where"
+
+  "proc"
+  "fun"
+  "enum"
 ] @keyword
 
 [
-  "and"
-  "or"
-  "implies"
-  "and_then"
-  "or_else"
-] @keyword
+  "while"
+  "for"
+] @repeat
 
-[ 
-  "ret"
-  "return"
-  "cont"
-  "continue"
-  "brk"
-  "break"
-  "last"
+[
   "if"
   "elif"
   "else"
-  "for"
-  "while"
   "match"
   "test"
-  "restrict"
-] @keyword
+] @conditional
+
+; Types
 
 [
-  "fun"
-  "proc"
-] @Special
+  "int"
 
-(unsized_integer_type) @Type
-(sized_integer_type) @Type
-(boolean_type) @Type
-(string_type) @Type
-(range_type) @Type
-(type_type) @Type
+] @type
 
-(type_declaration
-  "type" @keyword
+(type_cast
+  (expression_type
+    (identifier) @type))
+
+(type_specification
+  argument: (identifier) @variable
+  attribute: (attributes
+    attr: (_
+      (tuple_list
+        (identifier) @type))))
+
+(primitive_type) @type
+(string_type) @string
+
+(constant) @number
+
+; Functions
+
+(
+  (expression_list) @function
+  (function_definition)
 )
 
-(type_extension
-  "type" @keyword
-)
+(simple_function_call
+  (identifier) @function)
 
 (function_call
-  function: (identifier) @Special
-)
+  (identifier) @function)
 
-(function_call_type
-  function: (expression_type (identifier)) @Special
-)
+; Variables
 
-(number) @Constant
-(string_literal) @string
+(assignment_or_declaration_statement
+  lvalue: (expression_list
+    item: (identifier) @variable))
 
-(declaration
-  (type_qualifier) @Type
+(
+  (identifier) @variable
+  (assignment_operator)
 )
