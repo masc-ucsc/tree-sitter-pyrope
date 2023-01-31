@@ -3,14 +3,6 @@
 ; Operators
 
 [
-  "!"
-  "not"
-  "~"
-  "-"
-  "+"
-  "*"
-  "/"
-  "&"
   "|"
   "^"
   "~&"
@@ -18,38 +10,33 @@
   "~^"
   ">>"
   "<<"
-  "and"
-  "or"
-  "implies"
-  "!and"
-  "!or"
-  "!implies"
-  "in"
-  "!in"
-  "++"
-  "=="
-  ">="
-  "<="
-  "!="
-  ">"
-  "<"
 
- (assignment_operator)
 ] @operator 
+
+(assignment_operator) @operator
+
+(unary_expression 
+  operator: _ @operator)
+
+(binary_expression
+  operator: _ @operator)
 
 ; Keywords
 
 [
   "in"
 
-  "let"
-  "var"
-  "reg"
-
   "proc"
   "fun"
   "enum"
 ] @keyword
+
+(var_or_let_or_reg) @keyword
+
+[
+  "test"
+  "restrict"
+] @keyword.verification
 
 [
   "while"
@@ -61,7 +48,6 @@
   "elif"
   "else"
   "match"
-  "test"
 ] @conditional
 
 ; Types
@@ -71,6 +57,19 @@
 
 ] @type
 
+(unsized_integer_type) @number
+(sized_integer_type) @number
+(bounded_integer_type) @number
+
+(constant) @constant
+
+(boolean_type) @boolean
+
+(string_type) @string
+
+(typed_identifier
+  (identifier) @identifier)
+  
 (type_cast
   (expression_type
     (identifier) @type))
@@ -83,9 +82,7 @@
         (identifier) @type))))
 
 (primitive_type) @type
-(string_type) @string
 
-(constant) @number
 
 ; Functions
 
@@ -100,6 +97,16 @@
 (function_call
   (identifier) @function)
 
+(
+  (identifier) @function.verification
+  (#match? @function.verification "assert|assume|verify|waitfor")
+)
+
+(cycle_select) @function.pipeline
+(pipestage_scope_statement
+  "#>" @function.pipeline
+  fsm: (_) @function.pipeline)
+
 ; Variables
 
 (assignment_or_declaration_statement
@@ -110,3 +117,4 @@
   (identifier) @variable
   (assignment_operator)
 )
+
