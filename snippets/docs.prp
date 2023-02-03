@@ -282,7 +282,6 @@ var y = (
 )
 assert y == (ff=(1,2),zz=3)
 fcall 1,2         // same as: fcall(1,2)
-x = fcall 1,2     // same as: x = fcall(1,2)
 b = xx[1,2]       // same as: xx[(1,2)]
 
 for a in 1,2,3 {  // same as: for a in (1,2,3) {
@@ -814,15 +813,15 @@ cassert at4.a == "josep"  and at4.a.[valid] and at4.[valid]
       }
     }
 let cassert::[comptime] = assert
-let cassume::[comptime] = assume
+let coptimize::[comptime] = optimize
 a = 3
 assert a == 3          // checked at runtime (or compile time)
 cassert a == 3         // checked at compile time
 
 verify a < 4           // checked at runtime and verification
-assume b > 3           // may optimize and perform a runtime check
+optimize b > 3         // may optimize and perform a runtime check
 
-restrict "cond1" where foo < 1 and foo >3 {
+assume "cond1" where foo < 1 and foo >3 {
    verify bar == 4  // only checked at verification, restricting conditions
 }
 a = 0
@@ -1445,7 +1444,7 @@ unique if cond1 {
 // RTL equivalent
 var sel = (!cond1 and !cond2, cond1, cond2)@[..]  // one hot encode
 var res2= __hotmux(sel, a, b, c)
-assume !(cond1 and cond2)                         // one hot check
+optimize !(cond1 and cond2)                       // one hot check
 
 lec res, res2
 var res = a
@@ -1461,9 +1460,9 @@ let cond2 = x == c2
 let cond3 = x == c3
 var sel = (cond1, cond2, !cond1 and !cond2)@[..]  // one hot encode (no cond3)
 var res2= __hotmux(sel, b, c, d)
-assume  ( cond1 and !cond2 and !cond3)
-     or (!cond1 and  cond2 and !cond3)
-     or (!cond1 and !cond2 and  cond3)    // one hot check (no else allowed)
+optimize ( cond1 and !cond2 and !cond3)
+      or (!cond1 and  cond2 and !cond3)
+      or (!cond1 and !cond2 and  cond3)    // one hot check (no else allowed)
 
 lec res, res2
     var lhs = v1 or_else v2
@@ -2227,7 +2226,7 @@ let x = for i in fn { last i(args) when (i.[inp] does args)
                                     and (i.[out] does x   )
                                     and (i.[where](args)   ) }
 let randomize::[debug] = fun(ref self) {
-  let rnd = import "prp/rnd"
+  let rnd = import("prp/rnd")
   for i in ref self {
     if i equals _:int {
       i = rnd.between(i.[max],i.[min])
@@ -2257,21 +2256,21 @@ let mytup = (
   ,call3 = fun() { puts "call called" }
 )
 // file: src/user.prp
-a = import "my_fun/*fun*"
+a = import("my_fun/*fun*")
 a.fun1(a=1,b=2)         // OK
 
-let fun1 = import "my_fun/fun1"
+let fun1 = import("my_fun/fun1")
 lec fun1, a.fun1
 
-x = import "my_fun/mytup"
+x = import("my_fun/mytup")
 
 x.call3()                // prints call called
-let a = import "prj1/file1"
-let b = import "file1"        // import xxx_fun from file1 in the local project
-let c = import "file2"        // import the functions from local file2
-let d = import "prj2/file3"   // import the functions from project prj2 and file3
-let b = import "prp/Number"
-var a = import "fancy/Number_mixin"
+let a = import("prj1/file1")
+let b = import("file1")       // import xxx_fun from file1 in the local project
+let c = import("file2")       // import the functions from local file2
+let d = import("prj2/file3")  // import the functions from project prj2 and file3
+let b = import("prp/Number")
+var a = import("fancy/Number_mixin")
 
 let Number = b ++ a // patch the default Number class
 
@@ -2283,7 +2282,7 @@ let do_increase = proc() {
 }
 
 let do_debug = proc() {
-  let cntr = regref "do_increase/counter"
+  let cntr = regref("do_increase/counter")
 
   puts "The counter value is {}", cntr
 }
@@ -2296,7 +2295,7 @@ let xxx = proc(some,code) {
 
 // file local.prp
 let setup_xx = proc() {
-  var xx = regref "uart_addr" // match xxx.uart_addr if xxx is in hierarchy
+  var xx = regref("uart_addr")// match xxx.uart_addr if xxx is in hierarchy
   for i,index in ref xx {     // ref in for to allow element updates
     i = 0x300+index*0x10      // sets uart_addr to 0x300, 0x310, 0x320...
   }
@@ -2754,7 +2753,7 @@ let smallest = fun(...a) {
 let speak = fun(a:Bird) { puts "pio pio"  } 
          ++ fun(a:Cat) { puts "meaow" }
 let Type1 = (
-  ,setter = fun(a:int) {  }
+  ,setter = fun(ref self, a:int) {  }
 )
 let a:Type1 = 33
 let Say_mixin = (
@@ -2997,7 +2996,7 @@ let long=1
 g(long, short=1)   // OK
 let short=1
 g(long, short)     // OK
-    assume sel==1 or sel==2 or sel==4 // not needed. match sets it
+    optimize sel==1 or sel==2 or sel==4 // not needed. match sets it
     match sel {
       == 0b001 { f = i0 }
       == 0b010 { f = i2 }
@@ -3006,7 +3005,7 @@ g(long, short)     // OK
     f = (sel[0] & i0)
       | (sel[1] & i1)
       | (sel[2] & i2)
-    assume a != 0
+    optimize a != 0
 
 
     if (1 + a) != 1 { // always false
@@ -3015,7 +3014,7 @@ g(long, short)     // OK
       out = 3
     }
 
-    assume b != 3 
+    optimize b != 3 
     // array = (1,2,3,4,5,6,7,8)
     res = array[b]
 let f1 = fun() { 1 }
@@ -3252,8 +3251,8 @@ let here = fun()  { puts "here" ; ret 3}
 let call_now   = fun(f:fun){ ret f() } 
 let call_defer = fun(f:fun){ ret f   } 
 
-let x0 = call_now here           // prints "here"
-let x1 = call_defer here         // nothing printed
+let x0 = call_now(here)          // prints "here"
+let x1 = call_defer(here)        // nothing printed
 assert x0  == 3                  // nothing printed
 assert x1  == 3                  // nothing printed
 
@@ -3277,6 +3276,29 @@ b::[defer] = a
 cassert a==1 and b==2
 
 cassert b.[defer] == 1
+let max_gap_count = fun(nums) {
+  let max  = import("std").max
+  let sort = import("std").sort
+  let adjacent_transform = fun(a,num,f) {
+    var res = ()
+    for i in 0..<a.length by num {
+      res ++= f(a[i..+num])
+    }
+    ret res
+  }
+  let count = fun(a,b) {
+    var r = 0
+    for i in a {
+      r += 1 when i == b
+    }
+    ret r
+  }
+
+  ret numbers
+     |> sort(fun(a,b) { a<b })
+     |> adjacent_transform(num=2, fun(a,b) { a-b } )
+     |> fun(a) { count(a, a.max) }
+}
 let add = fun(a,b) { a + b }            // OK, no constrains
 let add = fun<T:int>(a:T,b:T) { a + b } // constrain both to have same type
 let Shape = (
@@ -3481,7 +3503,7 @@ cassert enu.b.x in enu.b
     let tmp1 = a<3
     let tmp2 = a>40
     let tmp3 = 1<<(tmp1,tmp2)
-    assume tmp3@+[..]<=1        // at most one bit set
+    optimize tmp3@+[..]<=1        // at most one bit set
 
     if tmp1 {
       y = 10
@@ -3530,7 +3552,7 @@ cassert enu.b.x in enu.b
 
     txt = "I have {num:d} {color} potato{extension}"
     x = fcall(a,b=3,foo,1+2)
-let prp = import "prp"
+let prp = import("prp")
 cassert prp.plus(1,2,3) == 6
 let plus = fun(...a:int)->(_:int) {
   var r = 0

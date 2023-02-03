@@ -69,7 +69,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "restrict_statement"
+            "name": "assume_statement"
           }
         ]
       }
@@ -125,21 +125,17 @@
       }
     },
     "function_call_statement": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "simple_function_call"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_semicolon"
-          }
-        ]
-      }
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "simple_function_call"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
     },
     "control_statement": {
       "type": "PREC_RIGHT",
@@ -282,12 +278,25 @@
             }
           },
           {
-            "type": "FIELD",
-            "name": "code",
-            "content": {
-              "type": "SYMBOL",
-              "name": "scope_statement"
-            }
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "code",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "scope_statement"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "pipe",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "pipestage_scope_statement"
+                }
+              }
+            ]
           },
           {
             "type": "FIELD",
@@ -313,12 +322,25 @@
                       }
                     },
                     {
-                      "type": "FIELD",
-                      "name": "code",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "scope_statement"
-                      }
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "FIELD",
+                          "name": "code",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "scope_statement"
+                          }
+                        },
+                        {
+                          "type": "FIELD",
+                          "name": "pipe",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "pipestage_scope_statement"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -342,12 +364,25 @@
                         "value": "else"
                       },
                       {
-                        "type": "FIELD",
-                        "name": "code",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "scope_statement"
-                        }
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "FIELD",
+                            "name": "code",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "scope_statement"
+                            }
+                          },
+                          {
+                            "type": "FIELD",
+                            "name": "pipe",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "pipestage_scope_statement"
+                            }
+                          }
+                        ]
                       }
                     ]
                   }
@@ -607,12 +642,25 @@
             }
           },
           {
-            "type": "FIELD",
-            "name": "code",
-            "content": {
-              "type": "SYMBOL",
-              "name": "scope_statement"
-            }
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "code",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "scope_statement"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "pipe",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "pipestage_scope_statement"
+                }
+              }
+            ]
           }
         ]
       }
@@ -809,7 +857,7 @@
         ]
       }
     },
-    "restrict_statement": {
+    "assume_statement": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -817,7 +865,7 @@
         "members": [
           {
             "type": "STRING",
-            "value": "restrict"
+            "value": "assume"
           },
           {
             "type": "FIELD",
@@ -1045,17 +1093,8 @@
         "type": "CHOICE",
         "members": [
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "ref"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "typed_identifier"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "ref_identifier"
           },
           {
             "type": "SYMBOL",
@@ -1173,7 +1212,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "simple_function_call"
+                  "name": "ref_identifier"
                 }
               ]
             }
@@ -1247,11 +1286,11 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "simple_function_call"
+                  "name": "enum_definition"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "enum_definition"
+                  "name": "ref_identifier"
                 }
               ]
             }
@@ -1495,6 +1534,19 @@
             "type": "SYMBOL",
             "name": "arg_list"
           }
+        }
+      ]
+    },
+    "ref_identifier": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ref"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "typed_identifier"
         }
       ]
     },
@@ -3602,12 +3654,21 @@
                         "value": "."
                       },
                       {
-                        "type": "FIELD",
-                        "name": "item",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "_restricted_expression"
-                        }
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "identifier"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "constant"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "tuple_sq"
+                          }
+                        ]
                       }
                     ]
                   }
@@ -3702,10 +3763,6 @@
           {
             "type": "SYMBOL",
             "name": "tuple"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "tuple_sq"
           },
           {
             "type": "SYMBOL",
@@ -4110,10 +4167,6 @@
           {
             "type": "SYMBOL",
             "name": "tuple"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "tuple_sq"
           },
           {
             "type": "SYMBOL",

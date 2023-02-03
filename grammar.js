@@ -126,7 +126,7 @@ module.exports = grammar({
         ,$.expression_statement
         // Verification Only
         ,$.test_statement
-        ,$.restrict_statement
+        ,$.assume_statement
       )
     )
     ,scope_statement: $ => prec.left('statement', seq(
@@ -138,10 +138,10 @@ module.exports = grammar({
       $._assignment_or_declaration
       ,$._semicolon
     ))
-    ,function_call_statement: $ => prec.right(seq(
+    ,function_call_statement: $ => seq(
       $.simple_function_call
       ,$._semicolon
-    ))
+    )
     ,control_statement: $ => prec.right(seq(
       field('type', $.ret_type)
       ,field('argument', optional($._expression))
@@ -158,15 +158,24 @@ module.exports = grammar({
       optional('unique')
       ,'if'
       ,field('condition', $.stmt_list)
-      ,field('code', $.scope_statement)
+      ,choice(
+        field('code', $.scope_statement)
+        ,field('pipe', $.pipestage_scope_statement)
+      )
       ,field('elif', repseq(
         'elif'
         ,field('condition', $.stmt_list)
-        ,field('code', $.scope_statement)
+        ,choice(
+          field('code', $.scope_statement)
+          ,field('pipe', $.pipestage_scope_statement)
+        )
       ))
       ,field('else', optseq(
         'else'
-        ,field('code', $.scope_statement)
+        ,choice(
+          field('code', $.scope_statement)
+          ,field('pipe', $.pipestage_scope_statement)
+        )
       ))
     ))
     ,for_expression: $ => seq(
@@ -217,7 +226,10 @@ module.exports = grammar({
         ,$._expression
         ,'else'
       ))
-      ,field('code', $.scope_statement)
+      ,choice(
+        field('code', $.scope_statement)
+        ,field('pipe', $.pipestage_scope_statement)
+      )
     ))
     ,match_operator: $ => choice(
       'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
@@ -234,8 +246,8 @@ module.exports = grammar({
       ,field('condition', optseq('where', $.expression_list))
       ,field('code', $.scope_statement)
     ))
-    ,restrict_statement: $ => prec.right(seq(
-      'restrict'
+    ,assume_statement: $ => prec.right(seq(
+      'assume'
       ,field('name', $.expression_list)
       ,field('condition', seq('where', $.expression_list))
       ,field('code', $.scope_statement)
@@ -248,7 +260,6 @@ module.exports = grammar({
     // Function Call
     ,simple_function_call: $ => prec.left('simple_function_call', seq(
       field('function', choice($.identifier, $.dot_expression, $.selection))
-      //field('function', $._restricted_expression)
       ,field('argument', $.expression_list)
     ))
 
@@ -264,7 +275,7 @@ module.exports = grammar({
       ,repeat(',')
     ))
     ,_tuple_item: $ => prec.left(choice(
-      seq('ref', $.typed_identifier)
+      $.ref_identifier
       ,$._expression
       ,$.simple_assignment
       //,$.function_type
@@ -279,7 +290,8 @@ module.exports = grammar({
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
         $._expression
-        ,$.simple_function_call
+        ,$.ref_identifier
+        //,$.simple_function_call
       )
     )))
     ,_assignment_or_declaration: $ => prec.right(seq(
@@ -289,8 +301,9 @@ module.exports = grammar({
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
         $._expression
-        ,$.simple_function_call
+        //,$.simple_function_call
         ,$.enum_definition
+        ,$.ref_identifier
       )
     )))
     ,cycle_select_or_pound: $=> choice($.cycle_select)
@@ -307,6 +320,10 @@ module.exports = grammar({
     ,enum_definition: $ => seq(
       choice('enum', 'variant')
       ,field('input', $.arg_list)
+    )
+    ,ref_identifier: $ => seq(
+      'ref'
+      ,$.typed_identifier
     )
     ,capture_list: $ => listseq1(
       $.typed_identifier, optseq('=', field('expression', $._expression))
@@ -437,7 +454,12 @@ module.exports = grammar({
     ,dot_expression: $ => prec.left('dot', seq(
       field('item', $._restricted_expression)
       ,choice(
-        repeat1(prec.left('dot_sub', seq('.', field('item', $._restricted_expression))))
+        repeat1(prec.left('dot_sub', seq('.', 
+          choice(
+            $.identifier
+            ,$.constant
+            ,$.tuple_sq
+          ))))
       )
     ))
     ,function_call: $ => prec.left('function_call', seq(
@@ -453,7 +475,7 @@ module.exports = grammar({
       ,$.function_call
       ,$.function_definition
       ,$.tuple
-      ,$.tuple_sq
+      //,$.tuple_sq
       ,$.optional_expression
       ,$.for_expression
       ,$.if_expression
@@ -516,7 +538,7 @@ module.exports = grammar({
       //       `:  some_type[2]  ` means an array of `some_type` with a size of 2
       //       `:  some_type.2   ` means the type of the element at position 2 of `some_type`
       ,$.tuple
-      ,$.tuple_sq
+      //,$.tuple_sq
       ,$.for_expression
       ,$.if_expression
       ,$.match_expression
