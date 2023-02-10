@@ -35,7 +35,7 @@
 
 [
   "test"
-  "restrict"
+  "assume"
 ] @keyword.verification
 
 [
@@ -91,15 +91,13 @@
   (function_definition)
 )
 
-(simple_function_call
-  (identifier) @function)
 
 (function_call
   (identifier) @function)
 
 (
   (identifier) @function.verification
-  (#match? @function.verification "assert|assume|verify|waitfor")
+  (#match? @function.verification "assert|verify|waitfor")
 )
 
 (cycle_select) @function.pipeline
