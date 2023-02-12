@@ -506,6 +506,10 @@
             "named": false
           },
           {
+            "type": "to",
+            "named": false
+          },
+          {
             "type": "|",
             "named": false
           },
@@ -2800,6 +2804,10 @@
   },
   {
     "type": "test",
+    "named": false
+  },
+  {
+    "type": "to",
     "named": false
   },
   {

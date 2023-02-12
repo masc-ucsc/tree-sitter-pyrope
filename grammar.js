@@ -402,6 +402,7 @@ module.exports = grammar({
         ['..=', 'range']
         ,['..<', 'range']
         ,['..+', 'range']
+        ,['to', 'range']
         ,['by', 'step']
         ,['and', 'logical_and']
         ,['!and', 'logical_nand']

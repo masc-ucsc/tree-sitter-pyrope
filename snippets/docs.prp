@@ -445,10 +445,16 @@ assert b@sext[1..=-2] == 0sb110_100
 assert b@[1..=-3]     == 0sb10_100
 assert b@[1..<-3]     == 0b0_100
 assert b@[0]          == false
-
 let c = 1..=3
 assert int(c) == 0b1110
 assert range(0b01_1100) == 2..=4
+
+let d = 1 to 3
+assert d == (1,2,3)
+assert int(0..=10 by 2) == 0b101_0101_0101
+assert  0 to 10 by  2 == ( 0,2,4,6,8,10)
+assert 10 to  0 by -2 == (10,8,6,4,2, 0)
+assert (for i in 0..=10 by 2 { cont i }) == (0,2,4,6,8,10)
 assert((0..<30 by 10) == (0,10,20)) // ranges and tuples can combined
 assert((1..=3) ++ 4 == (1,2,3,4))   // tuple and range ops become a tuple
 assert 1..=3 == (1,2,3)
@@ -757,22 +763,23 @@ var a:int = _
 cassert a==0 and a.[valid] == false and not a?
 
 var b:int = 0
-cassert b==0 and b::[valid] and b?
+cassert b==0 and b.[valid] and b?
 b = nil
 cassert b==nil and b.[valid] == false and not b?
 
 var c:fun(a1) = _
-cassert c == nil and c::[valid==false]
+cassert c == nil and c.[valid]==false
 c = fun(a1) { cassert true }
-cassert c!= nil and c::[valid]
+cassert c!= nil and c.[valid]
 
-var d = ()                       // empty tuple
-cassert d != nil and d::[valid]
+var d:[] = _               // empty tuple
+cassert d != nil and d.[valid]
+cassert d[0] == nil and !d[0].[valid]
 
 var e:int = nil
-cassert e==nil and e::[valid==false] and not e?
+cassert e==nil and !e.[valid] and not e?
 e = 0
-cassert e==0 and e::[valid] and e?
+cassert e==0 and e.[valid] and e?
 let a = "foo"
 
 var at1 = (
@@ -965,7 +972,7 @@ for x in ref b {
   x += 1
 }
 assert b == (2,3,4,5,6)
-var total = ()
+var total:[] = _
 for a in 1..=10 {
   continue when a == 2
   total ++= a
@@ -978,7 +985,7 @@ if true {
 }
 
 a = 3
-var total2 = ()
+var total2:[] = _
 while a>0 {
   total2 ++= a
   break when a == 2    // exit if scope
@@ -1032,10 +1039,9 @@ f3 = ring(c, f2)
 f4 = ring(d, f3)
 reg counter:u32 = _
 
-let counter_m1 = counter#[-1] // last cycle
 let counter_0  = counter#[0]  // current cycle 
-let counter_1  = counter#[1]  // last cycle
-let counter_2  = counter#[2]  // last last cycle cycle 
+let counter_1  = counter#[-1] // last cycle
+let counter_2  = counter#[-2] // last last cycle cycle 
 
 var deferred = counter.[defer]
 
@@ -1047,10 +1053,9 @@ if counter < 100 {
 
 if counter == 10 {
   assert deferred   == 10
-  assert counter_0  == 10
-  assert counter_1  ==  9
-  assert counter_2  ==  8
-  assert counter_m1 ==  9
+  assert counter_0  ==  9
+  assert counter_1  ==  8
+  assert counter_2  ==  7
 }
 var a = 1
 assert a == 1 and a.[defer] == 200
@@ -3182,13 +3187,13 @@ for i,idx in r {
   assert v == i
 }
 
-let r2=4..=2 by -1
-assert r == r2
+let r2=4 to 2 by -1
+assert r2 == (4,3,2)
 for i,idx in r2 {
   let v = match idx {
-   == 0 { 2 }
+   == 0 { 4 }
    == 1 { 3 }
-   == 2 { 4 }
+   == 2 { 2 }
   }
   assert v == i
 }
@@ -3280,7 +3285,7 @@ let max_gap_count = fun(nums) {
   let max  = import("std").max
   let sort = import("std").sort
   let adjacent_transform = fun(a,num,f) {
-    var res = ()
+    var res:[] = _
     for i in 0..<a.length by num {
       res ++= f(a[i..+num])
     }
