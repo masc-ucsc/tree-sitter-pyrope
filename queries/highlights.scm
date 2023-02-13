@@ -39,15 +39,12 @@
 ] @keyword.verification
 
 [
-  "while"
-  "for"
-] @repeat
-
-[
   "if"
   "elif"
   "else"
   "match"
+  "while"
+  "for"
 ] @conditional
 
 ; Types
