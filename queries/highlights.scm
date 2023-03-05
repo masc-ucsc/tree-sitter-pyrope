@@ -11,6 +11,7 @@
   ">>"
   "<<"
 
+  ":"
 ] @operator 
 
 (assignment_operator) @operator
@@ -48,35 +49,35 @@
 ] @conditional
 
 ; Types
+((constant) @boolean
+  (#any-of? @boolean "true" "false"))
+((identifier) @boolean
+  (#any-of? @boolean "true" "false"))
+
 
 [
   "int"
 
 ] @type
 
-(unsized_integer_type) @number
-(sized_integer_type) @number
-(bounded_integer_type) @number
+(unsized_integer_type) @type
+(sized_integer_type) @type
+(bounded_integer_type) @type
 
 (constant) @constant
 
-(boolean_type) @boolean
-
-(string_type) @string
+(boolean_type) @type
+(string_type) @type
 
 (typed_identifier
   (identifier) @identifier)
   
 (type_cast
-  (expression_type
-    (identifier) @type))
+  (_) @type)
 
 (type_specification
   argument: (identifier) @variable
-  attribute: (attributes
-    attr: (_
-      (tuple_list
-        (identifier) @type))))
+  (_) @type)
 
 (primitive_type) @type
 
@@ -93,8 +94,8 @@
   (identifier) @function)
 
 (
-  (identifier) @function.verification
-  (#match? @function.verification "assert|verify|waitfor")
+  (identifier) @debug
+  (#any-of? @debug "assert" "cassert" "verify")
 )
 
 (cycle_select) @function.pipeline
