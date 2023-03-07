@@ -2667,6 +2667,10 @@
     "named": false
   },
   {
+    "type": "comment",
+    "named": true
+  },
+  {
     "type": "cont",
     "named": false
   },

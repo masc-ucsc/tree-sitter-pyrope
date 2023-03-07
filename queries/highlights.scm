@@ -49,11 +49,11 @@
 ] @conditional
 
 ; Types
+
 ((constant) @boolean
   (#any-of? @boolean "true" "false"))
 ((identifier) @boolean
   (#any-of? @boolean "true" "false"))
-
 
 [
   "int"
@@ -80,7 +80,6 @@
   (_) @type)
 
 (primitive_type) @type
-
 
 ; Functions
 
@@ -114,3 +113,5 @@
   (assignment_operator)
 )
 
+; Comments
+(comment) @comment @spell

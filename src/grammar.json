@@ -4814,7 +4814,7 @@
         "value": "[\\s\\p{Zs}\\uFEFF\\u2060\\u200B]"
       }
     },
-    "_comment": {
+    "comment": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -4911,7 +4911,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_comment"
+      "name": "comment"
     }
   ],
   "conflicts": [

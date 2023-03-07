@@ -28,7 +28,7 @@ module.exports = grammar({
     ,[$._restricted_expression, $.function_type]
     ,[$._expression, $.function_type]
   ]
-  ,extras:    $ => [ $._space, $._comment ]
+  ,extras:    $ => [ $._space, $.comment ]
   ,word:      $ => $.identifier
   ,inline:    $ => []
 
@@ -655,7 +655,7 @@ module.exports = grammar({
 
     // Special
     ,_space:   $ => token(/[\s\p{Zs}\uFEFF\u2060\u200B]/)
-    ,_comment: $ => token(choice(
+    ,comment: $ => token(choice(
       /\/\/.*/
       ,seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     ))
