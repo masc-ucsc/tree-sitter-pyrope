@@ -1957,6 +1957,16 @@
     "type": "simple_function_call",
     "named": true,
     "fields": {
+      "always": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "always_tok",
+            "named": true
+          }
+        ]
+      },
       "argument": {
         "multiple": false,
         "required": true,
@@ -2629,6 +2639,10 @@
   {
     "type": "^",
     "named": false
+  },
+  {
+    "type": "always_tok",
+    "named": true
   },
   {
     "type": "and",

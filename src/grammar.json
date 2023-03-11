@@ -952,6 +952,22 @@
         "members": [
           {
             "type": "FIELD",
+            "name": "always",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "always_tok"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
             "name": "function",
             "content": {
               "type": "CHOICE",
@@ -4600,6 +4616,13 @@
       "content": {
         "type": "STRING",
         "value": "type"
+      }
+    },
+    "always_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "always"
       }
     },
     "identifier": {

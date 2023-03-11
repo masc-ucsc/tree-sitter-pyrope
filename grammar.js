@@ -259,7 +259,8 @@ module.exports = grammar({
 
     // Function Call
     ,simple_function_call: $ => prec.left('simple_function_call', seq(
-      field('function', choice($.identifier, $.dot_expression, $.selection))
+      field('always', optional($.always_tok))
+      ,field('function', choice($.identifier, $.dot_expression, $.selection))
       ,field('argument', $.expression_list)
     ))
 
@@ -602,6 +603,7 @@ module.exports = grammar({
     ,type_type: $ => token('type')
 
     // Identifiers
+    ,always_tok: $ => token('always')
     ,identifier: $ => token(
       choice(
         // \p{L}  : Letter
