@@ -16,10 +16,6 @@
         "named": true
       },
       {
-        "type": "for_expression",
-        "named": true
-      },
-      {
         "type": "function_call",
         "named": true
       },
@@ -79,6 +75,10 @@
           },
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           }
         ]
@@ -236,7 +236,7 @@
         ]
       },
       "rvalue": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
@@ -245,6 +245,10 @@
           },
           {
             "type": "enum_definition",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           },
           {
@@ -579,10 +583,6 @@
             "named": true
           },
           {
-            "type": "for_expression",
-            "named": true
-          },
-          {
             "type": "function_call",
             "named": true
           },
@@ -677,6 +677,10 @@
           {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "for_comprehension",
+            "named": true
           }
         ]
       }
@@ -702,11 +706,15 @@
     "named": true,
     "fields": {
       "argument": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           }
         ]
@@ -717,16 +725,6 @@
         "types": [
           {
             "type": "when_unless_cond",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "ret_type",
             "named": true
           }
         ]
@@ -777,10 +775,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "for_expression",
             "named": true
           },
           {
@@ -862,10 +856,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "for_expression",
             "named": true
           },
           {
@@ -990,11 +980,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "for_comprehension",
           "named": true
         }
       ]
@@ -1014,10 +1008,6 @@
         },
         {
           "type": "dot_expression_type",
-          "named": true
-        },
-        {
-          "type": "for_expression",
           "named": true
         },
         {
@@ -1048,7 +1038,43 @@
     }
   },
   {
-    "type": "for_expression",
+    "type": "for_comprehension",
+    "named": true,
+    "fields": {
+      "condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "stmt_list",
+            "named": true
+          }
+        ]
+      },
+      "data": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression_list",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "typed_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "for_statement",
     "named": true,
     "fields": {
       "code": {
@@ -1237,6 +1263,20 @@
           }
         ]
       },
+      "ensures": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "ensures",
+            "named": false
+          }
+        ]
+      },
       "func_type": {
         "multiple": false,
         "required": true,
@@ -1294,6 +1334,20 @@
           {
             "type": "type_or_identifier",
             "named": true
+          }
+        ]
+      },
+      "requires": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "requires",
+            "named": false
           }
         ]
       }
@@ -1516,10 +1570,6 @@
         "required": true,
         "types": [
           {
-            "type": "_expression",
-            "named": true
-          },
-          {
             "type": "else",
             "named": false
           },
@@ -1579,10 +1629,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "for_expression",
             "named": true
           },
           {
@@ -1761,11 +1807,6 @@
     }
   },
   {
-    "type": "ret_type",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "scope_expression",
     "named": true,
     "fields": {},
@@ -1938,11 +1979,15 @@
         ]
       },
       "rvalue": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           },
           {
@@ -2022,6 +2067,10 @@
           "named": true
         },
         {
+          "type": "for_statement",
+          "named": true
+        },
+        {
           "type": "function_call_statement",
           "named": true
         },
@@ -2058,6 +2107,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           },
           {
@@ -2137,6 +2190,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "for_comprehension",
             "named": true
           },
           {
@@ -2244,10 +2301,6 @@
           },
           {
             "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "for_expression",
             "named": true
           },
           {
@@ -2669,10 +2722,6 @@
     "named": false
   },
   {
-    "type": "brk",
-    "named": false
-  },
-  {
     "type": "by",
     "named": false
   },
@@ -2683,10 +2732,6 @@
   {
     "type": "comment",
     "named": true
-  },
-  {
-    "type": "cont",
-    "named": false
   },
   {
     "type": "continue",
@@ -2702,6 +2747,10 @@
   },
   {
     "type": "else",
+    "named": false
+  },
+  {
+    "type": "ensures",
     "named": false
   },
   {
@@ -2753,10 +2802,6 @@
     "named": false
   },
   {
-    "type": "last",
-    "named": false
-  },
-  {
     "type": "let",
     "named": false
   },
@@ -2797,7 +2842,7 @@
     "named": false
   },
   {
-    "type": "ret",
+    "type": "requires",
     "named": false
   },
   {

@@ -122,6 +122,7 @@ module.exports = grammar({
         ,$.function_call_statement
         ,$.control_statement
         ,$.while_statement
+        ,$.for_statement
         ,$.loop_statement
         ,$.expression_statement
         // Verification Only
@@ -142,13 +143,13 @@ module.exports = grammar({
       $.simple_function_call
       ,$._semicolon
     )
-    ,control_statement: $ => prec.right(seq(
-      field('type', $.ret_type)
-      ,field('argument', optional($._expression))
-      ,$._semicolon
-    ))
-    ,ret_type: $ => choice(
-      'ret', 'return', 'cont', 'continue', 'brk', 'break', 'last'
+    ,control_statement: $ => choice(
+      choice('continue', 'break')
+      ,seq(
+        'return'
+        ,field('argument', optional($._expression_with_comprehension))
+        ,$._semicolon
+      )
     )
     ,stmt_list: $ => prec.left('tuple_list', seq(
       field('item', $._tuple_item)
@@ -178,7 +179,7 @@ module.exports = grammar({
         )
       ))
     ))
-    ,for_expression: $ => seq(
+    ,for_statement: $ => seq(
       'for'
       ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
       ,'in'
@@ -223,7 +224,7 @@ module.exports = grammar({
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
         seq($.match_operator, $.expression_list)
-        ,$._expression
+        //,$._expression
         ,'else'
       ))
       ,choice(
@@ -237,7 +238,7 @@ module.exports = grammar({
       'equals', '!equals', 'does', '!does', 'is', '!is'
     )
     ,expression_statement: $ => prec.right(seq(
-      $._expression
+      $._expression_with_comprehension
       ,$._semicolon
     ))
     ,test_statement: $ => prec.right(seq(
@@ -277,7 +278,7 @@ module.exports = grammar({
     ))
     ,_tuple_item: $ => prec.left(choice(
       $.ref_identifier
-      ,$._expression
+      ,$._expression_with_comprehension
       ,$.simple_assignment
       //,$.function_type
     ))
@@ -290,7 +291,7 @@ module.exports = grammar({
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
-        $._expression
+        $._expression_with_comprehension
         ,$.ref_identifier
         //,$.simple_function_call
       )
@@ -301,7 +302,7 @@ module.exports = grammar({
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
-        $._expression
+        $._expression_with_comprehension
         //,$.simple_function_call
         ,$.enum_definition
         ,$.ref_identifier
@@ -316,6 +317,8 @@ module.exports = grammar({
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       ,field('condition', optseq('where', $.expression_list))
+      ,field('requires', optseq('requires', $._expression))
+      ,field('ensures', optseq('ensures', $._expression))
       ,field('code', $.scope_statement)
     )
     ,enum_definition: $ => seq(
@@ -327,7 +330,7 @@ module.exports = grammar({
       ,$.typed_identifier
     )
     ,capture_list: $ => listseq1(
-      $.typed_identifier, optseq('=', field('expression', $._expression))
+      $.typed_identifier, optseq('=', field('expression', $._expression_with_comprehension))
     )
     ,identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
     ,arg_list: $ => prec.left(seq(
@@ -342,7 +345,7 @@ module.exports = grammar({
     ,arg_item: $ => seq(
       field('mod', optional(choice('...','ref','reg')))
       ,$.typed_identifier
-      ,field('definition', optseq('=', $._expression))
+      ,field('definition', optseq('=', $._expression_with_comprehension))
     )
 
     ,type_or_identifier: $ => choice(
@@ -362,6 +365,22 @@ module.exports = grammar({
       ,$.binary_expression
       ,$._restricted_expression
     ))
+    ,_expression_with_comprehension: $ => seq(
+      $._expression
+      ,optional($.for_comprehension)
+    )
+    ,for_comprehension: $ => seq(
+      'for'
+      ,$.typed_identifier
+      ,'in'
+      ,field('data', $.expression_list)
+      ,optional(
+        seq(
+          'if'
+          ,field('condition', $.stmt_list)
+        )
+      )
+    )
     ,selection: $ => choice(
       $.member_selection
       ,$.bit_selection
@@ -479,7 +498,7 @@ module.exports = grammar({
       ,$.tuple
       //,$.tuple_sq
       ,$.optional_expression
-      ,$.for_expression
+      //,$.for_expression
       ,$.if_expression
       ,$.match_expression
       ,$.scope_expression
@@ -541,7 +560,7 @@ module.exports = grammar({
       //       `:  some_type.2   ` means the type of the element at position 2 of `some_type`
       ,$.tuple
       //,$.tuple_sq
-      ,$.for_expression
+      //,$.for_expression
       ,$.if_expression
       ,$.match_expression
       ,$.scope_expression

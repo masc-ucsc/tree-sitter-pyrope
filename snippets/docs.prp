@@ -91,7 +91,7 @@ puts(priority=2, " world")
 
 // src/file2.prp
 print(priority=1, "hello")
-var f = fun(a,b) { ret a + b }
+var f = fun(a,b) { a + b }
 var a = fcall() + 1               // OK
 var x = pcall() + a               // OK, proc combined with variable read
 var b = fcall(a) + 10 + pcall(a)  // OK
@@ -457,7 +457,7 @@ assert 10 to  0 by -2 == (10,8,6,4,2, 0)
 
 assert -1 to 2 == (-1,0,1,2)
 
-assert (for i in 0..=10 by 2 { cont i }) == (0,2,4,6,8,10)
+assert (i for i in 0..=10 by 2) == (0,2,4,6,8,10)
 assert((0..<30 by 10) == (0,10,20)) // ranges and tuples can combined
 assert((1..=3) ++ 4 == (1,2,3,4))   // tuple and range ops become a tuple
 assert 1..=3 == (1,2,3)
@@ -472,12 +472,12 @@ assert "h" ++ "ell" == ('h','e','l','l') == "hell"
 var bund1 = (color:string, value:s33)
 x:bund1        = _      // OK, declare x of type bund1 with default values
 bund1.color    = "red"  // OK
-bund1.is_green = fun(self) { ret self.color == "green" }
+bund1.is_green = fun(self) { self.color == "green" }
 x.color        = "blue" // OK
 
 let typ = (color:string, value:s33, is_green:fun(self) = _)
 y:typ        = _        // OK
-typ.is_green = fun(self) { ret self.color == "green" }
+typ.is_green = fun(self) { self.color == "green" }
 y.color      = "red"    // OK
 
 let bund3 = (color:string, value:s33)
@@ -516,7 +516,7 @@ assert tmp.[bits] < 30 and !tmp.[comptime]
 
     read_state = fun(x) {
       let f:u32:[comptime] = x // f is compile time or a error is generated
-      ret f                    // f should be compile time constant
+      return f                 // f should be compile time constant
     }
 
     var foo = read_state(zz) // foo will be compile time constant
@@ -528,7 +528,7 @@ assert tmp.[bits] < 30 and !tmp.[comptime]
       let f = x
       cassert f does u32
       cassert f.[comptime]
-      ret f
+      f
     }
 
     var foo = read_state(zz) // foo will be compile time constant
@@ -553,7 +553,7 @@ assert b.[poison] and b==4
 let counter = proc(en, width) {
   reg value:uint:[bits=width] = 0
   value = value + 1
-  ret value
+  value
 }
 
 let counter2::[clock_pin=clk1]=counter
@@ -825,24 +825,6 @@ assert !rand implies y == 2
 assert z.[valid]
 assert  rand implies z == 5
 assert !rand implies z == 6
-    let add = fun(a,b) { ret a+b }
-
-    for a in 0..=20 {
-      for b in 0..=20 {
-        test "checking add({},{})", a,b {
-           cassert a+b == add(a,b)
-        }
-      }
-    }
-    let add = fun(a,b) { ret a+b }
-
-    test "checking add" {
-      for a in 0..=20 {
-        for b in 0..=20 {
-           cassert a+b == add(a,b)
-        }
-      }
-    }
 let cassert::[comptime] = assert
 let coptimize::[comptime] = optimize
 a = 3
@@ -862,8 +844,8 @@ if cond {
 assert cond implies a == 3, "the branch was taken, so it must be 3??"
 assert a == 3, "the same error" when   cond
 assert a == 0, "the same error" unless cond
-let fun1 = fun(a,b) { ret a | b}
-let fun2 = fun(a,b) { ret ~(~a | ~b) }
+let fun1 = fun(a,b) { a | b}
+let fun2 = fun(a,b) { ~(~a | ~b) }
 lec fun1, fun2
 let mul2 = proc(a,b) -> (reg out) {
   reg pipe1 = _
@@ -899,13 +881,77 @@ for i in 1..<100 {
 }
 
 let get_rand_0_2556 = fun(a:u8) {
-  ret a.[rand]
+  a.[rand]
 }
 let a = (1,2,3,b=4)
 let x = a.[rand]
 
 cassert x==1 or x==2 or x==3 or x==4
 cassert x.b==4 when x==4
+    let add = fun(a,b) { a+b }
+
+    for a in 0..=20 {
+      for b in 0..=20 {
+        test "checking add({},{})", a,b {
+           cassert a+b == add(a,b)
+        }
+      }
+    }
+    let add = fun(a,b) { a+b }
+
+    test "checking add" {
+      for a in 0..=20 {
+        for b in 0..=20 {
+           cassert a+b == add(a,b)
+        }
+      }
+    }
+let counter = proc(update)->(value) {
+  reg count:u8:[wrap] = 0
+
+  value = count
+
+  count += 1 when update
+}
+
+test "counter through several cycles" {
+ 
+  var inp = true
+  let x = counter(inp.[defer])  // inp contents at the end of each cycle 
+
+  assert x == 0 // x.value == 0
+  assert inp == true
+
+  step
+
+  assert x == 1
+  inp = false
+
+  step
+
+  assert x == 1
+  assert inp == false
+  inp = true
+
+  assert inp == true
+  assert x == 1
+
+  step
+
+  assert inp == true
+  assert x == 2
+}
+test "assert should fail" {
+
+ let n = assert.[failed] 
+ assert n == false
+
+ assert false // FAILS
+
+ assert assert.[false]
+
+ assert.[failed] = false // disable test failures done when it finishes
+}
 a = unique if cond == 1 {
     300
   }elif cond == 2 {
@@ -947,7 +993,7 @@ assert a == 1000 when a > 10  // assert never executed either
 
 reg my = 3 when some_condition  // no register declared otherwise
 
-ret "fail" unless success_condition
+return "fail" unless success_condition
 {
   var x=1
   var z=_
@@ -966,30 +1012,39 @@ if {let a=1+yy; 13<a} {
   some_code()
 }
 
-let z3 = 1 + { if true { brk 3  } else { assert false } }
-assert z4 == 4
+let doit = fun(f,a) {
+  let x = f(a)
+  assert x == 7
+  return 3
+}
+
+let z3 = doit(fun(a) { 
+  assert a!=0
+  return 7             // exist the current lambda
+  100                  // never reached statement
+}, 33)
+cassert z3 == 3
 for i in 0..<100 {
  some_code(i)
 }
 
 var bund = (1,2,3,4)
-for i,index in bund {
+for index,i in bund {
   assert bund[j] == i
 }
 let b = (a=1,b=3,c=5,7,11)
 
-for i,index,key in b {
+for index,key,i in b {
   assert i==1  implies (index==0 and key == 'a')
   assert i==3  implies (index==1 and key == 'b')
   assert i==5  implies (index==2 and key == 'c')
   assert i==7  implies (index==3 and key == '' )
   assert i==11 implies (index==4 and key == '' )
 }
-var c = for i in 0..<5 { cont i }
-var d = for i in 0..<5 { i }
-var 2 = for i in 0..<5 { brk i }
-assert c == (0,1,2,3,4) == d
-assert e == (0)
+var d = i for i in 0..<5 
+var e = i for i in 0..<5 if i
+assert (0,1,2,3,4) == d
+assert e == (1,2,3,4)
 b = (1,2,3,4,5)
 
 for x in ref b {
@@ -1018,29 +1073,9 @@ while a>0 {
   assert false         // never executed
 }
 assert total2 == (3,2)
-total = for i in 1..=9 {
-  cont  i+10 when i < 3
-  brk  i+20 when i > 5
-}
-assert total == (11, 12, 3, 4, 5, 26)
 
-let v = fun() { ret 4 }
-assert v == 4
-
-let y = {         // expr scope1
-  var d=1 
-  brk {          // start expr scope2, brk finishes scope1
-    if true { 
-      brk 33     // finishes scope2
-      assert false 
-    } else { 
-      brk d
-      assert false 
-    }
-  } + 200 
-  assert false
-}
-assert y == (33+200)
+total = i+10 for i in 1..=9 if i<3
+assert total == (11, 12)
 // a do while contruct does not exist, but a loop is quite clean/close
 
 var a = 0
@@ -1099,7 +1134,7 @@ assert x.[defer] == 1
 test "my test {}", 1 {
   assert true
 }
-    let add = fun(a,b) { ret a+b }
+    let add = fun(a,b) { a+b }
 
     for i in 0..<10 { // 10 tests
       let a = (-30..<100).rand
@@ -1109,7 +1144,7 @@ test "my test {}", 1 {
         assert add(a,b) == (a+b)
       }
     }
-    let add = fun(a,b) { ret a+b }
+    let add = fun(a,b) { a+b }
 
     test "test 10 additions" {
       for i in 0..<10 { // 10 tests
@@ -1196,14 +1231,14 @@ let my_log::[debug] = fun (...inp) {
   puts
 }
 
-let f = fun<X>(a:X,b:X){ ret a+b }   // enforces a and b with same type
+let f = fun<X>(a:X,b:X){ a+b }   // enforces a and b with same type
 assert f(33:u22,100:u22)
 
 my_log a, false, x+1
 let div  = fun (self,b) { self / b }  // named input tuple
 let div2 = fun (...x){ x.0 / x.1 }    // unnamed input tuple
 
-let noarg = fun () { ret 33 }         // explicit no args
+let noarg = fun () { 33 }         // explicit no args
 
 assert 33 == noarg()
                       
@@ -1221,10 +1256,10 @@ k=(4)    |> div2(8)      // OK, 2, same as div2(8,4)
 l=(4,33) |> div2(8)      // OK, 2, same as div2(8,4,33)
 
 var tup = (
-  ,let f1 = fun(self) { ret 1 }
+  ,let f1 = fun(self) { 1 }
 )
 
-let f2 = fun (self){ ret 3 }
+let f2 = fun (self){ 3 }
 
 
 let xx = fun[tup] { tup.f1() } // OK, function restricted scope for f1
@@ -1245,7 +1280,7 @@ arg_fun(1,2)     // OK too
 
 var intercepted:(
  ,field:u32
- ,getter=fun(self) { ret self.field + 1 }
+ ,getter=fun(self) { self.field + 1 }
  ,setter=fun(ref self,v ) { self.field = v }
 ) = 0
 
@@ -1323,7 +1358,7 @@ var a_1 = (
   ,x:u10
   ,let f1 = fun(ref self,x)->(self) { // BOTH ref self and return self is OK
     self.x = x 
-    ret self
+    self
   }
 )
 
@@ -1372,7 +1407,7 @@ assert y.a == 6
       ,foo = fun () {
          bar = fun() { puts "bar" }
          puts "mem.foo"
-         ret (bar=bar)
+         return (bar=bar)
       }
     )
     b = 3
@@ -1394,7 +1429,7 @@ assert y.a == 6
       ,foo = fun () {
          bar = fun() { puts "bar" }
          puts "mem.foo"
-         ret (bar=bar)
+         return (bar=bar)
       }
     )
     b = 3
@@ -1417,7 +1452,7 @@ let fib1 = fun(n) where n==0 {0}
 assert fib1(10) == 55
 
 let fib2 = fun(n) {
-  ret match n {
+  return match n {
     == 0 {0}
     == 1 {1}
     else {fib2(n-1) + fib2(n-2)}
@@ -1526,7 +1561,7 @@ lec res, res2
 
     lec lhs , lhs2
     lec lhs?, lhs2_v
-    let f = fun(a,b) { ret if a == 0 { 3 }else{ b } }
+    let f = fun(a,b) { if a == 0 { 3 }else{ b } }
 
     var lhs = c
     if cond {
@@ -1590,7 +1625,7 @@ lec res, res2
           let res = self.total
           self.total::[wrap] = res+a
 
-          ret res
+          res
         }
       )
 
@@ -1610,7 +1645,7 @@ lec res, res2
           let res = self.total
           self.total::[wrap] = res+a
 
-          ret res
+          res
         }
       )
 
@@ -1910,7 +1945,7 @@ reg my_reg::[retime=true,clock=my_clk] = 0
       reg r  = _
       let rr = r           // get flop value
       r = a+b
-      ret rr
+      return rr
     }
     let mul3 = proc(a,b) { // 3 cycle multiply
       reg reg1 = _
@@ -1919,7 +1954,7 @@ reg my_reg::[retime=true,clock=my_clk] = 0
       reg3 = reg2
       reg2 = reg1
       reg1 = a * b
-      ret reg3
+      return reg3
     }
 
     let block = proc(in1,in2)->(out) {
@@ -1948,12 +1983,12 @@ let quick_log2 = fun(a) {
     i *= 2
   }
 
-  ret v
+  return v
 }
 
 let div=proc(a,b,id)->(res,id) {
   loop #>free_div_units[4] {
-    ret (a >> quick_log2(b), id) when b@+[..] == 1
+    return (a >> quick_log2(b), id) when b@+[..] == 1
     #>my_fsm[lat=5,num=1] {
       res = (a/b, id)
     }
@@ -2040,7 +2075,7 @@ let t2 = (a:int=100, b:string)
 var v1 = (a=33     , b="hello")
 
 let f1 = fun() {
-  ret (a=33     , b="hello")
+  return (a=33     , b="hello")
 }
 
 assert t1    equals t2
@@ -2084,8 +2119,8 @@ var c1:t1 = (b=3, a="hello") // OK
 var d:t2 = c                 // OK, both fully named
 assert d.0 == c.1 and c.0 == d.1
 assert d.a == c.a and d.b == c.b
-let a = fun() { ret 1 }
-let b = fun() { ret 2 }
+let a = fun() { 1 }
+let b = fun() { 2 }
 assert a equals _:fun()    // 1 !equals :fun()
 
 assert a() != b()              // 1 != 2
@@ -2128,7 +2163,7 @@ assert t4  is     t1
 assert t4 !is     t2
 
 let f2 = fun(x) where x is X1 {
-  ret x.b + 1
+  x.b + 1
 }
 let Rgb = (
   ,c:u24
@@ -2284,11 +2319,16 @@ let fu = fun(a,b=2) -> (c) where a>10 { c = a + b }
 assert fu.[inp] equals ('a','b')
 assert fu.[out] equals ('c')
 assert fu.[where](a=200) and !fu.[where](a=1)
-let x = fn(args)
+let x:u32 = fn(a1,a2)
 
-let x = for i in fn { last i(args) when (i.[inp] does args)
-                                    and (i.[out] does x   )
-                                    and (i.[where](args)   ) }
+let model_poly_call = fun(fn, ...args)->(out) {
+  for f in fn {
+     continue unless f.[inp] does args
+     continue unless f.[out] does out
+     return f(args) when i.[where](args)
+  }
+}
+let x:u32 = model_poly_call(fn, a1, a2)
 let randomize::[debug] = fun(ref self) {
   let rnd = import("prp/rnd")
   for i in ref self {
@@ -2298,7 +2338,7 @@ let randomize::[debug] = fun(ref self) {
       i = rnd.boolean()
     }
   }
-  ret self
+  self
 }
 
 let x = (a=1,b=true,c="hello")
@@ -2311,10 +2351,10 @@ assert y.c=="hello"  // string is not supposed to mutate in randomize()
 // file: src/my_fun.prp
 let fun1    = fun(a,b) { a+b }
 let fun2    = fun(a) {
-  let inside = fun() { ret 3 }
-  ret a
+  let inside = fun() { 3 }
+  a
 }
-let another = fun(a) { ret a }
+let another = fun(a) { a }
 
 let mytup = (
   ,call3 = fun() { puts "call called" }
@@ -2359,13 +2399,13 @@ let xxx = proc(some,code) {
 
 // file local.prp
 let setup_xx = proc() {
-  var xx = regref("uart_addr")// match xxx.uart_addr if xxx is in hierarchy
-  for i,index in ref xx {     // ref in for to allow element updates
-    i = 0x300+index*0x10      // sets uart_addr to 0x300, 0x310, 0x320...
+  var xx = regref("uart_addr") // match xxx.uart_addr if xxx is in hierarchy
+  for index,val in ref xx {    // ref in for to allow element updates
+    val = 0x300+index*0x10     // sets uart_addr to 0x300, 0x310, 0x320...
   }
 }
 let bpred = ( // complex predictor
-  ,let taken = fun(){ ret self.some_table[som_var] >=0 }
+  ,let taken = fun(){ self.some_table[som_var] >=0 }
 )
 
 test "mocking taken branches" {
@@ -2410,8 +2450,8 @@ let My_2_elem = (
     } ++ proc(ref self) { // default _ assignment
       self.data = _
     }
-  ,getter = fun(self)         { ret self.data    } 
-         ++ fun(self, i:uint) { ret self.data[i] }
+  ,getter = fun(self)         { self.data    } 
+         ++ fun(self, i:uint) { self.data[i] }
 )
 
 var v:My_2_elem = _
@@ -2447,9 +2487,9 @@ x.a2 = 5
 let showcase = (
   ,v:int = _
   ,getter = fun(self)->(_:string) where self.i>10 {
-    ret format("this is a big {} number", self.v)
+    format("this is a big {} number", self.v)
   } ++ fun(self)->(_:int) {
-    ret self.v
+    self.v
   }
 )
 
@@ -2462,9 +2502,9 @@ let r3:string = s // OK
 cassert r3 == "this is a bit 100 number"
 let my_obj = (
   ,val:u32 = _
-  ,getter = fun(self)->(_:string ){ ret string(self.val) }
-       ++ fun(self)->(_:bool){ ret self.val != 0    }
-       ++ fun(self)->(_:int    ){ ret self.val         }
+  ,getter = fun(self)->(_:string ){ string(self.val) }
+       ++ fun(self)->(_:bool){ self.val != 0    }
+       ++ fun(self)->(_:int    ){ self.val         }
 )
 var obj1::[attr1] = (
   ,data:int = _
@@ -2505,7 +2545,7 @@ cassert y.v == "ucsc"
 var my_arr = (
   ,vector:[16]u8 = 0
   ,getter = fun(self, idx:u4) {
-     ret self.vector[idx]
+     self.vector[idx]
   }
   ,setter = proc(ref self, idx:u4, val:u8) {
      self.vector[idx] = val
@@ -2542,7 +2582,7 @@ let t=(
   ,v:string = _
   ,setter = proc(ref self) { self.v = a }
   ,lt = fun(self,other)->(_:bool){ self.v  < other.v }
-  ,eq = fun(self,other)            { self.v == other.v } // infer ret
+  ,eq = fun(self,other)            { self.v == other.v } // infer return
 )
 
 var m1:t = 10
@@ -2574,9 +2614,9 @@ let t2=(
   ,xx_a=33
   ,yy_b = "foo"
   ,eq = fun(self, o:t1) {
-    ret self.xx_a == o.b and self.xx_y == o.long_name
+    return self.xx_a == o.b and self.xx_y == o.long_name
   } ++ fun(self, o:t2) {
-    ret self.xx_a == o.xx_a and self.xx_y == o.xx_y
+    return self.xx_a == o.xx_a and self.xx_y == o.xx_y
   }
 )
 
@@ -2727,11 +2767,11 @@ assert t.fun2() == 2     // base.fun2 catches all ahead of ext.fun2
 assert t.fun3(1,2) == 7  // EXACT match of arguments has higher priority
 assert t.fun3() == 8     // ext.fun3 catches all ahead of ext.fun3
 let x = base ++ (
-  ,fun1 = fun() { ret base.fun1() + 100 }
+  ,fun1 = fun() { return base.fun1() + 100 }
 )
-var fun_list = fun(a,b){ ret a+b}
-fun_list ++= fun(a,b,c){ ret a+b+c }
-fun_list ++= fun(a,b,c,d){ ret a+b+c+d }
+var fun_list = fun(a,b){ a+b}
+fun_list ++= fun(a,b,c){ a+b+c }
+fun_list ++= fun(a,b,c,d){ a+b+c+d }
 
 assert fun_list.[size] == 3    // 3 lambda entries in fun_list
 
@@ -2740,20 +2780,20 @@ assert fun_list(1,2,4) == 7
 assert fun_list(1,2,4,5) == 12
 
 
-fun_list ++= fun(a,b){ ret 100}
+fun_list ++= fun(a,b){ 100}
 assert fun_list(1,2) == 3
 
-fun_list = fun(a,b){ ret 200} ++ fun_list
+fun_list = fun(a,b){ 200} ++ fun_list
 assert fun_list(1,2) == 200
-var f1 = fun(a,b){ ret a+b+100 }
-  f1 ++= fun(x,y){ ret x+y+200 }
+var f1 = fun(a,b){ a+b+100 }
+  f1 ++= fun(x,y){ x+y+200 }
 
 assert f1(a=1,b=2) == 103
 assert f1(x=1,y=2) == 203
 assert f1(  1,  2) == 103  // first in list
-var fo = fun(a:int,b:string)->(_:bool)  { ret true    }
-  fo ++= fun(a:int,b:int   )->(_:bool)  { ret false   }
-  fo ++= fun(a:int,b:int   )->(_:string){ ret "hello" }
+var fo = fun(a:int,b:string)->(_:bool)  { true    }
+  fo ++= fun(a:int,b:int   )->(_:bool)  { false   }
+  fo ++= fun(a:int,b:int   )->(_:string){ "hello" }
 
 let a = fo(3,hello)
 assert a == true
@@ -2763,28 +2803,28 @@ assert b == false
 
 let c:string = fo(3,300)
 assert c == "hello"
-var f1 = fun(a,b)      where a >  40 { ret b+100    }
-      ++ fun(a,b)->(x) where x > 300 { ret b+200    } // output x
-      ++ fun(a,b)->(a) where a >  20 { ret b+300    } // input a
-      ++ fun(a,b)->(x) where x >  10 { ret b+400    } // output x
-      ++ fun(a,b)                    { ret a+b+1000 } // default
+var f1 = fun(a,b)      where a >  40 { b+100    }
+      ++ fun(a,b)->(x) where x > 300 { b+200    } // output x
+      ++ fun(a,b)->(a) where a >  20 { b+300    } // input a
+      ++ fun(a,b)->(x) where x >  10 { b+400    } // output x
+      ++ fun(a,b)                    { a+b+1000 } // default
 
 var fun_manual = fun(a,b){  // equivalent but not as maintenable
   if a>40 {
-    ret b+100
+    return b+100
   }
   let x = b + 200
   if x>300 {
-    ret (x=x)
+    return (x=x)
   }
   if a>20 {
-    ret b+300
+    return b+300
   }
   let tmp = a + b
   if tmp >10 {
-    ret (a=tmp)
+    return (a=tmp)
   }
-  ret a+b+1000
+  return a+b+1000
 }
 
 test "check equiv" {
@@ -2794,7 +2834,7 @@ test "check equiv" {
     }
   }
 }
-let Param_type = fun(a) { ret (xx:a = _) }
+let Param_type = fun(a) { return (xx:a = _) }
 
 let x:Param_type(string) = (xx="hello")
 let x:Param_type(int)    = (xx=130)
@@ -2812,7 +2852,7 @@ let smallest = fun(...a) {
   for i in a[1..] {
     x = i when i < x
   }
-  ret x
+  return x
 }
 let speak = fun(a:Bird) { puts "pio pio"  } 
          ++ fun(a:Cat) { puts "meaow" }
@@ -2847,14 +2887,14 @@ let Int1 = (
 
 let Int2 = (
   ,var counter:int:[private] = 0
-  ,accumulate = proc(ref self, v) { self.counter += v ; ret self.counter }
+  ,accumulate = proc(ref self, v) { self.counter += v ; return self.counter }
   ,api_pending:proc(ref self, x:string) -> (o:string) = _
 )
 
 let Combined = (...Int1, ...Int2
   ,api_pending = proc(ref self, x:int) -> (o:string) {
     self.add(x)
-    ret string(self.accumulate(self.get()))
+    string(self.accumulate(self.get()))
   }
 )
 let Interface = (
@@ -2884,13 +2924,13 @@ xx.sub(2)
 cassert xx.val1 == 1
 let exclude = fun(o,...a) {
   let new_tup = ()
-  for e,idx,key in o {
+  for idx,key,e in o {
     // create single tupe and append to preserve key and position order
     let sing_tup = ()
     sing_tup[key] = e
     new_tup ++= sing_tup unless key in o
   }
-  ret new_tup
+  new_tup
 }
 
 let Shape = (
@@ -2910,14 +2950,14 @@ let Circle = (
   ,rad:i32       = _
   ,area = fun(self) -> (_:i32) {
      let pi = import("math").pi
-     ret pi * self.rad * self.rad
+     return pi * self.rad * self.rad
   }
 ):Shape  // extra check that the exclude did not remove too many fields
 let rotate = fun(a) where a has 'x', a has 'y' and_then a.y!=30 {
   var r = a
   r.x = a.y
   r.y = a.x
-  ret r
+  return r
 }
 reg mem:[] = 0
 mem[3]   = something // async memory
@@ -3003,7 +3043,7 @@ let flatten = fun(...arr) {
   for i in arr {
     res ++= i
   }
-  ret res
+  return res
 }
 
 assert flatten(d2) == (1,2,3,4)
@@ -3094,9 +3134,9 @@ let tup = (
     var x_s = 10
 
     let call_captured = fun[x_s]() {
-      ret fun[x_s]() {
+      return fun[x_s]() {
         assert x_s == 10
-        ret x_s
+        return x_s
       }
     }
 
@@ -3116,7 +3156,7 @@ let tup = (
     }
     let j = 1
     let b = fun[j](x:i32)-> :i32 {
-      ret x+j
+      return x+j
     }
 
     assert b(1) == 2
@@ -3128,7 +3168,7 @@ let tup = (
       var addX = (
         ,a: i32 = a                        // copy value, runtime or comptime
         ,getter = fun(self, x: i32) {
-          ret x + self.a
+          return x + self.a
         }
       )
 
@@ -3142,7 +3182,7 @@ let tup = (
       a += 1
 
       let addX = fun[a](x: i32) { // Same behaviour as closure with tuple
-        ret x + a
+        return x + a
       }
 
       a += 100;
@@ -3153,19 +3193,19 @@ var x = 3
 
 let f1 = fun[x]()->(_:int){
    assert x == 3
-   ret 200
+   return 200
 }
 let f2 = fun()->(_:int){
    var x = _    // OK, no captures 'x' variable
    x = 100
-   ret x
+   return x
 }
 var x = 3
 var y = 10
 
 let fun2 = fun[y]()->(_:int){
   var x  = 200
-  ret y + x
+  return y + x
 }
 x = 1000
 assert fun2() == 203
@@ -3216,7 +3256,7 @@ var x = 0sb10?
 let str = __to_string(x) // only works for compile time constants
 assert x == "0sb10?"
 let s:string="hell"
-for i,idx in s {
+for idx,i in s {
   let v = match idx {
    == 0 { "h" }
    == 1 { "e" }
@@ -3227,7 +3267,7 @@ for i,idx in s {
 }
 
 let t = (1,2,3)
-for i,idx in t {
+for idx,i in t {
   let v = match idx {
    == 0 { 1 }
    == 1 { 2 }
@@ -3237,7 +3277,7 @@ for i,idx in t {
 }
 
 let r=2..<5
-for i,idx in r {
+for idx,i in r {
   let v = match idx {
    == 0 { 2 }
    == 1 { 3 }
@@ -3248,13 +3288,13 @@ for i,idx in r {
 
 let r2=4 to 2 by -1
 assert r2 == (4,3,2)
-for i,idx in r2 {
+for idx,i in r2 {
   let v = match idx {
    == 0 { 4 }
    == 1 { 3 }
    == 2 { 2 }
   }
-  assert v == i
+  assert v == r2[i]
 }
 
 for i in 2..<5 {
@@ -3269,7 +3309,7 @@ for i in 2..<5 {
   assert v == ri
 }
 
-for i,idx in 123 {
+for idx,i in 123 {
   assert i == 123 and idx==0
 }
 let v = 0xF0
@@ -3309,11 +3349,11 @@ let reverse = fun(x:uint)->(total:uint) {
   }
 }
 assert reverse(0b10110) == 0b01101
-let args = fun(x) { puts "args:{}", b ; ret 1}
-let here = fun()  { puts "here" ; ret 3}
+let args = fun(x) { puts "args:{}", b ; 1}
+let here = fun()  { puts "here" ; 3}
 
-let call_now   = fun(f:fun){ ret f() } 
-let call_defer = fun(f:fun){ ret f   } 
+let call_now   = fun(f:fun){ return f() } 
+let call_defer = fun(f:fun){ return f   } 
 
 let x0 = call_now(here)          // prints "here"
 let x1 = call_defer(here)        // nothing printed
@@ -3348,17 +3388,17 @@ let max_gap_count = fun(nums) {
     for i in 0..<a.length by num {
       res ++= f(a[i..+num])
     }
-    ret res
+    return res
   }
   let count = fun(a,b) {
     var r = 0
     for i in a {
       r += 1 when i == b
     }
-    ret r
+    return r
   }
 
-  ret numbers
+  return numbers
      |> sort(fun(a,b) { a<b })
      |> adjacent_transform(num=2, fun(a,b) { a-b } )
      |> fun(a) { count(a, a.max) }
@@ -3382,10 +3422,10 @@ let AnObject = (
 let f1 = proc(ref self:AnObject) -> :i32 { // unnamed output tuple
   let res = self.v
   self.v += 1
-  ret res
+  return res
 }
 let f2 = fun(self:AnObject) -> :i32 {
-  ret self.v
+  return self.v
 }
 let AnObject = (
   ,v:i32 = _
@@ -3452,11 +3492,11 @@ let telescope_unit3 = fun(a:u32,b:u32) -> (_:u32) {
     let tmp = a+1
   } #>one_pipe[lat=1] {
     if b == 0 {
-      ret tmp
+      return tmp
     }
     let tmp2 = tmp-b
   } #> {
-    ret tmp2
+    return tmp2
   }
 }
  let res2 =#[1,2] telescope_unit3(a,b,start)
@@ -3603,12 +3643,12 @@ cassert enu.b.x in enu.b
     while var i=0 ; i!=3 {
       i += 1
     }
-    for i,index,key in tup {
-      mycall(i,index,key)
+    for index,key,value in tup {
+      mycall(value,index,key)
     }
-    for i,index,key in ref tup {
-      mycall(i,index,key)
-      i = 0
+    for index,key,value in ref tup {
+      mycall(value,index,key)
+      value = 0
     }
     let num = 1
     let color = "blue"
@@ -3623,29 +3663,29 @@ let plus = fun(...a:int)->(_:int) {
   for e in a {
     r += e
   }
-  ret r
+  r
 }
 let x = (1,2,23)
 
 cassert p.len(x) == 3
-let len = fun(x) { ret x.[size] }
+let len = fun(x) { x.[size] }
 let x = (1,2,3)
 
 cassert x.map(fun(i){ i+1 }) == (2,3,4)
 let map = fun<T>(f:fun(a:T),...x:[]T) {
-  ret for e in x { f(e) }
+  return f(e) for e in x
 }
 cassert (1,2,3).filter(fun(i){ i!=2 }) == (1,3)
-let map = fun<T>(f:fun(a:T),...x:[]T) {
-  ret for e in x { if f(e) { cont x } }
+let filter = fun<T>(f:fun(a:T)->(_:Bool),...x:[]T) {
+  return e for e in x if not f(e)
 }
 cassrt (1,2,3).reduce(prp.plus) == 6
 let reduce = fun(op:fun<T>(a:T,b:T)->(_:T), ...x) {
-  ret x when x.[size] <= 1
+  return x when x.[size] <= 1
 
   var res = x[0]
   for i in x[1..] {
     res = op(res, i)
   }
-  ret res
+  return res
 }
