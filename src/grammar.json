@@ -611,8 +611,16 @@
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "match_operator"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "match_operator"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     },
                     {
                       "type": "SYMBOL",

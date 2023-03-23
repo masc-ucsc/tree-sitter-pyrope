@@ -220,8 +220,7 @@ module.exports = grammar({
     )
     ,match_list: $ => repeat1(seq(
       field('condition', choice(
-        seq($.match_operator, $.expression_list)
-        //,$._expression
+        seq(optional($.match_operator), $.expression_list)
         ,'else'
       ))
       ,choice(
