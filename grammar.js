@@ -127,7 +127,6 @@ module.exports = grammar({
         ,$.expression_statement
         // Verification Only
         ,$.test_statement
-        ,$.assume_statement
       )
     )
     ,scope_statement: $ => prec.left('statement', seq(
@@ -184,12 +183,10 @@ module.exports = grammar({
       ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
       ,'in'
       ,choice(
-        field('ref',
-          seq(
-            'ref'
-            ,$.typed_identifier  // not allowed in for expression
-          )
-        )
+        field('ref', seq(
+          'ref'
+          ,choice($.identifier, $.dot_expression, $.selection)
+        ))
         ,field('data', $.expression_list)
       )
       ,field('code', $.scope_statement)
@@ -245,12 +242,6 @@ module.exports = grammar({
       'test'
       ,field('args', $.expression_list)
       ,field('condition', optseq('where', $.expression_list))
-      ,field('code', $.scope_statement)
-    ))
-    ,assume_statement: $ => prec.right(seq(
-      'assume'
-      ,field('name', $.expression_list)
-      ,field('condition', seq('where', $.expression_list))
       ,field('code', $.scope_statement)
     ))
     ,expression_list: $ => prec.left(seq(
@@ -317,9 +308,12 @@ module.exports = grammar({
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       ,field('condition', optseq('where', $.expression_list))
-      ,field('requires', optseq('requires', $._expression))
-      ,field('ensures', optseq('ensures', $._expression))
+      ,field('verification', repeat($.func_def_verification))
       ,field('code', $.scope_statement)
+    )
+    ,func_def_verification: $=> seq(
+      choice('requires','ensures')
+      ,$._expression
     )
     ,enum_definition: $ => seq(
       choice('enum', 'variant')

@@ -825,8 +825,6 @@ assert !rand implies y == 2
 assert z.[valid]
 assert  rand implies z == 5
 assert !rand implies z == 6
-let cassert::[comptime] = assert
-let coptimize::[comptime] = optimize
 a = 3
 assert a == 3          // checked at runtime (or compile time)
 cassert a == 3         // checked at compile time
@@ -834,8 +832,12 @@ cassert a == 3         // checked at compile time
 verify a < 4           // checked at runtime and verification
 optimize b > 3         // may optimize and perform a runtime check
 
-assume "cond1" where foo < 1 and foo >3 {
-   verify bar == 4  // only checked at verification, restricting conditions
+let max_not_zero = fun(a,b) -> (res) 
+  requires a>0
+  requires b>0
+  ensures res==a or res==b {
+
+  res = if a>b {a} else {b}
 }
 a = 0
 if cond {
@@ -2173,7 +2175,7 @@ let Rgb = (
 let Color = enum(
   ,Yellow:Rgb = 0xffff00
   ,Red:Rgb    = 0xff0000
-  ,Green      = Rgb(0x00ff00) // alternative 
+  ,Green      = Rgb(0x00ff00) // alternative
   ,Blue       = Rgb(0x0000ff)
 )
 
@@ -2441,6 +2443,45 @@ var y:Typ2 = (a="x", b=0)
 x["hello"] = 44
 y = ("hello",44)
 cassert x==y
+let Matrix8x8 = (
+  ,data:[8][8]u16 = _
+  ,setter = fun(ref self, x:int(0,7), y:int(0,7), v:u16) {
+    self.data[x][y] = v
+  } ++ fun(ref self, x:int(0,7), v:u16) {
+    for ent in ref data[x] {
+      ent = v
+    }
+  } ++ fun(ref self) { // default initialization
+    for ent in ref data {
+      ent = 0
+    }
+  }
+)
+
+let m:Matrix8x8 = _
+cassert m.data[0][3] == 0
+
+m[1,2] = 100
+cassert m.data[1][2] == 100
+m[1] = 3
+cassert m.data[1][2] == 3
+m[4][5] = 33
+cassert m.data[4][5] == 33
+
+m[1] = 40
+cassert m[1] == (3,40,3,3,3,3,3,3)
+let Matrix2x2 = (
+  ,data:[2][2]u16 = _
+  ,getter = fun(ref self, x:int(0,2), y:int(0,2)) {
+    self.data[x][y] + 1
+  }
+
+)
+
+let n:Matrix2x2 = _
+n.data[0][1] = 2      // default setter
+
+cassert n[0][1] == 3  // getter does + 1
 let My_2_elem = (
   ,data:[2]string = _
   ,setter = proc(ref self, x:uint(0..<2), v:string) {
@@ -2450,7 +2491,7 @@ let My_2_elem = (
     } ++ proc(ref self) { // default _ assignment
       self.data = _
     }
-  ,getter = fun(self)         { self.data    } 
+  ,getter = fun(self)         { self.data    }
          ++ fun(self, i:uint) { self.data[i] }
 )
 
@@ -2461,7 +2502,7 @@ v = (x=0, "hello")
 v[1] = "world"
 
 cassert v[0] == "hello"
-cassert v == ("hello", "world")  // not 
+cassert v == ("hello", "world")  // not
 
 let z = v
 cassert z !equals v   // v has v.data, z does not
@@ -2512,7 +2553,7 @@ var obj1::[attr1] = (
     if v.[attr2] {
       self.data.[attr3] = 33
     }
-    cassert self.[attr1] 
+    cassert self.[attr1]
   }
 )
 let fint:int = _
