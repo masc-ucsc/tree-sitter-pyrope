@@ -30,13 +30,14 @@
   "proc"
   "fun"
   "enum"
-] @keyword
 
-(var_or_let_or_reg) @keyword
+  "var"
+  "let"
+  "reg"
+] @keyword
 
 [
   "test"
-  "assume"
 ] @keyword.verification
 
 [
@@ -47,6 +48,9 @@
   "while"
   "for"
 ] @conditional
+
+["{" "}" "(" ")" "[" "]"] @punctuation.bracket
+["," "."] @punctuation.delimiter
 
 ; Types
 
