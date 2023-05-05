@@ -435,6 +435,7 @@ module.exports = grammar({
         ,['!|', 'scalar_nor']
         ,['*', 'binary_times']
         ,['/', 'binary_times']
+        ,['%', 'binary_times']
         ,['+', 'binary_plus']
         ,['-', 'binary_plus']
         ,['<', 'binary_compare']
