@@ -44,6 +44,10 @@
         "named": true
       },
       {
+        "type": "tuple_sq",
+        "named": true
+      },
+      {
         "type": "type_specification",
         "named": true
       },
@@ -440,10 +444,6 @@
             "named": false
           },
           {
-            "type": "by",
-            "named": false
-          },
-          {
             "type": "case",
             "named": false
           },
@@ -480,7 +480,7 @@
             "named": false
           },
           {
-            "type": "to",
+            "type": "step",
             "named": false
           },
           {
@@ -578,6 +578,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -805,6 +809,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -877,6 +885,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1618,6 +1630,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -2270,6 +2286,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -2670,10 +2690,6 @@
     "named": false
   },
   {
-    "type": "by",
-    "named": false
-  },
-  {
     "type": "case",
     "named": false
   },
@@ -2810,15 +2826,15 @@
     "named": true
   },
   {
+    "type": "step",
+    "named": false
+  },
+  {
     "type": "string_type",
     "named": true
   },
   {
     "type": "test",
-    "named": false
-  },
-  {
-    "type": "to",
     "named": false
   },
   {

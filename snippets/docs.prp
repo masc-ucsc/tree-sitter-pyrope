@@ -212,6 +212,10 @@ var A_yyy::[comptime] = something // also comptime, redundant but legal
 var b = (f1=3,f2=4) // b is named and ordered
 var c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
 
+var d = (1,2,3,4)     // array or tuple
+assert d == [1,2,3,4] // the [] also check that all the fields have same type
+
+
 var a = (
   ,r1 = (b=1,c=2)
   ,r2 = (3,4)
@@ -547,19 +551,21 @@ let c = 1..=3
 assert int(c) == 0b1110
 assert range(0b01_1100) == 2..=4
 
-let d = 1 to 3
-assert d == (1,2,3)
+assert (1,2,3) == tuple(1..=3)
 
-assert int(0..=10 by 2) == 0b101_0101_0101
-assert  0 to 10 by  2 == ( 0,2,4,6,8,10)
-assert 10 to  0 by -2 == (10,8,6,4,2, 0)
+assert   int(0..=10 step  2) == 0b101_0101_0101
+assert tuple(0..=10 step  2) == ( 0,2,4,6,8,10)
+assert tuple(10..=0 step -2) == (10,8,6,4,2, 0)
+assert      (10..=0 step -2) == (10,8,6,4,2, 0)
 
-assert -1 to 2 == (-1,0,1,2)
+assert -1..=2 == (-1,0,1,2)
+let x = -1..=2
 
-assert (i for i in 0..=10 by 2) == (0,2,4,6,8,10)
+assert (i for i in 0..=10 step 2) == (0,2,4,6,8,10)
 
+assert 5..=0 step -1 == (5,4,3,2,1,0)
 
-assert((0..<30 by 10) == (0,10,20)) // ranges and tuples can combined
+assert((0..<30 step 10) == (0,10,20)) // ranges and tuples can combined
 assert((1..=3) ++ 4 == (1,2,3,4))   // tuple and range ops become a tuple
 assert 1..=3 == (1,2,3)
 assert((1..=3)@[..] == 0b1110)      // convert range to integer with @[..]
@@ -1142,7 +1148,7 @@ match let one=1 ; one ++ (2) {
   == (1,2) { puts "one:{}", one }      // should always hit
 }
 
-for x in 1 to 5 {
+for x in 1..=5 {
   let v1 = match x {
     3 { "three" }
     4 { "four" }
@@ -3705,7 +3711,7 @@ for (idx,i) in r.enumerate() {
   assert v == i
 }
 
-let r2=4 to 2 by -1
+let r2=4..=2 step -1
 assert r2 == (4,3,2)
 for (idx,i) in r2.enumerate() {
   let v = match idx {
@@ -3739,7 +3745,7 @@ assert v@[4] == 1       // unsigned output
 assert v@sext[4] == -1  // signed output
 
 assert v@[3..=4] == 0b010 == v@[3,4]
-assert v@[4..=3 by -1] == 0b010
+assert v@[4..=3 step -1] == 0b010
 assert v@[4,3] == v@[3,4] == 0b010
 
 let tmp1 = (v@[4], v@[3])@[..]  // typecast from 
@@ -3813,7 +3819,7 @@ let max_gap_count = fun(nums) {
   let sort = import("std").sort
   let adjacent_transform = fun(a,num,f) {
     var res:[] = _
-    for i in 0..<a.length by num {
+    for i in 0..<a.length step num {
       res ++= f(a[i..+num])
     }
     return res

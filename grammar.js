@@ -283,7 +283,6 @@ module.exports = grammar({
     ,attributes: $ => field('attr', seq(':' , choice($.tuple_sq,$.tuple)))
 
     // Assignment/Declaration
-    // FIXME: can I get rid of this rule?
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
@@ -446,8 +445,7 @@ module.exports = grammar({
         ['..=', 'range']
         ,['..<', 'range']
         ,['..+', 'range']
-        ,['to', 'range']
-        ,['by', 'step']
+        ,['step', 'step']
         ,['and', 'logical_and']
         ,['!and', 'logical_nand']
         ,['or', 'logical_or']
@@ -522,7 +520,7 @@ module.exports = grammar({
       ,$.function_call
       ,$.function_definition
       ,$.tuple
-      //,$.tuple_sq
+      ,$.tuple_sq
       ,$.optional_expression
       //,$.for_expression
       ,$.if_expression

@@ -2,11 +2,11 @@
 _find_one = (
 
   ,setter = fun (x) {
-    ret pick(x)
+    return pick(x)
   }
 
   ,pick = fun (x:u4)->(pos:u2,found:boolean) {
-    ret match x {
+    return match x {
       == 0b1??? { (3  ,true ) }
       == 0b01?? { (2  ,true ) }
       == 0b001? { (1  ,true ) }
@@ -15,29 +15,27 @@ _find_one = (
     }
   } ++ fun (x:u3)->(pos:u2,found:boolean) {
     match x {
-      == 0b1?? { ret (2,true) }
-      == 0b01? { ret (1,true) }
-      == 0b001 { ret (0,true) }
-      == 0b000 { ret (0b?,false) }
+      == 0b1?? { return (2,true) }
+      == 0b01? { return (1,true) }
+      == 0b001 { return (0,true) }
+      == 0b000 { return (0b?,false) }
     }
   } ++ fun (x:u2)->(pos:u2,found:boolean) {
-    ret match x {
+    return match x {
       == 0b1? { (1  ,true ) }
       == 0b01 { (0  ,true ) }
       == 0b00 { (0b?,false) }
     }
   } ++ fun (x:u1)->(pos:u1,found:boolean) {
-    ret (0, x)
+    return (0, x)
   } ++ fun (x)->(pos,found:boolean) {
-    let list = for i in 0..<x.__ubits by 4 {
-      cont pick(x[i..+4])
+    let list = pick(x[i..+4]) for i in range(0,to=x.__ubits,by=4)
+
+    for (index,e) in list.enumerate() {
+      return (pos=(i*4) | e.pos, found=true) when e.found
     }
 
-    for e,index in list {
-      ret (pos=(i*4) | e.pos, found=true) when e.found
-    }
-
-    ret (pos=0,found=false)
+    return (pos=0,found=false)
   }
 )
 

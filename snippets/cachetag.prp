@@ -1,5 +1,14 @@
 
 
-cache_hit = (opcode in (load_op, store_op)) and for i in dcache_tag_rdata {
-  last true when i == alu_result[DCACHE_TAG_BITS]
+// Weird comprehension option (but legal)
+
+cache_hit = (opcode in (load_op, store_op)) and (true for i in dcache_tag_rdata if i == alu_result[DCACHE_TAG_BITS])
+
+// Same but easier to understand
+cache_hit = false
+if opcode in (load_op, store_op) {
+  for i in dcache_tag_rdata {
+    cache_hit or= (i == alu_result[DCACHE_TAG_BITS])
+  }
 }
+
