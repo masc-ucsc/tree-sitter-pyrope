@@ -27,6 +27,11 @@ module.exports = grammar({
     [$._assignment_or_declaration]
     ,[$._restricted_expression, $.function_type]
     ,[$._expression, $.function_type]
+    ,[$._restricted_expression, $.typed_identifier]
+    ,[$._assignment_or_declaration, $._restricted_expression]
+    ,[$.complex_identifier, $.typed_identifier]
+    ,[$.complex_identifier, $.expression_type]
+    ,[$.complex_identifier_list, $._restricted_expression]
   ]
   ,extras:    $ => [ $._space, $.comment ]
   ,word:      $ => $.identifier
@@ -180,13 +185,16 @@ module.exports = grammar({
     ))
     ,for_statement: $ => seq(
       'for'
-      ,field('index', $.identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
+      ,choice(
+        seq('('
+          ,field('index', $.typed_identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
+          ,')'
+        )
+        ,$.typed_identifier
+      )
       ,'in'
       ,choice(
-        field('ref', seq(
-          'ref'
-          ,choice($.identifier, $.dot_expression, $.selection)
-        ))
+        $.ref_identifier
         ,field('data', $.expression_list)
       )
       ,field('code', $.scope_statement)
@@ -251,7 +259,7 @@ module.exports = grammar({
     // Function Call
     ,simple_function_call: $ => prec.left('simple_function_call', seq(
       field('always', optional($.always_tok))
-      ,field('function', choice($.identifier, $.dot_expression, $.selection))
+      ,field('function', $.complex_identifier)
       ,field('argument', $.expression_list)
     ))
 
@@ -275,6 +283,7 @@ module.exports = grammar({
     ,attributes: $ => field('attr', seq(':' , choice($.tuple_sq,$.tuple)))
 
     // Assignment/Declaration
+    // FIXME: can I get rid of this rule?
     ,simple_assignment: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
       ,field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
@@ -288,7 +297,16 @@ module.exports = grammar({
     )))
     ,_assignment_or_declaration: $ => prec.right(seq(
       field('decl',optional($.var_or_let_or_reg))
-      ,field('lvalue', $.expression_list)
+      ,choice(
+        seq('('
+          ,field('lvalue', $.complex_identifier_list)
+          ,')'
+        )
+        ,seq(
+          field('lvalue', $.complex_identifier)
+          ,field('type', optional($.type_cast))
+        )
+      )
       ,field('operator', $.assignment_operator)
       ,field('delay', optional($.cycle_select_or_pound))
       ,field('rvalue', choice(
@@ -303,7 +321,7 @@ module.exports = grammar({
     ,function_definition: $ => seq(
       field('func_type', choice('fun', 'proc'))
       ,field('capture', optseq('[', optional($.capture_list), ']'))
-      ,field('generic', optseq('<',  $.identifier_list, '>'))
+      ,field('generic', optseq('<',  $.typed_identifier_list, '>'))
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       ,field('condition', optseq('where', $.expression_list))
@@ -320,12 +338,11 @@ module.exports = grammar({
     )
     ,ref_identifier: $ => seq(
       'ref'
-      ,$.typed_identifier
+      ,$.complex_identifier
     )
     ,capture_list: $ => listseq1(
       $.typed_identifier, optseq('=', field('expression', $._expression_with_comprehension))
     )
-    ,identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
     ,arg_list: $ => prec.left(seq(
       '(', optional($.arg_item_list), ')'
     ))
@@ -346,10 +363,18 @@ module.exports = grammar({
       ,$.typed_identifier
     )
 
+    ,complex_identifier: $ => choice(
+      $.identifier
+      ,$.dot_expression
+      ,$.selection
+    )
+    ,complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
+
     ,typed_identifier: $ => seq(
       field('identifier', $.identifier)
       ,field('type', optional($.type_cast))
     )
+    ,typed_identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
 
     // Expressions
     ,_expression: $ => prec.left('expression', choice(
@@ -364,7 +389,13 @@ module.exports = grammar({
     )
     ,for_comprehension: $ => seq(
       'for'
-      ,$.typed_identifier
+      ,choice(
+        seq('('
+          ,field('index', $.typed_identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
+          ,')'
+        )
+        ,$.typed_identifier
+      )
       ,'in'
       ,field('data', $.expression_list)
       ,optional(
@@ -478,15 +509,16 @@ module.exports = grammar({
       )
     ))
     ,function_call: $ => prec.left('function_call', seq(
-      field('function', choice($.identifier, $.dot_expression, $.selection))
+      field('function', $.complex_identifier)
       ,field('argument', $.tuple)
     ))
     ,scope_expression: $ => prec.right('expression', alias($.scope_statement, $.scope_expression))
     ,_restricted_expression: $ => prec('expression', choice(
-      $.identifier
+      $.complex_identifier
+      //$.identifier
+      //,$.dot_expression
+      //,$.selection
       ,$.constant
-      ,$.selection
-      ,$.dot_expression
       ,$.function_call
       ,$.function_definition
       ,$.tuple
@@ -549,17 +581,10 @@ module.exports = grammar({
     ,expression_type: $ => prec.left('expression_type', choice(
       $.identifier
       ,$.constant
-      // NOTE: Use dot instead of select to avoid ambiguity
-      //       `:  some_type[2]  ` means an array of `some_type` with a size of 2
-      //       `:  some_type.2   ` means the type of the element at position 2 of `some_type`
       ,$.tuple
-      //,$.tuple_sq
-      //,$.for_expression
       ,$.if_expression
       ,$.match_expression
       ,$.scope_expression
-      // NOTE: These expressions need to be restricted due to ambiguity
-      //       `a: b:int.c`
       ,$.dot_expression_type
       ,$.function_call_type
     ))
@@ -568,8 +593,7 @@ module.exports = grammar({
       ,repeat1(prec.right('dot_type_sub', seq('.', field('item', $.expression_type))))
     ))
     ,function_call_type: $ => prec.right('function_call_type', seq(
-      field('function', choice($.identifier, $.dot_expression, $.selection))
-      //field('function', $.expression_type)
+      field('function', $.complex_identifier)
       ,field('argument', $.tuple)
     ))
     ,array_type: $ => prec.left('array_type', seq(
@@ -583,7 +607,7 @@ module.exports = grammar({
     ))
     ,function_type: $ => prec.left('function_type', seq(
       field('type', choice('fun', 'proc'))
-      ,field('generic', optseq('<',  $.identifier_list, '>'))
+      ,field('generic', optseq('<',  $.typed_identifier_list, '>'))
       ,field('input', optional($.arg_list))
       ,field('output', optseq('->', $.arg_list))
     ))
