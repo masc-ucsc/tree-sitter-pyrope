@@ -80,7 +80,7 @@
   (_) @type)
 
 (type_specification
-  argument: (identifier) @variable
+  argument: (complex_identifier) @variable
   (_) @type)
 
 (primitive_type) @type
@@ -94,7 +94,7 @@
 
 
 (function_call
-  (identifier) @function)
+  (complex_identifier) @function)
 
 (
   (identifier) @debug
@@ -109,8 +109,11 @@
 ; Variables
 
 (assignment_or_declaration_statement
-  lvalue: (expression_list
-    item: (identifier) @variable))
+  lvalue: (complex_identifier_list
+    item: (complex_identifier) @variable))
+
+(assignment_or_declaration_statement
+  lvalue: (complex_identifier) @variable)
 
 (
   (identifier) @variable
