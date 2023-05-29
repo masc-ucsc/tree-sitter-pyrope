@@ -20,11 +20,11 @@
         "named": true
       },
       {
-        "type": "function_definition",
+        "type": "if_expression",
         "named": true
       },
       {
-        "type": "if_expression",
+        "type": "lambda",
         "named": true
       },
       {
@@ -557,11 +557,11 @@
             "named": true
           },
           {
-            "type": "function_definition",
+            "type": "if_expression",
             "named": true
           },
           {
-            "type": "if_expression",
+            "type": "lambda",
             "named": true
           },
           {
@@ -787,11 +787,11 @@
             "named": true
           },
           {
-            "type": "function_definition",
+            "type": "if_expression",
             "named": true
           },
           {
-            "type": "if_expression",
+            "type": "lambda",
             "named": true
           },
           {
@@ -864,11 +864,11 @@
             "named": true
           },
           {
-            "type": "function_definition",
+            "type": "if_expression",
             "named": true
           },
           {
-            "type": "if_expression",
+            "type": "lambda",
             "named": true
           },
           {
@@ -1269,20 +1269,6 @@
           }
         ]
       },
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "fun",
-            "named": false
-          },
-          {
-            "type": "proc",
-            "named": false
-          }
-        ]
-      },
       "generic": {
         "multiple": true,
         "required": false,
@@ -1342,9 +1328,73 @@
     }
   },
   {
-    "type": "function_type",
+    "type": "function_definition_statement",
     "named": true,
     "fields": {
+      "func_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "fun_tok",
+            "named": true
+          },
+          {
+            "type": "proc_tok",
+            "named": true
+          }
+        ]
+      },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "complex_identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "function_definition",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "function_inline",
+    "named": true,
+    "fields": {
+      "fun_name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "func_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "fun_tok",
+            "named": true
+          },
+          {
+            "type": "proc_tok",
+            "named": true
+          }
+        ]
+      },
       "generic": {
         "multiple": true,
         "required": false,
@@ -1386,18 +1436,66 @@
             "named": true
           }
         ]
-      },
-      "type": {
+      }
+    }
+  },
+  {
+    "type": "function_type",
+    "named": true,
+    "fields": {
+      "func_type": {
         "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "fun",
+            "type": "fun_tok",
+            "named": true
+          },
+          {
+            "type": "proc_tok",
+            "named": true
+          }
+        ]
+      },
+      "generic": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "<",
             "named": false
           },
           {
-            "type": "proc",
+            "type": ">",
             "named": false
+          },
+          {
+            "type": "typed_identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "input": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "arg_list",
+            "named": true
+          }
+        ]
+      },
+      "output": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "->",
+            "named": false
+          },
+          {
+            "type": "arg_list",
+            "named": true
           }
         ]
       }
@@ -1469,6 +1567,36 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "lambda",
+    "named": true,
+    "fields": {
+      "func_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "fun_tok",
+            "named": true
+          },
+          {
+            "type": "proc_tok",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "function_definition",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1608,11 +1736,11 @@
             "named": true
           },
           {
-            "type": "function_definition",
+            "type": "if_expression",
             "named": true
           },
           {
-            "type": "if_expression",
+            "type": "lambda",
             "named": true
           },
           {
@@ -2031,6 +2159,10 @@
           "named": true
         },
         {
+          "type": "function_definition_statement",
+          "named": true
+        },
+        {
           "type": "loop_statement",
           "named": true
         },
@@ -2070,7 +2202,15 @@
             "named": true
           },
           {
+            "type": "function_inline",
+            "named": true
+          },
+          {
             "type": "ref_identifier",
+            "named": true
+          },
+          {
+            "type": "scope_statement",
             "named": true
           },
           {
@@ -2153,7 +2293,15 @@
             "named": true
           },
           {
+            "type": "function_inline",
+            "named": true
+          },
+          {
             "type": "ref_identifier",
+            "named": true
+          },
+          {
+            "type": "scope_statement",
             "named": true
           },
           {
@@ -2264,11 +2412,11 @@
             "named": true
           },
           {
-            "type": "function_definition",
+            "type": "if_expression",
             "named": true
           },
           {
-            "type": "if_expression",
+            "type": "lambda",
             "named": true
           },
           {
@@ -2730,8 +2878,8 @@
     "named": false
   },
   {
-    "type": "fun",
-    "named": false
+    "type": "fun_tok",
+    "named": true
   },
   {
     "type": "has",
@@ -2790,8 +2938,8 @@
     "named": false
   },
   {
-    "type": "proc",
-    "named": false
+    "type": "proc_tok",
+    "named": true
   },
   {
     "type": "range",

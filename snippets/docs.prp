@@ -1388,7 +1388,15 @@ test "my test {}", 1 {
       res = a+b
     }
 
+    fun add(a,b)->(res) {  // Same as let add=fun(a,b)->(res)
+      res = a+b
+    }
+
     let add=proc(a,b)->(res) {  // nicer to use fun, but proc works
+      res = a+b
+    }
+
+    proc add(a,b)->(res) {  // same
       res = a+b
     }
 
@@ -1396,7 +1404,15 @@ test "my test {}", 1 {
       res = a+b
     }
 
+    proc add(reg a, reg b)->(res) { // same
+      res = a+b
+    }
+
     let add=proc(a, b)->(reg res) {
+      res = a+b
+    }
+
+    proc add(a, b)->(reg res) { // same
       res = a+b
     }
 
@@ -1453,7 +1469,7 @@ let div2 = fun (...x){ x.0 / x.1 }    // unnamed input tuple
 let noarg = fun () { 33 }         // explicit no args
 
 assert 33 == noarg()
-                      
+
 
 b=div(self=8, b=4)       // OK, 2
 d=(self=8).div(b=2)      // OK, 4
@@ -1571,12 +1587,13 @@ let Nested_call = (
   ,var x = 1
   ,let outter= proc(ref self) {  self.x = 100 ; self.inner(); self.x = 5 }
   ,let inner = fun(self) { assert self.x == 100 }
+  ,proc okcall(ref self) { self.x = 55 }   // equivalent to let okcall=proc
 )
 
 var a_1 = (
   ,x:u10
   ,let f1 = fun(ref self,x)->(self) { // BOTH ref self and return self is OK
-    self.x = x 
+    self.x = x
     self
   }
 )
@@ -1588,7 +1605,7 @@ assert a_1.x == 3 and a_2.x == 4
 // Same behavior as in a function with UFCS
 fun2 = fun (ref self, x) { self.x = x }
 
-a_1.fun2(10)    
+a_1.fun2(10)
 var a_3 = a_1.fun2(20)
 assert a_1 == 10 and a_3 == 20
 
