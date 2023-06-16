@@ -27,14 +27,15 @@
 [
   "in"
 
-  "proc"
-  "fun"
   "enum"
 
   "var"
   "let"
   "reg"
 ] @keyword
+
+(fun_tok) @keyword
+(proc_tok) @keyword
 
 [
   "test"
