@@ -88,24 +88,30 @@
 
 ; Functions
 
-(
-  (expression_list) @function
-  (function_definition)
-)
+(simple_function_call
+  function: (complex_identifier) @function)
 
+(function_inline
+  fun_name: (identifier) @function)
+
+(function_definition_statement
+  lvalue: (complex_identifier) @function)
 
 (function_call
-  (complex_identifier) @function)
+  function: (complex_identifier) @function)
+
+(assignment_or_declaration_statement
+  lvalue: (complex_identifier) @function
+  rvalue: (lambda))
+
+(simple_assignment
+  lvalue: (identifier) @function
+  rvalue: (lambda))
 
 (
   (identifier) @debug
-  (#any-of? @debug "assert" "cassert" "verify")
+  (#any-of? @debug "assert" "cassert" "optimize" "verify")
 )
-
-(cycle_select) @function.pipeline
-(pipestage_scope_statement
-  "#>" @function.pipeline
-  fsm: (_) @function.pipeline)
 
 ; Variables
 
