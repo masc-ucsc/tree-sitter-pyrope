@@ -82,8 +82,8 @@
   "reg"
 ] @keyword
 
-(fun_tok) @keyword
-(proc_tok) @keyword
+(fun_tok) @keyword.function
+(proc_tok) @keyword.function
 
 [
   "if"
@@ -118,19 +118,32 @@
 
 (primitive_type) @type
 
-; Functions
+; Function calls
 
 (simple_function_call
-  function: (complex_identifier) @function)
+  function: (complex_identifier) @function.call)
+
+(function_call
+  function: (complex_identifier) @function.call)
 
 (function_inline
-  fun_name: (identifier) @function)
+  fun_name: (identifier) @function.call)
+
+; Parameters 
+
+(simple_function_call
+  argument: (expression_list
+    item: (complex_identifier) @parameter))
+
+(function_call
+  argument: (tuple
+    (tuple_list
+      item: (complex_identifier) @parameter)))
+
+; Function definitions 
 
 (function_definition_statement
   lvalue: (complex_identifier) @function)
-
-(function_call
-  function: (complex_identifier) @function)
 
 (assignment_or_declaration_statement
   lvalue: (complex_identifier) @function
@@ -140,10 +153,10 @@
   lvalue: (identifier) @function
   rvalue: (lambda))
 
-(
-  (identifier) @debug
-  (#any-of? @debug "assert" "cassert" "optimize" "verify" "test")
-)
+; Verification 
+
+((identifier) @debug
+  (#any-of? @debug "assert" "cassert" "optimize" "verify" "test"))
 
 ; Comments
 (comment) @comment @spell
