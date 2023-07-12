@@ -97,14 +97,18 @@
 ["{" "}" "(" ")" "[" "]"] @punctuation.bracket
 ["," "."] @punctuation.delimiter
 
-; Types
+; Constants
+
+; Distinguish strings from numbers and booleans
+(constant) @number
 
 ((constant) @boolean
   (#any-of? @boolean "true" "false"))
 ((identifier) @boolean
   (#any-of? @boolean "true" "false"))
 
-(constant) @constant
+((constant) @string 
+  (#contains? @string "'" "\""))
 
 ; Types
 
