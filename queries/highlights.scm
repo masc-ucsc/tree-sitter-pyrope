@@ -1,26 +1,74 @@
 ; highlights.scm
+((identifier) @variable (#set! "priority" 95))
 
 ; Operators
 
 [
-  "|"
+  "&"
   "^"
+  "|"
   "~&"
-  "~|"
   "~^"
+  "~|"
+  "<"
+  "<="
+  ">"
+  ">="
+  "=="
+  "!="
+ 
+  "!"
+  "~"
+  "-"
+  "..."
+
+  "?"
+
+  "..="
+  "..<"
+  "..+"
   ">>"
   "<<"
+  "!&"
+  "!^"
+  "!|"
+  "*"
+  "/"
+  "%"
+  "+"
+  "-"
+  "|>" 
+  "++"
 
-  ":"
+  (assignment_operator)
 ] @operator 
 
-(assignment_operator) @operator
+[
+  "and"
+  "!and"
+  "or"
+  "!or"
+  "has"
+  "!has"
+  "case"
+  "!case"
+  "equals"
+  "!equals"
+  "does"
+  "!does"
+  "is"
+  "!is"
 
-(unary_expression 
-  operator: _ @operator)
+  "not"
 
-(binary_expression
-  operator: _ @operator)
+  "step"
+  "implies"
+  "!implies"
+  "and_then"
+  "or_else"
+  "in"
+  "!in"
+] @keyword.operator
 
 ; Keywords
 
@@ -36,10 +84,6 @@
 
 (fun_tok) @keyword
 (proc_tok) @keyword
-
-[
-  "test"
-] @keyword.verification
 
 [
   "if"
@@ -60,19 +104,7 @@
 ((identifier) @boolean
   (#any-of? @boolean "true" "false"))
 
-[
-  "int"
-
-] @type
-
-(unsized_integer_type) @type
-(sized_integer_type) @type
-(bounded_integer_type) @type
-
 (constant) @constant
-
-(boolean_type) @type
-(string_type) @type
 
 (typed_identifier
   (identifier) @identifier)
@@ -110,21 +142,7 @@
 
 (
   (identifier) @debug
-  (#any-of? @debug "assert" "cassert" "optimize" "verify")
-)
-
-; Variables
-
-(assignment_or_declaration_statement
-  lvalue: (complex_identifier_list
-    item: (complex_identifier) @variable))
-
-(assignment_or_declaration_statement
-  lvalue: (complex_identifier) @variable)
-
-(
-  (identifier) @variable
-  (assignment_operator)
+  (#any-of? @debug "assert" "cassert" "optimize" "verify" "test")
 )
 
 ; Comments
