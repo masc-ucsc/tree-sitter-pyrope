@@ -106,17 +106,13 @@
 
 (constant) @constant
 
-(typed_identifier
-  (identifier) @identifier)
-  
-(type_cast
-  (_) @type)
+; Types
 
-(type_specification
-  argument: (complex_identifier) @variable
-  (_) @type)
+(primitive_type) @type.builtin
 
-(primitive_type) @type
+(expression_type) @type
+
+(function_type) @type
 
 ; Function calls
 
