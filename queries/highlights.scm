@@ -95,7 +95,7 @@
 ] @conditional
 
 ["{" "}" "(" ")" "[" "]"] @punctuation.bracket
-["," "."] @punctuation.delimiter
+["," "." ":"] @punctuation.delimiter
 
 ; Constants
 
@@ -118,6 +118,35 @@
 
 (function_type) @type
 
+; Attributes
+
+(attributes
+  attr: (tuple_sq (tuple_list
+    item: (complex_identifier (identifier) @function.macro))))
+
+(attributes
+  attr: (tuple_sq (tuple_list
+    item: (simple_assignment
+      lvalue: (identifier) @function.macro))))
+
+(attributes
+  attr: (tuple_sq (tuple_list
+    item: (binary_expression
+      left: (complex_identifier (identifier) @function.macro)))))
+
+(attributes
+  attr: (tuple (tuple_list
+    item: (complex_identifier (identifier) @function.macro))))
+
+(attributes
+  attr: (tuple (tuple_list
+    item: (simple_assignment
+      lvalue: (identifier) @function.macro))))
+
+(attributes
+  attr: (tuple (tuple_list
+    item: (binary_expression
+      left: (complex_identifier (identifier) @function.macro)))))
 ; Function calls
 
 (simple_function_call
