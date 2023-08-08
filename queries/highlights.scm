@@ -1,5 +1,62 @@
 ; highlights.scm
-((identifier) @variable (#set! "priority" 95))
+(identifier) @variable
+
+; Types
+
+(primitive_type) @type.builtin
+
+(expression_type) @type
+
+(function_type) @type
+
+; Parameters 
+(function_call
+  argument: (tuple
+    (tuple_list
+      item: (complex_identifier (identifier) @parameter))))
+
+(simple_function_call
+  argument: (expression_list
+    item: (complex_identifier (identifier) @parameter)))
+
+(function_definition
+  input: (arg_list
+    (arg_item_list (arg_item (complex_identifier (identifier) @parameter)))))
+
+; Attributes
+
+(attributes
+  attr: (_ (tuple_list
+    item: (complex_identifier (identifier) @function.macro))))
+
+; Function calls
+
+(simple_function_call
+  function: (complex_identifier (identifier) @function.call))
+
+(function_call
+  function: (complex_identifier (identifier) @function.call))
+
+(function_inline
+  fun_name: (identifier) @function.call)
+
+; Function definitions 
+
+(function_definition_statement
+  lvalue: (complex_identifier) @function)
+
+(assignment_or_declaration_statement
+  lvalue: (complex_identifier) @function
+  rvalue: (lambda))
+
+(simple_assignment
+  lvalue: (identifier) @function
+  rvalue: (lambda))
+
+; Fields
+
+(dot_expression
+  (identifier) @field)
 
 ; Operators
 
@@ -16,14 +73,11 @@
   ">="
   "=="
   "!="
- 
   "!"
   "~"
   "-"
   "..."
-
   "?"
-
   "..="
   "..<"
   "..+"
@@ -39,7 +93,6 @@
   "-"
   "|>" 
   "++"
-
   (assignment_operator)
 ] @operator 
 
@@ -58,9 +111,7 @@
   "!does"
   "is"
   "!is"
-
   "not"
-
   "step"
   "implies"
   "!implies"
@@ -74,13 +125,13 @@
 
 [
   "in"
-
   "enum"
-
   "var"
   "let"
   "reg"
 ] @keyword
+
+(test_statement "test" @keyword)
 
 (fun_tok) @keyword.function
 (proc_tok) @keyword.function
@@ -97,90 +148,24 @@
 ["{" "}" "(" ")" "[" "]"] @punctuation.bracket
 ["," "." ":"] @punctuation.delimiter
 
-; Constants
+(pipestage_scope_statement "#>" @punctuation.special)
 
 ; Distinguish strings from numbers and booleans
 (constant) @number
 
 ((constant) @boolean
   (#any-of? @boolean "true" "false"))
+
 ((identifier) @boolean
   (#any-of? @boolean "true" "false"))
 
 ((constant) @string 
   (#contains? @string "'" "\""))
 
-; Types
+; Builtin Functions
 
-(primitive_type) @type.builtin
-
-(expression_type) @type
-
-(function_type) @type
-
-; Attributes
-
-(attributes
-  attr: (tuple_sq (tuple_list
-    item: (complex_identifier (identifier) @function.macro))))
-
-(attributes
-  attr: (tuple_sq (tuple_list
-    item: (simple_assignment
-      lvalue: (identifier) @function.macro))))
-
-(attributes
-  attr: (tuple_sq (tuple_list
-    item: (binary_expression
-      left: (complex_identifier (identifier) @function.macro)))))
-
-(attributes
-  attr: (tuple (tuple_list
-    item: (complex_identifier (identifier) @function.macro))))
-
-(attributes
-  attr: (tuple (tuple_list
-    item: (simple_assignment
-      lvalue: (identifier) @function.macro))))
-
-(attributes
-  attr: (tuple (tuple_list
-    item: (binary_expression
-      left: (complex_identifier (identifier) @function.macro)))))
-; Function calls
-
-(simple_function_call
-  function: (complex_identifier) @function.call)
-
-(function_call
-  function: (complex_identifier) @function.call)
-
-(function_inline
-  fun_name: (identifier) @function.call)
-
-; Parameters 
-
-(simple_function_call
-  argument: (expression_list
-    item: (complex_identifier) @parameter))
-
-(function_call
-  argument: (tuple
-    (tuple_list
-      item: (complex_identifier) @parameter)))
-
-; Function definitions 
-
-(function_definition_statement
-  lvalue: (complex_identifier) @function)
-
-(assignment_or_declaration_statement
-  lvalue: (complex_identifier) @function
-  rvalue: (lambda))
-
-(simple_assignment
-  lvalue: (identifier) @function
-  rvalue: (lambda))
+((identifier) @function.builtin
+  (#any-of? @function.builtin "puts" "print"))
 
 ; Verification 
 
