@@ -702,9 +702,34 @@
     }
   },
   {
+    "type": "complex_string_literal",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "constant",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "complex_string_literal",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "control_statement",
@@ -2675,6 +2700,10 @@
   },
   {
     "type": "!|",
+    "named": false
+  },
+  {
+    "type": "\"",
     "named": false
   },
   {

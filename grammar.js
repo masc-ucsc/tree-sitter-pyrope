@@ -701,11 +701,19 @@ module.exports = grammar({
     // Strings
     , _string_literal: $ => choice(
       $._simple_string_literal
-      , $._complex_string_literal
+      , $.complex_string_literal
     )
     , _simple_string_literal: $ => token(/\'[^\'\n]*\'/)
-    , _complex_string_literal: $ => token(
-      seq('"', repeat(choice(prec(1, /\\./), /[^"\\\n]+/)), '"')
+    , complex_string_literal: $ => seq(
+      '"'
+      , repeat(
+        choice(
+          prec(2, /\\./)
+          , /[^{"\\\n]+/
+          , seq('{', optional($._expression), '}')
+        )
+      )
+      , '"'
     )
 
     // Special

@@ -105,8 +105,12 @@ let num       = 2
 let color     = "blue"
 let extension = "s"
 
-let txt = "I have {num:d} {color} potato{extension}"
-cassert txt == "I have 2 blue potatos"
+let txt1 = "I have {num} {color} potato{extension}"
+let txt2 = format('I have {:d} {} potato{} ', num, color, extension)
+cassert txt1 == txt2 == "I have 2 blue potatos"
+
+let txt3 = 'I have {num}'         // single quote does not do interpolation
+cassert txt3 == "I have \{num\}"  // \{ escapes the interpolation
 
 var a:string = "127"
 var b:int    = a     // same as var b = int(a)
@@ -131,6 +135,11 @@ a = 1 ; b = 2
 
 a = 1
 puts "Hello a is {}", a
+
+a = 1                                            // file foo line 3
+puts "{}:{} a:{} tracing a", a.[file], a.[loc], a
+puts "{a.[file]}:{a.loc} a:{a} tracing a"        // Same as previous
+dbg a, "tracing a"
 
 // src/file1.prp
 puts(priority=2, " world")
@@ -505,6 +514,13 @@ cassert E3("l1.l2") == E3.l1.l2
     assert r2 == (a=100,c=(a=101, e=131))  // checks values not mutability
     r2.a = 33            // OK
 
+
+fun example(a:int, b:int=self.a+5) -> (_:int) {
+  return a+b
+}
+assert example(a=3) == (a+a+5)
+assert example(6,7) == (6+7)
+assert example(6) == (6+6+5)
 
 var a:int         = _ // any value, no constrain
 var b:unsigned    = _ // only positive values
@@ -975,7 +991,7 @@ cassert a == 3         // checked at compile time
 
 optimize b > 3         // may optimize and perform a runtime check
 
-let max_not_zero = fun(a,b) -> (res) 
+let max_not_zero = fun(a,b) -> (res)
   requires a>0
   requires b>0
   ensures res==a or res==b {
@@ -1070,9 +1086,9 @@ let counter = proc(update)->(value) {
 }
 
 test "counter through several cycles" {
- 
+
   var inp = true
-  let x = counter(inp.[defer])  // inp contents at the end of each cycle 
+  let x = counter(inp.[defer])  // inp contents at the end of each cycle
 
   assert x == 0 // x.value == 0
   assert inp == true
@@ -1099,7 +1115,7 @@ test "counter through several cycles" {
 
 test "assert should fail" {
 
- let n = assert.[failed] 
+ let n = assert.[failed]
  assert n == false
 
  assert false // FAILS
@@ -1109,9 +1125,9 @@ test "assert should fail" {
  assert.[failed] = false // disable test failures done when it finishes
 }
 
-a = unique if cond == 1 {
+a = unique if x1 == 1 {
     300
-  }elif cond == 2 {
+  }elif x2 == 2 {
     400
   }else{
     500
@@ -1119,6 +1135,15 @@ a = unique if cond == 1 {
 
 var x = _
 if a { x = 3 } else { x = 4 }
+
+optimize !(x1==1 and x2==2)
+a = if x1 == 1 {
+    300
+  }elif x2 == 2 {
+    400
+  }else{
+    500
+  }
 
 var tmp = x+1
 
@@ -1139,10 +1164,16 @@ elif x in (2,3)   { puts "never"       }
 else              { assert false       }
 
 var hot = match x {
-    == 0b001 { a }
-    == 0b010 { b }
-    == 0b100 { c }
+    == 0sb001 { a }
+    == 0sb010 { b }
+    == 0sb100 { c }
   }
+
+// Equivalent
+optimize (x==0sb001 or x==0sb010 or x==0sb100)
+var hot2 = __hotmux(x, a, b, c)
+
+assert hot==hot2
 
 match let one=1 ; one ++ (2) {
   == (1,2) { puts "one:{}", one }      // should always hit
@@ -3545,9 +3576,26 @@ g(long, short)     // OK
       out = 3
     }
 
-    optimize b != 3 
+    optimize b != 3
     // array = (1,2,3,4,5,6,7,8)
     res = array[b]
+
+assert cond==3     // Not cassert or optimize, so no optimized
+var x1 = 0sb?
+
+if cond == 3 {
+  x1 = 1
+}
+assert x1==1 // still not optimized (cassert fails)
+cassert !x1.[comptime]
+
+var x2 = 0sb?
+optimize cond==3
+if cond == 3 {
+  x2 = 1
+}
+cassert x2==1
+cassert x2.[comptime]
 
 let f1 = fun() { 1 }
 
@@ -3765,21 +3813,21 @@ assert v@[3..=4] == 0b010 == v@[3,4]
 assert v@[4..=3 step -1] == 0b010
 assert v@[4,3] == v@[3,4] == 0b010
 
-let tmp1 = (v@[4], v@[3])@[..]  // typecast from 
+let tmp1 = (v@[4], v@[3])@[..]  // typecast from
 let tmp2 = (v@[3], v@[4])@[..]
 let tmp3 = v@[3,4]
 assert tmp1 == 0b01
 assert tmp2 == 0b100
 assert tmp3 == 0b10
 
-let tmp1s = (v@sext[4], v@sext[3])@[..]  // typecast from 
+let tmp1s = (v@sext[4], v@sext[3])@[..]  // typecast from
 let tmp2s = (v@sext[3], v@sext[4])@[..]
 let tmp3s = v@[4,3]
 assert tmp1s == 0b01
 assert tmp2s == 0b10
 assert tmp3s == 0b10
 
-let tmp1ss = (v@sext[4], v@sext[3])@sext[..]  // typecast from 
+let tmp1ss = (v@sext[4], v@sext[3])@sext[..]  // typecast from
 let tmp2ss = (v@sext[3], v@sext[4])@sext[..]
 let tmp3ss = v@sext[3,4]
 assert tmp1ss == 0b01  ==  1
@@ -3797,8 +3845,8 @@ assert reverse(0b10110) == 0b01101
 let args = fun(x) { puts "args:{}", b ; 1}
 let here = fun()  { puts "here" ; 3}
 
-let call_now   = fun(f:fun){ return f() } 
-let call_defer = fun(f:fun){ return f   } 
+let call_now   = fun(f:fun){ return f() }
+let call_defer = fun(f:fun){ return f   }
 
 let x0 = call_now(here)          // prints "here"
 let x1 = call_defer(here)        // nothing printed
@@ -4268,7 +4316,8 @@ cassert enu.b.x in enu.b
     let color = "blue"
     let extension = "s"
 
-    txt = "I have {num:d} {color} potato{extension}"
+    let txt1 = "I have {num} {color} potato{extension}"  // interpolation
+    let txt2 = format('I have {:d} {} potato{}', num, color, extension)
 
 
 
