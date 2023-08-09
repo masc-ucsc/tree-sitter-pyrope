@@ -52,10 +52,10 @@ test "my first test" {
       reg y = b
 
       while y!=0 #> {
-        if x > y { 
-          x -= y 
-        }else{ 
-          y -= x 
+        if x > y {
+          x -= y
+        }else{
+          y -= x
         }
       }
     }
@@ -301,7 +301,7 @@ e.x = 30   // OK
 e.z = 30   // OK
 
 var b = 100
-var a = (b:u8, b, b:u8 = _, let c=4) // a.0 and a.1 are unnamed, a.2==a.b 
+var a = (b:u8, b, b:u8 = _, let c=4) // a.0 and a.1 are unnamed, a.2==a.b
 a.b = 200
 assert a == (100, 100, 200, 4)
 
@@ -379,7 +379,7 @@ b = xx[1,2]       // same as: xx[(1,2)]
 for a in 1,2,3 {  // same as: for a in (1,2,3) {
   x = a
 }
-y = match z {    
+y = match z {
   in 1,2 { 4 }    // same as: in (1,2) { 4 }
   else { 5 }
 }
@@ -387,7 +387,7 @@ y2 = match var one=1 ; one ++ z {  // same as: y2 = match (1,z) {
   == (1,2) { 4 }
 }
 
-let addb = fun(a,b:u32)-> a:u32 { // same as: letaddb = fun(a,b:u32)->(a:u32)  
+let addb = fun(a,b:u32)-> a:u32 { // same as: letaddb = fun(a,b:u32)->(a:u32)
   a = a + b
 }
 
@@ -402,7 +402,7 @@ let c = 4
 let (x,b) = (true, c:u3) // assign x=true, b=4 AND check that c is type u3
 
 cassert x == true
-cassert b == 4 
+cassert b == 4
 
 let b = "foo"
 let c = 1
@@ -616,7 +616,7 @@ assert x equals z    // same type structure
 
 assert y is typ
 assert typ is typ
-assert z !is bund3 
+assert z !is bund3
 assert z !is typ
 assert z !is bund1
 
@@ -944,7 +944,7 @@ cassert e==0 and e.[valid] and e?
 let a = "foo"
 
 var at1 = (
-  ,a:string 
+  ,a:string
 )
 cassert at1[0] == "foo"
 cassert at1 !has "a"    // at1.a undefined
@@ -1195,7 +1195,7 @@ for x in 1..=5 {
 }
 
 var a = 3
-a += 1 when false             // never executes 
+a += 1 when false             // never executes
 assert a == 3
 assert a == 1000 when a > 10  // assert never executed either
 
@@ -1210,7 +1210,7 @@ return "fail" unless success_condition
     z = 10
     var x=_           // compiler error, 'x' is a shawdow variable
   }
-  assert z == 10 
+  assert z == 10
 }
 
 var yy = {let x=3 ; 33/3} + 1
@@ -1227,7 +1227,7 @@ let doit = fun(f,a) {
   return 3
 }
 
-let z3 = doit(fun(a) { 
+let z3 = doit(fun(a) {
   assert a!=0
   return 7             // exist the current lambda
   100                  // never reached statement
@@ -1246,7 +1246,7 @@ for (index,i) in bund.enumerate() {
 let b = (a=1,b=3,c=5,7,11)
 assert b.keys() == ('a', 'b', 'c', '', '')
 assert b.enumerate() == ((0,1), (1,3), (2,5), (3,7), (4,11))
-let xx= zip(b.keys(), b.enumerate()) 
+let xx= zip(b.keys(), b.enumerate())
 cassert xx == (('a',0,a=1), ('b',1,b=3), ('c',2,c=5), ('',3,7), ('',4,11))
 
 for (key,index,i) in zip(keys(b),b.enumerate()) {
@@ -1260,7 +1260,7 @@ for (key,index,i) in zip(keys(b),b.enumerate()) {
 let c = ((1,a=3), b=4, c=(x=1,y=6))
 assert c.enumerate() == ((0,(1,a=3)), (1,b=4), (2,c=(x=1,y=6)))
 
-var d = i for i in 0..<5 
+var d = i for i in 0..<5
 var e = i for i in 0..<5 if i
 assert (0,1,2,3,4) == d
 assert e == (1,2,3,4)
@@ -1306,7 +1306,7 @@ loop {
 
   a += 1
 
-  break unless a < 10 
+  break unless a < 10
 } // do{ ... }while(a<10)
 
 var c = 10
@@ -1323,9 +1323,9 @@ f4 = ring(d, f3)
 
 reg counter:u32 = _
 
-let counter_0  = counter#[0]  // current cycle 
+let counter_0  = counter#[0]  // current cycle
 let counter_1  = counter#[-1] // last cycle
-let counter_2  = counter#[-2] // last last cycle cycle 
+let counter_2  = counter#[-2] // last last cycle cycle
 
 var deferred = counter.[defer]
 
@@ -2042,7 +2042,7 @@ assert my_async_other_reg in (4,33)
     let Top2_t = (
       ,setter = proc(ref self,a,b) {
         let foo:Inner_t = (y=a,z=b)
-        
+
         self.c = foo.a
         self.d = foo.h
       }
@@ -2199,7 +2199,7 @@ let bad_code = proc(my_clk, inp)->(o1,o2) {
     }
 
     let mul1=proc(a,b)->(res) {
-      #>full_case_again[lat=1] { 
+      #>full_case_again[lat=1] {
         res = a*b
       }
     }
@@ -2332,8 +2332,8 @@ let add=proc(a,b,id)->(res,id) {
 
 let alu = proc(a,b,op, id)->(res,id) {
 
-  self.[total_free_units] = 1 
-     + mul.[pending_counter] 
+  self.[total_free_units] = 1
+     + mul.[pending_counter]
      + div.[free_div_units]
      + add.[add_counter]
 
@@ -3127,7 +3127,7 @@ let call_dog:fd_t = fun(d:Dog)->() {    // OK to add type in lhs
    d.bark()    // OK
 }
 
-let f_a = fun(fa:fa_t) { 
+let f_a = fun(fa:fa_t) {
   var a:Animal = _
   var d:Dog = _
   fa(a)  // OK
@@ -3135,7 +3135,7 @@ let f_a = fun(fa:fa_t) {
 }
 f_a(call_animal) // OK
 
-let f_d = fun(fd:fd_t) { 
+let f_d = fun(fd:fd_t) {
   var a:Animal = _
   var d:Dog = _
   fd(d)  // OK
@@ -3143,7 +3143,7 @@ let f_d = fun(fd:fd_t) {
 f_d(call_animal) // OK, `fd_t does call_animal` is true
 f_d(call_dog)    // OK
 
-let m = fun(a:int,...x:(_:string,c:int,d), y:int)->() { 
+let m = fun(a:int,...x:(_:string,c:int,d), y:int)->() {
   assert a == 1
   assert x.0 == "here"
   assert x.1 == 2 == x.c
@@ -3283,7 +3283,7 @@ let smallest = fun(...a) {
   return x
 }
 
-let speak = fun(a:Bird) { puts "pio pio"  } 
+let speak = fun(a:Bird) { puts "pio pio"  }
          ++ fun(a:Cat) { puts "meaow" }
 
 let Type1 = (
@@ -3369,8 +3369,8 @@ let exclude = fun(o,...a) {
 
 let Shape = (
   ,name:string = _
-  ,area:fun (self )->(_:i32)  = _            // undefined 
-  ,increase_size:proc(ref self, x:i12) = _  // undefined 
+  ,area:fun (self )->(_:i32)  = _            // undefined
+  ,increase_size:proc(ref self, x:i12) = _  // undefined
 
   ,setter=proc(ref self, name ) { self.name = name } // implemented, use =
   ,say_name=fun(self) { puts "name:{}", name }
@@ -3378,7 +3378,7 @@ let Shape = (
 
 let Circle = (
   ,...exclude(Shape,'setter')
-  
+
   ,setter        = proc(ref self) { Circle.setter(this, "circle") }
   ,increase_size = proc(ref self, x:i12) { self.rad *= x }
   ,rad:i32       = _
@@ -3430,13 +3430,13 @@ assert b[2][7] == 13
     }
     reg mem2 = reset_value   // infer async mem u5[3][8]
 
-    var mem = ( 
+    var mem = (
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
       ,(u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0), u5(0))
     )
-    reg mem2 = ( 
+    reg mem2 = (
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
       ,(u5(0), u5(1), u5(2), u5(3), u5(4), u5(5), u5(6), u5(7))
@@ -3917,7 +3917,7 @@ let Shape = (
 )
 
 let Rectangle:(...Shape,...OtherAPI) = (...some_code_here)
-let Circle:Shape = (...some_code_here) 
+let Circle:Shape = (...some_code_here)
 
 let print_share_info = fun(s:Shape) { }
 

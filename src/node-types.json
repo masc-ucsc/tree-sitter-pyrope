@@ -872,6 +872,16 @@
     "type": "dot_expression",
     "named": true,
     "fields": {
+      "attribute": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "tuple_sq",
+            "named": true
+          }
+        ]
+      },
       "item": {
         "multiple": false,
         "required": true,
@@ -921,7 +931,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "constant",
@@ -929,10 +939,6 @@
         },
         {
           "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "tuple_sq",
           "named": true
         }
       ]

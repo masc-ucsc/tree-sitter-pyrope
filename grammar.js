@@ -517,7 +517,7 @@ module.exports = grammar({
           choice(
             $.identifier
             , $.constant
-            , $.tuple_sq
+            , field('attribute', $.tuple_sq)
           ))))
       )
     ))

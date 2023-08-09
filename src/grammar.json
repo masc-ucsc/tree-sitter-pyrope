@@ -4057,8 +4057,12 @@
                             "name": "constant"
                           },
                           {
-                            "type": "SYMBOL",
-                            "name": "tuple_sq"
+                            "type": "FIELD",
+                            "name": "attribute",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "tuple_sq"
+                            }
                           }
                         ]
                       }
