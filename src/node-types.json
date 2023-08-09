@@ -272,25 +272,20 @@
   {
     "type": "attributes",
     "named": true,
-    "fields": {
-      "attr": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": ":",
-            "named": false
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "tuple_sq",
-            "named": true
-          }
-        ]
-      }
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "tuple_sq",
+          "named": true
+        }
+      ]
     }
   },
   {

@@ -291,7 +291,7 @@ module.exports = grammar({
       , field('input', optional($.arg_list))
       , field('output', optseq('->', $.arg_list))
     ))
-    , attributes: $ => field('attr', seq(':', choice($.tuple_sq, $.tuple)))
+    , attributes: $ => seq(':', choice($.tuple_sq, $.tuple))
 
     // Assignment/Declaration
     , simple_assignment: $ => prec.right(seq(

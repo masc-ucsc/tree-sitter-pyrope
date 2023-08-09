@@ -1184,30 +1184,26 @@
       }
     },
     "attributes": {
-      "type": "FIELD",
-      "name": "attr",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": ":"
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "tuple_sq"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "tuple"
-              }
-            ]
-          }
-        ]
-      }
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "tuple_sq"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "tuple"
+            }
+          ]
+        }
+      ]
     },
     "simple_assignment": {
       "type": "PREC_RIGHT",
