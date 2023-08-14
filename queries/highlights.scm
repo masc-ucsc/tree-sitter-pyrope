@@ -93,24 +93,6 @@
   "-"
   "|>" 
   "++"
-  (assignment_operator)
-] @operator 
-
-[
-  "and"
-  "!and"
-  "or"
-  "!or"
-  "has"
-  "!has"
-  "case"
-  "!case"
-  "equals"
-  "!equals"
-  "does"
-  "!does"
-  "is"
-  "!is"
   "not"
   "step"
   "implies"
@@ -119,7 +101,12 @@
   "or_else"
   "in"
   "!in"
-] @keyword.operator
+  (assignment_operator)
+  (match_operator)
+] @operator 
+
+(binary_expression
+  operator: _ @operator)
 
 ; Keywords
 
