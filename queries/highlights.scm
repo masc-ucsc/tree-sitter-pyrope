@@ -126,7 +126,6 @@
   "enum"
   "var"
   "let"
-  "reg"
 ] @keyword
 
 (test_statement "test" @keyword)
@@ -142,6 +141,11 @@
   "while"
   "for"
 ] @conditional
+
+[
+ "ref"
+ "reg" 
+] @type.qualifier
 
 ["{" "}" "(" ")" "[" "]"] @punctuation.bracket
 ["," "." ":"] @punctuation.delimiter
