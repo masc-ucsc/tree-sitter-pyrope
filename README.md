@@ -42,11 +42,11 @@ To run some benchmark:
 ./bench.sh
 ```
 
-## Syntax highlighting:
+## Syntax highlighting
 Pyrope syntax highlighting in neovim is possible using the nvim-treesitter plugin.
 Install the plugin with your package manager.
 
-### Install the parser
+### Parser installation:
 To install the parser using nvim-treesitter, add this to your init.lua. 
 Update the url line to point to the tree-sitter-pyrope repository. 
 ```
@@ -66,6 +66,17 @@ Locate the nvim-treesitter folder where neovim plugins are installed.
 Make a pyrope directory in nvim-treesitter/queries. 
 Copy tree-sitter-pyrope/queries/highlights.scm into nvim-treesitter/queries.
 
-### Usage
+### Usage:
 After opening a .prp file, run `:setf pyrope` to tell nvim-treesitter which parser to use. 
 Then, run `:TSEnable highlight` and highlights should be visible.
+
+## `prpfmt`
+A vertical alignment tool for pyrope is in progress.
+It will align pyrope code based on the tree-sitter nodes.
+
+### Compile
+Clone the tree-sitter repository. 
+Run make in the tree-sitter directory to generate a static library called `lib-treesitter.a`.
+
+Compile prpfmt.c using `clang -I tree-sitter/lib/include prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a`. 
+Since the program uses the tree-sitter C API, its path must be included in the compile process.
