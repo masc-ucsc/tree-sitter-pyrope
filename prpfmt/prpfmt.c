@@ -3,15 +3,41 @@
 #include <tree_sitter/api.h>
 
 bool depth_first_traversal(TSNode *node);
+char *file_to_string(char *path);
 
 int main(int argc, char **argv) {
   if (argc < 2)
     printf("Argument of type file path expected\n"), exit(1);
 
+  char *input_string = file_to_string(argv[1]);
+
+  // Parsing
+  TSLanguage *tree_sitter_pyrope();
+  TSParser *parser = ts_parser_new();
+  ts_parser_set_language(parser, tree_sitter_pyrope());
+
+  TSTree *tree = ts_parser_parse_string(
+    parser, 
+    NULL, 
+    input_string, 
+    strlen(input_string)
+  );
+
+  TSNode root_node = ts_tree_root_node(tree);
+  
+  depth_first_traversal(&root_node);
+
+  ts_tree_delete(tree);
+  ts_parser_delete(parser);
+  free(input_string);
+  return 0;
+}
+
+char *file_to_string(char *path) {
   char *buffer;
 
-  FILE *fp = fopen(argv[1], "r"); 
-  if (!fp) perror(argv[1]), exit(EXIT_FAILURE);
+  FILE *fp = fopen(path, "r"); 
+  if (!fp) perror(path), exit(EXIT_FAILURE);
 
   fseek(fp, 0L, SEEK_END);
   long l_size = ftell(fp);
@@ -26,27 +52,7 @@ int main(int argc, char **argv) {
   fclose(fp);
 
   printf("%s", buffer);
-  
-  // Parsing
-  TSLanguage *tree_sitter_pyrope();
-  TSParser *parser = ts_parser_new();
-  ts_parser_set_language(parser, tree_sitter_pyrope());
-
-  TSTree *tree = ts_parser_parse_string(
-    parser, 
-    NULL, 
-    buffer, 
-    strlen(buffer)
-  );
-
-  TSNode root_node = ts_tree_root_node(tree);
-  
-  depth_first_traversal(&root_node);
-
-  ts_tree_delete(tree);
-  ts_parser_delete(parser);
-  free(buffer);
-  return 0;
+  return buffer;
 }
 
 bool depth_first_traversal(TSNode *node) {
