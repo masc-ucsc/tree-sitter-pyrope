@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <tree_sitter/api.h>
 
-bool depth_first_traversal(TSNode *node);
+bool depth_first_traversal(char *input_string, TSNode *node);
+bool print_node(char *input_string, TSNode *node); // Print node info
 char *file_to_string(char *path);
 
 int main(int argc, char **argv) {
@@ -25,7 +26,7 @@ int main(int argc, char **argv) {
 
   TSNode root_node = ts_tree_root_node(tree);
   
-  depth_first_traversal(&root_node);
+  depth_first_traversal(input_string, &root_node);
 
   ts_tree_delete(tree);
   ts_parser_delete(parser);
@@ -51,15 +52,42 @@ char *file_to_string(char *path) {
 
   fclose(fp);
 
-  printf("%s", buffer);
+  //printf("%s", buffer);
   return buffer;
 }
 
-bool depth_first_traversal(TSNode *node) {
-  printf("%s\n", ts_node_type(*node));
-  for (int child = 0; child < ts_node_child_count(*node); child++) {
-    TSNode child_node = ts_node_child(*node, child);
-    depth_first_traversal(&child_node);
+bool depth_first_traversal(char *input_string, TSNode *node) {
+  //printf("%s\n", ts_node_type(*node));
+  print_node(input_string, node);
+  uint32_t child_count = ts_node_child_count(*node);
+  if (child_count > 0) {
+    for (int child = 0; child < child_count; child++) {
+      TSNode child_node = ts_node_child(*node, child);
+      depth_first_traversal(input_string, &child_node);
+    }
+  } else {
+    //print_node(input_string, ts_node_grammar_type(*node), ts_node_start_byte(*node), ts_node_end_byte(*node));
   }
+  return true;
+}
+
+bool print_node(char *input_string, TSNode *node) {
+  const char *type = ts_node_type(*node);
+  char *str = ts_node_string(*node);
+  printf("Type: %s\n", type);
+  //printf("Grammar Type: %s\n", ts_node_grammar_type(*node));
+  // printf("Grammar Symbol: %d\n", ts_node_grammar_symbol(*node));
+  //printf("String: %s\n", str);
+  printf("Named: %d\n", ts_node_is_named(*node));
+  printf("Symbol: %d\n", ts_node_symbol(*node));
+  free(str);
+  printf("Node text:\n");
+  for (uint32_t i = ts_node_start_byte(*node); i <= ts_node_end_byte(*node); i++) {
+    char t = input_string[i];
+    //if(t != ' ' && t != '\t' && t != '\n') {
+      putchar(t);
+    //}
+  }
+  printf("\n----------------------------------------\n");
   return true;
 }
