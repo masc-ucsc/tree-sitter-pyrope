@@ -5,6 +5,8 @@
 bool depth_first_traversal(char *input_string, TSNode *node);
 bool print_node(char *input_string, TSNode *node); // Print node info
 char *file_to_string(char *path);
+void print_if_expression(char *input_string, TSNode *node);
+void print_stmt_list(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -90,4 +92,15 @@ bool print_node(char *input_string, TSNode *node) {
   }
   printf("\n----------------------------------------\n");
   return true;
+}
+
+void print_if_expression(char *input_string, TSNode *node) {
+  printf("if ");
+  TSNode *condition = &ts_node_child_by_field_name(*node, "condition", 9); 
+  print_stmt_list(*input_string, &condition); 
+  free(condition);
+}
+
+void print_stmt_list(char *input_string, TSNode *node) {
+  printf("stmt_list"); // Placeholder
 }
