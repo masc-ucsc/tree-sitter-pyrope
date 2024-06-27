@@ -60,6 +60,9 @@ char *file_to_string(char *path) {
 
 bool depth_first_traversal(char *input_string, TSNode *node) {
   //printf("%s\n", ts_node_type(*node));
+  if (ts_node_grammar_symbol(*node)==131) {
+    print_if_expression(input_string, node);
+  }
   print_node(input_string, node);
   uint32_t child_count = ts_node_child_count(*node);
   if (child_count > 0) {
@@ -96,9 +99,8 @@ bool print_node(char *input_string, TSNode *node) {
 
 void print_if_expression(char *input_string, TSNode *node) {
   printf("if ");
-  TSNode *condition = &ts_node_child_by_field_name(*node, "condition", 9); 
-  print_stmt_list(*input_string, &condition); 
-  free(condition);
+  TSNode condition = ts_node_child_by_field_name(*node, "condition", 9); 
+  print_stmt_list(input_string, &condition); 
 }
 
 void print_stmt_list(char *input_string, TSNode *node) {
