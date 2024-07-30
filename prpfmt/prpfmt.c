@@ -1,20 +1,27 @@
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include <tree_sitter/api.h>
 
+#define IF_EXPRESSION 131
 #define ELIF 10
 #define STMT_LIST 130
 #define SCOPE_STMT 126
 #define ELSE 11
+#define EXPRESSION_STATEMENT 139
+#define SCOPE_EXPRESSION 180
 
-bool depth_first_traversal(char *input_string, TSNode *node);
-void print_node_info(char *input_string, TSNode *node); // Print node info
+bool depth_first_traversal(char *input_string, TSNode *node, int depth);
 bool print_node_text(char *input_string, TSNode *node);
 void print_children(char *input_string, TSNode *node);
 char *file_to_string(char *path);
-void print_if_expression(char *input_string, TSNode *node);
-void print_stmt_list(char *input_string, TSNode *node);
+
+void print_statement(char *input_string, TSNode *node);
 void print_scope_stmt(char *input_string, TSNode *node);
+void print_if_expression(char *input_string, TSNode *node);
+void print_while_stmt(char *input_string, TSNode *node);
+void print_expression_stmt(char *input_string, TSNode *node);
+void print_stmt_list(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -34,10 +41,17 @@ int main(int argc, char **argv) {
     strlen(input_string)
   );
 
+  // Tree usage and print
+  printf("Buffer size %zu\n", strlen(input_string));
   TSNode root_node = ts_tree_root_node(tree);
-  
-  depth_first_traversal(input_string, &root_node);
+  TSNode first_statement = ts_node_child(root_node, 0);
+  //printf("Root node: %s\n", ts_node_type(ts_node_child(root_node, 0)));
 
+  print_statement(input_string, &first_statement);
+  
+  //depth_first_traversal(input_string, &root_node, 0);
+
+  // Cleanup
   ts_tree_delete(tree);
   ts_parser_delete(parser);
   free(input_string);
@@ -66,62 +80,97 @@ char *file_to_string(char *path) {
   return buffer;
 }
 
-bool depth_first_traversal(char *input_string, TSNode *node) {
-  //printf("%s\n", ts_node_type(*node));
-  if (ts_node_grammar_symbol(*node)==131) {
-    print_if_expression(input_string, node);
+bool depth_first_traversal(char *input_string, TSNode *node, int depth) {
+  if (ts_node_grammar_symbol(*node)==SCOPE_STMT) {
+    //print_scope_stmt(input_string, node);
   }
-  //print_node_info(input_string, node);
+
   uint32_t child_count = ts_node_child_count(*node);
   if (child_count > 0) {
-    for (int child = 0; child < child_count; child++) {
+    for (uint32_t child = 0; child < child_count; child++) {
       TSNode child_node = ts_node_child(*node, child);
-      depth_first_traversal(input_string, &child_node);
+      for (int i = 0; i < depth; i++) {
+        printf("  ");
+      }
+      const char *type = ts_node_type(*node);
+      printf("%s ", type);
+      printf("%d ", ts_node_symbol(*node));
+      print_node_text(input_string, node);
+      printf("\n");
+      depth_first_traversal(input_string, &child_node, depth+1);
     }
   } else {
-    //print_node_info(input_string, ts_node_grammar_type(*node), ts_node_start_byte(*node), ts_node_end_byte(*node));
+    // Else we have reached a terminal node
   }
   return true;
 }
 
 void print_children(char *input_string, TSNode *node) {
-  for (int i = 0; i < ts_node_child_count(*node); i++) {
+  for (uint32_t i = 0; i < ts_node_child_count(*node); i++) {
     printf("*");
     TSNode child = ts_node_child(*node, i);
     print_node_text(input_string, &child);
   }
 }
 
-void print_node_info(char *input_string, TSNode *node) {
-  const char *type = ts_node_type(*node);
-  char *str = ts_node_string(*node);
-  printf("Type: %s\n", type);
-  //printf("Grammar Type: %s\n", ts_node_grammar_type(*node));
-  // printf("Grammar Symbol: %d\n", ts_node_grammar_symbol(*node));
-  //printf("String: %s\n", str);
-  printf("Named: %s\n", ts_node_is_named(*node)?"true":"false");
-  printf("Symbol: %d\n", ts_node_symbol(*node));
-  free(str);
-  printf("\n----------------------------------------\n");
-}
-
 bool print_node_text(char *input_string, TSNode *node) {
-  for (uint32_t i = ts_node_start_byte(*node); i <= ts_node_end_byte(*node); i++) {
+  assert(!ts_node_is_null(*node));
+  uint32_t start = ts_node_start_byte(*node);
+  uint32_t end = ts_node_end_byte(*node);
+  printf("[%d] - [%d]", start, end);
+  for (uint32_t i = start; i <= end; i++) {
+    //printf("%d\n", i);
+    assert(i <= strlen(input_string));
     char t = input_string[i];
     //if(t != ' ' && t != '\t' && t != '\n') {
-      putchar(t);
+      //putchar(t);
     //}
   }
   return true;
 }
 
-void print_if_expression(char *input_string, TSNode *node) {
-  // Print useful information
+// Print grammar rules
+
+void print_statement(char *input_string, TSNode *node) {
+  TSNode child = ts_node_child(*node, 0);
+  TSSymbol symbol = ts_node_grammar_symbol(child);
+  //printf("sym %d\n", symbol);
+
+  switch(symbol) {
+    case SCOPE_STMT:
+      print_scope_stmt(input_string, &child);
+      break;
+    case EXPRESSION_STATEMENT: 
+      print_expression_stmt(input_string, &child);
+      break;
+    default:
+      print_node_text(input_string, &child);
+      break;
+  }
+}
+
+void print_scope_stmt(char *input_string, TSNode *node) {
   int child_count = ts_node_child_count(*node);
-  printf("Child count: %d\n", child_count);
-  printf("Named child count: %d\n", ts_node_named_child_count(*node));
-  print_children(input_string, node);
-  printf("\n");
+  printf ("{\n");
+  /*for (uint32_t i = 1; i <= child_count - 2; i++) {
+    TSNode current_node = ts_node_child(*node, i);
+    print_statement(input_string, &current_node);
+  }*/
+  printf("\n}");
+}
+
+void print_if_expression(char *input_string, TSNode *node) {
+  assert(!ts_node_is_null(*node));
+  printf("print_if_expression()\n");
+
+  assert(ts_node_grammar_symbol(*node)==131);
+
+  // Print useful information
+  uint32_t child_count = ts_node_child_count(*node);
+  //printf("Child count: %d\n", child_count);
+  //printf("Named child count: %d\n", ts_node_named_child_count(*node));
+  //print_children(input_string, node);
+  //printf("\n");
 
   // Print if_expression
   printf("if ");
@@ -130,7 +179,7 @@ void print_if_expression(char *input_string, TSNode *node) {
   TSNode code = ts_node_child(*node, 2);
   print_scope_stmt(input_string, &code);
 
-  for(int i = 3; i < child_count; i++) {
+  for(uint32_t i = 3; i < child_count; i++) {
     TSNode current_node = ts_node_child(*node, i);
     switch(ts_node_grammar_symbol(current_node)) {
       case ELIF:
@@ -149,10 +198,30 @@ void print_if_expression(char *input_string, TSNode *node) {
   }
 }
 
-void print_stmt_list(char *input_string, TSNode *node) {
-  print_node_text(input_string, node); // TODO: Print formatted stmt_list 
+void print_while_stmt(char *input_string, TSNode *node) {
+  assert(!ts_node_is_null(*node));
+  printf("while ");
+  TSNode condition = ts_node_child(*node, 1);
+  print_stmt_list(input_string, &condition);
+  TSNode scope_stmt = ts_node_child(*node, 2);
+  print_scope_stmt(input_string, &scope_stmt);
 }
 
-void print_scope_stmt(char *input_string, TSNode *node) {
-  print_node_text(input_string, node); // TODO: Print formatted scope_stmt
+void print_expression_stmt(char *input_string, TSNode *node) {
+  TSNode child = ts_node_child(*node, 0);
+  TSSymbol symbol = ts_node_grammar_symbol(child);
+  //printf("symbol %d\n", symbol);
+
+  switch(symbol) {
+    case SCOPE_EXPRESSION:
+      print_scope_stmt(input_string, &child); 
+      break;
+  }
 }
+
+void print_stmt_list(char *input_string, TSNode *node) {
+  assert(!ts_node_is_null(*node));
+  //printf("printingstmtlist");
+  print_node_text(input_string, node); // TODO: Print formatted stmt_list 
+}
+// clang -I tree-sitter/lib/include tree-sitter-pyrope/prpfmt/prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a
