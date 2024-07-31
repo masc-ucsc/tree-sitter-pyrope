@@ -10,6 +10,9 @@
 #define ELSE 11
 #define EXPRESSION_STATEMENT 139
 #define SCOPE_EXPRESSION 180
+#define ASSIGNMENT_OR_DECLARATION_STATEMENT 127
+#define COMPLEX_IDENTIFIER 163
+#define COMPLEX_IDENTIFIER_LIST 164 
 
 bool depth_first_traversal(char *input_string, TSNode *node, int depth);
 bool print_node_text(char *input_string, TSNode *node);
@@ -18,6 +21,7 @@ char *file_to_string(char *path);
 
 void print_statement(char *input_string, TSNode *node);
 void print_scope_stmt(char *input_string, TSNode *node);
+void print_assignment_or_declaration_statement(char *input_string, TSNode *node);
 void print_if_expression(char *input_string, TSNode *node);
 void print_while_stmt(char *input_string, TSNode *node);
 void print_expression_stmt(char *input_string, TSNode *node);
@@ -42,7 +46,7 @@ int main(int argc, char **argv) {
   );
 
   // Tree usage and print
-  printf("Buffer size %zu\n", strlen(input_string));
+  //printf("Buffer size %zu\n", strlen(input_string));
   TSNode root_node = ts_tree_root_node(tree);
   TSNode first_statement = ts_node_child(root_node, 0);
   //printf("Root node: %s\n", ts_node_type(ts_node_child(root_node, 0)));
@@ -117,14 +121,14 @@ bool print_node_text(char *input_string, TSNode *node) {
   assert(!ts_node_is_null(*node));
   uint32_t start = ts_node_start_byte(*node);
   uint32_t end = ts_node_end_byte(*node);
-  printf("[%d] - [%d]", start, end);
+  //printf("[%d] - [%d]", start, end);
   for (uint32_t i = start; i <= end; i++) {
     //printf("%d\n", i);
     assert(i <= strlen(input_string));
     char t = input_string[i];
-    //if(t != ' ' && t != '\t' && t != '\n') {
-      //putchar(t);
-    //}
+    if(t != ' ' && t != '\t' && t != '\n') {
+      putchar(t);
+    }
   }
   return true;
 }
@@ -134,11 +138,14 @@ bool print_node_text(char *input_string, TSNode *node) {
 void print_statement(char *input_string, TSNode *node) {
   TSNode child = ts_node_child(*node, 0);
   TSSymbol symbol = ts_node_grammar_symbol(child);
-  //printf("sym %d\n", symbol);
+  printf("sym %d\n", symbol);
 
   switch(symbol) {
-    case SCOPE_STMT:
+    case SCOPE_STMT: case SCOPE_EXPRESSION:
       print_scope_stmt(input_string, &child);
+      break;
+    case ASSIGNMENT_OR_DECLARATION_STATEMENT:
+      print_assignment_or_declaration_statement(input_string, &child);
       break;
     case EXPRESSION_STATEMENT: 
       print_expression_stmt(input_string, &child);
@@ -151,12 +158,44 @@ void print_statement(char *input_string, TSNode *node) {
 
 void print_scope_stmt(char *input_string, TSNode *node) {
   int child_count = ts_node_child_count(*node);
+  printf("scope_stmt child count: %d", child_count);
   printf ("{\n");
-  /*for (uint32_t i = 1; i <= child_count - 2; i++) {
+  for (uint32_t i = 0; i < child_count; i++) {
     TSNode current_node = ts_node_child(*node, i);
     print_statement(input_string, &current_node);
-  }*/
+  }
   printf("\n}");
+}
+
+void print_assignment_or_declaration_statement(char *input_string, TSNode *node) {
+  TSNode decl = ts_node_child_by_field_name(*node, "decl", 4);
+  if (!ts_node_is_null(decl)) {
+    print_node_text(input_string, &decl);
+  }
+
+  TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
+  if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER_LIST) {
+    // TODO: Print complex identifier list
+  } else if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER) {
+    // TODO: Print complex identifier
+    TSNode type = ts_node_child_by_field_name(*node, "type", 4);
+    if (!ts_node_is_null(type)) {
+      // TODO: Print type cast
+    }
+  } 
+
+  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
+  print_node_text(input_string, &operator);
+
+  TSNode delay = ts_node_child_by_field_name(*node, "delay", 5);
+  if (!ts_node_is_null(delay)) {
+    print_node_text(input_string, &delay);
+  }
+
+  TSNode rvalue = ts_node_child_by_field_name(*node, "rvalue", 6);
+  switch(ts_node_grammar_symbol(rvalue)) {
+    
+  }
 }
 
 void print_if_expression(char *input_string, TSNode *node) {
