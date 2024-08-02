@@ -22,6 +22,7 @@ char *file_to_string(char *path);
 void print_statement(char *input_string, TSNode *node);
 void print_scope_stmt(char *input_string, TSNode *node);
 void print_assignment_or_declaration_statement(char *input_string, TSNode *node);
+void print_function_call_statement(char *input_string, TSNode *node);
 void print_if_expression(char *input_string, TSNode *node);
 void print_while_stmt(char *input_string, TSNode *node);
 void print_expression_stmt(char *input_string, TSNode *node);
@@ -196,6 +197,20 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   switch(ts_node_grammar_symbol(rvalue)) {
     
   }
+}
+void print_function_call_statement(char *input_string, TSNode *node) {
+  TSNode simple_function_call = ts_node_child(*node, 0);
+
+  TSNode always = ts_node_child_by_field_name(simple_function_call, "always", 6);
+  if (!ts_node_is_null(always)) {
+    printf("always");
+  }
+
+  TSNode function = ts_node_child_by_field_name(simple_function_call, "function", 8);
+  print_node_text(input_string, &function);
+
+  TSNode argument = ts_node_child_by_field_name(simple_function_call, "argument", 8);
+  print_node_text(input_string, &argument);
 }
 
 void print_if_expression(char *input_string, TSNode *node) {
