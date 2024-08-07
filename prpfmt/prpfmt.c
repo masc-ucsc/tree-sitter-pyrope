@@ -14,9 +14,15 @@
 #define ASSIGNMENT_OR_DECLARATION_STATEMENT 127
 #define COMPLEX_IDENTIFIER 163
 #define COMPLEX_IDENTIFIER_LIST 164 
+#define FUNCTION_CALL_STATEMENT 128 
+#define CONTROL_STATEMENT 129
+#define WHILE_STATEMENT 133
+#define FUNCTION_DEFINITION_STATEMENT 150
+#define LOOP_STATEMENT 134 
 
 bool depth_first_traversal(char *input_string, TSNode *node, int depth);
-bool print_node_text(char *input_string, TSNode *node);
+void print_node_text(char *input_string, TSNode *node);
+void print_node_text_with_whitespace(char *input_string, TSNode *node);
 void print_children(char *input_string, TSNode *node);
 char *file_to_string(char *path);
 
@@ -27,8 +33,12 @@ void print_function_call_statement(char *input_string, TSNode *node);
 void print_if_expression(char *input_string, TSNode *node);
 void print_while_statement(char *input_string, TSNode *node);
 void print_for_statement(char *input_string, TSNode *node);
-void print_expression_stmt(char *input_string, TSNode *node);
+void print_function_definition_statement(char *input_string, TSNode *node);
+void print_loop_statement(char *input_string, TSNode *node);
+void print_control_statement(char *input_string, TSNode *node);
+void print_expression_statement(char *input_string, TSNode *node);
 void print_stmt_list(char *input_string, TSNode *node);
+void print_complex_identifier(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -49,15 +59,15 @@ int main(int argc, char **argv) {
   );
 
   // Tree usage and print
-  //printf("Buffer size %zu\n", strlen(input_string));
   TSNode root_node = ts_tree_root_node(tree);
-  TSNode first_statement = ts_node_child(root_node, 0);
-  //printf("Root node: %s\n", ts_node_type(ts_node_child(root_node, 0)));
-  //printf(" %c\n ", input_string[36]);
-
-  print_statement(input_string, &first_statement);
+  uint32_t root_child_count = ts_node_child_count(root_node);
   
-  //depth_first_traversal(input_string, &root_node, 0);
+  if (root_child_count > 0) {
+    for (uint32_t i = 0; i < root_child_count; i++) {
+      TSNode child = ts_node_child(root_node, i);
+      print_statement(input_string, &child);
+    }
+  }
 
   // Cleanup
   ts_tree_delete(tree);
@@ -121,20 +131,24 @@ void print_children(char *input_string, TSNode *node) {
   }
 }
 
-bool print_node_text(char *input_string, TSNode *node) {
-  assert(!ts_node_is_null(*node));
+void print_node_text(char *input_string, TSNode *node) {
   uint32_t start = ts_node_start_byte(*node);
   uint32_t end = ts_node_end_byte(*node);
-  //printf("[%d] - [%d]", start, end);
   for (uint32_t i = start; i < end; i++) {
-    //printf("%d\n", i);
-    assert(i <= strlen(input_string));
     char t = input_string[i];
     if(t != ' ' && t != '\t' && t != '\n') {
       putchar(t);
     }
   }
-  return true;
+}
+
+void print_node_text_with_whitespace(char *input_string, TSNode *node) {
+  uint32_t start = ts_node_start_byte(*node);
+  uint32_t end = ts_node_end_byte(*node);
+  for (uint32_t i = start; i < end; i++) {
+    char t = input_string[i];
+    putchar(t);
+  }
 }
 
 // Print grammar rules
@@ -151,11 +165,26 @@ void print_statement(char *input_string, TSNode *node) {
     case ASSIGNMENT_OR_DECLARATION_STATEMENT:
       print_assignment_or_declaration_statement(input_string, &child);
       break;
+    case FUNCTION_CALL_STATEMENT:
+      print_function_call_statement(input_string, &child);
+      break;
+    case CONTROL_STATEMENT:
+      print_control_statement(input_string, &child);
+      break;
+    case WHILE_STATEMENT:
+      print_while_statement(input_string, &child);
+      break;
     case FOR_STATEMENT:
       print_for_statement(input_string, &child);
       break;
+    case FUNCTION_DEFINITION_STATEMENT:
+      print_function_definition_statement(input_string, &child);
+      break;
+    case LOOP_STATEMENT:
+      print_loop_statement(input_string, &child);
+      break;
     case EXPRESSION_STATEMENT: 
-      print_expression_stmt(input_string, &child);
+      print_expression_statement(input_string, &child);
       break;
     default:
       printf("reached default");
@@ -179,6 +208,7 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   TSNode decl = ts_node_child_by_field_name(*node, "decl", 4);
   if (!ts_node_is_null(decl)) {
     print_node_text(input_string, &decl);
+    putchar(' ');
   }
 
   TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
@@ -192,9 +222,11 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
     }
   } 
   print_node_text(input_string, &lvalue);
+  putchar(' ');
 
   TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
   print_node_text(input_string, &operator);
+  putchar(' ');
 
   TSNode delay = ts_node_child_by_field_name(*node, "delay", 5);
   if (!ts_node_is_null(delay)) {
@@ -206,7 +238,20 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   switch(ts_node_grammar_symbol(rvalue)) {
     
   }
+  printf("\n");
 }
+
+void print_function_definition_statement(char *input_string, TSNode *node) {
+  TSNode func_type = ts_node_child(*node, 0);
+  print_node_text(input_string, &func_type);
+  
+  TSNode lvalue = ts_node_child(*node, 1);
+  print_node_text(input_string, &lvalue);
+
+  TSNode function_definition = ts_node_child(*node, 2);
+  print_node_text(input_string, &function_definition); // TODO: add function
+}
+
 void print_function_call_statement(char *input_string, TSNode *node) {
   TSNode simple_function_call = ts_node_child(*node, 0);
 
@@ -270,7 +315,7 @@ void print_while_statement(char *input_string, TSNode *node) {
 }
 
 void print_for_statement(char *input_string, TSNode *node) {
-  printf("child count: %d\n", ts_node_named_child_count(*node));
+  //printf("child count: %d\n", ts_node_named_child_count(*node));
   printf("for ");
 
   TSNode index = ts_node_named_child(*node, 0);
@@ -285,7 +330,18 @@ void print_for_statement(char *input_string, TSNode *node) {
   print_scope_statement(input_string, &scope);
 }
 
-void print_expression_stmt(char *input_string, TSNode *node) {
+void print_loop_statement(char *input_string, TSNode *node) {
+  printf("loop ");
+
+  TSNode code = ts_node_named_child(*node, 0);
+  print_scope_statement(input_string, &code);
+}
+
+void print_control_statement(char *input_string, TSNode *node) {
+  print_node_text(input_string, node);
+}
+
+void print_expression_statement(char *input_string, TSNode *node) {
   TSNode child = ts_node_child(*node, 0);
   TSSymbol symbol = ts_node_grammar_symbol(child);
   //printf("symbol %d\n", symbol);
@@ -294,6 +350,8 @@ void print_expression_stmt(char *input_string, TSNode *node) {
     case SCOPE_EXPRESSION:
       print_scope_statement(input_string, &child); 
       break;
+    case COMPLEX_IDENTIFIER:
+      print_complex_identifier(input_string, &child);
   }
 }
 
@@ -301,5 +359,18 @@ void print_stmt_list(char *input_string, TSNode *node) {
   assert(!ts_node_is_null(*node));
   //printf("printingstmtlist");
   print_node_text(input_string, node); // TODO: Print formatted stmt_list 
+}
+
+void print_complex_identifier(char *input_string, TSNode *node) {
+  uint32_t start_byte = ts_node_start_byte(*node);
+  uint32_t end_byte = ts_node_end_byte(*node);
+  
+  if (input_string[start_byte] == '`') {
+    print_node_text_with_whitespace(input_string, node);
+  } else {
+    print_node_text(input_string, node);
+  }
+
+  // Add dot_expression and selection
 }
 // clang -I tree-sitter/lib/include tree-sitter-pyrope/prpfmt/prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a
