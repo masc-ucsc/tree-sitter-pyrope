@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <tree_sitter/api.h>
 
+#define STATEMENT 125
+#define COMMENT 120
 #define FOR_STATEMENT 132 
 #define IF_EXPRESSION 131
 #define ELIF 10
@@ -64,6 +66,7 @@ int main(int argc, char **argv) {
   
   if (root_child_count > 0) {
     for (uint32_t i = 0; i < root_child_count; i++) {
+      //printf("printing statement %d\n", i);
       TSNode child = ts_node_child(root_node, i);
       print_statement(input_string, &child);
     }
@@ -154,6 +157,19 @@ void print_node_text_with_whitespace(char *input_string, TSNode *node) {
 // Print grammar rules
 
 void print_statement(char *input_string, TSNode *node) {
+  if (ts_node_is_null(*node)) {
+    printf("TSNode is null, expected statement");
+  } 
+  TSSymbol stsym = ts_node_symbol(*node); 
+  //printf("Statement symbol : %d\n", stsym);
+  if (stsym != STATEMENT) {
+    if (stsym == COMMENT) {
+      print_node_text_with_whitespace(input_string, node);
+      return ;
+    }
+    printf("Node symbol is %d (expected %d, statement)\n", stsym, STATEMENT);
+  }
+
   TSNode child = ts_node_child(*node, 0);
   TSSymbol symbol = ts_node_grammar_symbol(child);
   //printf("sym %d\n", symbol);
@@ -215,13 +231,12 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER_LIST) {
     // TODO: Print complex identifier list
   } else if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER) {
-    // TODO: Print complex identifier
+    print_complex_identifier(input_string, &lvalue);
     TSNode type = ts_node_child_by_field_name(*node, "type", 4);
     if (!ts_node_is_null(type)) {
       // TODO: Print type cast
     }
   } 
-  print_node_text(input_string, &lvalue);
   putchar(' ');
 
   TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
@@ -347,6 +362,9 @@ void print_expression_statement(char *input_string, TSNode *node) {
   //printf("symbol %d\n", symbol);
 
   switch(symbol) {
+    case IF_EXPRESSION:
+      print_if_expression(input_string, &child);
+      break;
     case SCOPE_EXPRESSION:
       print_scope_statement(input_string, &child); 
       break;
