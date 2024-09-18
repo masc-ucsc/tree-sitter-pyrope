@@ -21,6 +21,9 @@
 #define WHILE_STATEMENT 133
 #define FUNCTION_DEFINITION_STATEMENT 150
 #define LOOP_STATEMENT 134 
+#define BINARY_EXPRESSION 177
+#define UNARY_EXPRESSION 175 
+#define CONSTANT 200
 
 bool depth_first_traversal(char *input_string, TSNode *node, int depth);
 void print_node_text(char *input_string, TSNode *node);
@@ -41,6 +44,9 @@ void print_control_statement(char *input_string, TSNode *node);
 void print_expression_statement(char *input_string, TSNode *node);
 void print_stmt_list(char *input_string, TSNode *node);
 void print_complex_identifier(char *input_string, TSNode *node);
+void print_binary_expression(char *input_string, TSNode *node);
+void print_unary_expression(char *input_string, TSNode *node);
+void print__expression(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -69,6 +75,8 @@ int main(int argc, char **argv) {
       //printf("printing statement %d\n", i);
       TSNode child = ts_node_child(root_node, i);
       print_statement(input_string, &child);
+      printf("\n");
+      //printf("reached top level\n");
     }
   }
 
@@ -165,6 +173,7 @@ void print_statement(char *input_string, TSNode *node) {
   if (stsym != STATEMENT) {
     if (stsym == COMMENT) {
       print_node_text_with_whitespace(input_string, node);
+      printf("\n");
       return ;
     }
     printf("Node symbol is %d (expected %d, statement)\n", stsym, STATEMENT);
@@ -205,7 +214,6 @@ void print_statement(char *input_string, TSNode *node) {
     default:
       printf("reached default");
       //print_node_text(input_string, &child);
-      break;
   }
 }
 
@@ -213,6 +221,7 @@ void print_scope_statement(char *input_string, TSNode *node) {
   uint32_t named_child_count = ts_node_named_child_count(*node);
   printf ("{\n");
   for (uint32_t i = 0; i < named_child_count; i++) {
+    printf("\t");
     TSNode current_node = ts_node_named_child(*node, i);
     print_statement(input_string, &current_node);
     printf("\n");
@@ -253,7 +262,7 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   switch(ts_node_grammar_symbol(rvalue)) {
     
   }
-  printf("\n");
+  //printf("\n");
 }
 
 void print_function_definition_statement(char *input_string, TSNode *node) {
@@ -277,6 +286,7 @@ void print_function_call_statement(char *input_string, TSNode *node) {
 
   TSNode function = ts_node_child_by_field_name(simple_function_call, "function", 8);
   print_node_text(input_string, &function);
+  putchar(' ');
 
   TSNode argument = ts_node_child_by_field_name(simple_function_call, "argument", 8);
   print_node_text(input_string, &argument);
@@ -284,7 +294,7 @@ void print_function_call_statement(char *input_string, TSNode *node) {
 
 void print_if_expression(char *input_string, TSNode *node) {
   assert(!ts_node_is_null(*node));
-  printf("print_if_expression()\n");
+  //printf("print_if_expression()\n");
 
   assert(ts_node_grammar_symbol(*node)==131);
 
@@ -300,25 +310,29 @@ void print_if_expression(char *input_string, TSNode *node) {
   TSNode condition = ts_node_child(*node, 1); 
   print_stmt_list(input_string, &condition); 
   TSNode code = ts_node_child(*node, 2);
+  printf(" ");
   print_scope_statement(input_string, &code);
 
   for(uint32_t i = 3; i < child_count; i++) {
     TSNode current_node = ts_node_child(*node, i);
     switch(ts_node_grammar_symbol(current_node)) {
       case ELIF:
-        printf("elif ");
+        printf(" elif ");
         break;
       case STMT_LIST:
         print_stmt_list(input_string, &current_node);
+        printf("\n");
         break;
       case SCOPE_STMT:
         print_scope_statement(input_string, &current_node);
+        printf("\n");
         break;
       case ELSE:
-        printf("else ");
+        printf(" else ");
         break;
     }
   }
+  //printf("\n");
 }
 
 void print_while_statement(char *input_string, TSNode *node) {
@@ -358,19 +372,8 @@ void print_control_statement(char *input_string, TSNode *node) {
 
 void print_expression_statement(char *input_string, TSNode *node) {
   TSNode child = ts_node_child(*node, 0);
-  TSSymbol symbol = ts_node_grammar_symbol(child);
-  //printf("symbol %d\n", symbol);
-
-  switch(symbol) {
-    case IF_EXPRESSION:
-      print_if_expression(input_string, &child);
-      break;
-    case SCOPE_EXPRESSION:
-      print_scope_statement(input_string, &child); 
-      break;
-    case COMPLEX_IDENTIFIER:
-      print_complex_identifier(input_string, &child);
-  }
+  //printf("print_expression_statement symbol: %d\n", ts_node_grammar_symbol(child));
+  print__expression(input_string, &child);
 }
 
 void print_stmt_list(char *input_string, TSNode *node) {
@@ -390,5 +393,70 @@ void print_complex_identifier(char *input_string, TSNode *node) {
   }
 
   // Add dot_expression and selection
+}
+
+void print_binary_expression(char *input_string, TSNode *node) {
+  assert(!ts_node_is_null(*node));
+
+  TSNode left = ts_node_child_by_field_name(*node, "left", 4);
+  print__expression(input_string, &left);
+  putchar(' '); 
+
+  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
+  print_node_text(input_string, &operator);
+
+  putchar(' '); 
+  TSNode right = ts_node_child_by_field_name(*node, "right", 5);
+  print__expression(input_string, &right);
+}
+
+void print_unary_expression(char *input_string, TSNode *node) {
+  assert(!ts_node_is_null(*node));
+
+  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
+  // TODO: add space when operator is 'not'
+  print_node_text(input_string, &operator);
+
+  TSNode argument = ts_node_child_by_field_name(*node, "argument", 8);
+  print__expression(input_string, &argument);
+}
+
+void print__restricted_expression(char *input_string, TSNode *node) {
+  printf("restricted exp\n");
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+
+  switch(symbol) {
+    case COMPLEX_IDENTIFIER:
+      print_complex_identifier(input_string, node);
+      break;
+    case CONSTANT:
+      print_node_text(input_string, node);
+      break;
+    case SCOPE_EXPRESSION:
+      print_scope_statement(input_string, node);
+      break;
+    default: 
+      printf("reached default, print__restricted_expression\nsymbol: %d\n", symbol);
+  }
+}
+
+void print__expression(char *input_string, TSNode *node) {
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+  //printf("exp %d\n", symbol);
+ 
+  switch(symbol) {
+    case UNARY_EXPRESSION: 
+      print_unary_expression(input_string, node);
+      break;
+    case BINARY_EXPRESSION:
+      print_binary_expression(input_string, node);
+      break;
+    case IF_EXPRESSION:
+      print_if_expression(input_string, node);
+      break;
+    case SCOPE_EXPRESSION:
+    default:
+      print__restricted_expression(input_string, node);
+  }
 }
 // clang -I tree-sitter/lib/include tree-sitter-pyrope/prpfmt/prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a
