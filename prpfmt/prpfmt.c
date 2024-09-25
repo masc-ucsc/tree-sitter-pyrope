@@ -3,42 +3,231 @@
 #include <assert.h>
 #include <tree_sitter/api.h>
 
-#define STATEMENT 125
-#define COMMENT 120
-#define FOR_STATEMENT 132 
-#define IF_EXPRESSION 131
-#define ELIF 10
-#define STMT_LIST 130
-#define SCOPE_STMT 126
-#define ELSE 11
-#define EXPRESSION_STATEMENT 139
-#define SCOPE_EXPRESSION 180
-#define ASSIGNMENT_OR_DECLARATION_STATEMENT 127
-#define COMPLEX_IDENTIFIER 163
-#define COMPLEX_IDENTIFIER_LIST 164 
-#define FUNCTION_CALL_STATEMENT 128 
-#define CONTROL_STATEMENT 129
-#define WHILE_STATEMENT 133
-#define FUNCTION_DEFINITION_STATEMENT 150
-#define LOOP_STATEMENT 134 
-#define BINARY_EXPRESSION 177
-#define UNARY_EXPRESSION 175 
-#define CONSTANT 200
-#define IDENTIFIER 1
-#define FUNCTION_CALL 179
-#define LAMBDA 182
-#define TEST_STATEMENT 140
-#define REF_IDENTIFIER 157
-#define TUPLE 143
-#define TUPLE_SQ 144
-#define SIMPLE_ASSIGNMENT 149
-#define ENUM_DEFINITION 156
-#define DOT_EXPRESSION 178 
-#define OPTIONAL_EXPRESSION 176
-#define MATCH_EXPRESSION 136
-#define ARG_LIST 52
-#define SELECTION 170 
-#define TYPE_OR_IDENTIFIER 162 
+enum {
+  sym_identifier = 1,
+  anon_sym_SEMI = 2,
+  anon_sym_LBRACE = 3,
+  anon_sym_RBRACE = 4,
+  anon_sym_continue = 5,
+  anon_sym_break = 6,
+  anon_sym_return = 7,
+  anon_sym_unique = 8,
+  anon_sym_if = 9,
+  anon_sym_elif = 10,
+  anon_sym_else = 11,
+  anon_sym_for = 12,
+  anon_sym_LPAREN = 13,
+  anon_sym_RPAREN = 14,
+  anon_sym_in = 15,
+  anon_sym_while = 16,
+  anon_sym_loop = 17,
+  anon_sym_POUND_GT = 18,
+  anon_sym_match = 19,
+  anon_sym_and = 20,
+  anon_sym_BANGand = 21,
+  anon_sym_or = 22,
+  anon_sym_BANGor = 23,
+  anon_sym_AMP = 24,
+  anon_sym_CARET = 25,
+  anon_sym_PIPE = 26,
+  anon_sym_TILDE_AMP = 27,
+  anon_sym_TILDE_CARET = 28,
+  anon_sym_TILDE_PIPE = 29,
+  anon_sym_LT = 30,
+  anon_sym_LT_EQ = 31,
+  anon_sym_GT = 32,
+  anon_sym_GT_EQ = 33,
+  anon_sym_EQ_EQ = 34,
+  anon_sym_BANG_EQ = 35,
+  anon_sym_has = 36,
+  anon_sym_BANGhas = 37,
+  anon_sym_case = 38,
+  anon_sym_BANGcase = 39,
+  anon_sym_BANGin = 40,
+  anon_sym_equals = 41,
+  anon_sym_BANGequals = 42,
+  anon_sym_does = 43,
+  anon_sym_BANGdoes = 44,
+  anon_sym_is = 45,
+  anon_sym_BANGis = 46,
+  anon_sym_test = 47,
+  anon_sym_where = 48,
+  anon_sym_COMMA = 49,
+  anon_sym_LBRACK = 50,
+  anon_sym_RBRACK = 51,
+  anon_sym_DASH_GT = 52,
+  anon_sym_COLON = 53,
+  anon_sym_var = 54,
+  anon_sym_let = 55,
+  anon_sym_reg = 56,
+  anon_sym_requires = 57,
+  anon_sym_ensures = 58,
+  anon_sym_enum = 59,
+  anon_sym_variant = 60,
+  anon_sym_ref = 61,
+  anon_sym_EQ = 62,
+  anon_sym_DOT_DOT_DOT = 63,
+  anon_sym_BANG = 64,
+  anon_sym_not = 65,
+  anon_sym_TILDE = 66,
+  anon_sym_DASH = 67,
+  anon_sym_QMARK = 68,
+  anon_sym_DOT_DOT_EQ = 69,
+  anon_sym_DOT_DOT_LT = 70,
+  anon_sym_DOT_DOT_PLUS = 71,
+  anon_sym_step = 72,
+  anon_sym_implies = 73,
+  anon_sym_BANGimplies = 74,
+  anon_sym_and_then = 75,
+  anon_sym_or_else = 76,
+  anon_sym_GT_GT = 77,
+  anon_sym_LT_LT = 78,
+  anon_sym_BANG_AMP = 79,
+  anon_sym_BANG_CARET = 80,
+  anon_sym_BANG_PIPE = 81,
+  anon_sym_STAR = 82,
+  anon_sym_SLASH = 83,
+  anon_sym_PERCENT = 84,
+  anon_sym_PLUS = 85,
+  anon_sym_PIPE_GT = 86,
+  anon_sym_PLUS_PLUS = 87,
+  anon_sym_DOT = 88,
+  sym_assignment_operator = 89,
+  anon_sym_DOT_DOT = 90,
+  anon_sym_AT = 91,
+  anon_sym_sext = 92,
+  anon_sym_zext = 93,
+  anon_sym_POUND = 94,
+  anon_sym_int = 95,
+  anon_sym_integer = 96,
+  anon_sym_signed = 97,
+  anon_sym_uint = 98,
+  anon_sym_unsigned = 99,
+  sym_sized_integer_type = 100,
+  anon_sym_range = 101,
+  sym_string_type = 102,
+  sym_boolean_type = 103,
+  sym_type_type = 104,
+  sym_fun_tok = 105,
+  sym_proc_tok = 106,
+  sym_always_tok = 107,
+  sym__simple_number = 108,
+  sym__scaled_number = 109,
+  sym__hex_number = 110,
+  sym__decimal_number = 111,
+  sym__octal_number = 112,
+  sym__binary_number = 113,
+  sym__bool_literal = 114,
+  sym__simple_string_literal = 115,
+  anon_sym_DQUOTE = 116,
+  aux_sym_complex_string_literal_token1 = 117,
+  aux_sym_complex_string_literal_token2 = 118,
+  sym__space = 119,
+  sym_comment = 120,
+  anon_sym_when = 121,
+  anon_sym_unless = 122,
+  sym__automatic_semicolon = 123,
+  sym_description = 124,
+  sym_statement = 125,
+  sym_scope_statement = 126,
+  sym_assignment_or_declaration_statement = 127,
+  sym_function_call_statement = 128,
+  sym_control_statement = 129,
+  sym_stmt_list = 130,
+  sym_if_expression = 131,
+  sym_for_statement = 132,
+  sym_while_statement = 133,
+  sym_loop_statement = 134,
+  sym_pipestage_scope_statement = 135,
+  sym_match_expression = 136,
+  sym_match_list = 137,
+  sym_match_operator = 138,
+  sym_expression_statement = 139,
+  sym_test_statement = 140,
+  sym_expression_list = 141,
+  sym_simple_function_call = 142,
+  sym_tuple = 143,
+  sym_tuple_sq = 144,
+  sym_tuple_list = 145,
+  sym__tuple_item = 146,
+  sym_function_inline = 147,
+  sym_attributes = 148,
+  sym_simple_assignment = 149,
+  sym_function_definition_statement = 150,
+  sym__assignment_or_declaration = 151,
+  sym_cycle_select_or_pound = 152,
+  sym_var_or_let_or_reg = 153,
+  sym_function_definition = 154,
+  sym_func_def_verification = 155,
+  sym_enum_definition = 156,
+  sym_ref_identifier = 157,
+  sym_capture_list = 158,
+  sym_arg_list = 159,
+  sym_arg_item_list = 160,
+  sym_arg_item = 161,
+  sym_type_or_identifier = 162,
+  sym_complex_identifier = 163,
+  sym_complex_identifier_list = 164,
+  sym_typed_identifier = 165,
+  sym_typed_identifier_list = 166,
+  sym__expression = 167,
+  sym__expression_with_comprehension = 168,
+  sym_for_comprehension = 169,
+  sym_selection = 170,
+  sym_member_selection = 171,
+  sym_bit_selection = 172,
+  sym_cycle_selection = 173,
+  sym_type_specification = 174,
+  sym_unary_expression = 175,
+  sym_optional_expression = 176,
+  sym_binary_expression = 177,
+  sym_dot_expression = 178,
+  sym_function_call = 179,
+  sym_scope_expression = 180,
+  sym__restricted_expression = 181,
+  sym_lambda = 182,
+  sym_select = 183,
+  sym_select_options = 184,
+  sym_member_select = 185,
+  sym_bit_select = 186,
+  sym_bit_select_type = 187,
+  sym_cycle_select = 188,
+  sym_type_cast = 189,
+  sym__type = 190,
+  sym_expression_type = 191,
+  sym_dot_expression_type = 192,
+  sym_function_call_type = 193,
+  sym_array_type = 194,
+  sym_function_type = 195,
+  sym_primitive_type = 196,
+  sym_unsized_integer_type = 197,
+  sym_bounded_integer_type = 198,
+  sym_range_type = 199,
+  sym_constant = 200,
+  sym__number = 201,
+  sym__string_literal = 202,
+  sym_complex_string_literal = 203,
+  sym__semicolon = 204,
+  sym_when_unless_cond = 205,
+  aux_sym_description_repeat1 = 206,
+  aux_sym_description_repeat2 = 207,
+  aux_sym_scope_statement_repeat1 = 208,
+  aux_sym_stmt_list_repeat1 = 209,
+  aux_sym_if_expression_repeat1 = 210,
+  aux_sym_match_list_repeat1 = 211,
+  aux_sym_expression_list_repeat1 = 212,
+  aux_sym_tuple_list_repeat1 = 213,
+  aux_sym_tuple_list_repeat2 = 214,
+  aux_sym_function_definition_repeat1 = 215,
+  aux_sym_capture_list_repeat1 = 216,
+  aux_sym_arg_item_list_repeat1 = 217,
+  aux_sym_complex_identifier_list_repeat1 = 218,
+  aux_sym_typed_identifier_list_repeat1 = 219,
+  aux_sym_dot_expression_repeat1 = 220,
+  aux_sym_member_select_repeat1 = 221,
+  aux_sym_dot_expression_type_repeat1 = 222,
+  aux_sym_complex_string_literal_repeat1 = 223,
+};
 
 bool depth_first_traversal(char *input_string, TSNode *node, int depth);
 void print_node_text(char *input_string, TSNode *node);
@@ -152,7 +341,7 @@ char *file_to_string(char *path) {
 }
 
 bool depth_first_traversal(char *input_string, TSNode *node, int depth) {
-  if (ts_node_grammar_symbol(*node)==SCOPE_STMT) {
+  if (ts_node_grammar_symbol(*node)==sym_scope_statement) {
     //print_scope_statement(input_string, node);
   }
 
@@ -212,13 +401,13 @@ void print_statement(char *input_string, TSNode *node) {
   } 
   TSSymbol stsym = ts_node_symbol(*node); 
   //printf("Statement symbol : %d\n", stsym);
-  if (stsym != STATEMENT) {
-    if (stsym == COMMENT) {
+  if (stsym != sym_statement) {
+    if (stsym == sym_comment) {
       print_node_text_with_whitespace(input_string, node);
       printf("\n");
       return ;
     }
-    printf("Node symbol is %d (expected %d, statement)\n", stsym, STATEMENT);
+    printf("Node symbol is %d (expected %d, statement)\n", stsym, sym_statement);
   }
 
   //printf("node children: %d", ts_node_child_count(*node));
@@ -228,42 +417,41 @@ void print_statement(char *input_string, TSNode *node) {
     //printf("sym %d\n", symbol);
 
     switch(symbol) {
-      case SCOPE_STMT: case SCOPE_EXPRESSION:
+      case sym_scope_statement: case sym_scope_expression:
         print_scope_statement(input_string, &child);
         break;
-      case ASSIGNMENT_OR_DECLARATION_STATEMENT:
+      case sym_assignment_or_declaration_statement:
         print_assignment_or_declaration_statement(input_string, &child);
         break;
-      case FUNCTION_CALL_STATEMENT:
+      case sym_function_call_statement:
         print_function_call_statement(input_string, &child);
         break;
-      case CONTROL_STATEMENT:
+      case sym_control_statement:
         print_control_statement(input_string, &child);
         break;
-      case WHILE_STATEMENT:
+      case sym_while_statement:
         print_while_statement(input_string, &child);
         break;
-      case FOR_STATEMENT:
+      case sym_for_statement:
         print_for_statement(input_string, &child);
         break;
-      case FUNCTION_DEFINITION_STATEMENT:
+      case sym_function_definition_statement:
         print_function_definition_statement(input_string, &child);
         break;
-      case LOOP_STATEMENT:
+      case sym_loop_statement:
         print_loop_statement(input_string, &child);
         break;
-      case EXPRESSION_STATEMENT: 
+      case sym_expression_statement: 
         print_expression_statement(input_string, &child);
         break;
-      case TEST_STATEMENT:
+      case sym_test_statement:
         print_test_statement(input_string, &child);
         break;
-      case COMMENT:
+      case sym_comment:
         print_node_text_with_whitespace(input_string, &child);
         break;
       default:
         printf("reached default, %d", symbol);
-        //print_node_text(input_string, &child);
   }
   }
 }
@@ -288,9 +476,9 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   }
 
   TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
-  if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER_LIST) {
+  if (ts_node_grammar_symbol(lvalue) == sym_complex_identifier_list) {
     // TODO: Print complex identifier list
-  } else if (ts_node_grammar_symbol(lvalue) == COMPLEX_IDENTIFIER) {
+  } else if (ts_node_grammar_symbol(lvalue) == sym_complex_identifier) {
     print_complex_identifier(input_string, &lvalue);
     TSNode type = ts_node_child_by_field_name(*node, "type", 4);
     if (!ts_node_is_null(type)) {
@@ -309,12 +497,11 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
   }
 
   TSNode rvalue = ts_node_child_by_field_name(*node, "rvalue", 6);
-  //printf("rv sym %d\n", ts_node_grammar_symbol(rvalue));
   switch(ts_node_grammar_symbol(rvalue)) {
-    case REF_IDENTIFIER:
+    case sym_ref_identifier:
       print_ref_identifier(input_string, &rvalue);
       break;
-    case ENUM_DEFINITION:
+    case sym_enum_definition:
       // TODO: print enum definition
       break;
     default: 
@@ -351,18 +538,8 @@ void print_function_call_statement(char *input_string, TSNode *node) {
 
 void print_if_expression(char *input_string, TSNode *node) {
   assert(!ts_node_is_null(*node));
-  //printf("print_if_expression()\n");
-
-  assert(ts_node_grammar_symbol(*node)==131);
-
-  // Print useful information
   uint32_t child_count = ts_node_child_count(*node);
-  //printf("Child count: %d\n", child_count);
-  //printf("Named child count: %d\n", ts_node_named_child_count(*node));
-  //print_children(input_string, node);
-  //printf("\n");
 
-  // Print if_expression
   printf("if ");
   TSNode condition = ts_node_child(*node, 1); 
   print_stmt_list(input_string, &condition); 
@@ -373,18 +550,18 @@ void print_if_expression(char *input_string, TSNode *node) {
   for(uint32_t i = 3; i < child_count; i++) {
     TSNode current_node = ts_node_child(*node, i);
     switch(ts_node_grammar_symbol(current_node)) {
-      case ELIF:
+      case anon_sym_elif:
         printf(" elif ");
         break;
-      case STMT_LIST:
+      case sym_stmt_list:
         print_stmt_list(input_string, &current_node);
         printf("\n");
         break;
-      case SCOPE_STMT:
+      case sym_scope_statement:
         print_scope_statement(input_string, &current_node);
         printf("\n");
         break;
-      case ELSE:
+      case anon_sym_else:
         printf(" else ");
         break;
     }
@@ -455,13 +632,13 @@ void print_complex_identifier(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(child);
 
   switch (symbol) {
-    case IDENTIFIER:
+    case sym_identifier:
       print_identifier(input_string, &child);
       break;
-    case DOT_EXPRESSION:
+    case sym_dot_expression:
       print_dot_expression(input_string, &child);
       break;
-    case SELECTION:
+    case sym_selection:
       // TODO: print selection
       break;
     default:
@@ -477,13 +654,13 @@ void print_dot_expression(char *input_string, TSNode *node) {
   putchar('.');
   TSSymbol sym = ts_node_grammar_symbol(choice);
   switch(sym) {
-    case IDENTIFIER:
+    case sym_identifier:
       print_identifier(input_string, &choice);
       break;
-    case CONSTANT:
+    case sym_constant:
       print_node_text(input_string, &choice);
       break;
-    case TUPLE_SQ:
+    case sym_tuple_sq:
       print_tuple_sq(input_string, &choice);
       break;
     default:
@@ -545,34 +722,34 @@ void print_restricted_expression(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
 
   switch(symbol) {
-    case COMPLEX_IDENTIFIER:
+    case sym_complex_identifier:
       print_complex_identifier(input_string, node);
       break;
-    case CONSTANT:
+    case sym_constant:
       print_node_text(input_string, node);
       break;
-    case FUNCTION_CALL:
+    case sym_function_call:
       print_function_call(input_string, node);
       break;
-    case LAMBDA:
+    case sym_lambda:
       print_lambda(input_string, node);
       break;
-    case TUPLE:
+    case sym_tuple:
       print_tuple(input_string, node);
       break;
-    case TUPLE_SQ:
+    case sym_tuple_sq:
       print_tuple_sq(input_string, node);
       break;
-    case OPTIONAL_EXPRESSION:
+    case sym_optional_expression:
       print_optional_expression(input_string, node);
       break;
-    case IF_EXPRESSION:
+    case sym_if_expression:
       print_if_expression(input_string, node);
       break;
-    case MATCH_EXPRESSION:
+    case sym_match_expression:
       print_match_expression(input_string, node);
       break;
-    case SCOPE_EXPRESSION:
+    case sym_scope_expression:
       print_scope_statement(input_string, node);
       break;
     default: 
@@ -615,16 +792,16 @@ void print_expression(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
  
   switch(symbol) {
-    case UNARY_EXPRESSION: 
+    case sym_unary_expression: 
       print_unary_expression(input_string, node);
       break;
-    case BINARY_EXPRESSION:
+    case sym_binary_expression:
       print_binary_expression(input_string, node);
       break;
-    case IF_EXPRESSION:
+    case sym_if_expression:
       print_if_expression(input_string, node);
       break;
-    case SCOPE_EXPRESSION:
+    case sym_scope_expression:
     default:
       print_restricted_expression(input_string, node);
   }
@@ -662,23 +839,20 @@ void print_function_definition(char *input_string, TSNode *node) {
   }
 
   TSNode input = ts_node_child_by_field_name(*node, "input", 5);
-  printf("bing%s", ts_node_grammar_type(input));
   if (!ts_node_is_null(input)) {
     print_arg_list(input_string, &input);
   }
 
   TSNode output = ts_node_child_by_field_name(*node, "output", 6);
-  printf("bing%d", ts_node_grammar_symbol(output));
-  printf("bg%d", ts_node_child_count(output));
   if (!ts_node_is_null(output)) {
     TSSymbol sym = ts_node_grammar_symbol(output);
     printf("->");
     //TSNode output_node = ts_node_named_child(output, 0);
     switch(sym) {
-      case ARG_LIST:
+      case sym_arg_list:
         //print_arg_list(input_string, &output);
         break;
-      case TYPE_OR_IDENTIFIER:
+      case sym_type_or_identifier:
         //print_type_or_identifier(input_string, &output);
         break;
       default:
@@ -703,7 +877,6 @@ void print_function_definition(char *input_string, TSNode *node) {
 }
 
 void print_arg_list(char *input_string, TSNode *node) {
-  printf("yak%d", ts_node_grammar_symbol(*node));
   putchar('(');
   TSNode arg_list = ts_node_named_child(*node, 0);
   print_arg_item_list(input_string, &arg_list);
@@ -792,9 +965,9 @@ void print_attributes(char *input_string, TSNode *node) {
   TSNode child = ts_node_named_child(*node, 0);
   TSSymbol sym = ts_node_grammar_symbol(child);
 
-  if(sym == TUPLE_SQ) {
+  if(sym == sym_tuple_sq) {
     print_tuple_sq(input_string, &child);
-  } else if (sym == TUPLE) {
+  } else if (sym == sym_tuple) {
     print_tuple(input_string, &child);
   } else {
     printf("error in print attributes");
@@ -837,10 +1010,10 @@ void print__tuple_item(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
 
   switch (symbol) {
-    case REF_IDENTIFIER:
+    case sym_ref_identifier:
       print_ref_identifier(input_string, node);
       break;
-    case SIMPLE_ASSIGNMENT:
+    case sym_simple_assignment:
       print_simple_assignment(input_string, node);
       break;
     default:
@@ -855,7 +1028,7 @@ void print_simple_assignment(char *input_string, TSNode *node) {
   }
 
   TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
-  if (ts_node_grammar_symbol(lvalue) == IDENTIFIER) {
+  if (ts_node_grammar_symbol(lvalue) == sym_identifier) {
     print_identifier(input_string, &lvalue);
   } else {
     // TODO: Print type_cast or type_specification
@@ -874,7 +1047,7 @@ void print_simple_assignment(char *input_string, TSNode *node) {
   TSNode rvalue = ts_node_child_by_field_name(*node, "rvalue", 6);
   TSSymbol sym = ts_node_grammar_symbol(rvalue);
   switch(sym) {
-    case REF_IDENTIFIER:
+    case sym_ref_identifier:
       print_ref_identifier(input_string, &rvalue);
       break;
     default:
