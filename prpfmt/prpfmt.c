@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <tree_sitter/api.h>
 
+// Symbol enum from tree-sitter-pyrope/src/parser.c
 enum {
   sym_identifier = 1,
   anon_sym_SEMI = 2,
@@ -817,23 +818,22 @@ void print_lambda(char *input_string, TSNode *node) {
 }
 
 void print_function_definition(char *input_string, TSNode *node) {
-  printf("cc%d", ts_node_child_count(*node));
   TSNode capture = ts_node_child_by_field_name(*node, "capture", 7);
   if (!ts_node_is_null(capture)) {
+    TSNode capture_node = ts_node_next_sibling(capture); 
     putchar('[');
-    TSNode capture_list = ts_node_named_child(capture, 0);
-    if(!ts_node_is_null(capture_list)) {
-      print_capture_list(input_string, &capture_list);
+    if(ts_node_symbol(capture_node) == sym_capture_list) {
+      print_capture_list(input_string, &capture_node);
     }
     putchar(']');
   }
 
   TSNode generic = ts_node_child_by_field_name(*node, "generic", 7);
   if (!ts_node_is_null(generic)) {
+    TSNode generic_node = ts_node_next_sibling(generic);
     putchar('<');
-    TSNode generic_list = ts_node_named_child(generic, 0);
-    if (!ts_node_is_null(generic_list)) {
-      print_typed_identifier_list(input_string, &generic_list);
+    if (!ts_node_is_null(generic_node)) {
+      print_typed_identifier_list(input_string, &generic_node);
     }
     putchar('>');
   }
@@ -845,25 +845,25 @@ void print_function_definition(char *input_string, TSNode *node) {
 
   TSNode output = ts_node_child_by_field_name(*node, "output", 6);
   if (!ts_node_is_null(output)) {
-    TSSymbol sym = ts_node_grammar_symbol(output);
+    TSNode output_node = ts_node_next_sibling(output);
+    TSSymbol sym = ts_node_grammar_symbol(output_node);
     printf("->");
-    //TSNode output_node = ts_node_named_child(output, 0);
     switch(sym) {
       case sym_arg_list:
-        //print_arg_list(input_string, &output);
+        print_arg_list(input_string, &output_node);
         break;
       case sym_type_or_identifier:
-        //print_type_or_identifier(input_string, &output);
+        print_type_or_identifier(input_string, &output_node);
         break;
       default:
         printf("default in print function definition (output) %d", sym);
     }
-  } else { printf("null"); }
+  } 
 
   TSNode condition = ts_node_child_by_field_name(*node, "condition", 9);
   if (!ts_node_is_null(condition)) {
     printf("where ");
-    TSNode cond_list = ts_node_named_child(condition, 0);
+    TSNode cond_list = ts_node_next_sibling(condition);
     if (!ts_node_is_null(cond_list)) {
       print_expression_list(input_string, &cond_list);
     }
@@ -878,8 +878,10 @@ void print_function_definition(char *input_string, TSNode *node) {
 
 void print_arg_list(char *input_string, TSNode *node) {
   putchar('(');
-  TSNode arg_list = ts_node_named_child(*node, 0);
-  print_arg_item_list(input_string, &arg_list);
+  if (ts_node_named_child_count(*node) > 0) {
+    TSNode arg_list = ts_node_named_child(*node, 0);
+    print_arg_item_list(input_string, &arg_list);
+  }
   putchar(')');
 }
 
@@ -901,14 +903,16 @@ void print_arg_item(char *input_string, TSNode *node) {
 
   if (!ts_node_is_null(mod)) {
     print_node_text(input_string, &mod);
+    putchar(' ');
     i++;
   }
 
-  TSNode type = ts_node_named_child(*node, i);
+  TSNode type = ts_node_child(*node, i);
   print_typed_identifier(input_string, &type);
 
   if (!ts_node_is_null(def)) {
-    print_expression(input_string, &def);
+    TSNode def_node = ts_node_next_sibling(def);
+    print_expression(input_string, &def_node);
   }
 }
 
@@ -979,9 +983,19 @@ void print_capture_list(char *input_string, TSNode *node) {
 }
 void print_tuple(char *input_string, TSNode *node) {
   putchar('('); 
-  if(ts_node_child_count(*node) > 2) {
-    TSNode list = ts_node_child(*node, 1);
-    print_tuple_list(input_string, &list);
+  for(uint32_t i = 0; i < ts_node_named_child_count(*node); i++) {
+    TSNode child = ts_node_named_child(*node, i);
+    switch(ts_node_grammar_symbol(child)) {
+      case sym_tuple_list: 
+        print_tuple_list(input_string, &child);
+        break;
+      case sym_comment:
+        print_node_text_with_whitespace(input_string, &child);
+        putchar('\n');
+        break;
+      default:
+        printf("reached default, capture list");
+    }
   }
   putchar(')'); 
 }
