@@ -230,7 +230,6 @@ enum {
   aux_sym_complex_string_literal_repeat1 = 223,
 };
 
-bool depth_first_traversal(char *input_string, TSNode *node, int depth);
 void print_node_text(char *input_string, TSNode *node);
 void print_node_text_with_whitespace(char *input_string, TSNode *node);
 char *file_to_string(char *path);
@@ -342,31 +341,6 @@ char *file_to_string(char *path) {
 
   //printf("%s", buffer);
   return buffer;
-}
-
-bool depth_first_traversal(char *input_string, TSNode *node, int depth) {
-  if (ts_node_grammar_symbol(*node)==sym_scope_statement) {
-    //print_scope_statement(input_string, node);
-  }
-
-  uint32_t child_count = ts_node_child_count(*node);
-  if (child_count > 0) {
-    for (uint32_t child = 0; child < child_count; child++) {
-      TSNode child_node = ts_node_child(*node, child);
-      for (int i = 0; i < depth; i++) {
-        printf("  ");
-      }
-      const char *type = ts_node_type(*node);
-      printf("%s ", type);
-      printf("%d ", ts_node_symbol(*node));
-      print_node_text(input_string, node);
-      printf("\n");
-      depth_first_traversal(input_string, &child_node, depth+1);
-    }
-  } else {
-    // Else we have reached a terminal node
-  }
-  return true;
 }
 
 void print_node_text(char *input_string, TSNode *node) {
