@@ -238,49 +238,66 @@ void print_statement(char *input_string, TSNode *node);
 void print_scope_statement(char *input_string, TSNode *node);
 void print_assignment_or_declaration_statement(char *input_string, TSNode *node);
 void print_function_call_statement(char *input_string, TSNode *node);
+void print_control_statement(char *input_string, TSNode *node);
+void print_stmt_list(char *input_string, TSNode *node);
 void print_if_expression(char *input_string, TSNode *node);
-void print_while_statement(char *input_string, TSNode *node);
 void print_for_statement(char *input_string, TSNode *node);
-void print_function_definition_statement(char *input_string, TSNode *node);
+void print_while_statement(char *input_string, TSNode *node);
 void print_loop_statement(char *input_string, TSNode *node);
 void print_pipestage_scope_statement(char *input_string, TSNode *node);
 void print_match_expression(char *input_string, TSNode *node);
 void print_match_list(char *input_string, TSNode *node);
-void print_control_statement(char *input_string, TSNode *node);
-void print_expression_statement(char *input_string, TSNode *node);
-void print_stmt_list(char *input_string, TSNode *node);
-void print_complex_identifier(char *input_string, TSNode *node);
-void print_complex_identifier_list(char *input_string, TSNode *node);
-void print_identifier(char *input_string, TSNode *node);
-void print_binary_expression(char *input_string, TSNode *node);
-void print_unary_expression(char *input_string, TSNode *node);
-void print_expression(char *input_string, TSNode *node);
-void print_lambda(char *input_string, TSNode *node);
-void print_function_definition(char *input_string, TSNode *node);
-void print_tuple(char *input_string, TSNode *node);
-void print_tuple_sq(char *input_string, TSNode *node);
-void print_optional_expression(char *input_string, TSNode *node);
-void print_enum_definition(char *input_string, TSNode *node);
-void print_ref_identifier(char *input_string, TSNode *node);
-void print_tuple_list(char *input_string, TSNode *node);
-void print__tuple_item(char *input_string, TSNode *node);
-void print_simple_assignment(char *input_string, TSNode *node);
-void print_function_call(char *input_string, TSNode *node);
-void print_restricted_expression(char *input_string, TSNode *node);
+void print_test_statement(char *input_string, TSNode *node);
 void print_expression_list(char *input_string, TSNode *node);
 void print_simple_function_call(char *input_string, TSNode *node);
+void print_tuple(char *input_string, TSNode *node);
+void print_tuple_sq(char *input_string, TSNode *node);
+void print_tuple_list(char *input_string, TSNode *node);
+void print__tuple_item(char *input_string, TSNode *node);
+void print_function_inline(char *input_string, TSNode *node);
+void print_attributes(char *input_string, TSNode *node);
+void print_simple_assignment(char *input_string, TSNode *node);
+void print_function_definition_statement(char *input_string, TSNode *node);
+void print_function_definition(char *input_string, TSNode *node);
+void print_func_def_verification(char *input_string, TSNode *node);
+void print_enum_definition(char *input_string, TSNode *node);
+void print_ref_identifier(char *input_string, TSNode *node);
 void print_capture_list(char *input_string, TSNode *node);
 void print_arg_list(char *input_string, TSNode *node);
 void print_arg_item_list(char *input_string, TSNode *node);
 void print_arg_item(char *input_string, TSNode *node);
-void print_typed_identifier(char *input_string, TSNode *node);
-void print_type_cast(char *input_string, TSNode *node);
-void print_type(char *input_string, TSNode *node);
-void print_attributes(char *input_string, TSNode *node);
-void print_typed_identifier_list(char *input_string, TSNode *node);
 void print_type_or_identifier(char *input_string, TSNode *node);
-void print_test_statement(char *input_string, TSNode *node);
+void print_complex_identifier(char *input_string, TSNode *node);
+void print_complex_identifier_list(char *input_string, TSNode *node);
+void print_typed_identifier(char *input_string, TSNode *node);
+void print_typed_identifier_list(char *input_string, TSNode *node);
+void print__expression(char *input_string, TSNode *node);
+void print__expression_with_comprehension(char *input_string, TSNode *node);
+void print_for_comprehension(char *input_string, TSNode *node);
+void print_type_specification(char *input_string, TSNode *node);
+void print_selection(char *input_string, TSNode *node);
+void print_member_selection(char *input_string, TSNode *node);
+void print_bit_selection(char *input_string, TSNode *node);
+void print_cycle_selection(char *input_string, TSNode *node);
+void print_unary_expression(char *input_string, TSNode *node);
+void print_binary_expression(char *input_string, TSNode *node);
+void print_optional_expression(char *input_string, TSNode *node);
 void print_dot_expression(char *input_string, TSNode *node);
+void print_function_call(char *input_string, TSNode *node);
+void print__restricted_expression(char *input_string, TSNode *node);
+void print_lambda(char *input_string, TSNode *node);
+void print_select(char *input_string, TSNode *node);
+void print_select_options(char *input_string, TSNode *node);
+void print_member_select(char *input_string, TSNode *node);
+void print_bit_select(char *input_string, TSNode *node);
+void print_cycle_select(char *input_string, TSNode *node);
+void print_type_cast(char *input_string, TSNode *node);
+void print_trivial_identifier_list(char *input_string, TSNode *node);
+void print__type(char *input_string, TSNode *node);
+void print_constant(char *input_string, TSNode *node);
+void print_identifier(char *input_string, TSNode *node);
+void print_comment(char *input_string, TSNode *node);
+void print__semicolon(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -306,10 +323,8 @@ int main(int argc, char **argv) {
   
   if (root_child_count > 0) {
     for (uint32_t i = 0; i < root_child_count; i++) {
-      //printf("printing statement %d\n", i);
       TSNode child = ts_node_child(root_node, i);
       print_statement(input_string, &child);
-      printf("\n");
       //printf("reached top level\n");
     }
   }
@@ -370,7 +385,6 @@ void print_statement(char *input_string, TSNode *node) {
     printf("TSNode is null, expected statement");
   } 
   TSSymbol stsym = ts_node_symbol(*node); 
-  //printf("Statement symbol : %d\n", stsym);
   if (stsym != sym_statement) {
     if (stsym == sym_comment) {
       print_node_text_with_whitespace(input_string, node);
@@ -380,15 +394,16 @@ void print_statement(char *input_string, TSNode *node) {
     printf("Node symbol is %d (expected %d, statement)\n", stsym, sym_statement);
   }
 
-  //printf("node children: %d", ts_node_child_count(*node));
   for (int i = 0; i < ts_node_child_count(*node); i++) {
     TSNode child = ts_node_child(*node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
-    //printf("sym %d\n", symbol);
 
     switch(symbol) {
-      case sym_scope_statement: case sym_scope_expression:
+      case sym_scope_statement: 
         print_scope_statement(input_string, &child);
+        break;
+      case sym_pipestage_scope_statement: 
+        print_pipestage_scope_statement(input_string, &child);
         break;
       case sym_assignment_or_declaration_statement:
         print_assignment_or_declaration_statement(input_string, &child);
@@ -412,128 +427,157 @@ void print_statement(char *input_string, TSNode *node) {
         print_loop_statement(input_string, &child);
         break;
       case sym_expression_statement: 
-        print_expression_statement(input_string, &child);
+        {
+        TSNode c2 = ts_node_child(child, 0);
+        print__expression_with_comprehension(input_string, &c2);
         break;
+        }
       case sym_test_statement:
         print_test_statement(input_string, &child);
         break;
       case sym_comment:
+        printf(" ");
         print_node_text_with_whitespace(input_string, &child);
         break;
       default:
         printf("reached default, %d", symbol);
+    }
   }
-  }
+  printf("\n");
 }
 
 void print_scope_statement(char *input_string, TSNode *node) {
-  uint32_t named_child_count = ts_node_named_child_count(*node);
-  printf ("{\n");
-  for (uint32_t i = 0; i < named_child_count; i++) {
-    printf("  ");
-    TSNode current_node = ts_node_named_child(*node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(current_node);
-    if (symbol==sym_statement) {
-      print_statement(input_string, &current_node);
-    } else {
-      printf("Expected statement (print scope statement)");
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_LBRACE:
+        printf("{\n");
+        break;
+      case anon_sym_RBRACE: 
+        printf("\n}");
+        break;
+      case sym_statement:
+        printf("  ");
+        print_statement(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, scope_statement");
     }
-    printf("\n");
   }
-  printf("}");
 }
 
 void print_assignment_or_declaration_statement(char *input_string, TSNode *node) {
-  TSNode decl = ts_node_child_by_field_name(*node, "decl", 4);
-  if (!ts_node_is_null(decl)) {
-    print_node_text(input_string, &decl);
-    putchar(' ');
-  }
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
-  if (ts_node_grammar_symbol(lvalue) == sym_complex_identifier_list) {
-    print_complex_identifier_list(input_string, &lvalue);
-  } else if (ts_node_grammar_symbol(lvalue) == sym_complex_identifier) {
-    print_complex_identifier(input_string, &lvalue);
-    TSNode type = ts_node_child_by_field_name(*node, "type", 4);
-    if (!ts_node_is_null(type)) {
-      print_type_cast(input_string, &type);
+    switch(symbol) {
+      case sym_var_or_let_or_reg:
+        print_node_text(input_string, &child);
+        putchar(' ');
+        break;
+      case anon_sym_LPAREN:
+        printf("(");
+        break;
+      case anon_sym_RPAREN: 
+        printf(")");
+        break;
+      case sym_complex_identifier_list:
+        print_complex_identifier_list(input_string, &child);
+        break;
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      case sym_type_cast:
+        print_type_cast(input_string, &child);
+        break;
+      case sym_assignment_operator:
+        putchar(' ');
+        print_node_text(input_string, &child);
+        putchar(' ');
+        break;
+      case sym_cycle_select_or_pound:
+        // TODO: print this
+        break;
+      case sym_enum_definition:
+        print_enum_definition(input_string, &child);
+        break;
+      case sym_ref_identifier:
+        print_ref_identifier(input_string, &child);
+        break;
+      default:
+        print__expression(input_string, &child);
     }
-  } 
-  putchar(' ');
-
-  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
-  print_node_text(input_string, &operator);
-  putchar(' ');
-
-  TSNode delay = ts_node_child_by_field_name(*node, "delay", 5);
-  if (!ts_node_is_null(delay)) {
-    print_node_text(input_string, &delay);
-    // TODO: print cycle select or pound
   }
-
-  TSNode rvalue = ts_node_child_by_field_name(*node, "rvalue", 6);
-  switch(ts_node_grammar_symbol(rvalue)) {
-    case sym_ref_identifier:
-      print_ref_identifier(input_string, &rvalue);
-      break;
-    case sym_enum_definition:
-      print_enum_definition(input_string, &rvalue);
-      break;
-    default: 
-      print_expression(input_string, &rvalue);
-  }
-}
-
-void print_function_definition_statement(char *input_string, TSNode *node) {
-  TSNode func_type = ts_node_child(*node, 0);
-  print_node_text(input_string, &func_type);
-  
-  TSNode lvalue = ts_node_child(*node, 1);
-  print_node_text(input_string, &lvalue);
-
-  TSNode function_definition = ts_node_child(*node, 2);
-  print_function_definition(input_string, &function_definition);
 }
 
 void print_function_call_statement(char *input_string, TSNode *node) {
-  TSNode simple_function_call = ts_node_child(*node, 0);
-  TSSymbol symbol = ts_node_grammar_symbol(simple_function_call);
-  if (symbol != sym_simple_function_call) {
-    printf("expected simple function call (fcall statement)");
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_simple_function_call:
+        print_simple_function_call(input_string, &child);
+        break;
+      case sym_comment:
+        printf(" ");
+        print_comment(input_string, &child);
+        break;
+      default:
+        print__semicolon(input_string, &child);
+    }
   }
-
-  TSNode always = ts_node_child_by_field_name(simple_function_call, "always", 6);
-  if (!ts_node_is_null(always)) {
-    printf("always ");
-  }
-
-  TSNode function = ts_node_child_by_field_name(simple_function_call, "function", 8);
-  print_complex_identifier(input_string, &function);
-  putchar(' ');
-
-  TSNode argument = ts_node_child_by_field_name(simple_function_call, "argument", 8);
-  print_expression_list(input_string, &argument);
 }
 
 void print_control_statement(char *input_string, TSNode *node) {
-  TSNode first = ts_node_child(*node, 0);
-  TSNode argument = ts_node_child_by_field_name(*node, "argument", 8);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  print_node_text(input_string, &first);
-  printf(" return");
-
-  if (!ts_node_is_null(argument)) {
-    print_expression(input_string, &argument);
+    switch(symbol) {
+      case anon_sym_continue:
+        printf("continue ");
+        break;
+      case anon_sym_break:
+        printf("break ");
+        break;
+      case anon_sym_return:
+        printf("return ");
+        break;
+      default:
+      {
+        const char *field_name = ts_node_field_name_for_child(*node, i); 
+        if (strcmp(field_name, "argument") == 0) {
+          print__expression_with_comprehension(input_string, &child); 
+        } else {
+          print__semicolon(input_string, &child);
+        }
+        print__expression_with_comprehension(input_string, &child);
+      }
+    }
   }
 }
 
 void print_stmt_list(char *input_string, TSNode *node) {
-  uint32_t ncc = ts_node_named_child_count(*node);
-  for (int i = 0; i < ncc; i++) {
-    if (i > 0) { printf(" ; "); }
-    TSNode child = ts_node_named_child(*node, i);
-    print__tuple_item(input_string, &child);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_SEMI:
+        printf(" ; ");
+        break;
+      default:
+        print__tuple_item(input_string, &child);
+    }
   }
 }
 
@@ -551,15 +595,16 @@ void print_if_expression(char *input_string, TSNode *node) {
         printf("if ");
         break;
       case anon_sym_elif: 
-        printf("elif ");
+        printf(" elif ");
         break;
       case anon_sym_else:
-        printf("else ");
+        printf(" else");
         break;
       case sym_stmt_list:
         print_stmt_list(input_string, &child);
         break;
       case sym_scope_statement:
+        putchar(' ');
         print_scope_statement(input_string, &child);
         break;
       case sym_pipestage_scope_statement:
@@ -571,7 +616,8 @@ void print_if_expression(char *input_string, TSNode *node) {
   }
 }
 
-void print_for_statement(char *input_string, TSNode *node) { uint32_t cc = ts_node_child_count(*node);
+void print_for_statement(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
     TSNode child = ts_node_child(*node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
@@ -635,7 +681,6 @@ void print_while_statement(char *input_string, TSNode *node) {
   }
 }
 
-
 void print_loop_statement(char *input_string, TSNode *node) {
   uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
@@ -659,17 +704,28 @@ void print_loop_statement(char *input_string, TSNode *node) {
 }
 
 void print_pipestage_scope_statement(char *input_string, TSNode *node) {
-  printf("#>");
-  TSNode c = ts_node_child(*node, 0);
-  printf("pipestage %d", ts_node_grammar_symbol(c));
-  TSNode fsm = ts_node_child_by_field_name(*node, "fsm", 3);
-  if (!ts_node_is_null(fsm)) {
-    TSNode sibling = ts_node_next_sibling(fsm);
-    print_identifier(input_string, &fsm);
-    print_tuple_sq(input_string, &sibling);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_POUND_GT:
+        printf("#> ");
+        break;
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_tuple_sq:
+        print_tuple_sq(input_string, &child);
+        break;
+      case sym_scope_statement:
+        print_scope_statement(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, pipestage_scope_statement");
+    }
   }
-  TSNode scope = ts_node_child_by_field_name(*node, "scope", 5);
-  print_scope_statement(input_string, &scope);
 }
 
 void print_match_expression(char *input_string, TSNode *node) {
@@ -728,12 +784,6 @@ void print_match_list(char *input_string, TSNode *node) {
   }
 }
 
-void print_expression_statement(char *input_string, TSNode *node) {
-  TSNode child = ts_node_child(*node, 0);
-  //printf("print_expression_statement symbol: %d\n", ts_node_grammar_symbol(child));
-  print_expression(input_string, &child);
-}
-
 void print_test_statement(char *input_string, TSNode *node) {
   uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
@@ -751,6 +801,7 @@ void print_test_statement(char *input_string, TSNode *node) {
         print_expression_list(input_string, &child);
         break;
       case sym_scope_statement:
+        printf(" ");
         print_scope_statement(input_string, &child);
         break;
       default:
@@ -770,7 +821,7 @@ void print_expression_list(char *input_string, TSNode *node) {
         printf(", ");
         break;
       default:
-        print_expression(input_string, &child);
+        print__expression(input_string, &child);
     }
   }
 }
@@ -787,6 +838,7 @@ void print_simple_function_call(char *input_string, TSNode *node) {
         break;
       case sym_complex_identifier:
         print_complex_identifier(input_string, &child);
+        printf(" ");
         break;
       case sym_expression_list:
         print_expression_list(input_string, &child);
@@ -798,161 +850,779 @@ void print_simple_function_call(char *input_string, TSNode *node) {
 }
 
 void print_tuple(char *input_string, TSNode *node) {
-  putchar('('); 
-  for(uint32_t i = 0; i < ts_node_named_child_count(*node); i++) {
-    TSNode child = ts_node_named_child(*node, i);
-    switch(ts_node_grammar_symbol(child)) {
-      case sym_tuple_list: 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_LPAREN:
+        printf("(");
+        break;
+      case anon_sym_RPAREN:
+        printf(")");
+        break;
+      case sym_tuple_list:
         print_tuple_list(input_string, &child);
         break;
-      case sym_comment:
-        print_node_text_with_whitespace(input_string, &child);
-        putchar('\n');
-        break;
       default:
-        printf("reached default, capture list");
+        printf("unexpected node type, tuple");
     }
   }
-  putchar(')'); 
 }
 
 void print_tuple_sq(char *input_string, TSNode *node) {
-  putchar('['); 
-  if(ts_node_child_count(*node) > 2) {
-    TSNode list = ts_node_child(*node, 1);
-    print_tuple_list(input_string, &list);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_LBRACK:
+        printf("[");
+        break;
+      case anon_sym_RBRACK:
+        printf("]");
+        break;
+      case sym_tuple_list:
+        print_tuple_list(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, tuple_sq");
+    }
   }
-  putchar(']'); 
 }
 
 void print_tuple_list(char *input_string, TSNode *node) {
-  TSNode child1 = ts_node_named_child(*node, 0);
-  print__tuple_item(input_string, &child1);
-  
-  for (int i = 1; i < ts_node_named_child_count(*node); i++) {
-    printf(", ");
-    TSNode child = ts_node_named_child(*node, i);
-    print__tuple_item(input_string, &child);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_COMMA:
+        printf(", ");
+        break;
+      default:
+        print__tuple_item(input_string, &child);
+    }
   }
 }
 
 void print__tuple_item(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
 
-  switch (symbol) {
+  switch(symbol) {
     case sym_ref_identifier:
       print_ref_identifier(input_string, node);
       break;
     case sym_simple_assignment:
       print_simple_assignment(input_string, node);
       break;
+    case sym_function_inline:
+      print_function_inline(input_string, node);
+      break;
+    case sym_scope_statement:
+      print_scope_statement(input_string, node);
+      break;
     default:
-      print_expression(input_string, node);
+      print__expression_with_comprehension(input_string, node);
+  }
+}
+
+void print_function_inline(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_fun_tok:
+        printf("fun ");
+        break;
+      case sym_proc_tok:
+        printf("proc ");
+        break;
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case anon_sym_LT:
+        printf("<");
+        break;
+      case anon_sym_GT:
+        printf(">");
+        break;
+      case sym_typed_identifier_list:
+        print_typed_identifier_list(input_string, &child);
+        break;
+      case sym_arg_list:
+        print_arg_list(input_string, &child);
+        break;
+      case anon_sym_DASH_GT:
+        printf("->");
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print_attributes(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_COLON:
+        printf(":");
+        break;
+      case sym_tuple:
+        print_tuple(input_string, &child);
+        break;
+      case sym_tuple_sq:
+        print_tuple_sq(input_string, &child);
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print_simple_assignment(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_var_or_let_or_reg:
+        print_node_text(input_string, &child);
+        putchar(' ');
+        break;
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_type_cast:
+        print_type_cast(input_string, &child);
+        break;
+      case sym_type_specification:
+        print_type_specification(input_string, &child);
+        break;
+      case sym_assignment_operator:
+        print_node_text(input_string, &child);
+        break;
+      case sym_cycle_select_or_pound:
+        {
+        TSNode c2 = ts_node_child(child, 0);
+        print_cycle_select(input_string, &c2);
+        break;
+        }
+      case sym_ref_identifier:
+        print_ref_identifier(input_string, &child);
+        break;
+      default:
+        print__expression_with_comprehension(input_string, &child);
+    }
+  }
+}
+
+void print_function_definition_statement(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_fun_tok:
+        printf("fun ");
+        break;
+      case sym_proc_tok:
+        printf("proc ");
+        break;
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      case sym_function_definition:
+        print_function_definition(input_string, &child);
+        break;
+      default:
+        printf("reached default %d", symbol);
+    }
+  }
+}
+
+void print_function_definition(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_LBRACK:
+        printf("[");
+        break;
+      case anon_sym_RBRACK:
+        printf("]");
+        break;
+      case sym_capture_list:
+        print_capture_list(input_string, &child);
+        break;
+      case anon_sym_LT:
+        printf("<");
+        break;
+      case anon_sym_GT:
+        printf(">");
+        break;
+      case sym_typed_identifier_list:
+        print_typed_identifier_list(input_string, &child);
+        break;
+      case sym_arg_list:
+        print_arg_list(input_string, &child);
+        break;
+      case anon_sym_DASH_GT:
+        printf("->");
+        break;
+      case sym_type_or_identifier:
+        print_type_or_identifier(input_string, &child);
+        break;
+      case anon_sym_where:
+        printf("where ");
+        break;
+      case sym_expression_list:
+        print_expression_list(input_string, &child);
+        break;
+      case sym_func_def_verification:
+        print_func_def_verification(input_string, &child);
+        break;
+      case sym_scope_statement:
+        print_scope_statement(input_string, &child);
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print_func_def_verification(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_requires:
+        printf("requires ");
+        break;
+      case anon_sym_ensures:
+        printf("ensures ");
+        break;
+      default:
+        print__expression(input_string, &child);
+    }
+  }
+}
+
+void print_enum_definition(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_enum:
+        printf("enum ");
+        break;
+      case anon_sym_variant:
+        printf("variant ");
+        break;
+      case sym_arg_list:
+        print_arg_list(input_string, &child);
+        break;
+      default:
+        printf("reached default %d", symbol);
+    }
+  }
+}
+
+void print_ref_identifier(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_ref:
+        printf("ref ");
+        break;
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      default:
+        printf("reached default %d", symbol);
+    }
+  }
+}
+
+void print_capture_list(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_typed_identifier:
+        print_typed_identifier(input_string, &child);
+        break;
+      case anon_sym_EQ:
+        printf("=");
+        break;
+      default:
+        print__expression_with_comprehension(input_string, &child);
+    }
+  }
+}
+
+void print_arg_list(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_LPAREN:
+        printf("(");
+        break;
+      case anon_sym_RPAREN:
+        printf(")");
+        break;
+      case sym_arg_item_list:
+        print_arg_item_list(input_string, &child);
+        break;
+      default:
+        printf("reached default %d",symbol);
+    }
+  }
+}
+
+void print_arg_item_list(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_COMMA:
+        printf(", ");
+        break;
+      case sym_arg_item:
+        print_arg_item(input_string, &child);
+        break;
+      default:
+        printf("reached default %d",symbol);
+    }
+  }
+}
+
+void print_arg_item(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_DOT_DOT_DOT:
+        printf("...");
+        break;
+      case anon_sym_ref:
+        printf("ref ");
+        break;
+      case anon_sym_reg:
+        printf("reg ");
+        break;
+      case sym_typed_identifier:
+        print_typed_identifier(input_string, &child);
+        break;
+      case anon_sym_EQ:
+        printf(" = ");
+        break;
+      default:
+        print__expression_with_comprehension(input_string, &child);
+    }
+  }
+}
+
+void print_type_or_identifier(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_type_cast:
+        print_type_cast(input_string, &child);
+        break;
+      case sym_typed_identifier:
+        print_typed_identifier(input_string, &child);
+        break;
+      default:
+        printf("default %d", symbol);
+    }
   }
 }
 
 void print_complex_identifier(char *input_string, TSNode *node) {
-  TSNode child = ts_node_child(*node, 0);
-  TSSymbol symbol = ts_node_grammar_symbol(child);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  switch (symbol) {
-    case sym_identifier:
-      print_identifier(input_string, &child);
-      break;
-    case sym_dot_expression:
-      print_dot_expression(input_string, &child);
-      break;
-    case sym_selection:
-      // TODO: print selection
-      break;
-    default:
-      printf("reached default, %d", symbol);
+    switch (symbol) {
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_dot_expression:
+        print_dot_expression(input_string, &child);
+        break;
+      case sym_selection:
+        print_selection(input_string, &child);
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
   }
 }
 
 void print_complex_identifier_list(char *input_string, TSNode *node) {
-  uint32_t ncc = ts_node_named_child_count(*node);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  for (int i = 0; i < ncc; i++) {
-    if (i > 0) { printf(", "); }
-    TSNode child = ts_node_named_child(*node, i);
-    TSSymbol csym = ts_node_grammar_symbol(child);
-    if (csym == sym_complex_identifier) {
-      print_complex_identifier(input_string, &child);
+    switch (symbol) {
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      case anon_sym_COMMA:
+        printf(", ");
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print_typed_identifier(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_type_cast:
+        print_type_cast(input_string, &child);
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print_typed_identifier_list(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case sym_typed_identifier:
+        print_typed_identifier(input_string, &child);
+        break;
+      case anon_sym_COMMA:
+        printf(", ");
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
+  }
+}
+
+void print__expression(char *input_string, TSNode *node) {
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+  
+  switch(symbol) {
+    case sym_type_specification:
+      print_type_specification(input_string, node);
+      break;
+    case sym_unary_expression:
+      print_unary_expression(input_string, node);
+      break;
+    case sym_binary_expression:
+      print_binary_expression(input_string, node);
+      break;
+    default:
+      print__restricted_expression(input_string, node);
+  }
+}
+
+void print__expression_with_comprehension(char *input_string, TSNode *node) {
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+
+  switch(symbol) {
+    case sym_for_comprehension:
+      print_for_comprehension(input_string, node);
+      break;
+    default:
+      print__expression(input_string, node);
+  }
+}
+
+void print_for_comprehension(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_for:
+        printf("for");
+        break;
+      case anon_sym_LPAREN:
+        printf("(");
+        break;
+      case anon_sym_RPAREN: 
+        printf(")");
+        break;
+      case sym_typed_identifier_list:
+        print_typed_identifier_list(input_string, &child);
+        break;
+      case sym_typed_identifier:
+        print_typed_identifier(input_string, &child);
+        break;
+      case anon_sym_in:
+        printf(" in ");
+        break;
+      case sym_expression_list:
+        print_expression_list(input_string, &child);
+        break;
+      case anon_sym_if:
+        printf(" if ");
+        break;
+      case sym_stmt_list:
+        print_stmt_list(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, for_comprehension");
+    }
+  }
+}
+
+void print_selection(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_member_selection:
+        print_member_selection(input_string, &child);
+        break;
+      case sym_bit_selection:
+        print_bit_selection(input_string, &child);
+        break;
+      case sym_cycle_selection:
+        print_cycle_selection(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, print_selection");
+    }
+  }
+}
+
+void print_member_selection(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_member_select:
+        print_member_select(input_string, &child);
+        break;
+      default:
+        print__restricted_expression(input_string, &child);
+    }
+  }
+}
+
+void print_bit_selection(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_bit_select:
+        print_bit_select(input_string, &child);
+        break;
+      default:
+        print__restricted_expression(input_string, &child);
+    }
+  }
+}
+
+void print_cycle_selection(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_cycle_select:
+        print_cycle_select(input_string, &child);
+        break;
+      default:
+        print__restricted_expression(input_string, &child);
+    }
+  }
+}
+
+void print_type_specification(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_COLON:
+        printf(":");
+        break;
+      case sym_attributes:
+        print_attributes(input_string, &child);
+        break;
+      default:
+        {
+        const char *field_name = ts_node_field_name_for_child(*node, i); 
+        if (strcmp(field_name, "argument") == 0) {
+          print__restricted_expression(input_string, &child); 
+        } else if (strcmp(field_name, "type") == 0) {
+          print__type(input_string, &child);
+        } else {
+          printf("reached default, %d", symbol);
+        }
+        }
+    }
+  }
+}
+
+void print_unary_expression(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_not:
+        printf("not ");
+        break;
+      case anon_sym_BANG: case anon_sym_TILDE:
+      case anon_sym_DASH: case anon_sym_DOT_DOT_DOT:
+        print_node_text(input_string, &child);
+        break;
+      default:
+        print__expression(input_string, &child);
+    }
+  }
+}
+
+void print_optional_expression(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_QMARK:
+        printf("?");
+        break;
+      default:
+        print__expression(input_string, &child);
+    }
+  }
+}
+
+void print_binary_expression(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    if (symbol >= anon_sym_SEMI && symbol <= anon_sym_unsigned) {
+      putchar(' ');
+      print_node_text(input_string, &child);
+      putchar(' ');
     } else {
-      printf("expected complex identifier");
+      print__expression(input_string, &child);
     }
   }
 }
 
 void print_dot_expression(char *input_string, TSNode *node) {
-  TSNode item = ts_node_named_child(*node, 0);
-  TSNode choice = ts_node_named_child(*node, 1);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  print_restricted_expression(input_string, &item);
-  putchar('.');
-  TSSymbol sym = ts_node_grammar_symbol(choice);
-  switch(sym) {
-    case sym_identifier:
-      print_identifier(input_string, &choice);
-      break;
-    case sym_constant:
-      print_node_text(input_string, &choice);
-      break;
-    case sym_tuple_sq:
-      print_tuple_sq(input_string, &choice);
-      break;
-    default:
-      printf("reached default dot expr");
+    switch(symbol) {
+      case anon_sym_DOT:
+        printf(".");
+        break;
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_constant:
+        print_constant(input_string, &child);
+        break;
+      default:
+        print__restricted_expression(input_string, &child);
+    }
   }
 }
 
-void print_identifier(char *input_string, TSNode *node) {
-  uint32_t start_byte = ts_node_start_byte(*node);
-  uint32_t end_byte = ts_node_end_byte(*node);
-  
-  if (input_string[start_byte] == '`') {
-    print_node_text_with_whitespace(input_string, node);
-  } else {
-    print_node_text(input_string, node);
+void print_function_call(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      case sym_tuple:
+        print_tuple(input_string, &child);
+        break;
+      default:
+        printf("reached default, function_call");
+    }
   }
 }
 
-void print_binary_expression(char *input_string, TSNode *node) {
-  assert(!ts_node_is_null(*node));
-
-  TSNode left = ts_node_child_by_field_name(*node, "left", 4);
-  print_expression(input_string, &left);
-  putchar(' '); 
-
-  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
-  print_node_text(input_string, &operator);
-
-  putchar(' '); 
-  TSNode right = ts_node_child_by_field_name(*node, "right", 5);
-  print_expression(input_string, &right);
-}
-
-void print_unary_expression(char *input_string, TSNode *node) {
-  assert(!ts_node_is_null(*node));
-
-  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
-  // TODO: add space when operator is 'not'
-  print_node_text(input_string, &operator);
-
-  TSNode argument = ts_node_child_by_field_name(*node, "argument", 8);
-  print_expression(input_string, &argument);
-}
-
-void print_restricted_expression(char *input_string, TSNode *node) {
+void print__restricted_expression(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
 
   switch(symbol) {
+    case sym__restricted_expression:
+      printf("Cool1");
+      break;
     case sym_complex_identifier:
       print_complex_identifier(input_string, node);
       break;
     case sym_constant:
-      print_node_text(input_string, node);
+      print_constant(input_string, node);
       break;
     case sym_function_call:
       print_function_call(input_string, node);
@@ -978,267 +1648,208 @@ void print_restricted_expression(char *input_string, TSNode *node) {
     case sym_scope_expression:
       print_scope_statement(input_string, node);
       break;
+    case sym_comment:
+      printf(" ");
+      print_node_text_with_whitespace(input_string, node);
+      break;
     default: 
-      printf("reached default, print_restricted_expression\nsymbol: %d\n", symbol);
-  }
-}
-
-void print_function_call(char *input_string, TSNode *node) {
-  TSNode function = ts_node_child(*node, 0);
-  TSNode argument = ts_node_child(*node, 1);
-
-  print_complex_identifier(input_string, &function);
-  print_tuple(input_string, &argument);
-}
-
-void print_expression(char *input_string, TSNode *node) {
-  TSSymbol symbol = ts_node_grammar_symbol(*node);
- 
-  switch(symbol) {
-    case sym_unary_expression: 
-      print_unary_expression(input_string, node);
-      break;
-    case sym_binary_expression:
-      print_binary_expression(input_string, node);
-      break;
-    case sym_if_expression:
-      print_if_expression(input_string, node);
-      break;
-    case sym_scope_expression:
-    default:
-      print_restricted_expression(input_string, node);
+      printf("reached default, print_restricted_expression %d\n", symbol);
   }
 }
 
 void print_lambda(char *input_string, TSNode *node) {
-  TSNode func_type = ts_node_child(*node, 0);
-  TSNode func_def = ts_node_child(*node, 1);
-
-  print_node_text(input_string, &func_type);
-  putchar(' ');
-  print_function_definition(input_string, &func_def);
-}
-
-void print_function_definition(char *input_string, TSNode *node) {
-  TSNode capture = ts_node_child_by_field_name(*node, "capture", 7);
-  if (!ts_node_is_null(capture)) {
-    TSNode capture_node = ts_node_next_sibling(capture); 
-    putchar('[');
-    if(ts_node_symbol(capture_node) == sym_capture_list) {
-      print_capture_list(input_string, &capture_node);
-    }
-    putchar(']');
-  }
-
-  TSNode generic = ts_node_child_by_field_name(*node, "generic", 7);
-  if (!ts_node_is_null(generic)) {
-    TSNode generic_node = ts_node_next_sibling(generic);
-    putchar('<');
-    if (!ts_node_is_null(generic_node)) {
-      print_typed_identifier_list(input_string, &generic_node);
-    }
-    putchar('>');
-  }
-
-  TSNode input = ts_node_child_by_field_name(*node, "input", 5);
-  if (!ts_node_is_null(input)) {
-    print_arg_list(input_string, &input);
-  }
-
-  TSNode output = ts_node_child_by_field_name(*node, "output", 6);
-  if (!ts_node_is_null(output)) {
-    TSNode output_node = ts_node_next_sibling(output);
-    TSSymbol sym = ts_node_grammar_symbol(output_node);
-    printf("->");
-    switch(sym) {
-      case sym_arg_list:
-        print_arg_list(input_string, &output_node);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_fun_tok:
+        printf("fun ");
         break;
-      case sym_type_or_identifier:
-        print_type_or_identifier(input_string, &output_node);
+      case sym_proc_tok:
+        printf("proc ");
+        break;
+      case sym_function_definition:
+        print_function_definition(input_string, &child);
         break;
       default:
-        printf("default in print function definition (output) %d", sym);
-    }
-  } 
-
-  TSNode condition = ts_node_child_by_field_name(*node, "condition", 9);
-  if (!ts_node_is_null(condition)) {
-    printf("where ");
-    TSNode cond_list = ts_node_next_sibling(condition);
-    if (!ts_node_is_null(cond_list)) {
-      print_expression_list(input_string, &cond_list);
+        printf("reached default %d", symbol);
     }
   }
-
-  TSNode verification = ts_node_child_by_field_name(*node, "verification", 12);
-  // Add verification handling
-
-  TSNode code = ts_node_child_by_field_name(*node, "code", 4);
-  print_scope_statement(input_string, &code);
 }
 
-void print_arg_list(char *input_string, TSNode *node) {
-  putchar('(');
-  if (ts_node_named_child_count(*node) > 0) {
-    TSNode arg_list = ts_node_named_child(*node, 0);
-    print_arg_item_list(input_string, &arg_list);
-  }
-  putchar(')');
-}
-
-void print_arg_item_list(char *input_string, TSNode *node) {
-  TSNode child1 = ts_node_named_child(*node, 0);
-  print_arg_item(input_string, &child1);
-  
-  for (int i = 1; i < ts_node_named_child_count(*node); i++) {
-    printf(", ");
-    TSNode child = ts_node_named_child(*node, i);
-    print_arg_item(input_string, &child);
+void print_select(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_LBRACK:
+        printf("[");
+        break;
+      case anon_sym_RBRACK:
+        printf("]");
+        break;
+      case sym_select_options:
+        print_select_options(input_string, &child);
+        break;
+      default:
+        printf("reached default %d", symbol);
+    }
   }
 }
 
-void print_arg_item(char *input_string, TSNode *node) {
-  TSNode mod = ts_node_child_by_field_name(*node, "mod", 3);
-  TSNode def = ts_node_child_by_field_name(*node, "definition", 10);
-  int i = 0;
-
-  if (!ts_node_is_null(mod)) {
-    print_node_text(input_string, &mod);
-    putchar(' ');
-    i++;
-  }
-
-  TSNode type = ts_node_child(*node, i);
-  print_typed_identifier(input_string, &type);
-
-  if (!ts_node_is_null(def)) {
-    TSNode def_node = ts_node_next_sibling(def);
-    print_expression(input_string, &def_node);
-  }
-}
-
-void print_typed_identifier(char *input_string, TSNode *node) {
-  TSNode ident = ts_node_child(*node, 0);
-  TSNode type = ts_node_child_by_field_name(*node, "type", 4);
-
-  print_identifier(input_string, &ident);
-  if (!ts_node_is_null(type)) {
-    print_type_cast(input_string, &type);
+void print_select_options(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_expression_list:
+        print_expression_list(input_string, &child);
+        break;
+      case anon_sym_DOT_DOT:
+        printf("..");
+        break;
+      case anon_sym_DOT_DOT_EQ:
+        printf("..=");
+        break;
+      case anon_sym_DOT_DOT_LT:
+        printf("..<");
+        break;
+      default:
+        print__expression(input_string, &child);
+    }
   }
 }
 
-void print_typed_identifier_list(char *input_string, TSNode *node) {
-  TSNode child1 = ts_node_named_child(*node, 0);
-  print_typed_identifier(input_string, &child1);
-  
-  for (int i = 1; i < ts_node_named_child_count(*node); i++) {
-    printf(", ");
-    TSNode child = ts_node_named_child(*node, i);
-    print_typed_identifier(input_string, &child);
+void print_member_select(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_select:
+        print_select(input_string, &child);
+        break;
+      default:
+        printf("reached default, member_select");
+    }
   }
 }
 
-void print_type_or_identifier(char *input_string, TSNode *node) {
-  TSNode type = ts_node_child_by_field_name(*node, "type", 4);
-  if (!ts_node_is_null(type)) {
-    print_type_cast(input_string, &type);
-  } else {
-    TSNode ident = ts_node_named_child(*node, 0);
-    print_typed_identifier(input_string, &ident);
+void print_bit_select(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case sym_bit_select_type:
+        print_node_text(input_string, &child);
+        break;
+      case sym_select:
+        print_select(input_string, &child);
+        break;
+      case anon_sym_AT:
+        printf("@");
+        break;
+      default:
+        printf("reached default, member_select");
+    }
+  }
+}
+
+void print_cycle_select(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    
+    switch(symbol) {
+      case anon_sym_POUND:
+        printf("#");
+        break;
+      case sym_select:
+        print_select(input_string, &child);
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
   }
 }
 
 void print_type_cast(char *input_string, TSNode *node) {
-  TSNode type = ts_node_child_by_field_name(*node, "type", 4);
-  TSNode attribute = ts_node_child_by_field_name(*node, "attribute", 9);
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  putchar(':');
-  if (!ts_node_is_null(type)) {
-    print_type(input_string, &type);
-  }
-  if (!ts_node_is_null(attribute)) {
-    print_attributes(input_string, &attribute);
-  }
-}
-
-void print_type(char *input_string, TSNode *node) {
-  print_node_text(input_string, node); // TODO: add type functionality
-}
-
-void print_attributes(char *input_string, TSNode *node) {
-  putchar(':');
-  TSNode child = ts_node_named_child(*node, 0);
-  TSSymbol sym = ts_node_grammar_symbol(child);
-
-  if(sym == sym_tuple_sq) {
-    print_tuple_sq(input_string, &child);
-  } else if (sym == sym_tuple) {
-    print_tuple(input_string, &child);
-  } else {
-    printf("error in print attributes");
+    switch(symbol) {
+      case anon_sym_POUND:
+        printf(":");
+        break;
+      case sym_attributes:
+        print_attributes(input_string, &child);
+        break;
+      default:
+        print__type(input_string, &child);
+    }
   }
 }
 
-void print_capture_list(char *input_string, TSNode *node) {
-  printf("capture list"); // TODO: add print capture list
-}
-void print_simple_assignment(char *input_string, TSNode *node) {
-  TSNode decl = ts_node_child_by_field_name(*node, "decl", 4);
-  if (!ts_node_is_null(decl)) {
-    print_node_text(input_string, &decl);
-    putchar(' ');
-  }
+void print_trivial_identifier_list(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
 
-  TSNode lvalue = ts_node_child_by_field_name(*node, "lvalue", 6);
-  if (ts_node_grammar_symbol(lvalue) == sym_identifier) {
-    print_identifier(input_string, &lvalue);
-  } else {
-    // TODO: Print type_cast or type_specification
-  } 
-  putchar(' ');
-
-  TSNode operator = ts_node_child_by_field_name(*node, "operator", 8);
-  print_node_text(input_string, &operator);
-  putchar(' ');
-
-  TSNode delay = ts_node_child_by_field_name(*node, "delay", 5);
-  if (!ts_node_is_null(delay)) {
-    print_node_text(input_string, &delay);
-  }
-
-  TSNode rvalue = ts_node_child_by_field_name(*node, "rvalue", 6);
-  TSSymbol sym = ts_node_grammar_symbol(rvalue);
-  switch(sym) {
-    case sym_ref_identifier:
-      print_ref_identifier(input_string, &rvalue);
-      break;
-    default:
-      print_expression(input_string, &rvalue);
+    switch (symbol) {
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case anon_sym_COMMA:
+        printf(", ");
+        break;
+      default:
+        printf("reached default, %d", symbol);
+    }
   }
 }
 
-void print_enum_definition(char *input_string, TSNode *node) {
-  TSNode first = ts_node_child(*node, 0);
-  TSNode input = ts_node_child_by_field_name(*node, "input", 5);
-  
-  print_node_text(input_string, &first);
-  putchar(' ');
-  print_arg_list(input_string, &input);
+void print_constant(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case sym_complex_string_literal:
+        print_node_text_with_whitespace(input_string, &child);
+        break;
+      default:
+        print_node_text(input_string, &child);
+    }
+  }
 }
 
-void print_ref_identifier(char *input_string, TSNode *node) {
-  TSNode complex = ts_node_named_child(*node, 0);
-
-  printf("ref ");
-  print_complex_identifier(input_string, &complex);
+void print_identifier(char *input_string, TSNode *node) {
+  print_node_text_with_whitespace(input_string, node);
 }
 
-void print_optional_expression(char *input_string, TSNode *node) {
-  TSNode arg = ts_node_child(*node, 0);
-
-  print_expression(input_string, &arg);
-  putchar('?');
+void print__type(char *input_string, TSNode *node) {
+  print_node_text(input_string, node); // Add type functionality
 }
 
+void print_comment(char *input_string, TSNode *node) {
+  print_node_text_with_whitespace(input_string, node);
+}
+
+void print__semicolon(char *input_string, TSNode *node) {
+  // TODO: when unless cond
+}
 // clang -I tree-sitter/lib/include tree-sitter-pyrope/prpfmt/prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a
