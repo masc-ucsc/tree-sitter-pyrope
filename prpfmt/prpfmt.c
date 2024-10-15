@@ -447,6 +447,16 @@ void print_statement(char *input_string, TSNode *node) {
 }
 
 void print_scope_statement(char *input_string, TSNode *node) {
+  TSNode parent = ts_node_parent(*node);
+  uint32_t depth = 2;
+  while (!ts_node_is_null(parent)) {
+    TSSymbol symbol = ts_node_symbol(parent);
+    if (symbol == sym_scope_statement) {
+      depth += 2;
+    }
+    parent = ts_node_parent(parent);
+  }
+
   uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
     TSNode child = ts_node_child(*node, i);
@@ -457,10 +467,11 @@ void print_scope_statement(char *input_string, TSNode *node) {
         printf("{\n");
         break;
       case anon_sym_RBRACE: 
-        printf("\n}");
+        printf("%*s", (depth-2), "");
+        printf("}");
         break;
       case sym_statement:
-        printf("  ");
+        printf("%*s", depth, "");
         print_statement(input_string, &child);
         break;
       default:
@@ -1822,19 +1833,7 @@ void print_trivial_identifier_list(char *input_string, TSNode *node) {
 }
 
 void print_constant(char *input_string, TSNode *node) {
-  uint32_t cc = ts_node_child_count(*node);
-  for (int i = 0; i < cc; i++) {
-    TSNode child = ts_node_child(*node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    switch (symbol) {
-      case sym_complex_string_literal:
-        print_node_text_with_whitespace(input_string, &child);
-        break;
-      default:
-        print_node_text(input_string, &child);
-    }
-  }
+  print_node_text_with_whitespace(input_string, node);
 }
 
 void print_identifier(char *input_string, TSNode *node) {
