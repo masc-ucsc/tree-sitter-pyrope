@@ -294,10 +294,17 @@ void print_cycle_select(char *input_string, TSNode *node);
 void print_type_cast(char *input_string, TSNode *node);
 void print_trivial_identifier_list(char *input_string, TSNode *node);
 void print__type(char *input_string, TSNode *node);
+void print_expression_type(char *input_string, TSNode *node);
+void print_dot_expression_type(char *input_string, TSNode *node);
+void print_function_call_type(char *input_string, TSNode *node);
+void print_array_type(char *input_string, TSNode *node);
+void print_function_type(char *input_string, TSNode *node);
+void print_primitive_type(char *input_string, TSNode *node);
 void print_constant(char *input_string, TSNode *node);
 void print_identifier(char *input_string, TSNode *node);
 void print_comment(char *input_string, TSNode *node);
-void print__semicolon(char *input_string, TSNode *node);
+bool print__semicolon(char *input_string, TSNode *node);
+void print_when_unless_cond(char *input_string, TSNode *node);
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -440,7 +447,7 @@ void print_statement(char *input_string, TSNode *node) {
         print_node_text_with_whitespace(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,statement %d", symbol);
     }
   }
   printf("\n");
@@ -474,8 +481,11 @@ void print_scope_statement(char *input_string, TSNode *node) {
         printf("%*s", depth, "");
         print_statement(input_string, &child);
         break;
+      case sym_comment:
+        print_node_text_with_whitespace(input_string, &child);
+        break;
       default:
-        printf("unexpected node type, scope_statement");
+        printf("unexpected node type, scope_statement:%d",symbol);
     }
   }
 }
@@ -520,8 +530,13 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
       case sym_ref_identifier:
         print_ref_identifier(input_string, &child);
         break;
+      case sym_when_unless_cond:
+        print_when_unless_cond(input_string, &child);
+        break;
       default:
-        print__expression(input_string, &child);
+        if (!print__semicolon(input_string, &child)) {
+          print__expression_with_comprehension(input_string, &child);
+        }
     }
   }
 }
@@ -541,7 +556,9 @@ void print_function_call_statement(char *input_string, TSNode *node) {
         print_comment(input_string, &child);
         break;
       default:
-        print__semicolon(input_string, &child);
+        if(!print__semicolon(input_string, &child)) {
+          printf("unexpected node type, fcall statement");
+        }
     }
   }
 }
@@ -568,9 +585,10 @@ void print_control_statement(char *input_string, TSNode *node) {
         if (strcmp(field_name, "argument") == 0) {
           print__expression_with_comprehension(input_string, &child); 
         } else {
-          print__semicolon(input_string, &child);
+          if(!print__semicolon(input_string, &child)) {
+            printf("unexpected node type, control statement");
+          }
         }
-        print__expression_with_comprehension(input_string, &child);
       }
     }
   }
@@ -619,6 +637,7 @@ void print_if_expression(char *input_string, TSNode *node) {
         print_scope_statement(input_string, &child);
         break;
       case sym_pipestage_scope_statement:
+        putchar(' ');
         print_pipestage_scope_statement(input_string, &child);
         break;
       default:
@@ -912,7 +931,7 @@ void print_tuple_list(char *input_string, TSNode *node) {
 
     switch(symbol) {
       case anon_sym_COMMA:
-        printf(", ");
+        printf(",");
         break;
       default:
         print__tuple_item(input_string, &child);
@@ -973,7 +992,7 @@ void print_function_inline(char *input_string, TSNode *node) {
         printf("->");
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default, function_inline:%d", symbol);
     }
   }
 }
@@ -995,7 +1014,7 @@ void print_attributes(char *input_string, TSNode *node) {
         print_tuple_sq(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default, attributes:%d", symbol);
     }
   }
 }
@@ -1058,7 +1077,7 @@ void print_function_definition_statement(char *input_string, TSNode *node) {
         print_function_definition(input_string, &child);
         break;
       default:
-        printf("reached default %d", symbol);
+        printf("reached default, function_def_stmt: %d", symbol);
     }
   }
 }
@@ -1110,7 +1129,7 @@ void print_function_definition(char *input_string, TSNode *node) {
         print_scope_statement(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default, func_def%d", symbol);
     }
   }
 }
@@ -1151,7 +1170,7 @@ void print_enum_definition(char *input_string, TSNode *node) {
         print_arg_list(input_string, &child);
         break;
       default:
-        printf("reached default %d", symbol);
+        printf("reached default, enum_def %d", symbol);
     }
   }
 }
@@ -1170,7 +1189,7 @@ void print_ref_identifier(char *input_string, TSNode *node) {
         print_complex_identifier(input_string, &child);
         break;
       default:
-        printf("reached default %d", symbol);
+        printf("reached default, ref_ident %d", symbol);
     }
   }
 }
@@ -1187,6 +1206,9 @@ void print_capture_list(char *input_string, TSNode *node) {
         break;
       case anon_sym_EQ:
         printf("=");
+        break;
+      case anon_sym_COMMA:
+        printf(",");
         break;
       default:
         print__expression_with_comprehension(input_string, &child);
@@ -1211,7 +1233,7 @@ void print_arg_list(char *input_string, TSNode *node) {
         print_arg_item_list(input_string, &child);
         break;
       default:
-        printf("reached default %d",symbol);
+        printf("reached default,arg_list %d",symbol);
     }
   }
 }
@@ -1224,13 +1246,17 @@ void print_arg_item_list(char *input_string, TSNode *node) {
     
     switch(symbol) {
       case anon_sym_COMMA:
-        printf(", ");
+        printf(",");
         break;
       case sym_arg_item:
         print_arg_item(input_string, &child);
         break;
+      case sym_comment:
+        printf(" ");
+        print_node_text_with_whitespace(input_string, &child);
+        break;
       default:
-        printf("reached default %d",symbol);
+        printf("reached default,arg_item_list %d",symbol);
     }
   }
 }
@@ -1299,7 +1325,7 @@ void print_complex_identifier(char *input_string, TSNode *node) {
         print_selection(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,complex_identifier %d", symbol);
     }
   }
 }
@@ -1315,10 +1341,10 @@ void print_complex_identifier_list(char *input_string, TSNode *node) {
         print_complex_identifier(input_string, &child);
         break;
       case anon_sym_COMMA:
-        printf(", ");
+        printf(",");
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,complex_identifier_list %d", symbol);
     }
   }
 }
@@ -1337,7 +1363,7 @@ void print_typed_identifier(char *input_string, TSNode *node) {
         print_type_cast(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,typed_ident %d", symbol);
     }
   }
 }
@@ -1353,10 +1379,10 @@ void print_typed_identifier_list(char *input_string, TSNode *node) {
         print_typed_identifier(input_string, &child);
         break;
       case anon_sym_COMMA:
-        printf(", ");
+        printf(",");
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,typed_ident_list %d", symbol);
     }
   }
 }
@@ -1522,7 +1548,7 @@ void print_type_specification(char *input_string, TSNode *node) {
         } else if (strcmp(field_name, "type") == 0) {
           print__type(input_string, &child);
         } else {
-          printf("reached default, %d", symbol);
+          printf("reached default,type_spec %d", symbol);
         }
         }
     }
@@ -1626,9 +1652,6 @@ void print__restricted_expression(char *input_string, TSNode *node) {
   TSSymbol symbol = ts_node_grammar_symbol(*node);
 
   switch(symbol) {
-    case sym__restricted_expression:
-      printf("Cool1");
-      break;
     case sym_complex_identifier:
       print_complex_identifier(input_string, node);
       break;
@@ -1685,7 +1708,7 @@ void print_lambda(char *input_string, TSNode *node) {
         print_function_definition(input_string, &child);
         break;
       default:
-        printf("reached default %d", symbol);
+        printf("reached default,lambda %d", symbol);
     }
   }
 }
@@ -1707,7 +1730,7 @@ void print_select(char *input_string, TSNode *node) {
         print_select_options(input_string, &child);
         break;
       default:
-        printf("reached default %d", symbol);
+        printf("reached default,select %d", symbol);
     }
   }
 }
@@ -1770,7 +1793,7 @@ void print_bit_select(char *input_string, TSNode *node) {
         printf("@");
         break;
       default:
-        printf("reached default, member_select");
+        printf("reached default, bit_select");
     }
   }
 }
@@ -1789,7 +1812,7 @@ void print_cycle_select(char *input_string, TSNode *node) {
         print_select(input_string, &child);
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,cycle select %d", symbol);
     }
   }
 }
@@ -1801,7 +1824,7 @@ void print_type_cast(char *input_string, TSNode *node) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch(symbol) {
-      case anon_sym_POUND:
+      case anon_sym_COLON:
         printf(":");
         break;
       case sym_attributes:
@@ -1824,10 +1847,203 @@ void print_trivial_identifier_list(char *input_string, TSNode *node) {
         print_identifier(input_string, &child);
         break;
       case anon_sym_COMMA:
-        printf(", ");
+        printf(",");
         break;
       default:
-        printf("reached default, %d", symbol);
+        printf("reached default,trivial identifier list %d", symbol);
+    }
+  }
+}
+
+void print__type(char *input_string, TSNode *node) {
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+
+  switch(symbol) {
+    case sym_primitive_type:
+      print_primitive_type(input_string, node);
+      break;
+    case sym_array_type:
+      print_array_type(input_string, node);
+      break;
+    case sym_function_type:
+      print_function_type(input_string, node);
+      break;
+    case sym_expression_type:
+      print_expression_type(input_string, node);
+      break;
+    default: 
+      printf("reached default, print__type:%d\n", symbol);
+  }
+}
+
+void print_expression_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_identifier:
+        print_identifier(input_string, &child);
+        break;
+      case sym_constant:
+        print_constant(input_string, &child);
+        break;
+      case sym_tuple:
+        print_tuple(input_string, &child);
+        break;
+      case sym_if_expression:
+        print_if_expression(input_string, &child);
+        break;
+      case sym_match_expression:
+        print_match_expression(input_string, &child);
+        break;
+      case sym_scope_statement:
+        print_scope_statement(input_string, &child);
+        break;
+      case sym_dot_expression_type:
+        print_dot_expression_type(input_string, &child);
+        break;
+      case sym_function_call_type:
+        print_function_call_type(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, print_expression_type:%d", symbol);
+    }
+  }
+}
+
+void print_dot_expression_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case anon_sym_DOT:
+        printf(".");
+        break;
+      case sym_expression_type:
+        print_expression_type(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, print_dot_expression_type");
+    }
+  }
+}
+
+void print_function_call_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_complex_identifier:
+        print_complex_identifier(input_string, &child);
+        break;
+      case sym_tuple:
+        print_tuple(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, print_function_call_type");
+    }
+  }
+}
+
+void print_array_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_tuple_sq:
+        print_tuple_sq(input_string, &child);
+        break;
+      case sym_primitive_type:
+        print_primitive_type(input_string, &child);
+        break;
+      case sym_array_type:
+        print_array_type(input_string, &child);
+        break;
+      case sym_function_type:
+        print_function_type(input_string, &child);
+        break;
+      case sym_expression_type:
+        print_expression_type(input_string, &child);
+        break;
+      default:
+        printf("unexpected node type, print_array_type");
+    }
+  }
+}
+
+void print_function_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_fun_tok:
+        printf("fun ");
+        break;
+      case sym_proc_tok:
+        printf("proc ");
+        break;
+      case anon_sym_LT:
+        printf("<");
+        break;
+      case anon_sym_GT:
+        printf(">");
+        break;
+      case sym_typed_identifier_list:
+        print_typed_identifier_list(input_string, &child);
+        break;
+      case sym_arg_list:
+        print_arg_list(input_string, &child);
+        break;
+      case anon_sym_DASH_GT:
+        printf("->");
+        break;
+      default:
+        printf("unexpected node type, print_function_type");
+    }
+  }
+}
+
+void print_primitive_type(char *input_string, TSNode *node) { 
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch(symbol) {
+      case sym_unsized_integer_type:
+        print_node_text(input_string, &child);
+        printf(" ");
+        break;
+      case sym_sized_integer_type:
+        print_node_text(input_string, &child);
+        break;
+      case sym_bounded_integer_type:
+        print_node_text(input_string, &child);
+        break;
+      case sym_range_type:
+        print_node_text(input_string, &child);
+        break;
+      case sym_string_type:
+        printf("string");
+        break;
+      case sym_boolean_type:
+        printf("boolean");
+        break;
+      case sym_type_type:
+        printf("type");
+        break;
+      default:
+        printf("unexpected node type, print_array_type");
     }
   }
 }
@@ -1840,15 +2056,46 @@ void print_identifier(char *input_string, TSNode *node) {
   print_node_text_with_whitespace(input_string, node);
 }
 
-void print__type(char *input_string, TSNode *node) {
-  print_node_text(input_string, node); // Add type functionality
-}
-
 void print_comment(char *input_string, TSNode *node) {
   print_node_text_with_whitespace(input_string, node);
 }
 
-void print__semicolon(char *input_string, TSNode *node) {
-  // TODO: when unless cond
+bool print__semicolon(char *input_string, TSNode *node) {
+  bool found_node = false;
+  TSSymbol symbol = ts_node_grammar_symbol(*node);
+
+  switch (symbol) {
+    case anon_sym_SEMI:
+      found_node = true;
+      printf(" ; ");
+      break;
+    case sym_when_unless_cond:
+      found_node = true;
+      putchar(' ');
+      print_when_unless_cond(input_string, node);
+      putchar(' ');
+      break;
+  }
+
+  return found_node;
+}
+
+void print_when_unless_cond(char *input_string, TSNode *node) {
+  uint32_t cc = ts_node_child_count(*node);
+  for (int i = 0; i < cc; i++) {
+    TSNode child = ts_node_child(*node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_when:
+        printf(" when ");
+        break;
+      case anon_sym_unless:
+        printf(" unless ");
+        break;
+      default:
+        print__expression(input_string, &child);
+    }
+  }
 }
 // clang -I tree-sitter/lib/include tree-sitter-pyrope/prpfmt/prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a
