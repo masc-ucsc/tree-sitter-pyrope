@@ -233,6 +233,7 @@ enum {
 void print_node_text(char *input_string, TSNode *node);
 void print_node_text_with_whitespace(char *input_string, TSNode *node);
 char *file_to_string(char *path);
+bool is_next_line_empty(char *input_string, TSNode *node);
 
 void print_statement(char *input_string, TSNode *node);
 void print_scope_statement(char *input_string, TSNode *node);
@@ -332,6 +333,8 @@ int main(int argc, char **argv) {
     for (uint32_t i = 0; i < root_child_count; i++) {
       TSNode child = ts_node_child(root_node, i);
       print_statement(input_string, &child);
+      if(is_next_line_empty(input_string, &child))
+        putchar('\n');
       //printf("reached top level\n");
     }
   }
@@ -385,13 +388,36 @@ void print_node_text_with_whitespace(char *input_string, TSNode *node) {
   }
 }
 
+bool is_next_line_empty(char *input_string, TSNode *node) {
+  uint32_t end_byte = ts_node_end_byte(*node);
+
+  // Navigate to end of current line
+  while(input_string[end_byte] != '\n') {
+    if(input_string[end_byte] == EOF)
+      return false;
+    end_byte++;
+  }
+  end_byte++;
+
+  // Check if next line is empty
+  while(input_string[end_byte] != '\n') {
+    if(input_string[end_byte] == EOF)
+      return false;
+
+    if(input_string[end_byte] != ' ' && input_string[end_byte] != '\t')
+      return false;
+    end_byte++;
+  }
+
+  return true;
+}
 // Print grammar rules
 
 void print_statement(char *input_string, TSNode *node) {
   if (ts_node_is_null(*node)) {
     printf("TSNode is null, expected statement");
   } 
-  TSSymbol stsym = ts_node_symbol(*node); 
+  TSSymbol stsym = ts_node_grammar_symbol(*node); 
   if (stsym != sym_statement) {
     if (stsym == sym_comment) {
       print_node_text_with_whitespace(input_string, node);
@@ -457,7 +483,7 @@ void print_scope_statement(char *input_string, TSNode *node) {
   TSNode parent = ts_node_parent(*node);
   uint32_t depth = 2;
   while (!ts_node_is_null(parent)) {
-    TSSymbol symbol = ts_node_symbol(parent);
+    TSSymbol symbol = ts_node_grammar_symbol(parent);
     if (symbol == sym_scope_statement) {
       depth += 2;
     }
@@ -480,6 +506,10 @@ void print_scope_statement(char *input_string, TSNode *node) {
       case sym_statement:
         printf("%*s", depth, "");
         print_statement(input_string, &child);
+        break;
+      case sym_scope_expression:
+      case sym_scope_statement:
+        print_scope_statement(input_string, &child);
         break;
       case sym_comment:
         print_node_text_with_whitespace(input_string, &child);
@@ -780,8 +810,12 @@ void print_match_expression(char *input_string, TSNode *node) {
       case sym_match_list:
         print_match_list(input_string, &child);
         break;
+      case sym_comment:
+        printf(" ");
+        print_comment(input_string, &child);
+        break;
       default:
-        printf("unexpected node type, print_match_expression");
+        printf("unexpected node type, print_match_expression%d",symbol);
     }
   }
 }
@@ -808,8 +842,12 @@ void print_match_list(char *input_string, TSNode *node) {
       case sym_pipestage_scope_statement:
         print_pipestage_scope_statement(input_string, &child);
         break;
+      case sym_comment:
+        printf(" ");
+        print_comment(input_string, &child);
+        break;
       default:
-        printf("unexpected node type, print_match_list");
+        printf("unexpected node type, print_match_list%d",symbol);
     }
   }
 }
@@ -895,8 +933,12 @@ void print_tuple(char *input_string, TSNode *node) {
       case sym_tuple_list:
         print_tuple_list(input_string, &child);
         break;
+      case sym_comment:
+        printf(" ");
+        print_comment(input_string, &child);
+        break;
       default:
-        printf("unexpected node type, tuple");
+        printf("unexpected node type, tuple%d",symbol);
     }
   }
 }
@@ -917,8 +959,12 @@ void print_tuple_sq(char *input_string, TSNode *node) {
       case sym_tuple_list:
         print_tuple_list(input_string, &child);
         break;
+      case sym_comment:
+        printf(" ");
+        print_comment(input_string, &child);
+        break;
       default:
-        printf("unexpected node type, tuple_sq");
+        printf("unexpected node type, tuple_sq%d",symbol);
     }
   }
 }
@@ -2058,6 +2104,7 @@ void print_identifier(char *input_string, TSNode *node) {
 
 void print_comment(char *input_string, TSNode *node) {
   print_node_text_with_whitespace(input_string, node);
+  printf("\n");
 }
 
 bool print__semicolon(char *input_string, TSNode *node) {
