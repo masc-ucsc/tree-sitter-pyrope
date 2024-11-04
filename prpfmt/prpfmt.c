@@ -333,8 +333,6 @@ int main(int argc, char **argv) {
     for (uint32_t i = 0; i < root_child_count; i++) {
       TSNode child = ts_node_child(root_node, i);
       print_statement(input_string, &child);
-      if(is_next_line_empty(input_string, &child))
-        putchar('\n');
       //printf("reached top level\n");
     }
   }
@@ -477,6 +475,8 @@ void print_statement(char *input_string, TSNode *node) {
     }
   }
   printf("\n");
+  if(is_next_line_empty(input_string, node))
+    printf("\n");
 }
 
 void print_scope_statement(char *input_string, TSNode *node) {
@@ -552,7 +552,11 @@ void print_assignment_or_declaration_statement(char *input_string, TSNode *node)
         putchar(' ');
         break;
       case sym_cycle_select_or_pound:
-        // TODO: print this
+        {
+        TSNode c2 = ts_node_child(child, 0);
+        print_cycle_select(input_string, &c2);
+        break;
+        }
         break;
       case sym_enum_definition:
         print_enum_definition(input_string, &child);
@@ -2104,7 +2108,7 @@ void print_identifier(char *input_string, TSNode *node) {
 
 void print_comment(char *input_string, TSNode *node) {
   print_node_text_with_whitespace(input_string, node);
-  printf("\n");
+  //printf("\n");
 }
 
 bool print__semicolon(char *input_string, TSNode *node) {
