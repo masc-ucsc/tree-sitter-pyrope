@@ -235,8 +235,8 @@ void print_node_text_with_whitespace(char *input_string, TSNode *node);
 char *file_to_string(char *path);
 bool is_next_line_empty(char *input_string, TSNode *node);
 
-void print_statement(char *input_string, TSNode *node);
-void print_scope_statement(char *input_string, TSNode *node);
+void print_statement(char *input_string, TSNode *node, bool wrap);
+void print_scope_statement(char *input_string, TSNode *node, bool wrap);
 void print_assignment_or_declaration_statement(char *input_string, TSNode *node);
 void print_function_call_statement(char *input_string, TSNode *node);
 void print_control_statement(char *input_string, TSNode *node);
@@ -245,7 +245,7 @@ void print_if_expression(char *input_string, TSNode *node);
 void print_for_statement(char *input_string, TSNode *node);
 void print_while_statement(char *input_string, TSNode *node);
 void print_loop_statement(char *input_string, TSNode *node);
-void print_pipestage_scope_statement(char *input_string, TSNode *node);
+void print_pipestage_scope_statement(char *input_string, TSNode *node, bool wrap);
 void print_match_expression(char *input_string, TSNode *node);
 void print_match_list(char *input_string, TSNode *node);
 void print_test_statement(char *input_string, TSNode *node);
@@ -307,6 +307,8 @@ void print_comment(char *input_string, TSNode *node);
 bool print__semicolon(char *input_string, TSNode *node);
 void print_when_unless_cond(char *input_string, TSNode *node);
 
+const int if_wrap_length = 100;
+
 int main(int argc, char **argv) {
   if (argc < 2)
     printf("Argument of type file path expected\n"), exit(1);
@@ -332,7 +334,7 @@ int main(int argc, char **argv) {
   if (root_child_count > 0) {
     for (uint32_t i = 0; i < root_child_count; i++) {
       TSNode child = ts_node_child(root_node, i);
-      print_statement(input_string, &child);
+      print_statement(input_string, &child, false);
       //printf("reached top level\n");
     }
   }
@@ -411,7 +413,7 @@ bool is_next_line_empty(char *input_string, TSNode *node) {
 }
 // Print grammar rules
 
-void print_statement(char *input_string, TSNode *node) {
+void print_statement(char *input_string, TSNode *node, bool wrap) {
   if (ts_node_is_null(*node)) {
     printf("TSNode is null, expected statement");
   } 
@@ -431,10 +433,10 @@ void print_statement(char *input_string, TSNode *node) {
 
     switch(symbol) {
       case sym_scope_statement: 
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_pipestage_scope_statement: 
-        print_pipestage_scope_statement(input_string, &child);
+        print_pipestage_scope_statement(input_string, &child, false);
         break;
       case sym_assignment_or_declaration_statement:
         print_assignment_or_declaration_statement(input_string, &child);
@@ -474,12 +476,12 @@ void print_statement(char *input_string, TSNode *node) {
         printf("reached default,statement %d", symbol);
     }
   }
-  printf("\n");
+  if(!wrap) { printf("\n"); }
   if(is_next_line_empty(input_string, node))
     printf("\n");
 }
 
-void print_scope_statement(char *input_string, TSNode *node) {
+void print_scope_statement(char *input_string, TSNode *node, bool wrap) {
   TSNode parent = ts_node_parent(*node);
   uint32_t depth = 2;
   while (!ts_node_is_null(parent)) {
@@ -497,19 +499,20 @@ void print_scope_statement(char *input_string, TSNode *node) {
 
     switch(symbol) {
       case anon_sym_LBRACE:
-        printf("{\n");
+        printf("{");
+        if(!wrap) { printf("\n"); }
         break;
       case anon_sym_RBRACE: 
-        printf("%*s", (depth-2), "");
+        if(!wrap) { printf("%*s", (depth-2), ""); }
         printf("}");
         break;
       case sym_statement:
-        printf("%*s", depth, "");
-        print_statement(input_string, &child);
+        if(!wrap) { printf("%*s", (depth), ""); }
+        print_statement(input_string, &child, wrap);
         break;
       case sym_scope_expression:
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_comment:
         print_node_text_with_whitespace(input_string, &child);
@@ -645,6 +648,14 @@ void print_stmt_list(char *input_string, TSNode *node) {
 }
 
 void print_if_expression(char *input_string, TSNode *node) {
+  bool wrap = false;
+  uint32_t start = ts_node_start_byte(*node);
+  uint32_t end = ts_node_end_byte(*node);
+  int length = end-start;
+  if (length < if_wrap_length) {
+    printf("wlen:%d:", length);
+    wrap = true; 
+  }
   uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
     TSNode child = ts_node_child(*node, i);
@@ -668,11 +679,11 @@ void print_if_expression(char *input_string, TSNode *node) {
         break;
       case sym_scope_statement:
         putchar(' ');
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, wrap);
         break;
       case sym_pipestage_scope_statement:
         putchar(' ');
-        print_pipestage_scope_statement(input_string, &child);
+        print_pipestage_scope_statement(input_string, &child, wrap);
         break;
       default:
         printf("unexpected node type, print_if_expression");
@@ -712,7 +723,7 @@ void print_for_statement(char *input_string, TSNode *node) {
         print_expression_list(input_string, &child);
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       default:
         printf("unexpected node type, print_for_statement");
@@ -734,10 +745,10 @@ void print_while_statement(char *input_string, TSNode *node) {
         print_stmt_list(input_string, &child);
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_pipestage_scope_statement:
-        print_pipestage_scope_statement(input_string, &child);
+        print_pipestage_scope_statement(input_string, &child, false);
         break;
       default:
         printf("unexpected node type, print_while_statement");
@@ -756,10 +767,10 @@ void print_loop_statement(char *input_string, TSNode *node) {
         printf("loop ");
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_pipestage_scope_statement:
-        print_pipestage_scope_statement(input_string, &child);
+        print_pipestage_scope_statement(input_string, &child, false);
         break;
       default:
         printf("unexpected node type, print_while_statement");
@@ -767,7 +778,7 @@ void print_loop_statement(char *input_string, TSNode *node) {
   }
 }
 
-void print_pipestage_scope_statement(char *input_string, TSNode *node) {
+void print_pipestage_scope_statement(char *input_string, TSNode *node, bool wrap) {
   uint32_t cc = ts_node_child_count(*node);
   for (int i = 0; i < cc; i++) {
     TSNode child = ts_node_child(*node, i);
@@ -784,7 +795,7 @@ void print_pipestage_scope_statement(char *input_string, TSNode *node) {
         print_tuple_sq(input_string, &child);
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       default:
         printf("unexpected node type, pipestage_scope_statement");
@@ -841,10 +852,10 @@ void print_match_list(char *input_string, TSNode *node) {
         printf(" else ");
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_pipestage_scope_statement:
-        print_pipestage_scope_statement(input_string, &child);
+        print_pipestage_scope_statement(input_string, &child, false);
         break;
       case sym_comment:
         printf(" ");
@@ -874,7 +885,7 @@ void print_test_statement(char *input_string, TSNode *node) {
         break;
       case sym_scope_statement:
         printf(" ");
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       default:
         printf("unexpected node type, print_test_statement");
@@ -1003,7 +1014,7 @@ void print__tuple_item(char *input_string, TSNode *node) {
       print_function_inline(input_string, node);
       break;
     case sym_scope_statement:
-      print_scope_statement(input_string, node);
+      print_scope_statement(input_string, node, false);
       break;
     default:
       print__expression_with_comprehension(input_string, node);
@@ -1176,7 +1187,7 @@ void print_function_definition(char *input_string, TSNode *node) {
         print_func_def_verification(input_string, &child);
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       default:
         printf("reached default, func_def%d", symbol);
@@ -1730,7 +1741,7 @@ void print__restricted_expression(char *input_string, TSNode *node) {
       print_match_expression(input_string, node);
       break;
     case sym_scope_expression:
-      print_scope_statement(input_string, node);
+      print_scope_statement(input_string, node, false);
       break;
     case sym_comment:
       printf(" ");
@@ -1949,7 +1960,7 @@ void print_expression_type(char *input_string, TSNode *node) {
         print_match_expression(input_string, &child);
         break;
       case sym_scope_statement:
-        print_scope_statement(input_string, &child);
+        print_scope_statement(input_string, &child, false);
         break;
       case sym_dot_expression_type:
         print_dot_expression_type(input_string, &child);
