@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "pyrope",
+      "camelcase": "Pyrope",
+      "title": "Pyrope",
+      "scope": "source.pyrope",
+      "file-types": [
+        "prp"
+      ],
+      "injection-regex": "^pyrope$",
+      "class-name": "TreeSitterPyrope"
+    }
+  ],
+  "metadata": {
+    "version": "0.9.2",
+    "license": "BSD-3-Clause",
+    "description": "Pyrope grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "Jose Renau"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/masc-ucsc/tree-sitter-pyrope"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}
