@@ -36,6 +36,14 @@ module.exports = grammar({
     , [$.var_or_let_or_reg, $.arg_item]
     , [$.tuple_sq, $.function_definition]
     , [$.function_inline, $.function_declaration]
+    , [$.function_type, $.function_call_type]
+    , [$.expression_type, $.typed_identifier]
+    , [$.complex_identifier, $.typed_identifier, $.expression_type]
+    , [$.tuple, $.arg_list]
+    , [$.function_inline, $.complex_identifier]
+    , [$.function_inline, $.function_declaration, $.complex_identifier]
+    , [$.function_inline, $.tuple_method_definition, $.complex_identifier]
+    , [$.function_inline, $.function_declaration, $.tuple_method_definition, $.complex_identifier]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -243,7 +251,11 @@ module.exports = grammar({
     , type_statement: $ => seq(
       'type'
       , field('name', $.identifier)
-      , field('definition', $.tuple)
+      , field('generic', optseq('<', $.typed_identifier_list, '>'))
+      , choice(
+        field('definition', $.tuple),  // trait definition: type Name ( ... )
+        seq('=', field('alias', $._type))  // type alias: type Name = Type
+      )
     )
     , impl_statement: $ => seq(
       'impl'
@@ -283,23 +295,33 @@ module.exports = grammar({
       $.ref_identifier
       , $._expression_with_comprehension
       , $.simple_assignment
-      , seq($.function_inline, $.scope_statement)
+      , prec(1, seq($.function_inline, $.scope_statement))
       , $.function_type
       , $.function_declaration
+      , $.function_definition_statement
+      , $.tuple_method_definition
     ))
     , function_inline: $ => prec.left('function_type', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('fun_name', $.identifier)
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('input', optional($.arg_list))
-      , field('output', optseq('->', $.arg_list))
+      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
     ))
     , function_declaration: $ => prec.left('function_type', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('fun_name', $.identifier)
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('input', optional($.arg_list))
-      , field('output', optseq('->', $.arg_list))
+      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
+    ))
+    , tuple_method_definition: $ => prec(2, seq(
+      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
+      , field('fun_name', $.identifier)
+      , field('generic', optseq('<', $.typed_identifier_list, '>'))
+      , field('input', optional($.arg_list))
+      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
+      , field('body', $.scope_statement)
     ))
     , attributes: $ => seq(':', choice($.tuple_sq, $.tuple))
 
@@ -384,9 +406,27 @@ module.exports = grammar({
     , enum_assignment: $ => seq(
       choice('enum', 'variant')
       , field('name', $.identifier)
-      , '='
-      , field('values', $.tuple)
+      , choice(
+        seq('=', field('values', $.tuple)),
+        field('body', $.enum_body)
+      )
     )
+    , enum_body: $ => seq(
+      '{'
+      , optional($.enum_field_list)
+      , '}'
+    )
+    , enum_field_list: $ => seq(
+      repeat(',')
+      , $.enum_field
+      , repeat(seq(repeat1(','), $.enum_field))
+      , repeat(',')
+    )
+    , enum_field: $ => prec.left(seq(
+      field('name', $.identifier)
+      , field('type', optional($.type_cast))
+      , field('default', optseq('=', $._expression))
+    ))
     , ref_identifier: $ => seq(
       'ref'
       , $.complex_identifier
@@ -659,11 +699,11 @@ module.exports = grammar({
         , $.expression_type
       )))
     ))
-    , function_type: $ => prec.left('function_type', seq(
+    , function_type: $ => prec.right('function_type', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('input', optional($.arg_list))
-      , field('output', optseq('->', $.arg_list))
+      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
     ))
     , primitive_type: $ => prec.left(choice(
       $.unsized_integer_type

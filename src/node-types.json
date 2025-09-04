@@ -965,6 +965,16 @@
     "type": "enum_assignment",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "enum_body",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -977,7 +987,7 @@
       },
       "values": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "tuple",
@@ -1014,6 +1024,21 @@
     }
   },
   {
+    "type": "enum_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "enum_field_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "enum_definition",
     "named": true,
     "fields": {
@@ -1027,6 +1052,61 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "enum_field",
+    "named": true,
+    "fields": {
+      "default": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "enum_field_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "enum_field",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1382,6 +1462,10 @@
           {
             "type": "arg_list",
             "named": true
+          },
+          {
+            "type": "expression_type",
+            "named": true
           }
         ]
       }
@@ -1614,6 +1698,10 @@
           {
             "type": "arg_list",
             "named": true
+          },
+          {
+            "type": "expression_type",
+            "named": true
           }
         ]
       }
@@ -1683,6 +1771,10 @@
           },
           {
             "type": "arg_list",
+            "named": true
+          },
+          {
+            "type": "expression_type",
             "named": true
           }
         ]
@@ -2376,6 +2468,10 @@
             "named": true
           },
           {
+            "type": "function_definition_statement",
+            "named": true
+          },
+          {
             "type": "function_inline",
             "named": true
           },
@@ -2393,6 +2489,10 @@
           },
           {
             "type": "simple_assignment",
+            "named": true
+          },
+          {
+            "type": "tuple_method_definition",
             "named": true
           }
         ]
@@ -2509,6 +2609,10 @@
             "named": true
           },
           {
+            "type": "function_definition_statement",
+            "named": true
+          },
+          {
             "type": "function_inline",
             "named": true
           },
@@ -2526,6 +2630,104 @@
           },
           {
             "type": "simple_assignment",
+            "named": true
+          },
+          {
+            "type": "tuple_method_definition",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "tuple_method_definition",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "fun_name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "func_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "comb_tok",
+            "named": true
+          },
+          {
+            "type": "flow_tok",
+            "named": true
+          },
+          {
+            "type": "fun_tok",
+            "named": true
+          },
+          {
+            "type": "pipe_tok",
+            "named": true
+          }
+        ]
+      },
+      "generic": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": "typed_identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "input": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "arg_list",
+            "named": true
+          }
+        ]
+      },
+      "output": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "->",
+            "named": false
+          },
+          {
+            "type": "arg_list",
+            "named": true
+          },
+          {
+            "type": "expression_type",
             "named": true
           }
         ]
@@ -2699,12 +2901,52 @@
     "type": "type_statement",
     "named": true,
     "fields": {
+      "alias": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "function_type",
+            "named": true
+          },
+          {
+            "type": "primitive_type",
+            "named": true
+          }
+        ]
+      },
       "definition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "tuple",
+            "named": true
+          }
+        ]
+      },
+      "generic": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": "typed_identifier_list",
             "named": true
           }
         ]
