@@ -38,10 +38,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "pipestage_scope_statement"
-          },
-          {
-            "type": "SYMBOL",
             "name": "declaration_statement"
           },
           {
@@ -83,6 +79,18 @@
           {
             "type": "SYMBOL",
             "name": "test_statement"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "type_statement"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "impl_statement"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "cassert_statement"
           }
         ]
       }
@@ -336,25 +344,12 @@
             }
           },
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "code",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "scope_statement"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "pipe",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "pipestage_scope_statement"
-                }
-              }
-            ]
+            "type": "FIELD",
+            "name": "code",
+            "content": {
+              "type": "SYMBOL",
+              "name": "scope_statement"
+            }
           },
           {
             "type": "FIELD",
@@ -373,32 +368,11 @@
                     },
                     {
                       "type": "FIELD",
-                      "name": "condition",
+                      "name": "code",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "stmt_list"
+                        "name": "scope_statement"
                       }
-                    },
-                    {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "code",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "scope_statement"
-                          }
-                        },
-                        {
-                          "type": "FIELD",
-                          "name": "pipe",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "pipestage_scope_statement"
-                          }
-                        }
-                      ]
                     }
                   ]
                 }
@@ -422,25 +396,8 @@
                         "value": "else"
                       },
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "FIELD",
-                            "name": "code",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "scope_statement"
-                            }
-                          },
-                          {
-                            "type": "FIELD",
-                            "name": "pipe",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "pipestage_scope_statement"
-                            }
-                          }
-                        ]
+                        "type": "SYMBOL",
+                        "name": "scope_statement"
                       }
                     ]
                   }
@@ -538,25 +495,12 @@
           }
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "code",
-              "content": {
-                "type": "SYMBOL",
-                "name": "scope_statement"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "pipe",
-              "content": {
-                "type": "SYMBOL",
-                "name": "pipestage_scope_statement"
-              }
-            }
-          ]
+          "type": "FIELD",
+          "name": "code",
+          "content": {
+            "type": "SYMBOL",
+            "name": "scope_statement"
+          }
         }
       ]
     },
@@ -568,63 +512,8 @@
           "value": "loop"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "code",
-              "content": {
-                "type": "SYMBOL",
-                "name": "scope_statement"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "pipe",
-              "content": {
-                "type": "SYMBOL",
-                "name": "pipestage_scope_statement"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "pipestage_scope_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "#>"
-        },
-        {
           "type": "FIELD",
-          "name": "fsm",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "identifier"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "tuple_sq"
-                  }
-                ]
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "scope",
+          "name": "code",
           "content": {
             "type": "SYMBOL",
             "name": "scope_statement"
@@ -713,25 +602,12 @@
             }
           },
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "code",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "scope_statement"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "pipe",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "pipestage_scope_statement"
-                }
-              }
-            ]
+            "type": "FIELD",
+            "name": "code",
+            "content": {
+              "type": "SYMBOL",
+              "name": "scope_statement"
+            }
           }
         ]
       }
@@ -928,6 +804,89 @@
         ]
       }
     },
+    "type_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "type"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "definition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "tuple"
+          }
+        }
+      ]
+    },
+    "impl_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "impl"
+        },
+        {
+          "type": "FIELD",
+          "name": "trait_name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "for"
+        },
+        {
+          "type": "FIELD",
+          "name": "type_name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "implementation",
+          "content": {
+            "type": "SYMBOL",
+            "name": "tuple"
+          }
+        }
+      ]
+    },
+    "cassert_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "cassert"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
+    },
     "expression_list": {
       "type": "PREC_LEFT",
       "value": 0,
@@ -975,22 +934,6 @@
       "content": {
         "type": "SEQ",
         "members": [
-          {
-            "type": "FIELD",
-            "name": "always",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "always_tok"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
           {
             "type": "FIELD",
             "name": "function",
@@ -1144,6 +1087,14 @@
                 "name": "scope_statement"
               }
             ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "function_type"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "function_declaration"
           }
         ]
       }
@@ -1166,7 +1117,123 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "proc_tok"
+                  "name": "comb_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "flow_tok"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "fun_name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "generic",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PREC_LEFT",
+                  "value": 0,
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "<"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "typed_identifier_list"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": ">"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "input",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "arg_list"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "output",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PREC_LEFT",
+                  "value": 0,
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "->"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "arg_list"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "function_declaration": {
+      "type": "PREC_LEFT",
+      "value": "function_type",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "func_type",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "fun_tok"
                 },
                 {
                   "type": "SYMBOL",
@@ -1396,10 +1463,6 @@
                 {
                   "type": "SYMBOL",
                   "name": "fun_tok"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "proc_tok"
                 },
                 {
                   "type": "SYMBOL",
@@ -4406,10 +4469,6 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "proc_tok"
-              },
-              {
-                "type": "SYMBOL",
                 "name": "comb_tok"
               },
               {
@@ -4954,10 +5013,6 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "proc_tok"
-                },
-                {
-                  "type": "SYMBOL",
                   "name": "comb_tok"
                 },
                 {
@@ -5200,13 +5255,6 @@
         "value": "fun"
       }
     },
-    "proc_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "proc"
-      }
-    },
     "comb_tok": {
       "type": "TOKEN",
       "content": {
@@ -5226,13 +5274,6 @@
       "content": {
         "type": "STRING",
         "value": "flow"
-      }
-    },
-    "always_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "always"
       }
     },
     "delay_tok": {
@@ -5619,6 +5660,10 @@
     [
       "tuple_sq",
       "function_definition"
+    ],
+    [
+      "function_inline",
+      "function_declaration"
     ]
   ],
   "precedences": [
