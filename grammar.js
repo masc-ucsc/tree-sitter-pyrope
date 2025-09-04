@@ -59,7 +59,6 @@ module.exports = grammar({
       , 'function'
       , 'member_selection'
       , 'bit_selection'
-      , 'cycle_selection'
       , 'unary'
       , 'range'
       , 'step'
@@ -132,6 +131,7 @@ module.exports = grammar({
       , $.while_statement
       , $.for_statement
       , $.function_definition_statement
+      , $.enum_assignment_statement
       , $.loop_statement
       , $.expression_statement
       // Verification Only
@@ -285,7 +285,7 @@ module.exports = grammar({
       , seq($.function_inline, $.scope_statement)
     ))
     , function_inline: $ => prec.left('function_type', seq(
-      field('func_type', choice($.fun_tok, $.proc_tok))
+      field('func_type', choice($.fun_tok, $.proc_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('fun_name', $.identifier)
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('input', optional($.arg_list))
@@ -298,7 +298,6 @@ module.exports = grammar({
       field('decl', optional($.var_or_let_or_reg))
       , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
       , field('operator', $.assignment_operator)
-      , field('delay', optional($.cycle_select_or_pound))
       , field('rvalue', choice(
         $._expression_with_comprehension
         , $.ref_identifier
@@ -306,9 +305,13 @@ module.exports = grammar({
       )
       )))
     , function_definition_statement: $ => prec.left('statement', seq(
-      field('func_type', choice($.fun_tok, $.proc_tok))
+      field('func_type', choice($.fun_tok, $.proc_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('lvalue', $.complex_identifier)
       , $.function_definition
+    ))
+    , enum_assignment_statement: $ => prec.left('statement', seq(
+      $.enum_assignment
+      , $._semicolon
     ))
     , _assignment_or_declaration: $ => prec.right(seq(
       field('decl', optional($.var_or_let_or_reg))
@@ -323,7 +326,6 @@ module.exports = grammar({
         )
       )
       , field('operator', $.assignment_operator)
-      , field('delay', optional($.cycle_select_or_pound))
       , field('rvalue', choice(
         $._expression_with_comprehension
         //,$.simple_function_call
@@ -331,7 +333,6 @@ module.exports = grammar({
         , $.ref_identifier
       )
       )))
-    , cycle_select_or_pound: $ => choice($.cycle_select)
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
     , function_definition: $ => seq(
       field('capture', optseq('[', optional($.capture_list), ']'))
@@ -349,6 +350,12 @@ module.exports = grammar({
     , enum_definition: $ => seq(
       choice('enum', 'variant')
       , field('input', $.arg_list)
+    )
+    , enum_assignment: $ => seq(
+      choice('enum', 'variant')
+      , field('name', $.identifier)
+      , '='
+      , field('values', $.tuple)
     )
     , ref_identifier: $ => seq(
       'ref'
@@ -381,7 +388,16 @@ module.exports = grammar({
       $.identifier
       , $.dot_expression
       , $.selection
+      , $.timed_identifier
     )
+    , timed_identifier: $ => prec.left(1, seq(
+      field('identifier', $.identifier)
+      , '@'
+      , field('timing', choice(
+        $.constant
+        , seq('[', $._expression, ']')
+      ))
+    ))
     , complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
 
     , typed_identifier: $ => seq(
@@ -422,7 +438,6 @@ module.exports = grammar({
     , selection: $ => choice(
       $.member_selection
       , $.bit_selection
-      , $.cycle_selection
     )
     , member_selection: $ => prec.right('member_selection', seq(
       field('argument', $._restricted_expression)
@@ -431,10 +446,6 @@ module.exports = grammar({
     , bit_selection: $ => prec.right('bit_selection', seq(
       field('argument', $._restricted_expression)
       , field('select', $.bit_select)
-    ))
-    , cycle_selection: $ => prec.right('cycle_selection', seq(
-      field('argument', $._restricted_expression)
-      , field('select', $.cycle_select)
     ))
     , type_specification: $ => prec.left('type_spec', seq(
       field('argument', $._restricted_expression)
@@ -540,7 +551,7 @@ module.exports = grammar({
       , $.scope_expression
     ))
     , lambda: $ => seq(
-      field('func_type', choice($.fun_tok, $.proc_tok))
+      field('func_type', choice($.fun_tok, $.proc_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , $.function_definition
     )
     // Operators
@@ -564,10 +575,9 @@ module.exports = grammar({
     )
     , member_select: $ => prec.right('select', repeat1($.select))
     , bit_select: $ => prec.right('select', seq(
-      '@', field('type', optional($.bit_select_type)), field('select', $.select)
+      '#', field('type', optional($.bit_select_type)), field('select', $.select)
     ))
     , bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
-    , cycle_select: $ => seq('#', $.select)
 
     // Types
     , type_cast: $ => prec.left('type_cast', seq(
@@ -620,7 +630,7 @@ module.exports = grammar({
       )))
     ))
     , function_type: $ => prec.left('function_type', seq(
-      field('func_type', choice($.fun_tok, $.proc_tok))
+      field('func_type', choice($.fun_tok, $.proc_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('input', optional($.arg_list))
       , field('output', optseq('->', $.arg_list))
@@ -654,6 +664,9 @@ module.exports = grammar({
     , type_type: $ => token('type')
     , fun_tok: $ => token('fun')
     , proc_tok: $ => token('proc')
+    , comb_tok: $ => token('comb')
+    , pipe_tok: $ => token('pipe')
+    , flow_tok: $ => token('flow')
 
     // Identifiers
     , always_tok: $ => token('always')

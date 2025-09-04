@@ -66,6 +66,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "enum_assignment_statement"
+          },
+          {
+            "type": "SYMBOL",
             "name": "loop_statement"
           },
           {
@@ -1091,6 +1095,18 @@
                 {
                   "type": "SYMBOL",
                   "name": "proc_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "comb_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "flow_tok"
                 }
               ]
             }
@@ -1259,22 +1275,6 @@
           },
           {
             "type": "FIELD",
-            "name": "delay",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "cycle_select_or_pound"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
             "name": "rvalue",
             "content": {
               "type": "CHOICE",
@@ -1312,6 +1312,18 @@
                 {
                   "type": "SYMBOL",
                   "name": "proc_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "comb_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "flow_tok"
                 }
               ]
             }
@@ -1327,6 +1339,23 @@
           {
             "type": "SYMBOL",
             "name": "function_definition"
+          }
+        ]
+      }
+    },
+    "enum_assignment_statement": {
+      "type": "PREC_LEFT",
+      "value": "statement",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "enum_assignment"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_semicolon"
           }
         ]
       }
@@ -1418,22 +1447,6 @@
           },
           {
             "type": "FIELD",
-            "name": "delay",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "cycle_select_or_pound"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
             "name": "rvalue",
             "content": {
               "type": "CHOICE",
@@ -1455,15 +1468,6 @@
           }
         ]
       }
-    },
-    "cycle_select_or_pound": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "cycle_select"
-        }
-      ]
     },
     "var_or_let_or_reg": {
       "type": "CHOICE",
@@ -1707,6 +1711,44 @@
           "content": {
             "type": "SYMBOL",
             "name": "arg_list"
+          }
+        }
+      ]
+    },
+    "enum_assignment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "enum"
+            },
+            {
+              "type": "STRING",
+              "value": "variant"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "FIELD",
+          "name": "values",
+          "content": {
+            "type": "SYMBOL",
+            "name": "tuple"
           }
         }
       ]
@@ -2007,8 +2049,63 @@
         {
           "type": "SYMBOL",
           "name": "selection"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "timed_identifier"
         }
       ]
+    },
+    "timed_identifier": {
+      "type": "PREC_LEFT",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "identifier",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "@"
+          },
+          {
+            "type": "FIELD",
+            "name": "timing",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "constant"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "["
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "]"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
     },
     "complex_identifier_list": {
       "type": "PREC_LEFT",
@@ -2307,10 +2404,6 @@
         {
           "type": "SYMBOL",
           "name": "bit_selection"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cycle_selection"
         }
       ]
     },
@@ -2359,31 +2452,6 @@
             "content": {
               "type": "SYMBOL",
               "name": "bit_select"
-            }
-          }
-        ]
-      }
-    },
-    "cycle_selection": {
-      "type": "PREC_RIGHT",
-      "value": "cycle_selection",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "argument",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_restricted_expression"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "select",
-            "content": {
-              "type": "SYMBOL",
-              "name": "cycle_select"
             }
           }
         ]
@@ -4175,6 +4243,18 @@
               {
                 "type": "SYMBOL",
                 "name": "proc_tok"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "comb_tok"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "pipe_tok"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "flow_tok"
               }
             ]
           }
@@ -4355,7 +4435,7 @@
         "members": [
           {
             "type": "STRING",
-            "value": "@"
+            "value": "#"
           },
           {
             "type": "FIELD",
@@ -4410,19 +4490,6 @@
         {
           "type": "STRING",
           "value": "zext"
-        }
-      ]
-    },
-    "cycle_select": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "#"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "select"
         }
       ]
     },
@@ -4724,6 +4791,18 @@
                 {
                   "type": "SYMBOL",
                   "name": "proc_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "comb_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe_tok"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "flow_tok"
                 }
               ]
             }
@@ -4962,6 +5041,27 @@
       "content": {
         "type": "STRING",
         "value": "proc"
+      }
+    },
+    "comb_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "comb"
+      }
+    },
+    "pipe_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "pipe"
+      }
+    },
+    "flow_tok": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "flow"
       }
     },
     "always_tok": {
@@ -5415,10 +5515,6 @@
       {
         "type": "STRING",
         "value": "bit_selection"
-      },
-      {
-        "type": "STRING",
-        "value": "cycle_selection"
       },
       {
         "type": "STRING",
