@@ -125,6 +125,7 @@ module.exports = grammar({
       // Synthesizable
       $.scope_statement
       , $.pipestage_scope_statement
+      , $.declaration_statement
       , $.assignment_or_declaration_statement
       , $.function_call_statement
       , $.control_statement
@@ -145,6 +146,14 @@ module.exports = grammar({
     ))
     , assignment_or_declaration_statement: $ => prec.right(seq(
       $._assignment_or_declaration
+      , $._semicolon
+    ))
+    , declaration_statement: $ => prec.right(seq(
+      field('decl', $.var_or_let_or_reg)
+      , choice(
+        seq('(', field('lvalue', $.complex_identifier_list), ')')
+        , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+      )
       , $._semicolon
     ))
     , function_call_statement: $ => seq(
@@ -298,6 +307,7 @@ module.exports = grammar({
       field('decl', optional($.var_or_let_or_reg))
       , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
       , field('operator', $.assignment_operator)
+      , field('delay', optional($.assignment_delay))
       , field('rvalue', choice(
         $._expression_with_comprehension
         , $.ref_identifier
@@ -326,6 +336,7 @@ module.exports = grammar({
         )
       )
       , field('operator', $.assignment_operator)
+      , field('delay', optional($.assignment_delay))
       , field('rvalue', choice(
         $._expression_with_comprehension
         //,$.simple_function_call
@@ -333,6 +344,24 @@ module.exports = grammar({
         , $.ref_identifier
       )
       )))
+    , assignment_delay: $ => choice(
+      seq(
+        $.delay_tok
+        , '['
+        , $._expression
+        , ']'
+      )
+      , seq(
+        '@'
+        , '['
+        , $._expression
+        , ']'
+      )
+      , seq(
+        '@'
+        , $.constant
+      )
+    )
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
     , function_definition: $ => seq(
       field('capture', optseq('[', optional($.capture_list), ']'))
@@ -670,6 +699,7 @@ module.exports = grammar({
 
     // Identifiers
     , always_tok: $ => token('always')
+    , delay_tok: $ => token('delay')
     , identifier: $ => token(
       choice(
         // \p{L}  : Letter

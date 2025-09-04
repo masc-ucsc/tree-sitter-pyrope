@@ -178,6 +178,25 @@
     }
   },
   {
+    "type": "assignment_delay",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "delay_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "assignment_or_declaration_statement",
     "named": true,
     "fields": {
@@ -187,6 +206,16 @@
         "types": [
           {
             "type": "var_or_let_or_reg",
+            "named": true
+          }
+        ]
+      },
+      "delay": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "assignment_delay",
             "named": true
           }
         ]
@@ -744,6 +773,54 @@
         "types": [
           {
             "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "declaration_statement",
+    "named": true,
+    "fields": {
+      "decl": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "var_or_let_or_reg",
+            "named": true
+          }
+        ]
+      },
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "complex_identifier_list",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
             "named": true
           }
         ]
@@ -2061,6 +2138,16 @@
           }
         ]
       },
+      "delay": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "assignment_delay",
+            "named": true
+          }
+        ]
+      },
       "lvalue": {
         "multiple": false,
         "required": true,
@@ -2159,6 +2246,10 @@
         },
         {
           "type": "control_statement",
+          "named": true
+        },
+        {
+          "type": "declaration_statement",
           "named": true
         },
         {
@@ -2910,6 +3001,10 @@
   {
     "type": "continue",
     "named": false
+  },
+  {
+    "type": "delay_tok",
+    "named": true
   },
   {
     "type": "does",
