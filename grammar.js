@@ -218,7 +218,7 @@ module.exports = grammar({
     , loop_statement: $ => seq(
       'loop'
       , field('attributes', optseq('::', $.tuple_sq))
-      // conflict , field('init', optional($.stmt_list))
+      , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
     )
     , match_expression: $ => seq(

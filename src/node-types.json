@@ -1824,6 +1824,16 @@
             "named": true
           }
         ]
+      },
+      "init": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "stmt_list",
+            "named": true
+          }
+        ]
       }
     }
   },

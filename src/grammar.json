@@ -695,6 +695,22 @@
         },
         {
           "type": "FIELD",
+          "name": "init",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "stmt_list"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
           "name": "code",
           "content": {
             "type": "SYMBOL",
