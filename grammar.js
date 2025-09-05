@@ -296,6 +296,7 @@ module.exports = grammar({
       $.ref_identifier
       , $._expression_with_comprehension
       , $.simple_assignment
+      , $.typed_declaration
       , prec(1, seq($.function_inline, $.scope_statement))
       , $.function_type
       , $.function_declaration
@@ -336,11 +337,15 @@ module.exports = grammar({
         $._expression_with_comprehension
         , $.ref_identifier
         //,$.simple_function_call
-      )
-      )))
+      ))
+      ))
+    , typed_declaration: $ => seq(
+      field('decl', $.var_or_let_or_reg)
+      , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+    )
     , function_definition_statement: $ => prec.left('statement', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('pipe_config', optseq(':', '[', $.expression_list, ']'))
+      , field('pipe_config', optseq('::', choice($.tuple_sq, $.tuple)))
       , field('lvalue', $.complex_identifier)
       , $.function_definition
     ))
@@ -391,7 +396,7 @@ module.exports = grammar({
     , function_definition: $ => seq(
       field('capture', optseq('[', optional($.capture_list), ']'))
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('pipe_config', optseq(':', '[', $.expression_list, ']'))
+      , field('pipe_config', optseq('::', choice($.tuple_sq, $.tuple)))
       , field('input', optional($.arg_list))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       , field('condition', optseq('where', $.expression_list))

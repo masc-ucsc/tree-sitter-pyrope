@@ -1498,19 +1498,15 @@
         "required": false,
         "types": [
           {
-            "type": ":",
+            "type": "::",
             "named": false
           },
           {
-            "type": "[",
-            "named": false
+            "type": "tuple",
+            "named": true
           },
           {
-            "type": "]",
-            "named": false
-          },
-          {
-            "type": "expression_list",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1568,19 +1564,15 @@
         "required": false,
         "types": [
           {
-            "type": ":",
+            "type": "::",
             "named": false
           },
           {
-            "type": "[",
-            "named": false
+            "type": "tuple",
+            "named": true
           },
           {
-            "type": "]",
-            "named": false
-          },
-          {
-            "type": "expression_list",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -2472,6 +2464,10 @@
           {
             "type": "tuple_method_definition",
             "named": true
+          },
+          {
+            "type": "typed_declaration",
+            "named": true
           }
         ]
       }
@@ -2612,6 +2608,10 @@
           },
           {
             "type": "tuple_method_definition",
+            "named": true
+          },
+          {
+            "type": "typed_declaration",
             "named": true
           }
         ]
@@ -2947,6 +2947,40 @@
     "fields": {}
   },
   {
+    "type": "typed_declaration",
+    "named": true,
+    "fields": {
+      "decl": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "var_or_let_or_reg",
+            "named": true
+          }
+        ]
+      },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "type_cast",
+            "named": true
+          },
+          {
+            "type": "type_specification",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "typed_identifier",
     "named": true,
     "fields": {
@@ -3216,6 +3250,10 @@
   },
   {
     "type": ":",
+    "named": false
+  },
+  {
+    "type": "::",
     "named": false
   },
   {

@@ -1139,6 +1139,10 @@
             "name": "simple_assignment"
           },
           {
+            "type": "SYMBOL",
+            "name": "typed_declaration"
+          },
+          {
             "type": "PREC",
             "value": 1,
             "content": {
@@ -1678,6 +1682,40 @@
         ]
       }
     },
+    "typed_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "decl",
+          "content": {
+            "type": "SYMBOL",
+            "name": "var_or_let_or_reg"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "lvalue",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_cast"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_specification"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "function_definition_statement": {
       "type": "PREC_LEFT",
       "value": "statement",
@@ -1723,19 +1761,20 @@
                     "members": [
                       {
                         "type": "STRING",
-                        "value": ":"
+                        "value": "::"
                       },
                       {
-                        "type": "STRING",
-                        "value": "["
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "expression_list"
-                      },
-                      {
-                        "type": "STRING",
-                        "value": "]"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "tuple_sq"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "tuple"
+                          }
+                        ]
                       }
                     ]
                   }
@@ -2071,19 +2110,20 @@
                   "members": [
                     {
                       "type": "STRING",
-                      "value": ":"
+                      "value": "::"
                     },
                     {
-                      "type": "STRING",
-                      "value": "["
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "expression_list"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "]"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "tuple_sq"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "tuple"
+                        }
+                      ]
                     }
                   ]
                 }
