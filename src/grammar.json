@@ -62,7 +62,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "function_definition_statement"
+            "name": "lambda"
           },
           {
             "type": "SYMBOL",
@@ -1501,44 +1501,6 @@
           }
         }
       ]
-    },
-    "function_definition_statement": {
-      "type": "PREC_LEFT",
-      "value": "statement",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "func_type",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "fun_tok"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "comb_tok"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "pipe_tok"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "flow_tok"
-                }
-              ]
-            }
-          },
-          {
-            "type": "SYMBOL",
-            "name": "function_definition"
-          }
-        ]
-      }
     },
     "enum_assignment_statement": {
       "type": "PREC_LEFT",
@@ -4443,6 +4405,22 @@
           }
         },
         {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
           "type": "SYMBOL",
           "name": "function_definition_decl"
         },
@@ -5513,10 +5491,6 @@
       "arg_item"
     ],
     [
-      "tuple_sq",
-      "function_definition"
-    ],
-    [
       "expression_type",
       "typed_identifier"
     ],
@@ -5537,10 +5511,10 @@
       "typed_identifier"
     ],
     [
-      "function_definition",
-      "_restricted_expression"
+      "lambda"
     ],
     [
+      "complex_identifier",
       "lambda"
     ]
   ],

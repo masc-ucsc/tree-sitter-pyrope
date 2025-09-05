@@ -1191,21 +1191,6 @@
     }
   },
   {
-    "type": "func_def_verification",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "function_call",
     "named": true,
     "fields": {
@@ -1281,66 +1266,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "function_definition",
-    "named": true,
-    "fields": {
-      "code": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "scope_statement",
-            "named": true
-          }
-        ]
-      },
-      "condition": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          },
-          {
-            "type": "where",
-            "named": false
-          }
-        ]
-      },
-      "lvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "complex_identifier",
-            "named": true
-          }
-        ]
-      },
-      "verification": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "func_def_verification",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "function_definition_decl",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1425,44 +1350,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "function_definition_statement",
-    "named": true,
-    "fields": {
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb_tok",
-            "named": true
-          },
-          {
-            "type": "flow_tok",
-            "named": true
-          },
-          {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
-            "type": "pipe_tok",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "function_definition",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1605,6 +1492,16 @@
           },
           {
             "type": "pipe_tok",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -2140,11 +2037,11 @@
           "named": true
         },
         {
-          "type": "function_definition_statement",
+          "type": "impl_statement",
           "named": true
         },
         {
-          "type": "impl_statement",
+          "type": "lambda",
           "named": true
         },
         {
@@ -3001,10 +2898,6 @@
     "named": false
   },
   {
-    "type": "ensures",
-    "named": false
-  },
-  {
     "type": "enum",
     "named": false
   },
@@ -3098,10 +2991,6 @@
   },
   {
     "type": "reg",
-    "named": false
-  },
-  {
-    "type": "requires",
     "named": false
   },
   {
