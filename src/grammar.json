@@ -4720,48 +4720,6 @@
         ]
       }
     },
-    "trivial_identifier_list": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "STRING",
-            "value": ","
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "STRING",
-                  "value": ","
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "identifier"
-              }
-            ]
-          }
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "STRING",
-            "value": ","
-          }
-        }
-      ]
-    },
     "_type": {
       "type": "PREC_LEFT",
       "value": "type",

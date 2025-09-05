@@ -619,12 +619,6 @@ module.exports = grammar({
         , field('attribute', $.attributes)
       )
     ))
-    , trivial_identifier_list: $ => seq(
-      repeat(',')
-      , $.identifier
-      , repeat(seq(repeat1(','), $.identifier))
-      , repeat(',')
-    )
     , _type: $ => prec.left('type', choice(
       $.primitive_type
       , $.array_type
