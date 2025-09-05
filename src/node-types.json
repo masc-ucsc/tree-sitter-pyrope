@@ -148,7 +148,7 @@
             "named": true
           },
           {
-            "type": "function_type",
+            "type": "lambda",
             "named": true
           },
           {
@@ -1287,28 +1287,6 @@
     "type": "function_definition",
     "named": true,
     "fields": {
-      "capture": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": ",",
-            "named": false
-          },
-          {
-            "type": "[",
-            "named": false
-          },
-          {
-            "type": "]",
-            "named": false
-          },
-          {
-            "type": "typed_identifier",
-            "named": true
-          }
-        ]
-      },
       "code": {
         "multiple": false,
         "required": true,
@@ -1333,6 +1311,60 @@
           }
         ]
       },
+      "lvalue": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "complex_identifier",
+            "named": true
+          }
+        ]
+      },
+      "verification": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "func_def_verification",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "function_definition_decl",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "function_definition_decl",
+    "named": true,
+    "fields": {
+      "capture": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "typed_identifier_list",
+            "named": true
+          }
+        ]
+      },
       "generic": {
         "multiple": true,
         "required": false,
@@ -1353,7 +1385,7 @@
       },
       "input": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "arg_list",
@@ -1392,16 +1424,6 @@
             "named": true
           }
         ]
-      },
-      "verification": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "func_def_verification",
-            "named": true
-          }
-        ]
       }
     }
   },
@@ -1430,30 +1452,6 @@
             "named": true
           }
         ]
-      },
-      "lvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "complex_identifier",
-            "named": true
-          }
-        ]
-      },
-      "pipe_config": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "::",
-            "named": false
-          },
-          {
-            "type": "tuple_sq",
-            "named": true
-          }
-        ]
       }
     },
     "children": {
@@ -1465,164 +1463,6 @@
           "named": true
         }
       ]
-    }
-  },
-  {
-    "type": "function_inline",
-    "named": true,
-    "fields": {
-      "fun_name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb_tok",
-            "named": true
-          },
-          {
-            "type": "flow_tok",
-            "named": true
-          },
-          {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
-            "type": "pipe_tok",
-            "named": true
-          }
-        ]
-      },
-      "generic": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": "typed_identifier_list",
-            "named": true
-          }
-        ]
-      },
-      "input": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "arg_list",
-            "named": true
-          }
-        ]
-      },
-      "output": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "->",
-            "named": false
-          },
-          {
-            "type": "arg_list",
-            "named": true
-          },
-          {
-            "type": "expression_type",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "function_type",
-    "named": true,
-    "fields": {
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb_tok",
-            "named": true
-          },
-          {
-            "type": "flow_tok",
-            "named": true
-          },
-          {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
-            "type": "pipe_tok",
-            "named": true
-          }
-        ]
-      },
-      "generic": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": "typed_identifier_list",
-            "named": true
-          }
-        ]
-      },
-      "input": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "arg_list",
-            "named": true
-          }
-        ]
-      },
-      "output": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "->",
-            "named": false
-          },
-          {
-            "type": "arg_list",
-            "named": true
-          },
-          {
-            "type": "expression_type",
-            "named": true
-          }
-        ]
-      }
     }
   },
   {
@@ -1737,6 +1577,16 @@
     "type": "lambda",
     "named": true,
     "fields": {
+      "code": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
       "func_type": {
         "multiple": false,
         "required": true,
@@ -1765,7 +1615,7 @@
       "required": true,
       "types": [
         {
-          "type": "function_definition",
+          "type": "function_definition_decl",
           "named": true
         }
       ]
@@ -2337,31 +2187,11 @@
             "named": true
           },
           {
-            "type": "function_definition_statement",
-            "named": true
-          },
-          {
-            "type": "function_inline",
-            "named": true
-          },
-          {
-            "type": "function_type",
-            "named": true
-          },
-          {
             "type": "ref_identifier",
             "named": true
           },
           {
-            "type": "scope_statement",
-            "named": true
-          },
-          {
             "type": "simple_assignment",
-            "named": true
-          },
-          {
-            "type": "tuple_method_definition",
             "named": true
           },
           {
@@ -2478,23 +2308,7 @@
             "named": true
           },
           {
-            "type": "function_definition_statement",
-            "named": true
-          },
-          {
-            "type": "function_inline",
-            "named": true
-          },
-          {
-            "type": "function_type",
-            "named": true
-          },
-          {
             "type": "ref_identifier",
-            "named": true
-          },
-          {
-            "type": "scope_statement",
             "named": true
           },
           {
@@ -2502,105 +2316,7 @@
             "named": true
           },
           {
-            "type": "tuple_method_definition",
-            "named": true
-          },
-          {
             "type": "typed_declaration",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "tuple_method_definition",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "scope_statement",
-            "named": true
-          }
-        ]
-      },
-      "fun_name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb_tok",
-            "named": true
-          },
-          {
-            "type": "flow_tok",
-            "named": true
-          },
-          {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
-            "type": "pipe_tok",
-            "named": true
-          }
-        ]
-      },
-      "generic": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": "typed_identifier_list",
-            "named": true
-          }
-        ]
-      },
-      "input": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "arg_list",
-            "named": true
-          }
-        ]
-      },
-      "output": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "->",
-            "named": false
-          },
-          {
-            "type": "arg_list",
-            "named": true
-          },
-          {
-            "type": "expression_type",
             "named": true
           }
         ]
@@ -2649,7 +2365,7 @@
             "named": true
           },
           {
-            "type": "function_type",
+            "type": "lambda",
             "named": true
           },
           {
@@ -2751,7 +2467,7 @@
             "named": true
           },
           {
-            "type": "function_type",
+            "type": "lambda",
             "named": true
           },
           {
@@ -2779,7 +2495,7 @@
             "named": true
           },
           {
-            "type": "function_type",
+            "type": "lambda",
             "named": true
           },
           {

@@ -24,7 +24,7 @@ module.exports = grammar({
 
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
-    [$._expression, $.function_type]
+    [$._expression, $.lambda]
     , [$._restricted_expression, $.typed_identifier]
     , [$._assignment_or_declaration, $._restricted_expression]
     , [$.complex_identifier, $.typed_identifier]
@@ -32,12 +32,13 @@ module.exports = grammar({
     , [$.complex_identifier_list, $._restricted_expression]
     , [$.var_or_let_or_reg, $.arg_item]
     , [$.tuple_sq, $.function_definition]
-    , [$.function_type, $.function_call_type]
     , [$.expression_type, $.typed_identifier]
     , [$.complex_identifier, $.typed_identifier, $.expression_type]
     , [$.tuple, $.arg_list]
-    , [$.function_inline, $.complex_identifier]
-    , [$.function_inline, $.tuple_method_definition, $.complex_identifier]
+    , [$._tuple_item, $._restricted_expression]
+    , [$.typed_identifier]
+    , [$.function_definition, $._restricted_expression]
+    , [$.lambda]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -49,7 +50,6 @@ module.exports = grammar({
       , 'dot_type_sub'
       , 'array_type'
       , 'range_type'
-      , 'function_type'
       , 'function_call_type'
       , 'mixin_type_sub'
       , 'expression_type'
@@ -299,26 +299,8 @@ module.exports = grammar({
       , $._expression_with_comprehension
       , $.simple_assignment
       , $.typed_declaration
-      , prec(1, seq($.function_inline, $.scope_statement))
-      , $.function_type
-      , $.function_inline
-      , $.function_definition_statement
-      , $.tuple_method_definition
-    ))
-    , function_inline: $ => prec.left('function_type', seq(
-      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('fun_name', $.identifier)
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('input', optional($.arg_list))
-      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
-    ))
-    , tuple_method_definition: $ => prec(2, seq(
-      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('fun_name', $.identifier)
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('input', optional($.arg_list))
-      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
-      , field('body', $.scope_statement)
+      , $.lambda
+      // lambda subset, $.function_definition_statement
     ))
     , attributes: $ => seq(':', $.tuple_sq)
 
@@ -340,8 +322,6 @@ module.exports = grammar({
     )
     , function_definition_statement: $ => prec.left('statement', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('pipe_config', optseq('::', $.tuple_sq))
-      , field('lvalue', $.complex_identifier)
       , $.function_definition
     ))
     , enum_assignment_statement: $ => prec.left('statement', seq(
@@ -388,12 +368,16 @@ module.exports = grammar({
       )
     )
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
-    , function_definition: $ => seq(
-      field('capture', optseq('[', listseq1($.typed_identifier), ']'))
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
+    , function_definition_decl: $ => seq(
+      field('generic', optseq('<', $.typed_identifier_list, '>'))
+      , field('capture', optseq('[', $.typed_identifier_list, ']'))
       , field('pipe_config', optseq('::', $.tuple_sq))
-      , field('input', optional($.arg_list))
+      , field('input', choice($.arg_list), seq('(', ')'))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
+    )
+    , function_definition: $ => seq(
+      field('lvalue', $.complex_identifier)
+      , $.function_definition_decl
       , field('condition', optseq('where', $.expression_list))
       , field('verification', repeat($.func_def_verification))
       , field('code', $.scope_statement)
@@ -458,7 +442,7 @@ module.exports = grammar({
       field('identifier', $.identifier)
       , field('type', optional($.type_cast))
     )
-    , typed_identifier_list: $ => prec.left(listseq1(field('item', $.typed_identifier)))
+    , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
 
     // Expressions
     , _expression: $ => prec.left('expression', choice(
@@ -475,7 +459,7 @@ module.exports = grammar({
       'for'
       , choice(
         seq('('
-          , field('index', $.typed_identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
+          , field('index', $.typed_identifier_list)
           , ')'
         )
         , $.typed_identifier
@@ -603,7 +587,8 @@ module.exports = grammar({
     ))
     , lambda: $ => seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , $.function_definition
+      , $.function_definition_decl
+      , field('code', optional($.scope_statement))
     )
     // Operators
     , assignment_operator: $ => token(choice(
@@ -648,7 +633,7 @@ module.exports = grammar({
     , _type: $ => prec.left('type', choice(
       $.primitive_type
       , $.array_type
-      , $.function_type
+      , $.lambda
       , $.expression_type
     ))
     , expression_type: $ => prec.left('expression_type', choice(
@@ -673,15 +658,9 @@ module.exports = grammar({
       , optional(field('base', choice(
         $.primitive_type
         , $.array_type
-        , $.function_type
+        , $.lambda
         , $.expression_type
       )))
-    ))
-    , function_type: $ => prec.right('function_type', seq(
-      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('input', optional($.arg_list))
-      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
     ))
     , primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
