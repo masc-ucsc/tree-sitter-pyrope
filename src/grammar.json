@@ -6039,13 +6039,6 @@
   ],
   "conflicts": [
     [
-      "_assignment_or_declaration"
-    ],
-    [
-      "_restricted_expression",
-      "function_type"
-    ],
-    [
       "_expression",
       "function_type"
     ],

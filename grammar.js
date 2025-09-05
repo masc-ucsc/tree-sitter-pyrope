@@ -24,9 +24,7 @@ module.exports = grammar({
 
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
-    [$._assignment_or_declaration]
-    , [$._restricted_expression, $.function_type]
-    , [$._expression, $.function_type]
+    [$._expression, $.function_type]
     , [$._restricted_expression, $.typed_identifier]
     , [$._assignment_or_declaration, $._restricted_expression]
     , [$.complex_identifier, $.typed_identifier]
