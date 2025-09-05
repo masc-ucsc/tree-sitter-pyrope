@@ -337,10 +337,39 @@
           },
           {
             "type": "FIELD",
+            "name": "init",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PREC_LEFT",
+                  "value": 0,
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "stmt_list"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": ";"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
             "name": "condition",
             "content": {
               "type": "SYMBOL",
-              "name": "stmt_list"
+              "name": "_expression"
             }
           },
           {
@@ -371,7 +400,7 @@
                       "name": "condition",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "stmt_list"
+                        "name": "_expression"
                       }
                     },
                     {
@@ -583,10 +612,39 @@
         },
         {
           "type": "FIELD",
+          "name": "init",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PREC_LEFT",
+                "value": 0,
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "stmt_list"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
           "name": "condition",
           "content": {
             "type": "SYMBOL",
-            "name": "stmt_list"
+            "name": "_expression"
           }
         },
         {
@@ -608,6 +666,35 @@
         },
         {
           "type": "FIELD",
+          "name": "attributes",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PREC_LEFT",
+                "value": 0,
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "::"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "tuple_sq"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
           "name": "code",
           "content": {
             "type": "SYMBOL",
@@ -625,10 +712,39 @@
         },
         {
           "type": "FIELD",
-          "name": "stmt_list",
+          "name": "init",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PREC_LEFT",
+                "value": 0,
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "stmt_list"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
           "content": {
             "type": "SYMBOL",
-            "name": "stmt_list"
+            "name": "_expression"
           }
         },
         {
@@ -4852,10 +4968,6 @@
           {
             "type": "SYMBOL",
             "name": "tuple"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "tuple_sq"
           },
           {
             "type": "SYMBOL",

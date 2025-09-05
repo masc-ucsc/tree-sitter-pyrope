@@ -44,10 +44,6 @@
         "named": true
       },
       {
-        "type": "tuple_sq",
-        "named": true
-      },
-      {
         "type": "type_specification",
         "named": true
       },
@@ -589,10 +585,6 @@
           {
             "type": "tuple",
             "named": true
-          },
-          {
-            "type": "tuple_sq",
-            "named": true
           }
         ]
       },
@@ -917,10 +909,6 @@
           },
           {
             "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1782,7 +1770,7 @@
         "required": true,
         "types": [
           {
-            "type": "stmt_list",
+            "type": "_expression",
             "named": true
           }
         ]
@@ -1792,15 +1780,15 @@
         "required": false,
         "types": [
           {
+            "type": "_expression",
+            "named": true
+          },
+          {
             "type": "elif",
             "named": false
           },
           {
             "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "stmt_list",
             "named": true
           }
         ]
@@ -1815,6 +1803,20 @@
           },
           {
             "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "init": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          },
+          {
+            "type": "stmt_list",
             "named": true
           }
         ]
@@ -1899,6 +1901,20 @@
     "type": "loop_statement",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
+          }
+        ]
+      },
       "code": {
         "multiple": false,
         "required": true,
@@ -1915,22 +1931,36 @@
     "type": "match_expression",
     "named": true,
     "fields": {
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "init": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          },
+          {
+            "type": "stmt_list",
+            "named": true
+          }
+        ]
+      },
       "match_list": {
         "multiple": false,
         "required": false,
         "types": [
           {
             "type": "match_list",
-            "named": true
-          }
-        ]
-      },
-      "stmt_list": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "stmt_list",
             "named": true
           }
         ]
@@ -2033,10 +2063,6 @@
           },
           {
             "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -2850,10 +2876,6 @@
           {
             "type": "tuple",
             "named": true
-          },
-          {
-            "type": "tuple_sq",
-            "named": true
           }
         ]
       },
@@ -3138,6 +3160,20 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "init": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          },
           {
             "type": "stmt_list",
             "named": true

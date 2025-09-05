@@ -186,11 +186,12 @@ module.exports = grammar({
     , if_expression: $ => prec.left('statement', seq(
       optional('unique')
       , 'if'
-      , field('condition', $.stmt_list)
+      , field('init', optseq($.stmt_list, ';'))
+      , field('condition', $._expression)
       , field('code', $.scope_statement)
       , field('elif', repseq(
         'elif'
-        , field('condition', $.stmt_list)
+        , field('condition', $._expression)
         , field('code', $.scope_statement)
       ))
       , field('else', optseq('else', $.scope_statement))
@@ -216,16 +217,20 @@ module.exports = grammar({
     , while_statement: $ => seq(
       'while'
       , field('attributes', optseq('::', $.tuple_sq))
-      , field('condition', $.stmt_list)
+      , field('init', optseq($.stmt_list, ';'))
+      , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
     , loop_statement: $ => seq(
       'loop'
+      , field('attributes', optseq('::', $.tuple_sq))
+      // conflict , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
     )
     , match_expression: $ => seq(
       'match'
-      , field('stmt_list', $.stmt_list)
+      , field('init', optseq($.stmt_list, ';'))
+      , field('condition', $._expression)
       , '{'
       , field('match_list', optional($.match_list))
       , '}'
@@ -608,7 +613,6 @@ module.exports = grammar({
       , $.function_call
       , $.lambda
       , $.tuple
-      , $.tuple_sq
       , $.optional_expression
       //,$.for_expression
       , $.if_expression
