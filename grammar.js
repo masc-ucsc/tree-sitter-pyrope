@@ -30,7 +30,6 @@ module.exports = grammar({
     , [$.complex_identifier, $.typed_identifier]
     , [$.complex_identifier, $.expression_type]
     , [$.complex_identifier_list, $._restricted_expression]
-    , [$.function_definition, $.scope_expression]
     , [$.var_or_let_or_reg, $.arg_item]
     , [$.tuple_sq, $.function_definition]
     , [$.function_type, $.function_call_type]
@@ -594,7 +593,6 @@ module.exports = grammar({
       field('function', $.complex_identifier)
       , field('argument', $.tuple)
     ))
-    , scope_expression: $ => prec.right('expression', alias($.scope_statement, $.scope_expression))
     , _restricted_expression: $ => prec('expression', choice(
       $.complex_identifier
       , $.constant
@@ -605,7 +603,6 @@ module.exports = grammar({
       //,$.for_expression
       , $.if_expression
       , $.match_expression
-      , $.scope_expression
     ))
     , lambda: $ => seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
@@ -663,7 +660,6 @@ module.exports = grammar({
       , $.tuple
       , $.if_expression
       , $.match_expression
-      , $.scope_expression
       , $.dot_expression_type
       , $.function_call_type
     ))

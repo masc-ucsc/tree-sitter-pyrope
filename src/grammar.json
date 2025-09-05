@@ -4801,19 +4801,6 @@
         ]
       }
     },
-    "scope_expression": {
-      "type": "PREC_RIGHT",
-      "value": "expression",
-      "content": {
-        "type": "ALIAS",
-        "content": {
-          "type": "SYMBOL",
-          "name": "scope_statement"
-        },
-        "named": true,
-        "value": "scope_expression"
-      }
-    },
     "_restricted_expression": {
       "type": "PREC",
       "value": "expression",
@@ -4851,10 +4838,6 @@
           {
             "type": "SYMBOL",
             "name": "match_expression"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "scope_expression"
           }
         ]
       }
@@ -5263,10 +5246,6 @@
           {
             "type": "SYMBOL",
             "name": "match_expression"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "scope_expression"
           },
           {
             "type": "SYMBOL",
@@ -6061,10 +6040,6 @@
     [
       "complex_identifier_list",
       "_restricted_expression"
-    ],
-    [
-      "function_definition",
-      "scope_expression"
     ],
     [
       "var_or_let_or_reg",

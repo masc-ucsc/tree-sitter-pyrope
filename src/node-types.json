@@ -36,10 +36,6 @@
         "named": true
       },
       {
-        "type": "scope_expression",
-        "named": true
-      },
-      {
         "type": "tuple",
         "named": true
       },
@@ -579,10 +575,6 @@
             "named": true
           },
           {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
             "type": "tuple",
             "named": true
           }
@@ -904,10 +896,6 @@
             "named": true
           },
           {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
             "type": "tuple",
             "named": true
           }
@@ -1099,10 +1087,6 @@
         },
         {
           "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "scope_expression",
           "named": true
         },
         {
@@ -1974,10 +1958,6 @@
             "named": true
           },
           {
-            "type": "scope_expression",
-            "named": true
-          },
-          {
             "type": "tuple",
             "named": true
           }
@@ -2085,25 +2065,6 @@
       "types": [
         {
           "type": "complex_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "scope_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "scope_expression",
-          "named": true
-        },
-        {
-          "type": "statement",
           "named": true
         }
       ]
@@ -2775,10 +2736,6 @@
           },
           {
             "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_expression",
             "named": true
           },
           {
