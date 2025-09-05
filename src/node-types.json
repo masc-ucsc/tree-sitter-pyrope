@@ -1770,7 +1770,7 @@
         ]
       },
       "condition": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
@@ -1789,6 +1789,10 @@
           },
           {
             "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "stmt_list",
             "named": true
           }
         ]

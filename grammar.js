@@ -190,6 +190,7 @@ module.exports = grammar({
       , field('code', $.scope_statement)
       , field('elif', repseq(
         'elif'
+        , field('condition', $.stmt_list)
         , field('code', $.scope_statement)
       ))
       , field('else', optseq('else', $.scope_statement))
@@ -755,6 +756,7 @@ module.exports = grammar({
       , $._decimal_number
       , $._octal_number
       , $._binary_number
+      , $._typed_number
     )
     , _simple_number: $ => token(/0|[1-9][0-9]*/)
     , _scaled_number: $ => token(/(0|[1-9][0-9]*)[KMGT]/)
@@ -762,6 +764,7 @@ module.exports = grammar({
     , _decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
     , _octal_number: $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)
     , _binary_number: $ => token(/0(s|S)?(b|B)[0-1\?][0-1_\?]*/)
+    , _typed_number: $ => token(/(0|[1-9][0-9]*)[sui][0-9]+/)
 
     // Booleans
     , _bool_literal: $ => token(choice('true', 'false'))

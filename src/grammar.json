@@ -368,6 +368,14 @@
                     },
                     {
                       "type": "FIELD",
+                      "name": "condition",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "stmt_list"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
                       "name": "code",
                       "content": {
                         "type": "SYMBOL",
@@ -5694,6 +5702,10 @@
         {
           "type": "SYMBOL",
           "name": "_binary_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_typed_number"
         }
       ]
     },
@@ -5737,6 +5749,13 @@
       "content": {
         "type": "PATTERN",
         "value": "0(s|S)?(b|B)[0-1\\?][0-1_\\?]*"
+      }
+    },
+    "_typed_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "(0|[1-9][0-9]*)[sui][0-9]+"
       }
     },
     "_bool_literal": {
