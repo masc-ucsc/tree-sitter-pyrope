@@ -389,7 +389,7 @@ module.exports = grammar({
     )
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
     , function_definition: $ => seq(
-      field('capture', optseq('[', optional($.capture_list), ']'))
+      field('capture', optseq('[', listseq1($.typed_identifier), ']'))
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('pipe_config', optseq('::', $.tuple_sq))
       , field('input', optional($.arg_list))
@@ -417,9 +417,6 @@ module.exports = grammar({
     , ref_identifier: $ => seq(
       'ref'
       , $.complex_identifier
-    )
-    , capture_list: $ => listseq1(
-      $.typed_identifier, optseq('=', field('expression', $._expression_with_comprehension))
     )
     , arg_list: $ => prec.left(seq(
       '(', optional($.arg_item_list), ')'

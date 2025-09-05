@@ -627,36 +627,6 @@
     }
   },
   {
-    "type": "capture_list",
-    "named": true,
-    "fields": {
-      "expression": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "for_comprehension",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "typed_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "cassert_statement",
     "named": true,
     "fields": {
@@ -1322,6 +1292,10 @@
         "required": false,
         "types": [
           {
+            "type": ",",
+            "named": false
+          },
+          {
             "type": "[",
             "named": false
           },
@@ -1330,7 +1304,7 @@
             "named": false
           },
           {
-            "type": "capture_list",
+            "type": "typed_identifier",
             "named": true
           }
         ]
