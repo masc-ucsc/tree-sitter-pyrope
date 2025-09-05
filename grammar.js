@@ -24,20 +24,15 @@ module.exports = grammar({
 
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
-    [$._expression, $.lambda]
-    , [$._restricted_expression, $.typed_identifier]
-    , [$._assignment_or_declaration, $._restricted_expression]
+    // Keep only conflicts still necessary after simplifications
+    [$._assignment_or_declaration, $._restricted_expression]
     , [$.complex_identifier, $.typed_identifier]
     , [$.complex_identifier, $.expression_type]
     , [$.complex_identifier_list, $._restricted_expression]
-    , [$.var_or_let_or_reg, $.arg_item]
-    , [$.expression_type, $.typed_identifier]
-    , [$.complex_identifier, $.typed_identifier, $.expression_type]
-    , [$.tuple, $.arg_list]
     , [$._tuple_item, $._restricted_expression]
-    , [$.typed_identifier]
     , [$.lambda]
-    , [$.complex_identifier, $.lambda]
+    , [$.function_definition_decl, $.arg_list]
+    , [$.typed_identifier]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -287,12 +282,7 @@ module.exports = grammar({
 
     , tuple_sq: $ => seq('[', optional($.tuple_list), ']')
 
-    , tuple_list: $ => prec.left('tuple_list', seq(
-      repeat(',')
-      , field('item', $._tuple_item)
-      , repeat(seq(repeat1(','), field('item', $._tuple_item)))
-      , repeat(',')
-    ))
+    , tuple_list: $ => prec.left('tuple_list', listseq1(field('item', $._tuple_item)))
     , _tuple_item: $ => prec.left(choice(
       $.ref_identifier
       , $._expression_with_comprehension
@@ -366,7 +356,7 @@ module.exports = grammar({
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq('[', $.typed_identifier_list, ']'))
       , field('pipe_config', optseq('::', $.tuple_sq))
-      , field('input', choice($.arg_list), seq('(', ')'))
+      , field('input', choice($.arg_list, seq('(', ')')))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
     )
     , function_definition: $ => seq(
@@ -399,12 +389,7 @@ module.exports = grammar({
     , arg_list: $ => prec.left(seq(
       '(', optional($.arg_item_list), ')'
     ))
-    , arg_item_list: $ => seq(
-      repeat(',')
-      , $.arg_item
-      , repeat(seq(repeat1(','), $.arg_item))
-      , repeat(',')
-    )
+    , arg_item_list: $ => listseq1($.arg_item)
     , arg_item: $ => seq(
       field('mod', optional(choice('...', 'ref', 'reg')))
       , $.typed_identifier
@@ -598,7 +583,7 @@ module.exports = grammar({
     )
     , select_options: $ => choice(
       field('list', $.expression_list)
-      , field('open_range', seq('..'))
+      , field('open_range', '..')
       , field('open_range', seq($._expression, '..'))
       , field('from_zero', seq(choice('..=', '..<'), $._expression))
     )

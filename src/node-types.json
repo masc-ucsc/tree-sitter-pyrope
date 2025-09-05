@@ -1309,9 +1309,17 @@
         ]
       },
       "input": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "arg_list",
             "named": true
