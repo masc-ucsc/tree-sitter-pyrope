@@ -45,7 +45,6 @@ module.exports = grammar({
       , 'array_type'
       , 'range_type'
       , 'function_call_type'
-      , 'mixin_type_sub'
       , 'expression_type'
       , 'type'
       , 'typed_identifier'
@@ -78,7 +77,6 @@ module.exports = grammar({
       , 'logical_nor'
       , 'induction'
       , 'sequential_condition'
-      , 'cycle_condition'
       , 'tuple_relation'
       , 'tuple_concat'
       , 'type_compare'
@@ -91,8 +89,7 @@ module.exports = grammar({
       , 'expression'
     ]
     , [
-      'argument_list'
-      , 'tuple_list'
+      'tuple_list'
     ]
     , [
       'expression'
@@ -151,7 +148,7 @@ module.exports = grammar({
       field('decl', $.var_or_let_or_reg)
       , choice(
         seq('(', field('lvalue', $.complex_identifier_list), ')')
-        , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+        , field('lvalue', $.typed_identifier)
       )
       , $._semicolon
     ))
@@ -295,7 +292,7 @@ module.exports = grammar({
     // Assignment/Declaration
     , simple_assignment: $ => prec.right(seq(
       field('decl', optional($.var_or_let_or_reg))
-      , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+      , field('lvalue', $.typed_identifier)
       , field('operator', $.assignment_operator)
       , field('delay', optional($.assignment_delay))
       , field('rvalue', choice(

@@ -187,21 +187,8 @@
                 "type": "FIELD",
                 "name": "lvalue",
                 "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "type_cast"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "type_specification"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "typed_identifier"
                 }
               }
             ]
@@ -1421,21 +1408,8 @@
             "type": "FIELD",
             "name": "lvalue",
             "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "identifier"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "type_cast"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "type_specification"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "typed_identifier"
             }
           },
           {
@@ -5511,10 +5485,6 @@
       },
       {
         "type": "STRING",
-        "value": "mixin_type_sub"
-      },
-      {
-        "type": "STRING",
         "value": "expression_type"
       },
       {
@@ -5639,10 +5609,6 @@
       },
       {
         "type": "STRING",
-        "value": "cycle_condition"
-      },
-      {
-        "type": "STRING",
         "value": "tuple_relation"
       },
       {
@@ -5673,10 +5639,6 @@
       }
     ],
     [
-      {
-        "type": "STRING",
-        "value": "argument_list"
-      },
       {
         "type": "STRING",
         "value": "tuple_list"

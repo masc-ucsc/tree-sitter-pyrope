@@ -788,15 +788,7 @@
             "named": true
           },
           {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
+            "type": "typed_identifier",
             "named": true
           }
         ]
@@ -1935,15 +1927,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
+            "type": "typed_identifier",
             "named": true
           }
         ]
