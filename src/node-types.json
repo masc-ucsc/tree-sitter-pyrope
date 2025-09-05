@@ -1330,90 +1330,6 @@
     }
   },
   {
-    "type": "function_declaration",
-    "named": true,
-    "fields": {
-      "fun_name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb_tok",
-            "named": true
-          },
-          {
-            "type": "flow_tok",
-            "named": true
-          },
-          {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
-            "type": "pipe_tok",
-            "named": true
-          }
-        ]
-      },
-      "generic": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": "typed_identifier_list",
-            "named": true
-          }
-        ]
-      },
-      "input": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "arg_list",
-            "named": true
-          }
-        ]
-      },
-      "output": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "->",
-            "named": false
-          },
-          {
-            "type": "arg_list",
-            "named": true
-          },
-          {
-            "type": "expression_type",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "function_definition",
     "named": true,
     "fields": {
@@ -2476,10 +2392,6 @@
             "named": true
           },
           {
-            "type": "function_declaration",
-            "named": true
-          },
-          {
             "type": "function_definition_statement",
             "named": true
           },
@@ -2618,10 +2530,6 @@
           },
           {
             "type": "for_comprehension",
-            "named": true
-          },
-          {
-            "type": "function_declaration",
             "named": true
           },
           {

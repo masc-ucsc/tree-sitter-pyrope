@@ -35,15 +35,12 @@ module.exports = grammar({
     , [$.function_definition, $.scope_expression]
     , [$.var_or_let_or_reg, $.arg_item]
     , [$.tuple_sq, $.function_definition]
-    , [$.function_inline, $.function_declaration]
     , [$.function_type, $.function_call_type]
     , [$.expression_type, $.typed_identifier]
     , [$.complex_identifier, $.typed_identifier, $.expression_type]
     , [$.tuple, $.arg_list]
     , [$.function_inline, $.complex_identifier]
-    , [$.function_inline, $.function_declaration, $.complex_identifier]
     , [$.function_inline, $.tuple_method_definition, $.complex_identifier]
-    , [$.function_inline, $.function_declaration, $.tuple_method_definition, $.complex_identifier]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -307,18 +304,11 @@ module.exports = grammar({
       , $.typed_declaration
       , prec(1, seq($.function_inline, $.scope_statement))
       , $.function_type
-      , $.function_declaration
+      , $.function_inline
       , $.function_definition_statement
       , $.tuple_method_definition
     ))
     , function_inline: $ => prec.left('function_type', seq(
-      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
-      , field('fun_name', $.identifier)
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('input', optional($.arg_list))
-      , field('output', optseq('->', choice($.arg_list, $.expression_type)))
-    ))
-    , function_declaration: $ => prec.left('function_type', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
       , field('fun_name', $.identifier)
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
@@ -634,13 +624,11 @@ module.exports = grammar({
       , $.select_options
       , ']'
     )
-    , select_options: $ => seq(
-      choice(
-        field('list', $.expression_list)
-        , field('open_range', seq('..'))
-        , field('open_range', seq($._expression, '..'))
-        , field('from_zero', seq(choice('..=', '..<'), $._expression))
-      )
+    , select_options: $ => choice(
+      field('list', $.expression_list)
+      , field('open_range', seq('..'))
+      , field('open_range', seq($._expression, '..'))
+      , field('from_zero', seq(choice('..=', '..<'), $._expression))
     )
     , member_select: $ => prec.right('select', repeat1($.select))
     , bit_select: $ => prec.right('select', seq(
