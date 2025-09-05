@@ -297,10 +297,6 @@
       "required": true,
       "types": [
         {
-          "type": "tuple",
-          "named": true
-        },
-        {
           "type": "tuple_sq",
           "named": true
         }
@@ -1502,10 +1498,6 @@
             "named": false
           },
           {
-            "type": "tuple",
-            "named": true
-          },
-          {
             "type": "tuple_sq",
             "named": true
           }
@@ -1566,10 +1558,6 @@
           {
             "type": "::",
             "named": false
-          },
-          {
-            "type": "tuple",
-            "named": true
           },
           {
             "type": "tuple_sq",

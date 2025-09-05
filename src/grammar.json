@@ -1581,17 +1581,8 @@
           "value": ":"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "tuple_sq"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "tuple"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "tuple_sq"
         }
       ]
     },
@@ -1764,17 +1755,8 @@
                         "value": "::"
                       },
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "tuple_sq"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "tuple"
-                          }
-                        ]
+                        "type": "SYMBOL",
+                        "name": "tuple_sq"
                       }
                     ]
                   }
@@ -2113,17 +2095,8 @@
                       "value": "::"
                     },
                     {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "tuple_sq"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "tuple"
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "tuple_sq"
                     }
                   ]
                 }
