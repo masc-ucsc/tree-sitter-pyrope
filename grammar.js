@@ -339,6 +339,7 @@ module.exports = grammar({
       )))
     , function_definition_statement: $ => prec.left('statement', seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
+      , field('pipe_config', optseq(':', '[', $.expression_list, ']'))
       , field('lvalue', $.complex_identifier)
       , $.function_definition
     ))
@@ -389,6 +390,7 @@ module.exports = grammar({
     , function_definition: $ => seq(
       field('capture', optseq('[', optional($.capture_list), ']'))
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
+      , field('pipe_config', optseq(':', '[', $.expression_list, ']'))
       , field('input', optional($.arg_list))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
       , field('condition', optseq('where', $.expression_list))
@@ -408,25 +410,9 @@ module.exports = grammar({
       , field('name', $.identifier)
       , choice(
         seq('=', field('values', $.tuple)),
-        field('body', $.enum_body)
+        field('body', $.arg_list)
       )
     )
-    , enum_body: $ => seq(
-      '{'
-      , optional($.enum_field_list)
-      , '}'
-    )
-    , enum_field_list: $ => seq(
-      repeat(',')
-      , $.enum_field
-      , repeat(seq(repeat1(','), $.enum_field))
-      , repeat(',')
-    )
-    , enum_field: $ => prec.left(seq(
-      field('name', $.identifier)
-      , field('type', optional($.type_cast))
-      , field('default', optseq('=', $._expression))
-    ))
     , ref_identifier: $ => seq(
       'ref'
       , $.complex_identifier

@@ -970,7 +970,7 @@
         "required": false,
         "types": [
           {
-            "type": "enum_body",
+            "type": "arg_list",
             "named": true
           }
         ]
@@ -1024,21 +1024,6 @@
     }
   },
   {
-    "type": "enum_body",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "enum_field_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "enum_definition",
     "named": true,
     "fields": {
@@ -1052,61 +1037,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "enum_field",
-    "named": true,
-    "fields": {
-      "default": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "=",
-            "named": false
-          },
-          {
-            "type": "_expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "type_cast",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "enum_field_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "enum_field",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1563,6 +1493,28 @@
           }
         ]
       },
+      "pipe_config": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ":",
+            "named": false
+          },
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "expression_list",
+            "named": true
+          }
+        ]
+      },
       "verification": {
         "multiple": true,
         "required": false,
@@ -1607,6 +1559,28 @@
         "types": [
           {
             "type": "complex_identifier",
+            "named": true
+          }
+        ]
+      },
+      "pipe_config": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ":",
+            "named": false
+          },
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "expression_list",
             "named": true
           }
         ]
