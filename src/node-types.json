@@ -1174,6 +1174,20 @@
     "type": "for_statement",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
+          }
+        ]
+      },
       "code": {
         "multiple": false,
         "required": true,
@@ -1200,6 +1214,20 @@
         "types": [
           {
             "type": "typed_identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "init": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          },
+          {
+            "type": "stmt_list",
             "named": true
           }
         ]
@@ -3082,6 +3110,20 @@
     "type": "while_statement",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
+          }
+        ]
+      },
       "code": {
         "multiple": false,
         "required": true,

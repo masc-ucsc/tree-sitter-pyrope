@@ -197,6 +197,8 @@ module.exports = grammar({
     ))
     , for_statement: $ => seq(
       'for'
+      , field('attributes', optseq('::', $.tuple_sq))
+      , field('init', optseq($.stmt_list, ';'))
       , choice(
         seq('('
           , field('index', $.typed_identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
@@ -213,6 +215,7 @@ module.exports = grammar({
     )
     , while_statement: $ => seq(
       'while'
+      , field('attributes', optseq('::', $.tuple_sq))
       , field('condition', $.stmt_list)
       , field('code', $.scope_statement)
     )
