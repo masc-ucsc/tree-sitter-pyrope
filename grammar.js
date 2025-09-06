@@ -33,6 +33,7 @@ module.exports = grammar({
     , [$.lambda]
     , [$.function_definition_decl, $.arg_list]
     , [$.typed_identifier]
+    , [$.function_call_statement, $._restricted_expression]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -93,7 +94,7 @@ module.exports = grammar({
     ]
     , [
       'expression'
-      , 'simple_function_call'
+      , 'function_call_statement'
     ]
     , [
       'expression'
@@ -132,7 +133,7 @@ module.exports = grammar({
       , $.test_statement
       , $.type_statement
       , $.impl_statement
-      , $.cassert_statement
+      //, $.cassert_statement
     )
     )
     , scope_statement: $ => prec.left('statement', seq(
@@ -152,10 +153,6 @@ module.exports = grammar({
       )
       , $._semicolon
     ))
-    , function_call_statement: $ => seq(
-      $.simple_function_call
-      , $._semicolon
-    )
     , control_statement: $ => choice(
       choice('continue', 'break')
       , seq(
@@ -250,6 +247,7 @@ module.exports = grammar({
         field('definition', $.tuple),  // trait definition: type Name ( ... )
         seq('=', field('alias', $._type))  // type alias: type Name = Type
       )
+      , $._semicolon
     )
     , impl_statement: $ => seq(
       'impl'
@@ -257,6 +255,7 @@ module.exports = grammar({
       , 'for'
       , field('type_name', $.identifier)
       , field('implementation', $.tuple)
+      , $._semicolon
     )
     , cassert_statement: $ => seq(
       'cassert'
@@ -269,11 +268,16 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , simple_function_call: $ => prec.left('simple_function_call', seq(
+    , function_call: $ => prec.left('function_call', seq(
+      field('function', $.complex_identifier)
+      , field('argument', $.tuple)
+    ))
+    //
+    , function_call_statement: $ => seq(
       field('function', $.complex_identifier)
       , field('argument', $.expression_list)
-    ))
-
+      , $._semicolon
+    )
     // Tuple
     , tuple: $ => seq('(', optional($.tuple_list), ')')
 
@@ -298,7 +302,6 @@ module.exports = grammar({
       , field('rvalue', choice(
         $._expression_with_comprehension
         , $.ref_identifier
-        //,$.simple_function_call
       ))
     ))
     , typed_declaration: $ => seq(
@@ -325,7 +328,6 @@ module.exports = grammar({
       , field('delay', optional($.assignment_delay))
       , field('rvalue', choice(
         $._expression_with_comprehension
-        //,$.simple_function_call
         , $.enum_definition
         , $.ref_identifier
       )
@@ -546,10 +548,6 @@ module.exports = grammar({
           ))))
       )
     ))
-    , function_call: $ => prec.left('function_call', seq(
-      field('function', $.complex_identifier)
-      , field('argument', $.tuple)
-    ))
     , _restricted_expression: $ => prec('expression', choice(
       $.complex_identifier
       , $.constant
@@ -691,7 +689,15 @@ module.exports = grammar({
 
     // Numbers
     , _number: $ => choice(
-      $._simple_number
+      // Prefer a single negative literal token over '-' operator + literal
+      $._neg_simple_number
+      , $._neg_scaled_number
+      , $._neg_hex_number
+      , $._neg_decimal_number
+      , $._neg_octal_number
+      , $._neg_binary_number
+      , $._neg_typed_number
+      , $._simple_number
       , $._scaled_number
       , $._hex_number
       , $._decimal_number
@@ -699,6 +705,13 @@ module.exports = grammar({
       , $._binary_number
       , $._typed_number
     )
+    , _neg_simple_number: $ => token(prec(2, /-(0|[1-9][0-9]*)/))
+    , _neg_scaled_number: $ => token(prec(2, /-(0|[1-9][0-9]*)[KMGT]/))
+    , _neg_hex_number: $ => token(prec(2, /-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/))
+    , _neg_decimal_number: $ => token(prec(2, /-0(s|S)?(d|D)?[0-9][0-9_]*/))
+    , _neg_octal_number: $ => token(prec(2, /-0(s|S)?(o|O)[0-7][0-7_]*/))
+    , _neg_binary_number: $ => token(prec(2, /-0(s|S)?(b|B)[0-1\?][0-1_\?]*/))
+    , _neg_typed_number: $ => token(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/))
     , _simple_number: $ => token(/0|[1-9][0-9]*/)
     , _scaled_number: $ => token(/(0|[1-9][0-9]*)[KMGT]/)
     , _hex_number: $ => token(/0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)

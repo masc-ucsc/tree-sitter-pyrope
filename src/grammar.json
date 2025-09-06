@@ -87,10 +87,6 @@
           {
             "type": "SYMBOL",
             "name": "impl_statement"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "cassert_statement"
           }
         ]
       }
@@ -199,19 +195,6 @@
           }
         ]
       }
-    },
-    "function_call_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "simple_function_call"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_semicolon"
-        }
-      ]
     },
     "control_statement": {
       "type": "CHOICE",
@@ -1095,6 +1078,10 @@
               ]
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
         }
       ]
     },
@@ -1132,6 +1119,10 @@
             "type": "SYMBOL",
             "name": "tuple"
           }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
         }
       ]
     },
@@ -1197,9 +1188,9 @@
         ]
       }
     },
-    "simple_function_call": {
+    "function_call": {
       "type": "PREC_LEFT",
-      "value": "simple_function_call",
+      "value": "function_call",
       "content": {
         "type": "SEQ",
         "members": [
@@ -1216,11 +1207,36 @@
             "name": "argument",
             "content": {
               "type": "SYMBOL",
-              "name": "expression_list"
+              "name": "tuple"
             }
           }
         ]
       }
+    },
+    "function_call_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "function",
+          "content": {
+            "type": "SYMBOL",
+            "name": "complex_identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "argument",
+          "content": {
+            "type": "SYMBOL",
+            "name": "expression_list"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
     },
     "tuple": {
       "type": "SEQ",
@@ -4325,31 +4341,6 @@
         ]
       }
     },
-    "function_call": {
-      "type": "PREC_LEFT",
-      "value": "function_call",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "complex_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "argument",
-            "content": {
-              "type": "SYMBOL",
-              "name": "tuple"
-            }
-          }
-        ]
-      }
-    },
     "_restricted_expression": {
       "type": "PREC",
       "value": "expression",
@@ -5151,6 +5142,34 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_neg_simple_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_scaled_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_hex_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_decimal_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_octal_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_binary_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_neg_typed_number"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_simple_number"
         },
         {
@@ -5178,6 +5197,83 @@
           "name": "_typed_number"
         }
       ]
+    },
+    "_neg_simple_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-(0|[1-9][0-9]*)"
+        }
+      }
+    },
+    "_neg_scaled_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-(0|[1-9][0-9]*)[KMGT]"
+        }
+      }
+    },
+    "_neg_hex_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*"
+        }
+      }
+    },
+    "_neg_decimal_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-0(s|S)?(d|D)?[0-9][0-9_]*"
+        }
+      }
+    },
+    "_neg_octal_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-0(s|S)?(o|O)[0-7][0-7_]*"
+        }
+      }
+    },
+    "_neg_binary_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-0(s|S)?(b|B)[0-1\\?][0-1_\\?]*"
+        }
+      }
+    },
+    "_neg_typed_number": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "PATTERN",
+          "value": "-(0|[1-9][0-9]*)[sui][0-9]+"
+        }
+      }
     },
     "_simple_number": {
       "type": "TOKEN",
@@ -5459,6 +5555,10 @@
     ],
     [
       "typed_identifier"
+    ],
+    [
+      "function_call_statement",
+      "_restricted_expression"
     ]
   ],
   "precedences": [
@@ -5651,7 +5751,7 @@
       },
       {
         "type": "STRING",
-        "value": "simple_function_call"
+        "value": "function_call_statement"
       }
     ],
     [

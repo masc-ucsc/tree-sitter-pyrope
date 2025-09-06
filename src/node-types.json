@@ -627,32 +627,6 @@
     }
   },
   {
-    "type": "cassert_statement",
-    "named": true,
-    "fields": {
-      "condition": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "_expression",
-            "named": true
-          }
-        ]
-      },
-      "gate": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "when_unless_cond",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "complex_identifier",
     "named": true,
     "fields": {},
@@ -1212,6 +1186,26 @@
     "type": "function_call_statement",
     "named": true,
     "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "complex_identifier",
+            "named": true
+          }
+        ]
+      },
       "gate": {
         "multiple": false,
         "required": false,
@@ -1222,16 +1216,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "simple_function_call",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1428,6 +1412,16 @@
     "type": "impl_statement",
     "named": true,
     "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      },
       "implementation": {
         "multiple": false,
         "required": true,
@@ -1963,32 +1957,6 @@
     }
   },
   {
-    "type": "simple_function_call",
-    "named": true,
-    "fields": {
-      "argument": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "complex_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "statement",
     "named": true,
     "fields": {},
@@ -1998,10 +1966,6 @@
       "types": [
         {
           "type": "assignment_or_declaration_statement",
-          "named": true
-        },
-        {
-          "type": "cassert_statement",
           "named": true
         },
         {
@@ -2399,6 +2363,16 @@
         "types": [
           {
             "type": "tuple",
+            "named": true
+          }
+        ]
+      },
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
             "named": true
           }
         ]
@@ -2854,10 +2828,6 @@
   },
   {
     "type": "case",
-    "named": false
-  },
-  {
-    "type": "cassert",
     "named": false
   },
   {
