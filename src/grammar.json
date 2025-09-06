@@ -1188,9 +1188,9 @@
         ]
       }
     },
-    "function_call": {
+    "function_call_expression": {
       "type": "PREC_LEFT",
-      "value": "function_call",
+      "value": "function_call_expression",
       "content": {
         "type": "SEQ",
         "members": [
@@ -2381,33 +2381,37 @@
       }
     },
     "typed_identifier": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "identifier",
-          "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
+      "type": "PREC_LEFT",
+      "value": "typed_identifier",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "identifier",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "type",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type_cast"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
           }
-        },
-        {
-          "type": "FIELD",
-          "name": "type",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "type_cast"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          }
-        }
-      ]
+        ]
+      }
     },
     "typed_identifier_list": {
       "type": "SEQ",
@@ -4357,7 +4361,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "function_call"
+            "name": "function_call_expression"
           },
           {
             "type": "SYMBOL",
@@ -5557,8 +5561,24 @@
       "typed_identifier"
     ],
     [
+      "typed_identifier",
+      "_restricted_expression"
+    ],
+    [
       "function_call_statement",
       "_restricted_expression"
+    ],
+    [
+      "tuple",
+      "arg_list"
+    ],
+    [
+      "var_or_let_or_reg",
+      "arg_item"
+    ],
+    [
+      "ref_identifier",
+      "typed_identifier"
     ]
   ],
   "precedences": [
@@ -5761,7 +5781,7 @@
       },
       {
         "type": "STRING",
-        "value": "function_call"
+        "value": "function_call_expression"
       },
       {
         "type": "STRING",

@@ -16,7 +16,7 @@
         "named": true
       },
       {
-        "type": "function_call",
+        "type": "function_call_expression",
         "named": true
       },
       {
@@ -555,7 +555,7 @@
             "named": true
           },
           {
-            "type": "function_call",
+            "type": "function_call_expression",
             "named": true
           },
           {
@@ -812,7 +812,7 @@
             "named": true
           },
           {
-            "type": "function_call",
+            "type": "function_call_expression",
             "named": true
           },
           {
@@ -1157,7 +1157,7 @@
     }
   },
   {
-    "type": "function_call",
+    "type": "function_call_expression",
     "named": true,
     "fields": {
       "argument": {
@@ -1663,7 +1663,7 @@
             "named": true
           },
           {
-            "type": "function_call",
+            "type": "function_call_expression",
             "named": true
           },
           {
@@ -2272,7 +2272,7 @@
             "named": true
           },
           {
-            "type": "function_call",
+            "type": "function_call_expression",
             "named": true
           },
           {

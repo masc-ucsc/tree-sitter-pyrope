@@ -33,7 +33,11 @@ module.exports = grammar({
     , [$.lambda]
     , [$.function_definition_decl, $.arg_list]
     , [$.typed_identifier]
+    , [$.typed_identifier, $._restricted_expression]
     , [$.function_call_statement, $._restricted_expression]
+    , [$.tuple, $.arg_list]
+    , [$.var_or_let_or_reg, $.arg_item]
+    , [$.ref_identifier, $.typed_identifier]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -98,7 +102,7 @@ module.exports = grammar({
     ]
     , [
       'expression'
-      , 'function_call'
+      , 'function_call_expression'
       , 'function_call_type'
     ]
     , [
@@ -268,7 +272,7 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , function_call: $ => prec.left('function_call', seq(
+    , function_call_expression: $ => prec.left('function_call_expression', seq(
       field('function', $.complex_identifier)
       , field('argument', $.tuple)
     ))
@@ -416,10 +420,10 @@ module.exports = grammar({
     ))
     , complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
 
-    , typed_identifier: $ => seq(
+    , typed_identifier: $ => prec.left('typed_identifier', seq(
       field('identifier', $.identifier)
       , field('type', optional($.type_cast))
-    )
+    ))
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
 
     // Expressions
@@ -551,7 +555,7 @@ module.exports = grammar({
     , _restricted_expression: $ => prec('expression', choice(
       $.complex_identifier
       , $.constant
-      , $.function_call
+      , $.function_call_expression
       , $.lambda
       , $.tuple
       , $.optional_expression
