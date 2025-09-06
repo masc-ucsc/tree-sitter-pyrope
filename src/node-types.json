@@ -170,26 +170,7 @@
     }
   },
   {
-    "type": "assignment_delay",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "_expression",
-          "named": true
-        },
-        {
-          "type": "delay_tok",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "assignment_or_declaration_statement",
+    "type": "assignment",
     "named": true,
     "fields": {
       "decl": {
@@ -212,16 +193,6 @@
           }
         ]
       },
-      "gate": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "when_unless_cond",
-            "named": true
-          }
-        ]
-      },
       "lvalue": {
         "multiple": false,
         "required": true,
@@ -231,7 +202,7 @@
             "named": true
           },
           {
-            "type": "complex_identifier_list",
+            "type": "typed_identifier_list",
             "named": true
           }
         ]
@@ -278,6 +249,51 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "assignment_delay",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "delay_tok",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assignment_or_declaration_statement",
+    "named": true,
+    "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "assignment",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1893,70 +1909,6 @@
     }
   },
   {
-    "type": "simple_assignment",
-    "named": true,
-    "fields": {
-      "decl": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "var_or_let_or_reg",
-            "named": true
-          }
-        ]
-      },
-      "delay": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "assignment_delay",
-            "named": true
-          }
-        ]
-      },
-      "lvalue": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "typed_identifier",
-            "named": true
-          }
-        ]
-      },
-      "operator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "assignment_operator",
-            "named": true
-          }
-        ]
-      },
-      "rvalue": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "_expression",
-            "named": true
-          },
-          {
-            "type": "for_comprehension",
-            "named": true
-          },
-          {
-            "type": "ref_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "statement",
     "named": true,
     "fields": {},
@@ -2036,15 +1988,15 @@
             "named": true
           },
           {
+            "type": "assignment",
+            "named": true
+          },
+          {
             "type": "for_comprehension",
             "named": true
           },
           {
             "type": "ref_identifier",
-            "named": true
-          },
-          {
-            "type": "simple_assignment",
             "named": true
           },
           {
@@ -2157,15 +2109,15 @@
             "named": true
           },
           {
+            "type": "assignment",
+            "named": true
+          },
+          {
             "type": "for_comprehension",
             "named": true
           },
           {
             "type": "ref_identifier",
-            "named": true
-          },
-          {
-            "type": "simple_assignment",
             "named": true
           },
           {
@@ -2456,6 +2408,24 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "timing": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "_expression",
             "named": true
           }
         ]

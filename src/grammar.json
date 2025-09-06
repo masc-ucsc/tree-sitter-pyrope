@@ -132,7 +132,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_assignment_or_declaration"
+            "name": "assignment"
           },
           {
             "type": "SYMBOL",
@@ -1372,7 +1372,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "simple_assignment"
+            "name": "assignment"
           },
           {
             "type": "SYMBOL",
@@ -1398,132 +1398,7 @@
         }
       ]
     },
-    "simple_assignment": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "decl",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "var_or_let_or_reg"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "lvalue",
-            "content": {
-              "type": "SYMBOL",
-              "name": "typed_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "operator",
-            "content": {
-              "type": "SYMBOL",
-              "name": "assignment_operator"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "delay",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "assignment_delay"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "rvalue",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_expression_with_comprehension"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "ref_identifier"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    "typed_declaration": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "decl",
-          "content": {
-            "type": "SYMBOL",
-            "name": "var_or_let_or_reg"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "lvalue",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "identifier"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "type_cast"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "type_specification"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    "enum_assignment_statement": {
-      "type": "PREC_LEFT",
-      "value": "statement",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "enum_assignment"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_semicolon"
-          }
-        ]
-      }
-    },
-    "_assignment_or_declaration": {
+    "assignment": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -1560,7 +1435,7 @@
                     "name": "lvalue",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "complex_identifier_list"
+                      "name": "typed_identifier_list"
                     }
                   },
                   {
@@ -1644,6 +1519,57 @@
                 }
               ]
             }
+          }
+        ]
+      }
+    },
+    "typed_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "decl",
+          "content": {
+            "type": "SYMBOL",
+            "name": "var_or_let_or_reg"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "lvalue",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_cast"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_specification"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "enum_assignment_statement": {
+      "type": "PREC_LEFT",
+      "value": "statement",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "enum_assignment"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_semicolon"
           }
         ]
       }
@@ -2276,41 +2202,50 @@
             }
           },
           {
-            "type": "STRING",
-            "value": "@"
-          },
-          {
-            "type": "FIELD",
-            "name": "timing",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "constant"
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "["
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_expression"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "]"
-                    }
-                  ]
-                }
-              ]
-            }
+            "type": "SYMBOL",
+            "name": "_timing_sequence"
           }
         ]
       }
+    },
+    "_timing_sequence": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "@"
+        },
+        {
+          "type": "FIELD",
+          "name": "timing",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "constant"
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "["
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_expression"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "]"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
     },
     "complex_identifier_list": {
       "type": "PREC_LEFT",
@@ -2393,6 +2328,18 @@
               "type": "SYMBOL",
               "name": "identifier"
             }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_timing_sequence"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           },
           {
             "type": "FIELD",
@@ -5531,10 +5478,6 @@
   ],
   "conflicts": [
     [
-      "_assignment_or_declaration",
-      "_restricted_expression"
-    ],
-    [
       "complex_identifier",
       "typed_identifier"
     ],
@@ -5579,6 +5522,14 @@
     [
       "ref_identifier",
       "typed_identifier"
+    ],
+    [
+      "timed_identifier",
+      "typed_identifier"
+    ],
+    [
+      "assignment",
+      "_restricted_expression"
     ]
   ],
   "precedences": [

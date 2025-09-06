@@ -25,8 +25,8 @@ module.exports = grammar({
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
     // Keep only conflicts still necessary after simplifications
-    [$._assignment_or_declaration, $._restricted_expression]
-    , [$.complex_identifier, $.typed_identifier]
+    // [$.assignment, $._restricted_expression],
+    [$.complex_identifier, $.typed_identifier]
     , [$.complex_identifier, $.expression_type]
     , [$.complex_identifier_list, $._restricted_expression]
     , [$._tuple_item, $._restricted_expression]
@@ -38,6 +38,8 @@ module.exports = grammar({
     , [$.tuple, $.arg_list]
     , [$.var_or_let_or_reg, $.arg_item]
     , [$.ref_identifier, $.typed_identifier]
+    , [$.timed_identifier, $.typed_identifier]
+    , [$.assignment, $._restricted_expression]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -146,7 +148,7 @@ module.exports = grammar({
       , '}'
     ))
     , assignment_or_declaration_statement: $ => prec.right(seq(
-      $._assignment_or_declaration
+      $.assignment
       , $._semicolon
     ))
     , declaration_statement: $ => prec.right(seq(
@@ -291,38 +293,18 @@ module.exports = grammar({
     , _tuple_item: $ => prec.left(choice(
       $.ref_identifier
       , $._expression_with_comprehension
-      , $.simple_assignment
+      , $.assignment
       , $.typed_declaration
       , $.lambda
     ))
     , attributes: $ => seq(':', $.tuple_sq)
 
-    // Assignment/Declaration
-    , simple_assignment: $ => prec.right(seq(
-      field('decl', optional($.var_or_let_or_reg))
-      , field('lvalue', $.typed_identifier)
-      , field('operator', $.assignment_operator)
-      , field('delay', optional($.assignment_delay))
-      , field('rvalue', choice(
-        $._expression_with_comprehension
-        , $.ref_identifier
-      ))
-    ))
-    , typed_declaration: $ => seq(
-      field('decl', $.var_or_let_or_reg)
-      , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
-    )
-    , enum_assignment_statement: $ => prec.left('statement', seq(
-      $.enum_assignment
-      , $._semicolon
-    ))
-    , _assignment_or_declaration: $ => prec.right(seq(
+    // Assignment (single or tuple lvalue)
+    , assignment: $ => prec.right(seq(
       field('decl', optional($.var_or_let_or_reg))
       , choice(
-        seq('('
-          , field('lvalue', $.complex_identifier_list)
-          , ')'
-        )
+        seq('(', field('lvalue', $.typed_identifier_list), ')')
+        // HERE , field('lvalue', $.typed_identifier)
         , seq(
           field('lvalue', $.complex_identifier)
           , field('type', optional($.type_cast))
@@ -334,8 +316,17 @@ module.exports = grammar({
         $._expression_with_comprehension
         , $.enum_definition
         , $.ref_identifier
-      )
-      )))
+      ))
+    ))
+    , typed_declaration: $ => seq(
+      field('decl', $.var_or_let_or_reg)
+      , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+    )
+    , enum_assignment_statement: $ => prec.left('statement', seq(
+      $.enum_assignment
+      , $._semicolon
+    ))
+    // (removed) _assignment_or_declaration folded into assignment
     , assignment_delay: $ => choice(
       seq(
         $.delay_tok
@@ -412,16 +403,20 @@ module.exports = grammar({
     )
     , timed_identifier: $ => prec.left(1, seq(
       field('identifier', $.identifier)
-      , '@'
+      , $._timing_sequence
+    ))
+    , _timing_sequence: $ => seq(
+      '@'
       , field('timing', choice(
         $.constant
         , seq('[', $._expression, ']')
       ))
-    ))
+    )
     , complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
 
     , typed_identifier: $ => prec.left('typed_identifier', seq(
       field('identifier', $.identifier)
+      , optional($._timing_sequence)
       , field('type', optional($.type_cast))
     ))
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
