@@ -189,7 +189,7 @@ module.exports = grammar({
     ))
     , for_statement: $ => seq(
       'for'
-      , field('attributes', optseq('::', $.tuple_sq))
+      , field('attributes', optseq('::', $.attribute_list))
       , field('init', optseq($.stmt_list, ';'))
       , choice(
         seq('('
@@ -207,14 +207,14 @@ module.exports = grammar({
     )
     , while_statement: $ => seq(
       'while'
-      , field('attributes', optseq('::', $.tuple_sq))
+      , field('attributes', optseq('::', $.attribute_list))
       , field('init', optseq($.stmt_list, ';'))
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
     , loop_statement: $ => seq(
       'loop'
-      , field('attributes', optseq('::', $.tuple_sq))
+      , field('attributes', optseq('::', $.attribute_list))
       , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
     )
@@ -300,7 +300,7 @@ module.exports = grammar({
       , $.typed_declaration
       , $.lambda
     ))
-    , attributes: $ => seq(':', $.tuple_sq)
+    , attributes: $ => seq(':', $.attribute_list)
 
     // Assignment (single or tuple lvalue)
     , assignment: $ => prec.right(seq(
@@ -357,10 +357,18 @@ module.exports = grammar({
       )
     )
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
+    
+    // Attribute lists: ::[identifier [= expression], ...]
+    , attribute_item: $ => seq(
+      field('name', $.identifier)
+      , field('value', optseq('=', $._expression))
+    )
+    , attribute_item_list: $ => listseq1(field('item', $.attribute_item))
+    , attribute_list: $ => seq('[', optional($.attribute_item_list), ']')
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq('[', $.typed_identifier_list, ']'))
-      , field('pipe_config', optseq('::', $.tuple_sq))
+      , field('pipe_config', optseq('::', $.attribute_list))
       , field('input', choice($.arg_list, seq('(', ')')))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
     )

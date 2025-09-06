@@ -443,7 +443,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_list"
                     }
                   ]
                 }
@@ -569,7 +569,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_list"
                     }
                   ]
                 }
@@ -652,7 +652,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_list"
                     }
                   ]
                 }
@@ -1394,7 +1394,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "tuple_sq"
+          "name": "attribute_list"
         }
       ]
     },
@@ -1748,6 +1748,137 @@
         }
       ]
     },
+    "attribute_item": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PREC_LEFT",
+                "value": 0,
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "="
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "attribute_item_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "STRING",
+            "value": ","
+          }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "item",
+              "content": {
+                "type": "SYMBOL",
+                "name": "attribute_item"
+              }
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "PREC_LEFT",
+            "value": 0,
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "STRING",
+                    "value": ","
+                  }
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "item",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "attribute_item"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "STRING",
+            "value": ","
+          }
+        }
+      ]
+    },
+    "attribute_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "attribute_item_list"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
     "function_definition_decl": {
       "type": "SEQ",
       "members": [
@@ -1835,7 +1966,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_list"
                     }
                   ]
                 }

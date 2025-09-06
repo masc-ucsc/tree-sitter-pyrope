@@ -301,6 +301,67 @@
     }
   },
   {
+    "type": "attribute_item",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "attribute_item_list",
+    "named": true,
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "attribute_item",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "attribute_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_item_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "attributes",
     "named": true,
     "fields": {},
@@ -309,7 +370,7 @@
       "required": true,
       "types": [
         {
-          "type": "tuple_sq",
+          "type": "attribute_list",
           "named": true
         }
       ]
@@ -1095,7 +1156,7 @@
             "named": false
           },
           {
-            "type": "tuple_sq",
+            "type": "attribute_list",
             "named": true
           }
         ]
@@ -1333,7 +1394,7 @@
             "named": false
           },
           {
-            "type": "tuple_sq",
+            "type": "attribute_list",
             "named": true
           }
         ]
@@ -1529,7 +1590,7 @@
             "named": false
           },
           {
-            "type": "tuple_sq",
+            "type": "attribute_list",
             "named": true
           }
         ]
@@ -2571,7 +2632,7 @@
             "named": false
           },
           {
-            "type": "tuple_sq",
+            "type": "attribute_list",
             "named": true
           }
         ]
