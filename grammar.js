@@ -40,6 +40,9 @@ module.exports = grammar({
     , [$.ref_identifier, $.typed_identifier]
     , [$.timed_identifier, $.typed_identifier]
     , [$.assignment, $._restricted_expression]
+    , [$.lvalue_item, $._restricted_expression]
+    , [$.assignment, $.lvalue_item, $._restricted_expression]
+    , [$.lvalue_item, $.typed_identifier_list]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -303,12 +306,12 @@ module.exports = grammar({
     , assignment: $ => prec.right(seq(
       field('decl', optional($.var_or_let_or_reg))
       , choice(
-        seq('(', field('lvalue', $.typed_identifier_list), ')')
-        // HERE , field('lvalue', $.typed_identifier)
+        seq('(', field('lvalue', $.lvalue_list), ')')
+        , field('lvalue', $.typed_identifier)
         , seq(
-          field('lvalue', $.complex_identifier)
-          , field('type', optional($.type_cast))
-        )
+            field('lvalue', $.complex_identifier)
+            , field('type', optional($.type_cast))
+          )
       )
       , field('operator', $.assignment_operator)
       , field('delay', optional($.assignment_delay))
@@ -322,6 +325,14 @@ module.exports = grammar({
       field('decl', $.var_or_let_or_reg)
       , field('lvalue', $.typed_identifier)
     )
+    , lvalue_item: $ => choice(
+      $.typed_identifier
+      , seq(
+          field('identifier', $.complex_identifier)
+          , field('type', optional($.type_cast))
+        )
+    )
+    , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , enum_assignment_statement: $ => prec.left('statement', seq(
       $.enum_assignment
       , $._semicolon

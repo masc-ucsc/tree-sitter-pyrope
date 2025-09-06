@@ -202,7 +202,11 @@
             "named": true
           },
           {
-            "type": "typed_identifier_list",
+            "type": "lvalue_list",
+            "named": true
+          },
+          {
+            "type": "typed_identifier",
             "named": true
           }
         ]
@@ -1546,6 +1550,58 @@
         "types": [
           {
             "type": "stmt_list",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "lvalue_item",
+    "named": true,
+    "fields": {
+      "identifier": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "complex_identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "typed_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "lvalue_list",
+    "named": true,
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "lvalue_item",
             "named": true
           }
         ]
