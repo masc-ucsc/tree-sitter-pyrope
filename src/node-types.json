@@ -670,22 +670,6 @@
     }
   },
   {
-    "type": "complex_identifier_list",
-    "named": true,
-    "fields": {
-      "item": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "complex_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "complex_string_literal",
     "named": true,
     "fields": {},
@@ -774,11 +758,11 @@
         "required": true,
         "types": [
           {
-            "type": "complex_identifier_list",
+            "type": "typed_identifier",
             "named": true
           },
           {
-            "type": "typed_identifier",
+            "type": "typed_identifier_list",
             "named": true
           }
         ]
@@ -2383,15 +2367,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "type_cast",
-            "named": true
-          },
-          {
-            "type": "type_specification",
+            "type": "typed_identifier",
             "named": true
           }
         ]

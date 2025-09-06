@@ -170,7 +170,7 @@
                     "name": "lvalue",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "complex_identifier_list"
+                      "name": "typed_identifier_list"
                     }
                   },
                   {
@@ -1538,21 +1538,8 @@
           "type": "FIELD",
           "name": "lvalue",
           "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "identifier"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "type_cast"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "type_specification"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "typed_identifier"
           }
         }
       ]

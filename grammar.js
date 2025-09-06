@@ -154,7 +154,7 @@ module.exports = grammar({
     , declaration_statement: $ => prec.right(seq(
       field('decl', $.var_or_let_or_reg)
       , choice(
-        seq('(', field('lvalue', $.complex_identifier_list), ')')
+        seq('(', field('lvalue', $.typed_identifier_list), ')')
         , field('lvalue', $.typed_identifier)
       )
       , $._semicolon
@@ -320,7 +320,7 @@ module.exports = grammar({
     ))
     , typed_declaration: $ => seq(
       field('decl', $.var_or_let_or_reg)
-      , field('lvalue', choice($.identifier, $.type_cast, $.type_specification))
+      , field('lvalue', $.typed_identifier)
     )
     , enum_assignment_statement: $ => prec.left('statement', seq(
       $.enum_assignment
