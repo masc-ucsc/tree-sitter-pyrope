@@ -46,6 +46,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "import_statement"
+          },
+          {
+            "type": "SYMBOL",
             "name": "function_call_statement"
           },
           {
@@ -195,6 +199,73 @@
           }
         ]
       }
+    },
+    "import_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "import"
+        },
+        {
+          "type": "FIELD",
+          "name": "module",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "module_path"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_string_literal"
+              }
+            ]
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "as"
+        },
+        {
+          "type": "FIELD",
+          "name": "alias",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
+    },
+    "module_path": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            ]
+          }
+        }
+      ]
     },
     "control_statement": {
       "type": "CHOICE",
@@ -2672,6 +2743,14 @@
           },
           {
             "type": "SYMBOL",
+            "name": "if_expression"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "match_expression"
+          },
+          {
+            "type": "SYMBOL",
             "name": "_restricted_expression"
           }
         ]
@@ -4476,46 +4555,33 @@
             }
           },
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "PREC_LEFT",
-                  "value": "dot_sub",
-                  "content": {
-                    "type": "SEQ",
+            "type": "REPEAT1",
+            "content": {
+              "type": "PREC_LEFT",
+              "value": "dot_sub",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "."
+                  },
+                  {
+                    "type": "CHOICE",
                     "members": [
                       {
-                        "type": "STRING",
-                        "value": "."
+                        "type": "SYMBOL",
+                        "name": "identifier"
                       },
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "identifier"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "constant"
-                          },
-                          {
-                            "type": "FIELD",
-                            "name": "attribute",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "tuple_sq"
-                            }
-                          }
-                        ]
+                        "type": "SYMBOL",
+                        "name": "constant"
                       }
                     ]
                   }
-                }
+                ]
               }
-            ]
+            }
           }
         ]
       }
@@ -4549,14 +4615,6 @@
           {
             "type": "SYMBOL",
             "name": "optional_expression"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "if_expression"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "match_expression"
           }
         ]
       }
@@ -5729,27 +5787,8 @@
       "arg_list"
     ],
     [
-      "typed_identifier"
-    ],
-    [
-      "typed_identifier",
-      "_restricted_expression"
-    ],
-    [
       "function_call_statement",
       "_restricted_expression"
-    ],
-    [
-      "tuple",
-      "arg_list"
-    ],
-    [
-      "var_or_let_or_reg",
-      "arg_item"
-    ],
-    [
-      "ref_identifier",
-      "typed_identifier"
     ],
     [
       "timed_identifier",

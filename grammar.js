@@ -32,12 +32,7 @@ module.exports = grammar({
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
     , [$.function_definition_decl, $.arg_list]
-    , [$.typed_identifier]
-    , [$.typed_identifier, $._restricted_expression]
     , [$.function_call_statement, $._restricted_expression]
-    , [$.tuple, $.arg_list]
-    , [$.var_or_let_or_reg, $.arg_item]
-    , [$.ref_identifier, $.typed_identifier]
     , [$.timed_identifier, $.typed_identifier]
     , [$.assignment, $._restricted_expression]
     , [$.lvalue_item, $._restricted_expression]
@@ -69,7 +64,7 @@ module.exports = grammar({
       , 'range'
       , 'step'
       , 'type_spec'
-      , 'pipe_concat'   // higher prio than == to allow a |> b == c 
+      , 'pipe_concat'   // higher prio than == to allow a |> b == c
       , 'binary_times'
       , 'binary_plus'
       , 'binary_shift'
@@ -130,6 +125,7 @@ module.exports = grammar({
       $.scope_statement
       , $.declaration_statement
       , $.assignment_or_declaration_statement
+      , $.import_statement
       , $.function_call_statement
       , $.control_statement
       , $.while_statement
@@ -162,6 +158,20 @@ module.exports = grammar({
       )
       , $._semicolon
     ))
+    , import_statement: $ => seq(
+      'import'
+      , field('module', choice(
+        $.module_path
+        , $._string_literal
+      ))
+      , 'as'
+      , field('alias', $.identifier)
+      , $._semicolon
+    )
+    , module_path: $ => seq(
+      $.identifier
+      , repeat(seq('.', $.identifier))
+    )
     , control_statement: $ => choice(
       choice('continue', 'break')
       , seq(
@@ -309,9 +319,9 @@ module.exports = grammar({
         seq('(', field('lvalue', $.lvalue_list), ')')
         , field('lvalue', $.typed_identifier)
         , seq(
-            field('lvalue', $.complex_identifier)
-            , field('type', optional($.type_cast))
-          )
+          field('lvalue', $.complex_identifier)
+          , field('type', optional($.type_cast))
+        )
       )
       , field('operator', $.assignment_operator)
       , field('delay', optional($.assignment_delay))
@@ -328,9 +338,9 @@ module.exports = grammar({
     , lvalue_item: $ => choice(
       $.typed_identifier
       , seq(
-          field('identifier', $.complex_identifier)
-          , field('type', optional($.type_cast))
-        )
+        field('identifier', $.complex_identifier)
+        , field('type', optional($.type_cast))
+      )
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , enum_assignment_statement: $ => prec.left('statement', seq(
@@ -357,7 +367,7 @@ module.exports = grammar({
       )
     )
     , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
-    
+
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_item: $ => seq(
       field('name', $.identifier)
@@ -445,6 +455,8 @@ module.exports = grammar({
       $.type_specification
       , $.unary_expression
       , $.binary_expression
+      , $.if_expression
+      , $.match_expression
       , $._restricted_expression
     ))
     , _expression_with_comprehension: $ => seq(
@@ -557,14 +569,11 @@ module.exports = grammar({
     )
     , dot_expression: $ => prec.left('dot', seq(
       field('item', $._restricted_expression)
-      , choice(
-        repeat1(prec.left('dot_sub', seq('.',
-          choice(
-            $.identifier
-            , $.constant
-            , field('attribute', $.tuple_sq)
-          ))))
-      )
+      , repeat1(prec.left('dot_sub', seq('.',
+        choice(
+          $.identifier
+          , $.constant
+        ))))
     ))
     , _restricted_expression: $ => prec('expression', choice(
       $.complex_identifier
@@ -573,9 +582,6 @@ module.exports = grammar({
       , $.lambda
       , $.tuple
       , $.optional_expression
-      //,$.for_expression
-      , $.if_expression
-      , $.match_expression
     ))
     , lambda: $ => seq(
       field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
