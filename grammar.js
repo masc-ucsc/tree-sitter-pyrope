@@ -366,7 +366,7 @@ module.exports = grammar({
         , $.constant
       )
     )
-    , var_or_let_or_reg: $ => choice('var', 'let', 'reg')
+    , var_or_let_or_reg: $ => choice('const', 'mut', 'reg')
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_item: $ => seq(
@@ -584,7 +584,7 @@ module.exports = grammar({
       , $.optional_expression
     ))
     , lambda: $ => seq(
-      field('func_type', choice($.fun_tok, $.comb_tok, $.pipe_tok, $.flow_tok))
+      field('func_type', choice($.comb_tok, $.pipe_tok, $.flow_tok))
       , field('name', optional($.identifier))
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
@@ -680,9 +680,8 @@ module.exports = grammar({
     , range_type: $ => seq('range', '(', $.select_options, ')')
     //,enum_type: $ => seq('enum', $.tuple)
     , string_type: $ => token('string')
-    , boolean_type: $ => token('boolean')
+    , boolean_type: $ => token('bool')
     , type_type: $ => token('type')
-    , fun_tok: $ => token('fun')
     , comb_tok: $ => token('comb')
     , pipe_tok: $ => token('pipe')
     , flow_tok: $ => token('flow')
@@ -709,6 +708,7 @@ module.exports = grammar({
       $._number
       , $._bool_literal
       , $._string_literal
+      , $._unknown_literal
     )
 
     // Numbers
@@ -746,6 +746,9 @@ module.exports = grammar({
 
     // Booleans
     , _bool_literal: $ => token(choice('true', 'false'))
+
+    // Unknown/uninitialized value
+    , _unknown_literal: $ => token('?')
 
     // Strings
     , _string_literal: $ => choice(

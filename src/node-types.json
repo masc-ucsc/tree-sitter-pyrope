@@ -1560,10 +1560,6 @@
             "named": true
           },
           {
-            "type": "fun_tok",
-            "named": true
-          },
-          {
             "type": "pipe_tok",
             "named": true
           }
@@ -2924,6 +2920,10 @@
     "extra": true
   },
   {
+    "type": "const",
+    "named": false
+  },
+  {
     "type": "continue",
     "named": false
   },
@@ -2958,10 +2958,6 @@
   {
     "type": "for",
     "named": false
-  },
-  {
-    "type": "fun_tok",
-    "named": true
   },
   {
     "type": "has",
@@ -3004,15 +3000,15 @@
     "named": false
   },
   {
-    "type": "let",
-    "named": false
-  },
-  {
     "type": "loop",
     "named": false
   },
   {
     "type": "match",
+    "named": false
+  },
+  {
+    "type": "mut",
     "named": false
   },
   {
@@ -3089,10 +3085,6 @@
   },
   {
     "type": "unsigned",
-    "named": false
-  },
-  {
-    "type": "var",
     "named": false
   },
   {

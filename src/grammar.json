@@ -1807,11 +1807,11 @@
       "members": [
         {
           "type": "STRING",
-          "value": "var"
+          "value": "const"
         },
         {
           "type": "STRING",
-          "value": "let"
+          "value": "mut"
         },
         {
           "type": "STRING",
@@ -4630,10 +4630,6 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "fun_tok"
-              },
-              {
-                "type": "SYMBOL",
                 "name": "comb_tok"
               },
               {
@@ -5267,7 +5263,7 @@
       "type": "TOKEN",
       "content": {
         "type": "STRING",
-        "value": "boolean"
+        "value": "bool"
       }
     },
     "type_type": {
@@ -5275,13 +5271,6 @@
       "content": {
         "type": "STRING",
         "value": "type"
-      }
-    },
-    "fun_tok": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "fun"
       }
     },
     "comb_tok": {
@@ -5371,6 +5360,10 @@
         {
           "type": "SYMBOL",
           "name": "_string_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_unknown_literal"
         }
       ]
     },
@@ -5575,6 +5568,13 @@
             "value": "false"
           }
         ]
+      }
+    },
+    "_unknown_literal": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "?"
       }
     },
     "_string_literal": {
