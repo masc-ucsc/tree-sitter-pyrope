@@ -1,0 +1,7 @@
+mut range1 = 1..=5              // Inclusive range: 1,2,3,4,5
+mut range2 = 0..<4              // Exclusive range: 0,1,2,3
+mut range3 = 2..+3              // Size-based range: 2,3,4
+
+// Range operations
+assert (1..=3) == (1,2,3)       // Range to tuple conversion
+assert int(1..=3) == 0b1110     // Range to one-hot encoding

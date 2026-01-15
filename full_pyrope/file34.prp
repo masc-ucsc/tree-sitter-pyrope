@@ -1,0 +1,25 @@
+type Eq = ( comb eq(self, other) -> bool )
+type Point = (x:int, y:int)
+impl Eq for Point ( comb eq(self, o:Point) -> bool { self.x == o.x and self.y == o.y } )
+
+const p:Point = (x=1, y=2)
+assert p does Eq
+assert (Point does p)
+assert (Point does (x:int, y:int))
+
+// NOTE: No `trait` keyword; use `type` for interfaces and `impl` blocks for attachment.
+type Eq = (comb eq(self, other) -> bool)
+type Point = (x:int, y:int)
+impl Eq for Point ( comb eq(self, o:Point) -> bool { self.x == o.x and self.y == o.y } )
+
+const p:Point = (x=1, y=2)
+const x:Point = (x=3, y=2)
+cassert p does Point
+cassert p does Eq
+cassert p is Point           // nominal type matches declared type
+cassert p !is Eq             // `is` is nominal; interfaces are not nominally equal
+cassert p.eq(p)
+cassert !p.eq(x)
+match p {
+  does (x:int, y:int) { puts "p matches fields (x,y)" }
+}

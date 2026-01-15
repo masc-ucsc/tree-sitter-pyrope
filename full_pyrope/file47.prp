@@ -1,0 +1,4 @@
+// NOTE: Use `...r` binding; prior `..r` was incorrect.
+const r:(z:int) = 100
+const p:(x:int, y:int, ...r) = (x=1, y=2, z=3)
+const q:(x:int, ...r) = (x=1,z=10)  // OK

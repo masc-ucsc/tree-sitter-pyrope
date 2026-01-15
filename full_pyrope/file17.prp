@@ -1,0 +1,29 @@
+// Bitwidth constraints
+mut data:u32:[max=1000, min=0] = 0
+
+// Overflow behavior (set at declaration - applies to all operations)
+mut counter_wrap:u8:[wrap=true] = 0      // Always wraps on overflow
+mut counter_sat:u8:[saturate=true] = 0   // Always saturates on overflow
+
+// One-off overflow behavior (typecast with attributes)
+mut result = (a + b):u8:[wrap=true]      // This operation wraps to u8
+mut clamped = (x + y):u8:[saturate=true] // This operation saturates to u8
+
+// Typecast without attributes
+mut truncated = (large_val):u8           // Explicit typecast to u8
+
+// Compile-time attributes
+const SIZE:[comptime=true] = 16     // Compile-time constant
+mut array_size = SIZE               // Uses compile-time value
+
+// Hardware attributes
+reg state:[reset_pin=my_reset] = 0  // Custom reset signal
+reg clocked:[clock_pin=fast_clk] = 0 // Custom clock signal
+reg async_reg:[async=true] = 0      // Asynchronous reset
+reg pipeline:[retime=true] = 0      // Allow synthesis retiming
+
+// Debug attributes
+mut debug_val:[debug=true] = counter // Debug-only variable
+
+// To "change" attributes, create a new variable
+mut new_data:[wrap=true] = data     // new_data has wrap, data unchanged

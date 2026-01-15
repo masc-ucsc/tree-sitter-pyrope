@@ -1,0 +1,9 @@
+cover (state == IDLE and start)
+unique if x {
+  y = 1
+} elif z {
+  y = 2
+} else {
+  y = 3
+}
+// NOTE: `unique if` asserts at most one branch condition holds at a time.

@@ -1,0 +1,3 @@
+const PI = 3.14                 // Compile-time constant
+mut temp = calculation()        // Combinational
+reg accumulator = 0             // Persistent register

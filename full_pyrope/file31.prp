@@ -1,0 +1,10 @@
+mut a = 2
+comb make_adder[a]() -> (f) {
+  cassert a::[comptime] == true  // all captures are always comptime
+  // Capture a, b from outer scope
+  const b = 3
+  f = comb[a, b] (x:int) -> (y:int) { a*x + b }
+}
+a= 1000     // Does not affect the capture value
+const add2 = make_adder().f
+assert add2(10) == 23

@@ -1,0 +1,9 @@
+reg memory:[256]u32 = 0                     // Simple memory
+reg dual_port:[1024]u16:[                   // Complex memory with attributes
+  rdport=(0,1),
+  wrport=(2),
+  latency=1
+] = 0
+
+// Port access uses .port[] for clarity
+mut out = ram.port[0][addr]:[rdport=0]      // Read port 0

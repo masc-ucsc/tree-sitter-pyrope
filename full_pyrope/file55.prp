@@ -1,0 +1,16 @@
+mut i = 0
+while::[some_attribute=true] 1<10 {
+  i += 1
+}
+while::[elastic=true] mut z=1; x {
+  x -= z
+}
+for::[
+  ,loop_coalesce=2    // optional: help the compiler
+  ,ivdep=true         // assert no loop-carried deps on chosen arrays
+  ,unroll=2           // replicate body (if legal)
+  ,ii=1
+] mut total=0; j in 0..<n {
+  total += j
+  puts total
+}

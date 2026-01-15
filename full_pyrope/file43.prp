@@ -1,0 +1,15 @@
+enum ADT = (
+  Person:(eats:string) = ?,
+  Robot:(charges_with:string) = ?
+)
+
+const nourish = comb(x:ADT) {
+  match x {
+    does ADT.Person { puts "eating:{x.eats}" }
+    does ADT.Robot { puts "charging:{x.charges_with}" }
+  }
+}
+
+test "my main" {
+  (_:Person="pizza", _:Robot="electricity").each(nourish)
+}

@@ -1,0 +1,3 @@
+const x:u32 = 0xDEADBEEF
+// NOTE: Use explicit slicing/packing for reinterprets.
+const b:(u8,u8,u8,u8) = (x[0..=7], x[8..=15], x[16..=23], x[24..=31])

@@ -1,0 +1,22 @@
+mut buffer:[16]u8 = ?           // Array (no persistence)
+reg memory:[256]u32 = 0         // Memory (persistent)
+
+memory[addr] = data             // Write
+mut read_data = memory[addr]    // Read
+
+// Range-based access
+mut slice = buffer[1..=4]       // Extract elements 1-4
+
+// Memory with synthesis attributes
+reg ram:[1024]u32:[
+  latency=1,                    // 1-cycle read latency
+  fwd=true,                     // Write-to-read forwarding
+  wensize=4,                    // 4-bit write enable (byte enables)
+  rdport=(0,1), wrport=(2,3)    // Port assignment
+] = 0
+
+// Dual-port access (simple Pyrope requires explicit port attribute for multiport)
+ram[addr1]:[wrport=2] = data1            // Write port 2
+ram[addr2]:[wrport=3] = data2            // Write port 3
+mut out1 = ram.port[0][addr3]:[rdport=0] // Read port 0
+mut out2 = ram.port[1][addr4]:[rdport=1] // Read port 1

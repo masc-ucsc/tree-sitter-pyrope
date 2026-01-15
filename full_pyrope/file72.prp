@@ -1,0 +1,3 @@
+mut value = 0b1010_1100
+mut bits = value#[3..=6]        // Extract bits 3-6 (NOT array indexing)
+value#[3] = 0                   // Set bit 3 (NOT array assignment)

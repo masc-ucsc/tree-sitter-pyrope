@@ -1,0 +1,3 @@
+reg counter = 0
+counter += 1                    // Immediate update
+counter@[1] += 1               // Deferred to end of cycle

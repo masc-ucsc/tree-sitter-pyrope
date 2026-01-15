@@ -1,0 +1,8 @@
+comb add(a:u8, b:u8) -> (result:u8) {
+    result = a + b
+}
+
+// Implicit return
+comb add_simple(a:u8, b:u8) {
+    a + b                       // Returns single-element tuple
+}

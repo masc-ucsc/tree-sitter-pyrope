@@ -1,0 +1,3 @@
+const name = "Pyrope"
+const msg  = "Hello {name}!"
+puts msg

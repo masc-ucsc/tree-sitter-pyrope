@@ -1,0 +1,11 @@
+// Import functions from other files
+const math_ops = import("math/basic")
+const result = math_ops.add(a, b)
+
+// Import specific function
+const multiply = import("math/basic/multiply")
+const product = multiply(x, y)
+
+// Import from local file
+const utils = import("utils")
+utils.debug_print("Hello")

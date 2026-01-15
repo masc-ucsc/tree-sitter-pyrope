@@ -1,0 +1,16 @@
+pipe mul(a, b) -> (c) { c = a * b }
+pipe add(a, b) -> (c) { c = a + b }
+
+flow alu(in1, in2) -> (out_pipelined, out_live) {
+  const (tmp@[2+1], in2_d@[2+1]) = delay[3] (mul(in1, in2), in2)
+  out_pipelined = delay[1] add(tmp@[2+1], in2_d@[2+1])
+  out_live      =@[1]      add(tmp@[2+1], in2@0)  // =@[1] is the same as = delay[1]
+}
+
+flow accum_alu(in1, in2) -> (out) {
+  reg total:[init=0]
+  const tmp@[2+1] = delay[3] mul(in1, in2)
+  const sum_aligned = add(total@0, tmp@[2+1])  // explicit timing makes alignment clear
+  total@[1] = sum_aligned                      // @[1] defers write to end of cycle
+  out = total@0  // current register output
+}

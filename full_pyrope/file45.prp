@@ -1,0 +1,12 @@
+// ->() is an explicit void return
+type Queue<T> = (push:comb(T)->(), pop:comb()->(T), empty:comb()->(bool))
+
+// Same meaning, generic list is allowed before tuple declarations
+const Queue = type<T>(push:comb(T)->(), pop:comb()->(T), empty:comb()->(bool))
+
+// comb, type, flow, pipe can have an option <parameter_list>
+
+const triadd1 = comb<T>(a:T, b:T, c:T) -> T { a + b + c }
+const triadd2 = pipe<T>::[stages=3] (a:T, b:T, c:T) ->T { a + b + c }
+const triadd3 = flow<T> (a:T, b:T, c:T) ->T { a@0 + b@0 + c@0 }
+cassert triadd1(1,2,3) == 6

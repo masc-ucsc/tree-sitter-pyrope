@@ -1,0 +1,17 @@
+type v_type = variant(str:String, num:int) // No default value in variant
+
+const another_x:variant(IntKind:int, StrKind:string)=?
+
+mut vv:v_type = (num=0x65)
+cassert vv.num == 0x65
+
+type Vtype = variant(str:String, num:int, b:bool)
+
+const x1a:Vtype = "hello"                 // implicit variant type
+const x1b:Vtype = (str="hello")           // explicit variant type
+
+mut x2:Vtype:[comptime=true] = "hello"    // comptime
+
+cassert x1a.str == "hello" and x1a == "hello"
+cassert x1b.str == "hello" and x1b == "hello"
+

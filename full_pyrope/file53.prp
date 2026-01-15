@@ -1,0 +1,2 @@
+// NOTE: Use bus resolution as a function-style primitive:
+(a,b) = bus(a,b)

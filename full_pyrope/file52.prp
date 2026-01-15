@@ -1,0 +1,9 @@
+pipe stagetocreate::[elastic=true,stages=2..<8] (in:int) -> (out:int) {
+  out = in + 1
+}
+pipe stage2::[stages=2..<8] (in:int) -> (out:int) {
+  out = in + 1
+}
+// NOTE: `elastic` enables validity checks like `in?`; otherwise same syntax.
+// Example usage:
+const v = if in? { stage(in) } else { 0 }

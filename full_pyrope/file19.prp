@@ -1,0 +1,3 @@
+mut sum = a + b; mut diff = a - b; mut prod = a * b; mut div = a / b  // Basic arithmetic
+mut left_shift = a << n; mut right_shift = a >> n  // Shifts
+const remainder = a % b  // Modulo (compile-time only due to cost)

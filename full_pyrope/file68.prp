@@ -1,0 +1,5 @@
+const std = import('std')
+const q = std.queue.make[int](depth=16)
+q.push(1)
+assert !q.empty()
+const v = q.pop()

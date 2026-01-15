@@ -1,0 +1,2 @@
+// NOTE: The following snippet is not valid Pyrope
+const a:Option(_:u8) = Some(3)

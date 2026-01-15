@@ -1,0 +1,11 @@
+// Set attribute (only at declaration)
+mut foo:u32:[comptime=true] = 42    // Set comptime attribute
+reg counter:[reset_pin=rst] = 0     // Set reset pin attribute
+
+// Read attribute value
+const num_bits = counter::[bits]    // Read number of bits
+
+// Check attribute (read and compare)
+cassert counter::[bits] == 8        // Check bit width
+cassert foo::[comptime] == true     // Check if compile-time constant
+cassert z::[bits] < 32              // Check bit width constraint

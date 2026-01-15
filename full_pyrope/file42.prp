@@ -1,0 +1,19 @@
+// Define an ADT with associated values
+enum Expr = (
+    ,,, // extra commas are OK (no meaning)
+    ,number:Int=?
+    ,,, // extra commas are OK (no meaning)
+    ,add:(_:Expr, _:Expr)=?
+    ,,, // extra commas are OK (no meaning)
+)
+
+// Evaluate recursively
+comb eval(e: Expr) -> int {
+    match e {
+      does Expr.number { e.number }
+      does Expr.add    { eval(e.add[0]) + eval(e.add[1]) }
+    }
+}
+
+const expr = Expr.add(Expr.number(2), Expr.number(3))
+puts "result:{eval(expr)} should be 5"

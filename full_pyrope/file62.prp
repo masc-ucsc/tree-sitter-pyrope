@@ -1,0 +1,15 @@
+mut a=(a=1,b=2)
+const b=(c=3)
+
+const ccat1 = a ++ b
+assert ccat1 == (a=1,b=2,c=3)
+assert ccat1 == (1,2,3)
+
+mut ccat2 = a ++ (b=20) ++ b
+assert ccat2 == (a=1,b=(2,20),c=3)
+assert ccat2 == (1,(2,20),3)
+
+mut join1 = (...a,...b)
+assert join1 == (a=1,b=2,c=3)
+assert join1 == (1,2,3)
+

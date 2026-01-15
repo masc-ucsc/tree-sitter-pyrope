@@ -1,0 +1,7 @@
+const v = (tag="sum", a=1, b=2)
+const r = match v {
+  case (tag="sum", a, b) { v.a + v.b }
+  case (tag="val", x)     { v.x }
+  else                     { 0 }
+}
+cassert r == 1+2

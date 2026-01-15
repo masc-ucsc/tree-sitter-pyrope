@@ -1,0 +1,2 @@
+comb pure_function(x:u8) -> (y:u8) { y = x + 1 }
+pipe stateful_function() -> (reg counter:u8) { counter += 1 }

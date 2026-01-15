@@ -1,0 +1,5 @@
+out = core(some_inputs)
+
+x = peek(core.xx.some_wire)
+poke(core.yy.some_register, 1)
+// NOTE: `peek`/`poke` are library functions; no grammar change required.

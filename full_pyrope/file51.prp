@@ -1,0 +1,3 @@
+// Instantiate external RTL with port mapping
+const (out_t) =  mymod(clock=clk, reset=rst, a=in_a)
+// NOTE: Same form as comb/pipe/flow calls; import handles RTL binding.

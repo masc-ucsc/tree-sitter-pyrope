@@ -1,0 +1,4 @@
+// Basic puts for debugging
+puts "Hello World"            // Simple string output
+puts "Value: ", variable      // Print variable
+puts "Count: ", count, " Max: ", max_val  // Multiple values

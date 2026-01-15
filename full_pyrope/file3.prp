@@ -1,0 +1,14 @@
+// Code block scope
+mut a = 3
+{
+    assert a == 3       // Visible from outer scope
+    mut b = 4           // Local to this block
+    // const a = 33     // Error: no shadowing allowed
+}
+// assert b == 4       // Error: 'b' not visible outside block
+
+// Functions have their own scope (Small Pyrope does not support capture variables)
+comb example() {
+    mut local = 5       // Function-local variable
+    local + 1
+}

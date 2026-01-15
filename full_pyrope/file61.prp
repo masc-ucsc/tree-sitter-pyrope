@@ -1,0 +1,9 @@
+comb x1(a:int,b)->int { 3 }
+comb x2(a:int,b)->(x) { 3 }
+comb x3(a:int,b=5)->(x:int) { 3 }
+comb x4(a:int,b:int3)->(x:int) { 3 }
+
+const x5 = comb(a:int,b)->int { 3 }
+const x6 = comb(a:int=10,b)->(x) { 3 }
+const x7 = comb(a:int,b)->(x:int) { 3 }
+const x8 = comb(a:int,b:int3)->(x:int) { 3 }

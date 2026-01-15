@@ -1,0 +1,6 @@
+if condition { /* ... */ }     // Standard conditional
+match value {                  // Pattern matching
+  case 0 { /* ... */ }         // `case` is alias for `==`
+  == 1 { /* ... */ }           // `==` also works
+  else { /* ... */ }
+}

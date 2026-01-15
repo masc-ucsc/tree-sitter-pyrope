@@ -1,0 +1,18 @@
+// Single-port memory with basic attributes
+reg memory:[256]u32:[latency=1, fwd=true] = 0
+
+// Multi-port memory configuration
+reg dual_port:[1024]u16:[
+  rdport=(0,1),        // Ports 0,1 are read ports
+  wrport=(2),          // Port 2 is write port
+  latency=1,           // Read latency
+  fwd=false,           // No forwarding
+  wensize=4            // 4-bit write enable mask
+] = 0
+
+// Memory with custom clocking
+reg async_mem:[64]u8:[
+  clock=(clk1, clk2),  // Different clocks per port
+  reset=mem_rst,       // Custom reset signal
+  posclk=false         // Negative edge triggered
+] = 0

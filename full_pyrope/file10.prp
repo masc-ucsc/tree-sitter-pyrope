@@ -1,0 +1,1 @@
+const (tmp@0:u32, tmp2@[2]:u3:[something=true], x@0:i3:[comptime=true]) = some_flow_call(a@0, b@3:u32, c@2:[xxx_should_be_set=true])

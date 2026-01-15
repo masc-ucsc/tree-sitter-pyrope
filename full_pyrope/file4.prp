@@ -1,0 +1,10 @@
+mut point = (x=10, y=20)        // Named tuple
+mut array = (1, 2, 3, 4)        // Indexed tuple
+mut mixed = (x=1, 2, y=3)       // Mixed named/indexed
+
+// Access
+assert point.x == 10
+assert array[2] == 3            // Array-style access
+
+// Concatenation
+mut combined = point ++ (z=30)  // (x=10, y=20, z=30)

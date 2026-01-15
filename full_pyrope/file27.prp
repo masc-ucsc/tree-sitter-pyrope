@@ -1,0 +1,18 @@
+reg counter:u8 = 0
+mut tmp:u8 = counter
+
+counter += 1                    // Immediate update
+tmp += 1
+assert counter == tmp
+
+counter@[1] += 1               // Defer write to end of cycle
+assert counter == tmp
+tmp += 1
+
+assert counter != tmp
+assert counter@[1] == tmp      // Read deferred value (end of cycle)
+
+// Timing syntax summary:
+// counter@[0]  - current value (same as just 'counter')
+// counter@[1]  - value at end of cycle (deferred/next)
+// counter@[-1] - value from previous cycle

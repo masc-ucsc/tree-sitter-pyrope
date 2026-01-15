@@ -1,0 +1,20 @@
+// Integers (signed/unsigned with bit constraints)
+mut a:u8 = 100          // 8-bit unsigned
+mut b:i16 = -50         // 16-bit signed
+mut c:int = 1000        // Unlimited precision (compile-time only)
+
+// Boolean
+mut flag:bool = true
+
+// String (basic operations)
+mut text:string = "hello"
+mut combined = text ++ " world"  // String concatenation
+puts "Debug: value is ", combined   // Print for debugging
+
+// Default initialization
+mut x = ?               // Type default (0 for int, false for bool, "" for string)
+mut y = 0               // Explicit value
+
+// '?' bits are don't-care/unknown, '_' is just a separator
+mut unknown = 0b101?    // Bit 0 is don't care/unknown
+mut partial = 0b??10    // Multiple don't care/unknown bits

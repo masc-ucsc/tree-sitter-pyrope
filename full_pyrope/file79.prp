@@ -1,0 +1,5 @@
+assert condition               // Runtime assertion (hardware check)
+cassert compile_time_expr      // Compile-time assertion
+test "description" {           // Test block with simulation
+    step                       // Advance clock cycle
+}

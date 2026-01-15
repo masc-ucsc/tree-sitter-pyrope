@@ -1,0 +1,8 @@
+comb div(a:int, b:int) -> (q:int) {
+  requires b != 0
+  ensures  a == q*b + (a % b)  // Note: % is compile-time only
+  q = a / b
+}
+
+const a = some_call(z)
+optimize a < 1000  // a should never be over 1000, optimize accordingly

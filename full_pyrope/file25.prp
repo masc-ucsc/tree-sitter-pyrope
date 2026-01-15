@@ -1,0 +1,10 @@
+assert condition               // Runtime assertion
+cassert compile_time_expr      // Compile-time assertion
+
+test "counter test" {
+    const cnt = counter(true)
+    puts "Counter value: ", cnt   // Debug output
+    step                      // Advance one cycle
+    assert cnt == 1
+    cassert SIZE == 16         // Compile-time constant check
+}

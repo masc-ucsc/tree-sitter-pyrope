@@ -1,0 +1,7 @@
+mut point = (x=10, y=20)        // Named tuple (like struct)
+mut array = (1, 2, 3, 4)        // Indexed tuple (like array)
+mut mixed = (x=1, 2, y=3)       // Mixed named/indexed
+
+// Access patterns
+assert point.x == 10            // Named access
+assert array[2] == 3            // Array-style access

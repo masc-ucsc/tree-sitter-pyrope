@@ -1,0 +1,12 @@
+mut point = (x=10, y=20,
+  // Method using tuple scope
+  comb move(self, dx:int, dy:int) -> (out) {
+    out = (x=self.x + dx, y=self.y + dy)
+  }
+  ,move2 = comb(self, dx:int, dy:int) -> (out:int) { // Also legal
+    out = (x=self.x + dx, y=self.y + dy)
+  }
+)
+const p2 = point.move(1, -2)
+assert p2.x == 11 and p2.y == 18
+// NOTE: `self` is explicit; earlier drafts suggested implicit `self`, which is invalid.

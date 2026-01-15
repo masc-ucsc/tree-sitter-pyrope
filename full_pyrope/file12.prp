@@ -1,0 +1,4 @@
+return when    enable
+return unless !enable  // Same
+
+assert !enable

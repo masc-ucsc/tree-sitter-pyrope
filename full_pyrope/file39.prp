@@ -1,0 +1,3 @@
+const cfg = read_file("config.txt")
+puts cfg
+// NOTE: File I/O comes from imported C++ methods; no special grammar.

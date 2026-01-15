@@ -1,0 +1,15 @@
+type RegBox = (reg v:int,
+  comb get(self) -> (_:int) { self.v },
+  pipe set(self, x:int) { self.v = x }  // pipe as it accesses a register
+)
+
+const rb:RegBox = (v=0)
+rb.set(3)
+assert rb.get() == 3
+// NOTE: Methods inside tuple types are allowed. Also valid:
+
+const RegBox = (reg v:int,
+  get = comb(self) -> int { self.v },
+  set = pipe(self, x:int) -> () { self.v = x }  // pipe as it accesses a register
+)
+

@@ -1,0 +1,1 @@
+reg ram:[1024]u32:[macro="sram_32kx32", latency=1] = 0

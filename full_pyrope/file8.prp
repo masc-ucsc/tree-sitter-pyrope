@@ -1,0 +1,25 @@
+pipe counter(enable:bool) -> (reg count:u8) {
+    count += 1 when enable
+}
+
+pipe fifo(push:bool, pop:bool, data_in:u18) -> (data_out:u18, full:bool, empty:bool) {
+    reg buffer:[16]u18 = _
+    reg head:u4 = 0
+    reg tail:u4 = 0
+    reg count:u5 = 0
+
+    if push and !full {
+        buffer[head] = data_in
+        head = (head + 1) & 0xF
+        count += 1
+    }
+
+    if pop and !empty {
+        data_out = buffer[tail]
+        tail = (tail + 1) & 0xF
+        count -= 1
+    }
+
+    full = (count == 16)
+    empty = (count == 0)
+}

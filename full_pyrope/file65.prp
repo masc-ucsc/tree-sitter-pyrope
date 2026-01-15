@@ -1,0 +1,4 @@
+// NOTE: Prefer attributes and operators (`has`/`does`/`equals`). Examples:
+cassert 1::[typename] == int::[typename]
+cassert ((x=1,y=2) has "x")
+

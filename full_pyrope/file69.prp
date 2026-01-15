@@ -1,0 +1,3 @@
+const std = import('std')
+assert std.math.gcd(12, 18) == 6
+const s = std.str.join(("a","b"), ",")

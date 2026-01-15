@@ -1,0 +1,12 @@
+mut maybe_u8:u8 = ?         // default invalid
+cassert maybe_u8::[valid] == false
+maybe_u8 = 5
+cassert maybe_u8::[valid] == true
+if maybe_u8? {               // test valid (sugar for maybe_u8::[valid] == true)
+  assert maybe_u8 == 5
+}
+mut pkt = (data:u16, valid:bool)
+if pkt.data? { // sugar for pkt.data::[valid] == true
+  puts "data=", pkt.data
+}
+// NOTE: `?` is default value (unknown/invalid). Invalid means `x::[valid] == false`.

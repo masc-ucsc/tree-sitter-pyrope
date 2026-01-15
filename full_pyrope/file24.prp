@@ -1,0 +1,6 @@
+// Explicit parentheses required for mixed precedence
+mut result = (a * b) + (c & d)   // Clear precedence
+// mut mixed = a * b + c & d     // Error: use parentheses
+
+// Chained comparisons allowed
+assert a <= b <= c               // Same as: a <= b and b <= c

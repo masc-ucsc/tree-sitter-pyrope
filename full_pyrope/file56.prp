@@ -1,0 +1,9 @@
+import io as I
+// NOTE: No wildcard-imports; use assignment or explicit aliasing.
+// Some legal equivalent options:
+
+const math = import("some/hierarchy/math")
+import some.hierarchy.math as math
+
+const myio = import("some/io/lib")
+import "some/io/lib" as myio2

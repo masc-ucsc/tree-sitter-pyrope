@@ -1,0 +1,5 @@
+const s = "hello"
+assert s.len() == 5
+assert s.find("ll") == 2
+assert s.substr(1,3) == "ell"
+// NOTE: Names/returns similar to C++23 string_view; not grammar-relevant.

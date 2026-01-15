@@ -1,0 +1,4 @@
+// No trait keyword, but `type`
+type Show ( comb show(self) -> String )
+impl Show for int ( comb show(self) -> String { "_{self}_" } )
+cassert 42.show() == "_42_"

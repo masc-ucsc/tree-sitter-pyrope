@@ -1,0 +1,1 @@
+enum Token = ( Id:string=?, Lit:variant(IntKind:int, StrKind:string)=? )

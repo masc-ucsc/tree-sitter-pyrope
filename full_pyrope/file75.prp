@@ -1,0 +1,3 @@
+mut data:u32:[max=1000, min=0] = 0          // Type with constraints
+reg counter:[reset_pin=rst] = 0             // Hardware attributes
+cassert counter::[bits] == 8                // Read and check attribute

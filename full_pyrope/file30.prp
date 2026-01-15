@@ -1,0 +1,36 @@
+// Import required modules
+const test_utils = import("test/helpers")
+
+// Simple CPU register file
+pipe reg_file(
+    clk:bool,
+    we:bool,
+    ra:u5,
+    rb:u5,
+    wa:u5,
+    wd:u32
+) -> (
+    rd_a:u32,
+    rd_b:u32
+) {
+    reg registers:[32]u32 = 0
+
+    // Read ports (1st read, no forwarding)
+    rd_a = if ra == 0 { 0 } else { registers[ra] }
+    rd_b = if rb == 0 { 0 } else { registers[rb] }
+
+    // Write port
+    if we {
+        registers[wa] = wd when (wa != 0)  // Register 0 is always 0
+    }
+}
+
+test "register file" {
+    const rf = reg_file(we=true, ra=3, rb=1, wa=1, wd=42)
+    assert rf.rd_a == 0
+    assert rf.rd_b == 0 // no fwd
+    step
+    const rf2 = reg_file(we=false, ra=1, rb=0, wa=0, wd=0)
+    assert rf2.rd_a == 42
+    assert rf2.rd_b == 0
+}

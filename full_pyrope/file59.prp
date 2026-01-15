@@ -1,0 +1,7 @@
+comb add1(a:u8, b:u8) -> int { a + b }
+comb add2(a:i8, b:i8) -> int { a + b }
+
+const add = add1 ++ add2 // (add1, ...add2) should work too
+
+const x = add(1u8, 2u8)
+const y = add(-1i8, 2i8)

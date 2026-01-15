@@ -1,0 +1,2 @@
+mut and_result = a & b; mut or_result = a | b; mut xor_result = a ^ b  // AND, OR, XOR
+mut not_result = ~a             // NOT

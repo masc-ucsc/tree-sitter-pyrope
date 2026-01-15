@@ -1,0 +1,14 @@
+match state {
+    == 0 { next_state = 1 }
+    == 1 { next_state = 2 }
+    == 2 { next_state = 0 }
+    else { next_state = 0 }
+}
+
+// `case` is an alias for `==` in match statements
+match state {
+    case 0 { next_state = 1 }
+    case 1 { next_state = 2 }
+    case 2 { next_state = 0 }
+    else   { next_state = 0 }
+}

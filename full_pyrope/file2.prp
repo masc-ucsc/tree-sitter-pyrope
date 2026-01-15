@@ -1,0 +1,3 @@
+const constant = 42     // Compile-time constant (immutable)
+mut wire = 0            // Combinational (no persistence)
+reg state = 0           // Register (persistent across cycles)

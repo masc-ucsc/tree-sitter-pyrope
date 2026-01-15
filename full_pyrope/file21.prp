@@ -1,0 +1,2 @@
+mut logical_and = a and b; mut logical_or = a or b  // Logical (no short-circuit)
+mut logical_not = !a            // Logical NOT

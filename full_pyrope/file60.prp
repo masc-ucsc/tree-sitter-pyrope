@@ -1,0 +1,23 @@
+const base = (
+  fun1 = comb() { 1 },         // catch all
+  fun2 = comb() { 2 },         // catch all
+)
+const ext = base ++ (
+  fun1 = comb(a, b) { 4 },   // overwrite allowed with extends (++), not in-place (...)
+  fun2 = comb(a, b) { 5 } ++ comb() { 6 },  // append
+  fun3 = comb(a, b) { 7 } ++ comb() { 8 }   // base has no fun3
+)
+
+mut t:ext = ?
+
+// t.fun1 only has ext.fun1
+assert t.fun1(a=1,b=2) == 4
+
+// t.fun2 has base.fun2 and then ext.fun2
+assert t.fun2(1,2) == 5  // EXACT match of arguments has higher priority
+assert t.fun2() == 2     // base.fun2 catches all ahead of ext.fun2
+
+// t.fun3 has ext.fun3 (no base.fun3)
+assert t.fun3(1,2) == 7  // EXACT match of arguments has higher priority
+assert t.fun3() == 8     // ext.fun3 catches all ahead of ext.fun3
+

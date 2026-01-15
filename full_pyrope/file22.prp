@@ -1,0 +1,2 @@
+mut equal = a == b; mut not_equal = a != b  // Equality
+mut less = a < b; mut less_eq = a <= b; mut greater = a > b; mut greater_eq = a >= b  // Comparison
