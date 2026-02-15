@@ -6,10 +6,11 @@
 #include "prpfmt.h"
 
 void print_help() {
-  printf("Usage: ./prpfmt <input_file> [-o <output_file>]\n");
+  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>]\n");
   printf("       ./prpfmt [-h | --help]\n\n");
   printf("Options:\n");
   printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
+  printf("  -i, --indent <n>  Specify the indentation size (default: 2).\n");
   printf("  -h, --help        Display this help message.\n");
 }
 
@@ -82,8 +83,9 @@ int main(int argc, char **argv) {
   
   char *infile_path = argv[1];
   char *outfile_path = NULL;
+  int indent_size = 2;
 
-  // Parse for -o option
+  // Parse for -o, -i options
   for (int i = 2; i < argc; i++) {
     if (strcmp(argv[i], "-o") == 0) {
       if (i + 1 < argc) {
@@ -91,6 +93,15 @@ int main(int argc, char **argv) {
         i++;
       } else {
         fprintf(stderr, "Error: -o requires an output file path.\n");
+        print_help();
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--indent") == 0) {
+      if (i + 1 < argc) {
+        indent_size = atoi(argv[i + 1]);
+        i++;
+      } else {
+        fprintf(stderr, "Error: -i/--indent requires an integer value.\n");
         print_help();
         exit(1);
       }
@@ -140,7 +151,7 @@ int main(int argc, char **argv) {
     .source_code = source_code,
     .outfile = outfile,
     .indent_level = 0,
-    .indent_size = 2,
+    .indent_size = indent_size,
     .fmt_on = true
   };
 
