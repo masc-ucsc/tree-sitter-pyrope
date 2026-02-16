@@ -6,8 +6,8 @@ import difflib
 import re
 
 # Configuration
-PRPFMT_EXECUTABLE = "../../prpfmt"
-TEST_FILES_DIR = "../full_pyrope"
+PRPFMT_EXECUTABLE = "../../../prpfmt"
+TEST_FILES_DIR = "../../full_pyrope"
 
 def normalize(text):
     # Remove comments (// style)

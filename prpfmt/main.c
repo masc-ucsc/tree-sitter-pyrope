@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   
   char *infile_path = argv[1];
   char *outfile_path = NULL;
-  int indent_size = 2;
+  int indent_size = 4;
 
   // Parse for -o, -i options
   for (int i = 2; i < argc; i++) {
