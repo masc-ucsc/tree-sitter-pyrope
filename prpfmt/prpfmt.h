@@ -282,7 +282,7 @@ void print_test_statement(TSNode node, PrpfmtState *st);
 void print_type_statement(TSNode node, PrpfmtState *st);
 void print_while_statement(TSNode node, PrpfmtState *st);
 
-void print_assignment(TSNode node, PrpfmtState *st);
+void print_assignment(TSNode node, PrpfmtState *st, bool spaces);
 void print_enum_assignment(TSNode node, PrpfmtState *st);
 
 void print_arg_item(TSNode node, PrpfmtState *st);
@@ -290,7 +290,7 @@ void print_arg_item_list(TSNode node, PrpfmtState *st);
 void print_arg_list(TSNode node, PrpfmtState *st);
 void print_array_type(TSNode node, PrpfmtState *st);
 void print_assignment_delay(TSNode node, PrpfmtState *st);
-void print_assignment_operator(TSNode node, PrpfmtState *st);
+void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces);
 void print_attribute_item(TSNode node, PrpfmtState *st);
 void print_attribute_item_list(TSNode node, PrpfmtState *st);
 void print_attribute_list(TSNode node, PrpfmtState *st);

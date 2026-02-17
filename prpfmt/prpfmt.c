@@ -24,10 +24,28 @@ void print_tree(TSTree *tree, PrpfmtState *st) {
   TSNode root_node = ts_tree_root_node(tree);
   uint32_t root_child_count = ts_node_child_count(root_node);
 
+  TSNode prev_child;
+  bool has_prev = false;
+
   // Iterate over the root's children
   for (uint32_t i = 0; i < root_child_count; i++) {
     TSNode child = ts_node_child(root_node, i);
+
+    if (has_prev) {
+      TSPoint prev_end = ts_node_end_point(prev_child);
+      TSPoint curr_start = ts_node_start_point(child);
+
+      if (curr_start.row > prev_end.row + 1) {
+        uint32_t blank_lines = curr_start.row - prev_end.row - 1;
+        for (uint32_t j = 0; j < blank_lines; j++) {
+          fprintf(st->outfile, "\n");
+        }
+      }
+    }
+
     print_statement(child, st);
+    prev_child = child;
+    has_prev = true;
   }
 }
 
@@ -167,7 +185,7 @@ void print_assignment_or_declaration_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_assignment:
-        print_assignment(child, st);
+        print_assignment(child, st, true);
         break;
       case sym_when_unless_cond:
       case anon_sym_SEMI:
@@ -812,7 +830,7 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print_assignment(TSNode node, PrpfmtState *st) {
+void print_assignment(TSNode node, PrpfmtState *st, bool spaces) {
   uint32_t child_count = ts_node_child_count(node);
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -840,9 +858,7 @@ void print_assignment(TSNode node, PrpfmtState *st) {
         continue;
       }
       if (strcmp(field_name, "operator") == 0) {
-        fprintf(st->outfile, " ");
-        print_assignment_operator(child, st);
-        fprintf(st->outfile, " ");
+        print_assignment_operator(child, st, spaces);
         continue;
       }
       if (strcmp(field_name, "delay") == 0) {
@@ -1068,10 +1084,12 @@ void print_assignment_delay(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print_assignment_operator(TSNode node, PrpfmtState *st) {
+void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces) {
   char *text = get_node_text(node, st->source_code);
   if (text) {
+    if (spaces) fprintf(st->outfile, " ");
     fprintf(st->outfile, "%s", text);
+    if (spaces) fprintf(st->outfile, " ");
     free(text);
   }
 }
@@ -1092,7 +1110,7 @@ void print_attribute_item(TSNode node, PrpfmtState *st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     if (symbol == sym_assignment) {
-      print_assignment(child, st);
+      print_assignment(child, st, false);
     } else if (symbol == sym_comment) {
       print_comment(child, st);
     } else {
@@ -2913,7 +2931,7 @@ void print__tuple_item(TSNode node, PrpfmtState *st) {
       print_ref_identifier(node, st);
       break;
     case sym_assignment:
-      print_assignment(node, st);
+      print_assignment(node, st, false);
       break;
     case sym_typed_declaration:
       print_typed_declaration(node, st);
