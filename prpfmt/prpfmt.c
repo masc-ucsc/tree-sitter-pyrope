@@ -1188,13 +1188,17 @@ void print_binary_expression(TSNode node, PrpfmtState *st) {
         continue;
       }
       if (strcmp(field_name, "operator") == 0) {
-        fprintf(st->outfile, " ");
+        TSSymbol symbol = ts_node_grammar_symbol(child);
         char *text = get_node_text(child, st->source_code);
+
         if (text) {
-          fprintf(st->outfile, "%s", text);
+          if (symbol == anon_sym_DOT_DOT_EQ || symbol == anon_sym_DOT_DOT_LT || symbol == anon_sym_DOT_DOT_PLUS) {
+            fprintf(st->outfile, "%s", text);
+          } else {
+            fprintf(st->outfile, " %s ", text);
+          }
           free(text);
         }
-        fprintf(st->outfile, " ");
         continue;
       }
     }
