@@ -263,21 +263,21 @@ void print_comment(TSNode node, PrpfmtState *st);
 // Root children: comment, statement
 void print_comment_inline(TSNode node, PrpfmtState *st);
 void print_comment_newline(TSNode node, PrpfmtState *st);
-void print_statement(TSNode node, PrpfmtState *st);
+void print_statement(TSNode node, PrpfmtState *st, bool is_inline);
 
 // Statement children
 void print_assignment_or_declaration_statement(TSNode node, PrpfmtState *st);
 void print_control_statement(TSNode node, PrpfmtState *st);
 void print_declaration_statement(TSNode node, PrpfmtState *st);
 void print_enum_assignment_statement(TSNode node, PrpfmtState *st);
-void print_expression_statement(TSNode node, PrpfmtState *st);
+void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print_for_statement(TSNode node, PrpfmtState *st);
 void print_function_call_statement(TSNode node, PrpfmtState *st);
 void print_impl_statement(TSNode node, PrpfmtState *st);
 void print_import_statement(TSNode node, PrpfmtState *st);
 void print_lambda(TSNode node, PrpfmtState *st);
 void print_loop_statement(TSNode node, PrpfmtState *st);
-void print_scope_statement(TSNode node, PrpfmtState *st);
+void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print_test_statement(TSNode node, PrpfmtState *st);
 void print_type_statement(TSNode node, PrpfmtState *st);
 void print_while_statement(TSNode node, PrpfmtState *st);
@@ -321,7 +321,7 @@ void print_function_call_type(TSNode node, PrpfmtState *st);
 void print_function_definition(TSNode node, PrpfmtState *st);
 void print_function_definition_decl(TSNode node, PrpfmtState *st);
 void print_identifier(TSNode node, PrpfmtState *st);
-void print_if_expression(TSNode node, PrpfmtState *st);
+void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline);
 void print_lvalue_item(TSNode node, PrpfmtState *st);
 void print_lvalue_list(TSNode node, PrpfmtState *st);
 void print_match_expression(TSNode node, PrpfmtState *st);

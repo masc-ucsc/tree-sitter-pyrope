@@ -10,7 +10,7 @@ void print_help() {
   printf("       ./prpfmt [-h | --help]\n\n");
   printf("Options:\n");
   printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
-  printf("  -i, --indent <n>  Specify the indentation size (default: 2).\n");
+  printf("  -i, --indent <n>  Specify the indentation size (default: 4).\n");
   printf("  -h, --help        Display this help message.\n");
 }
 
