@@ -148,7 +148,7 @@ void print_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         print_loop_statement(child, st);
         break;
       case sym_scope_statement:
-        print_scope_statement(child, st, false);
+        print_scope_statement(child, st, is_inline);
         break;
       case sym_test_statement:
         print_test_statement(child, st);
@@ -174,7 +174,7 @@ void print_statement(TSNode node, PrpfmtState *st, bool is_inline) {
     }
   }
 
-  if (st->indent_level > 0) {
+  if (!(st->inline_exp)) {
     fprintf(st->outfile, "\n");
   }
 }
@@ -210,7 +210,7 @@ void print_control_statement(TSNode node, PrpfmtState *st) {
 
     if (field_name && strcmp(field_name, "argument") == 0) {
       fprintf(st->outfile, " ");
-      print__expression_with_comprehension(child, st);
+      print__expression_with_comprehension(child, st, true);
       continue;
     }
 
@@ -314,7 +314,7 @@ void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         print_comment(child, st);
         break;
       default:
-        print__expression(child, st);
+        print__expression_with_comprehension(child, st, is_inline);
         break;
     }
   }
@@ -651,8 +651,10 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
           // Temporarily disable indentation for statements in inline scope
           int old_level = st->indent_level;
           st->indent_level = 0;
+          st->inline_exp = true;
           print_statement(child, st, true);
           st->indent_level = old_level;
+          st->inline_exp = false;
         } else {
           print_statement(child, st, false);
         }
@@ -829,12 +831,12 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
       }
       if (strcmp(field_name, "condition") == 0) {
         fprintf(st->outfile, " ");
-        print__expression(child, st);
+        print__expression(child, st, true);
         continue;
       }
       if (strcmp(field_name, "code") == 0) {
         fprintf(st->outfile, " ");
-        print_scope_statement(child, st, false);
+        print_scope_statement(child, st, true);
         continue;
       }
     }
@@ -891,7 +893,7 @@ void print_assignment(TSNode node, PrpfmtState *st, bool spaces) {
         } else if (symbol == sym_ref_identifier) {
           print_ref_identifier(child, st);
         } else {
-          print__expression_with_comprehension(child, st);
+          print__expression_with_comprehension(child, st, true);
         }
         continue;
       }
@@ -973,13 +975,13 @@ void print_arg_item(TSNode node, PrpfmtState *st) {
               if (s2 == anon_sym_EQ) {
                 fprintf(st->outfile, " = ");
               } else {
-                print__expression_with_comprehension(c2, st);
+                print__expression_with_comprehension(c2, st, true);
               }
             }
           } else {
             // Already handled by anon_sym_EQ or we just print the expression if it's direct
             if (symbol != anon_sym_EQ) {
-              print__expression_with_comprehension(child, st);
+              print__expression_with_comprehension(child, st, true);
             }
           }
         }
@@ -1098,7 +1100,7 @@ void print_assignment_delay(TSNode node, PrpfmtState *st) {
         print_comment(child, st);
         break;
       default:
-        print__expression(child, st);
+        print__expression(child, st, true);
         break;
     }
   }
@@ -1136,7 +1138,7 @@ void print_attribute_item(TSNode node, PrpfmtState *st) {
     } else if (symbol == sym_comment) {
       print_comment(child, st);
     } else {
-      print__expression(child, st);
+      print__expression(child, st, true);
     }
   }
 }
@@ -1206,7 +1208,7 @@ void print_binary_expression(TSNode node, PrpfmtState *st) {
 
     if (field_name) {
       if (strcmp(field_name, "left") == 0 || strcmp(field_name, "right") == 0) {
-        print__expression(child, st);
+        print__expression(child, st, true);
         continue;
       }
       if (strcmp(field_name, "operator") == 0) {
@@ -1487,7 +1489,7 @@ void print_expression_list(TSNode node, PrpfmtState *st) {
     } else if (symbol == sym_comment) {
       print_comment(child, st);
     } else {
-      print__expression(child, st);
+      print__expression(child, st, true);
     }
   }
 }
@@ -1602,7 +1604,7 @@ void print_func_def_verification(TSNode node, PrpfmtState *st) {
         free(text);
       }
     } else {
-      print__expression(child, st);
+      print__expression(child, st, true);
     }
   }
 }
@@ -1851,7 +1853,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
     if (field_name) {
       if (strcmp(field_name, "condition") == 0) {
         fprintf(st->outfile, " ");
-        print__expression(child, st);
+        print__expression(child, st, is_inline);
         continue;
       }
       if (strcmp(field_name, "code") == 0 || strcmp(field_name, "else") == 0 || strcmp(field_name, "elif") == 0) {
@@ -1886,7 +1888,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
               fprintf(st->outfile, " if");
             } else if (fn2 && strcmp(fn2, "condition") == 0) {
               fprintf(st->outfile, " ");
-              print__expression(c2, st);
+              print__expression(c2, st, is_inline);
             } else if (fn2 && strcmp(fn2, "code") == 0) {
               fprintf(st->outfile, " ");
               print_scope_statement(c2, st, is_inline);
@@ -2008,7 +2010,7 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
         continue;
       } else if (strcmp(field_name, "condition") == 0) {
         fprintf(st->outfile, " ");
-        print__expression(child, st);
+        print__expression(child, st, true);
         continue;
       } else if (strcmp(field_name, "match_list") == 0) {
         print_match_list(child, st);
@@ -2147,7 +2149,7 @@ void print_optional_expression(TSNode node, PrpfmtState *st) {
 
     if (field_name) {
       if (strcmp(field_name, "argument") == 0) {
-        print__expression(child, st);
+        print__expression(child, st, true);
         continue;
       }
       if (strcmp(field_name, "operator") == 0) {
@@ -2298,7 +2300,7 @@ void print_select_options(TSNode node, PrpfmtState *st) {
         fprintf(st->outfile, "..<");
         break;
       default:
-        print__expression(child, st);
+        print__expression(child, st, true);
         break;
     }
   }
@@ -2373,7 +2375,7 @@ void print_timed_identifier(TSNode node, PrpfmtState *st) {
         if (symbol == sym_constant) {
           print_constant(child, st);
         } else {
-          print__expression(child, st);
+          print__expression(child, st, true);
         }
         continue;
       }
@@ -2602,7 +2604,7 @@ void print_typed_identifier(TSNode node, PrpfmtState *st) {
         } else {
           // Handle seq('[', $._expression, ']') if it's not a named node
           // or just call print__expression if it matches
-          print__expression(child, st);
+          print__expression(child, st, true);
         }
         continue;
       }
@@ -2655,7 +2657,7 @@ void print_unary_expression(TSNode node, PrpfmtState *st) {
         continue;
       }
       if (strcmp(field_name, "argument") == 0) {
-        print__expression(child, st);
+        print__expression(child, st, true);
         continue;
       }
     }
@@ -2687,7 +2689,7 @@ void print_when_unless_cond(TSNode node, PrpfmtState *st) {
 
     if (field_name && strcmp(field_name, "condition") == 0) {
       fprintf(st->outfile, " ");
-      print__expression(child, st);
+      print__expression(child, st, true);
       continue;
     }
 
@@ -2723,7 +2725,7 @@ void print__decimal_number(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print__expression(TSNode node, PrpfmtState *st) {
+void print__expression(TSNode node, PrpfmtState *st, bool is_inline) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
 
   switch (symbol) {
@@ -2731,7 +2733,7 @@ void print__expression(TSNode node, PrpfmtState *st) {
       print_binary_expression(node, st);
       break;
     case sym_if_expression:
-      print_if_expression(node, st, true);
+      print_if_expression(node, st, is_inline);
       break;
     case sym_match_expression:
       print_match_expression(node, st);
@@ -2755,12 +2757,12 @@ void print__expression(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print__expression_with_comprehension(TSNode node, PrpfmtState *st) {
+void print__expression_with_comprehension(TSNode node, PrpfmtState *st, bool is_inline) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
   if (symbol == sym_for_comprehension) {
     print_for_comprehension(node, st);
   } else {
-    print__expression(node, st);
+    print__expression(node, st, is_inline);
   }
 }
 
@@ -3008,7 +3010,7 @@ void print__tuple_item(TSNode node, PrpfmtState *st) {
       print_lambda(node, st);
       break;
     default:
-      print__expression_with_comprehension(node, st);
+      print__expression_with_comprehension(node, st, true);
       break;
   }
 }

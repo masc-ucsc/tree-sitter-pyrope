@@ -152,7 +152,8 @@ int main(int argc, char **argv) {
     .outfile = outfile,
     .indent_level = 0,
     .indent_size = indent_size,
-    .fmt_on = true
+    .fmt_on = true,
+    .inline_exp = false
   };
 
   // test_print_all_nodes(tree, source_code);

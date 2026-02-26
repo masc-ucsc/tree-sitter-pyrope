@@ -10,6 +10,7 @@ typedef struct {
   int indent_level;
   int indent_size;
   bool fmt_on;
+  bool inline_exp;
 } PrpfmtState;
 
 // Symbol enum from tree-sitter-pyrope/src/parser.c
@@ -359,8 +360,8 @@ void print_when_unless_cond(TSNode node, PrpfmtState *st);
 void print__binary_number(TSNode node, PrpfmtState *st);
 void print__bool_literal(TSNode node, PrpfmtState *st);
 void print__decimal_number(TSNode node, PrpfmtState *st);
-void print__expression(TSNode node, PrpfmtState *st);
-void print__expression_with_comprehension(TSNode node, PrpfmtState *st);
+void print__expression(TSNode node, PrpfmtState *st, bool is_inline);
+void print__expression_with_comprehension(TSNode node, PrpfmtState *st, bool is_inline);
 void print__hex_number(TSNode node, PrpfmtState *st);
 void print__neg_binary_number(TSNode node, PrpfmtState *st);
 void print__neg_decimal_number(TSNode node, PrpfmtState *st);
