@@ -635,12 +635,16 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
+    TSNode next = ts_node_next_sibling(child);
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch (symbol) {
       case anon_sym_LBRACE:
-        if (is_inline) {
+        if (is_inline) { 
           fprintf(st->outfile, "{ ");
+        } else if (!ts_node_is_null(next) && ts_node_grammar_symbol(next) == sym_comment) {
+          fprintf(st->outfile, "{");
+          st->indent_level++;
         } else {
           fprintf(st->outfile, "{\n");
           st->indent_level++;
