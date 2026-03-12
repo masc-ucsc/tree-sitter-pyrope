@@ -156,7 +156,6 @@ int main(int argc, char **argv) {
     .inline_exp = false
   };
 
-  // test_print_all_nodes(tree, source_code);
   print_tree(tree, &state);
 
   // Free memory

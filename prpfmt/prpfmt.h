@@ -255,143 +255,149 @@ enum {
   aux_sym_complex_string_literal_repeat1 = 238,
 };
 
+// 1. Entry & High-Level Dispatch
 void print_tree(TSTree *tree, PrpfmtState *st);
-
+void print_statement(TSNode node, PrpfmtState *st, bool is_inline);
+void print_indent(PrpfmtState *st);
 void check_format_directives(const char *node_text, PrpfmtState *st);
 
-void print_comment(TSNode node, PrpfmtState *st);
-
-// Root children: comment, statement
-void print_comment_inline(TSNode node, PrpfmtState *st);
-void print_comment_newline(TSNode node, PrpfmtState *st);
-void print_statement(TSNode node, PrpfmtState *st, bool is_inline);
-
-// Statement children
-void print_assignment_or_declaration_statement(TSNode node, PrpfmtState *st);
-void print_control_statement(TSNode node, PrpfmtState *st);
-void print_declaration_statement(TSNode node, PrpfmtState *st);
-void print_enum_assignment_statement(TSNode node, PrpfmtState *st);
-void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline);
-void print_for_statement(TSNode node, PrpfmtState *st);
-void print_function_call_statement(TSNode node, PrpfmtState *st);
-void print_impl_statement(TSNode node, PrpfmtState *st);
-void print_import_statement(TSNode node, PrpfmtState *st);
-void print_lambda(TSNode node, PrpfmtState *st);
-void print_loop_statement(TSNode node, PrpfmtState *st);
+// 2. Structural (Scopes, Lists, Tuples)
 void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline);
-void print_test_statement(TSNode node, PrpfmtState *st);
-void print_type_statement(TSNode node, PrpfmtState *st);
-void print_while_statement(TSNode node, PrpfmtState *st);
+void print_stmt_list(TSNode node, PrpfmtState *st);
+void print_tuple(TSNode node, PrpfmtState *st);
+void print_tuple_sq(TSNode node, PrpfmtState *st);
+void print_tuple_list(TSNode node, PrpfmtState *st);
+void print__tuple_item(TSNode node, PrpfmtState *st);
 
-void print_assignment(TSNode node, PrpfmtState *st, bool spaces);
-void print_enum_assignment(TSNode node, PrpfmtState *st);
-
-void print_arg_item(TSNode node, PrpfmtState *st);
-void print_arg_item_list(TSNode node, PrpfmtState *st);
-void print_arg_list(TSNode node, PrpfmtState *st);
-void print_array_type(TSNode node, PrpfmtState *st);
-void print_assignment_delay(TSNode node, PrpfmtState *st);
-void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces);
-void print_attribute_item(TSNode node, PrpfmtState *st);
-void print_attribute_item_list(TSNode node, PrpfmtState *st);
-void print_attribute_list(TSNode node, PrpfmtState *st);
-void print_attributes(TSNode node, PrpfmtState *st);
-void print_binary_expression(TSNode node, PrpfmtState *st);
-void print_bit_select(TSNode node, PrpfmtState *st);
-void print_bit_select_type(TSNode node, PrpfmtState *st);
-void print_bit_selection(TSNode node, PrpfmtState *st);
-void print_boolean_type(TSNode node, PrpfmtState *st);
-void print_bounded_integer_type(TSNode node, PrpfmtState *st);
-void print_cassert_statement(TSNode node, PrpfmtState *st);
-void print_comb_tok(TSNode node, PrpfmtState *st);
-void print_complex_identifier(TSNode node, PrpfmtState *st);
-void print_complex_identifier_list(TSNode node, PrpfmtState *st);
-void print_complex_string_literal(TSNode node, PrpfmtState *st);
-void print_constant(TSNode node, PrpfmtState *st);
-void print_delay_tok(TSNode node, PrpfmtState *st);
-void print_dot_expression(TSNode node, PrpfmtState *st);
-void print_dot_expression_type(TSNode node, PrpfmtState *st);
-void print_enum_definition(TSNode node, PrpfmtState *st);
-void print_expression_list(TSNode node, PrpfmtState *st);
-void print_expression_type(TSNode node, PrpfmtState *st);
-void print_flow_tok(TSNode node, PrpfmtState *st);
-void print_for_comprehension(TSNode node, PrpfmtState *st);
-void print_func_def_verification(TSNode node, PrpfmtState *st);
-void print_function_call_expression(TSNode node, PrpfmtState *st);
-void print_function_call_type(TSNode node, PrpfmtState *st);
-void print_function_definition(TSNode node, PrpfmtState *st);
-void print_function_definition_decl(TSNode node, PrpfmtState *st);
-void print_identifier(TSNode node, PrpfmtState *st);
+// 3. Control Flow
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline);
-void print_lvalue_item(TSNode node, PrpfmtState *st);
-void print_lvalue_list(TSNode node, PrpfmtState *st);
 void print_match_expression(TSNode node, PrpfmtState *st);
 void print_match_list(TSNode node, PrpfmtState *st);
 void print_match_operator(TSNode node, PrpfmtState *st);
-void print_member_select(TSNode node, PrpfmtState *st);
-void print_member_selection(TSNode node, PrpfmtState *st);
-void print_module_path(TSNode node, PrpfmtState *st);
-void print_optional_expression(TSNode node, PrpfmtState *st);
-void print_pipe_tok(TSNode node, PrpfmtState *st);
-void print_primitive_type(TSNode node, PrpfmtState *st);
-void print_range_type(TSNode node, PrpfmtState *st);
-void print_ref_identifier(TSNode node, PrpfmtState *st);
-void print_select(TSNode node, PrpfmtState *st);
-void print_select_options(TSNode node, PrpfmtState *st);
-void print_selection(TSNode node, PrpfmtState *st);
-void print_sized_integer_type(TSNode node, PrpfmtState *st);
-void print_stmt_list(TSNode node, PrpfmtState *st);
-void print_string_type(TSNode node, PrpfmtState *st);
-void print_timed_identifier(TSNode node, PrpfmtState *st);
-void print_tuple(TSNode node, PrpfmtState *st);
-void print_tuple_list(TSNode node, PrpfmtState *st);
-void print_tuple_sq(TSNode node, PrpfmtState *st);
-void print_type_cast(TSNode node, PrpfmtState *st);
-void print_type_or_identifier(TSNode node, PrpfmtState *st);
-void print_type_specification(TSNode node, PrpfmtState *st);
-void print_type_type(TSNode node, PrpfmtState *st);
-void print_typed_declaration(TSNode node, PrpfmtState *st);
-void print_typed_identifier(TSNode node, PrpfmtState *st);
-void print_typed_identifier_list(TSNode node, PrpfmtState *st);
-void print_unary_expression(TSNode node, PrpfmtState *st);
-void print_unsized_integer_type(TSNode node, PrpfmtState *st);
-void print_var_or_let_or_reg(TSNode node, PrpfmtState *st);
+void print_for_statement(TSNode node, PrpfmtState *st);
+void print_while_statement(TSNode node, PrpfmtState *st);
+void print_loop_statement(TSNode node, PrpfmtState *st);
+void print_control_statement(TSNode node, PrpfmtState *st);
 void print_when_unless_cond(TSNode node, PrpfmtState *st);
-void print__binary_number(TSNode node, PrpfmtState *st);
-void print__bool_literal(TSNode node, PrpfmtState *st);
-void print__decimal_number(TSNode node, PrpfmtState *st);
+
+// 4. Assignments & Declarations
+void print_assignment(TSNode node, PrpfmtState *st, bool spaces);
+void print_lvalue_item(TSNode node, PrpfmtState *st);
+void print_lvalue_list(TSNode node, PrpfmtState *st);
+void print_assignment_or_declaration_statement(TSNode node, PrpfmtState *st);
+void print_declaration_statement(TSNode node, PrpfmtState *st);
+void print_enum_assignment_statement(TSNode node, PrpfmtState *st);
+void print_enum_assignment(TSNode node, PrpfmtState *st);
+void print_enum_definition(TSNode node, PrpfmtState *st);
+void print_typed_declaration(TSNode node, PrpfmtState *st);
+void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces);
+void print_assignment_delay(TSNode node, PrpfmtState *st);
+
+// 5. Functions & Parameters
+void print_lambda(TSNode node, PrpfmtState *st);
+void print_function_definition(TSNode node, PrpfmtState *st);
+void print_function_definition_decl(TSNode node, PrpfmtState *st);
+void print_func_def_verification(TSNode node, PrpfmtState *st);
+void print_arg_list(TSNode node, PrpfmtState *st);
+void print_arg_item_list(TSNode node, PrpfmtState *st);
+void print_arg_item(TSNode node, PrpfmtState *st);
+void print_function_call_statement(TSNode node, PrpfmtState *st);
+void print_function_call_expression(TSNode node, PrpfmtState *st);
+
+// 6. Expressions & Selection
+void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print__expression(TSNode node, PrpfmtState *st, bool is_inline);
 void print__expression_with_comprehension(TSNode node, PrpfmtState *st, bool is_inline);
-void print__hex_number(TSNode node, PrpfmtState *st);
-void print__neg_binary_number(TSNode node, PrpfmtState *st);
-void print__neg_decimal_number(TSNode node, PrpfmtState *st);
-void print__neg_hex_number(TSNode node, PrpfmtState *st);
-void print__neg_octal_number(TSNode node, PrpfmtState *st);
-void print__neg_scaled_number(TSNode node, PrpfmtState *st);
-void print__neg_simple_number(TSNode node, PrpfmtState *st);
-void print__neg_typed_number(TSNode node, PrpfmtState *st);
-void print__number(TSNode node, PrpfmtState *st);
-void print__octal_number(TSNode node, PrpfmtState *st);
 void print__restricted_expression(TSNode node, PrpfmtState *st);
-void print__scaled_number(TSNode node, PrpfmtState *st);
-void print__semicolon(TSNode node, PrpfmtState *st);
-void print__simple_number(TSNode node, PrpfmtState *st);
-void print__simple_string_literal(TSNode node, PrpfmtState *st);
-void print__space(TSNode node, PrpfmtState *st);
-void print__string_literal(TSNode node, PrpfmtState *st);
-void print__timing_sequence(TSNode node, PrpfmtState *st);
-void print__tuple_item(TSNode node, PrpfmtState *st);
+void print_binary_expression(TSNode node, PrpfmtState *st);
+void print_unary_expression(TSNode node, PrpfmtState *st);
+void print_dot_expression(TSNode node, PrpfmtState *st);
+void print_optional_expression(TSNode node, PrpfmtState *st);
+void print_type_specification(TSNode node, PrpfmtState *st);
+void print_type_cast(TSNode node, PrpfmtState *st);
+void print_expression_list(TSNode node, PrpfmtState *st);
+void print_for_comprehension(TSNode node, PrpfmtState *st);
+void print_selection(TSNode node, PrpfmtState *st);
+void print_member_selection(TSNode node, PrpfmtState *st);
+void print_bit_selection(TSNode node, PrpfmtState *st);
+void print_member_select(TSNode node, PrpfmtState *st);
+void print_bit_select(TSNode node, PrpfmtState *st);
+void print_select(TSNode node, PrpfmtState *st);
+void print_select_options(TSNode node, PrpfmtState *st);
+void print_bit_select_type(TSNode node, PrpfmtState *st);
+
+// 7. Types & Identifiers
 void print__type(TSNode node, PrpfmtState *st);
+void print_primitive_type(TSNode node, PrpfmtState *st);
+void print_unsized_integer_type(TSNode node, PrpfmtState *st);
+void print_sized_integer_type(TSNode node, PrpfmtState *st);
+void print_bounded_integer_type(TSNode node, PrpfmtState *st);
+void print_range_type(TSNode node, PrpfmtState *st);
+void print_array_type(TSNode node, PrpfmtState *st);
+void print_string_type(TSNode node, PrpfmtState *st);
+void print_boolean_type(TSNode node, PrpfmtState *st);
+void print_type_type(TSNode node, PrpfmtState *st);
+void print_expression_type(TSNode node, PrpfmtState *st);
+void print_dot_expression_type(TSNode node, PrpfmtState *st);
+void print_function_call_type(TSNode node, PrpfmtState *st);
+void print_type_statement(TSNode node, PrpfmtState *st);
+void print_type_or_identifier(TSNode node, PrpfmtState *st);
+void print_typed_identifier(TSNode node, PrpfmtState *st);
+void print_typed_identifier_list(TSNode node, PrpfmtState *st);
+void print_identifier(TSNode node, PrpfmtState *st);
+void print_ref_identifier(TSNode node, PrpfmtState *st);
+void print_complex_identifier(TSNode node, PrpfmtState *st);
+void print_complex_identifier_list(TSNode node, PrpfmtState *st);
+void print_timed_identifier(TSNode node, PrpfmtState *st);
+void print_var_or_let_or_reg(TSNode node, PrpfmtState *st);
+
+// 8. Literals & Numbers
+void print_constant(TSNode node, PrpfmtState *st);
+void print__number(TSNode node, PrpfmtState *st);
+void print__simple_number(TSNode node, PrpfmtState *st);
+void print__scaled_number(TSNode node, PrpfmtState *st);
+void print__hex_number(TSNode node, PrpfmtState *st);
+void print__decimal_number(TSNode node, PrpfmtState *st);
+void print__octal_number(TSNode node, PrpfmtState *st);
+void print__binary_number(TSNode node, PrpfmtState *st);
 void print__typed_number(TSNode node, PrpfmtState *st);
+void print__neg_simple_number(TSNode node, PrpfmtState *st);
+void print__neg_scaled_number(TSNode node, PrpfmtState *st);
+void print__neg_hex_number(TSNode node, PrpfmtState *st);
+void print__neg_decimal_number(TSNode node, PrpfmtState *st);
+void print__neg_octal_number(TSNode node, PrpfmtState *st);
+void print__neg_binary_number(TSNode node, PrpfmtState *st);
+void print__neg_typed_number(TSNode node, PrpfmtState *st);
+void print__bool_literal(TSNode node, PrpfmtState *st);
+void print__string_literal(TSNode node, PrpfmtState *st);
+void print__simple_string_literal(TSNode node, PrpfmtState *st);
+void print_complex_string_literal(TSNode node, PrpfmtState *st);
 void print__unknown_literal(TSNode node, PrpfmtState *st);
 
-// Get node text from source code
+// 9. Comments
+void print_comment(TSNode node, PrpfmtState *st);
+void print_comment_inline(TSNode node, PrpfmtState *st);
+void print_comment_newline(TSNode node, PrpfmtState *st);
+
+// 10. Special Statements & Attributes
+void print_import_statement(TSNode node, PrpfmtState *st);
+void print_impl_statement(TSNode node, PrpfmtState *st);
+void print_test_statement(TSNode node, PrpfmtState *st);
+void print_cassert_statement(TSNode node, PrpfmtState *st);
+void print_module_path(TSNode node, PrpfmtState *st);
+void print_attributes(TSNode node, PrpfmtState *st);
+void print_attribute_list(TSNode node, PrpfmtState *st);
+void print_attribute_item_list(TSNode node, PrpfmtState *st);
+void print_attribute_item(TSNode node, PrpfmtState *st);
+void print_comb_tok(TSNode node, PrpfmtState *st);
+void print_pipe_tok(TSNode node, PrpfmtState *st);
+void print_flow_tok(TSNode node, PrpfmtState *st);
+void print_delay_tok(TSNode node, PrpfmtState *st);
+void print__semicolon(TSNode node, PrpfmtState *st);
+void print__space(TSNode node, PrpfmtState *st);
+void print__timing_sequence(TSNode node, PrpfmtState *st);
+
+// 11. Utilities
 char *get_node_text(TSNode node, const char *source_code);
-
-void format_node_recursive(TSNode node, const char *source_code, uint32_t *last_printed_end, FILE *outfile);
-
-// Test functions
-void test_print_all_nodes(TSTree *tree, const char *source_code);
-void test_print_all_nodes_recursive(TSNode node, const char *source_code, int indent_level);
 
 #endif // PRP_FMT_H
