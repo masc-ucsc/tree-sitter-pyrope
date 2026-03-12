@@ -6,7 +6,7 @@ This tool is a formatter (like `clang-format`) for Pyrope which traverses the Py
 
 ## File Structure
 This project depends on the tree-sitter library and expects the following directory structure:
-
+```
 project-root/
 ├── prpfmt (executable)
 ├── tree-sitter/
