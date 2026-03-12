@@ -40,8 +40,6 @@ This will create the `prpfmt` executable in the `project-root` directory.
 You can run the formatter from the `project-root` directory:
 ```bash
 ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>]
-```
-
 ./prpfmt [-h | --help]
 ```
 
