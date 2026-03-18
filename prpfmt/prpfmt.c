@@ -5,7 +5,11 @@
 
 #include "prpfmt.h"
 
-// 1. Entry & High-Level Dispatch
+/******************************************************************************
+ * 1. Entry & High-Level Dispatch
+ * Responsibilities: Initiates tree traversal, manages high-level statement dispatch, 
+ * and handles global indentation/formatting state directives.
+ ******************************************************************************/
 
 void print_tree(TSTree *tree, PrpfmtState *st) {
   // Get root and child info
@@ -59,7 +63,17 @@ void print_statement(TSNode node, PrpfmtState *st, bool is_inline) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     if (i == 0 && symbol != sym_scope_statement) {
-      print_indent(st);
+      TSNode prev_sib = ts_node_prev_sibling(node);
+      if (ts_node_is_null(prev_sib)) {
+        print_indent(st);
+      } else {
+        TSSymbol prev_sym = ts_node_grammar_symbol(prev_sib);
+        TSPoint prev_end = ts_node_end_point(prev_sib);
+        TSPoint curr_start = ts_node_start_point(node);
+        if (curr_start.row > prev_end.row || (prev_sym == anon_sym_LBRACE && !st->inline_exp)) {
+          print_indent(st);
+        }
+      }
     }
 
     switch (symbol) {
@@ -115,11 +129,18 @@ void print_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   }
 
   TSNode next = ts_node_next_sibling(node);
-  if (!ts_node_is_null(next) && ts_node_grammar_symbol(next) == sym_comment) {
+  if (!ts_node_is_null(next)) {
     TSPoint end = ts_node_end_point(node);
     TSPoint nstart = ts_node_start_point(next);
+    TSSymbol next_sym = ts_node_grammar_symbol(next);
     if (end.row == nstart.row) {
-      return;
+      if (next_sym == sym_comment) {
+        return;
+      }
+      if (next_sym != anon_sym_RBRACE || st->inline_exp) {
+        fprintf(st->outfile, " ");
+        return;
+      }
     }
   }
 
@@ -142,10 +163,23 @@ void check_format_directives(const char *node_text, PrpfmtState *st) {
   }
 }
 
-// 2. Structural (Scopes, Lists, Tuples)
+/******************************************************************************
+ * 2. Structural (Scopes, Lists, Tuples)
+ * Responsibilities: Manages code blocks and collection delimiters. Ensures 
+ * indentation level changes for nested scopes and proper spacing for lists.
+ ******************************************************************************/
 
 void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
+  TSNode first = ts_node_child(node, 0);
+  TSNode last = ts_node_child(node, child_count - 1);
+  bool single_line = false;
+  if (!ts_node_is_null(first) && !ts_node_is_null(last)) {
+    if (ts_node_start_point(first).row == ts_node_end_point(last).row) {
+      single_line = true;
+    }
+  }
+
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSNode next = ts_node_next_sibling(child);
@@ -153,7 +187,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
 
     switch (symbol) {
       case anon_sym_LBRACE:
-        if (is_inline) { 
+        if (is_inline || single_line) { 
           fprintf(st->outfile, "{ ");
         } else if (!ts_node_is_null(next) && ts_node_grammar_symbol(next) == sym_comment) {
           fprintf(st->outfile, "{");
@@ -164,21 +198,22 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         }
         break;
       case sym_statement:
-        if (is_inline) {
+        if (is_inline || single_line) {
           // Temporarily disable indentation for statements in inline scope
           int old_level = st->indent_level;
           st->indent_level = 0;
+          bool old_inline = st->inline_exp;
           st->inline_exp = true;
           print_statement(child, st, true);
           st->indent_level = old_level;
-          st->inline_exp = false;
+          st->inline_exp = old_inline;
         } else {
           print_statement(child, st, false);
         }
         break;
       case anon_sym_RBRACE:
-        if (is_inline) {
-          fprintf(st->outfile, " }");
+        if (is_inline || single_line) {
+          fprintf(st->outfile, "}");
         } else {
           st->indent_level--;
           print_indent(st);
@@ -200,7 +235,10 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_SEMI:
-        fprintf(st->outfile, " ; ");
+        fprintf(st->outfile, " ;");
+        if (i < child_count - 1) {
+          fprintf(st->outfile, " ");
+        }
         break;
       case sym_comment:
         print_comment(child, st);
@@ -300,7 +338,11 @@ void print__tuple_item(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 3. Control Flow
+/******************************************************************************
+ * 3. Control Flow
+ * Responsibilities: Formats branching and looping constructs (if, match, for, while). 
+ * Manages keyword spacing and conditional clause alignment.
+ ******************************************************************************/
 
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
@@ -387,7 +429,6 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
       if (strcmp(field_name, "init") == 0) {
         if (symbol == sym_stmt_list) {
           print_stmt_list(child, st);
-          fprintf(st->outfile, "; ");
         } else if (symbol == anon_sym_SEMI) {
           fprintf(st->outfile, "; ");
         } else {
@@ -522,7 +563,6 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
       if (strcmp(field_name, "init") == 0) {
         if (symbol == sym_stmt_list) {
           print_stmt_list(child, st);
-          fprintf(st->outfile, "; ");
         } else if (symbol == anon_sym_SEMI) {
           fprintf(st->outfile, "; ");
         } else {
@@ -613,7 +653,6 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
       if (strcmp(field_name, "init") == 0) {
         if (symbol == sym_stmt_list) {
           print_stmt_list(child, st);
-          fprintf(st->outfile, "; ");
         } else if (symbol == anon_sym_SEMI) {
           fprintf(st->outfile, "; ");
         } else {
@@ -637,7 +676,7 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
       }
       if (strcmp(field_name, "code") == 0) {
         fprintf(st->outfile, " ");
-        print_scope_statement(child, st, true);
+        print_scope_statement(child, st, false);
         continue;
       }
     }
@@ -757,7 +796,11 @@ void print_when_unless_cond(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 4. Assignments & Declarations
+/******************************************************************************
+ * 4. Assignments & Declarations
+ * Responsibilities: Formats variable declarations and value assignments. Handles 
+ * spacing around operators (=, :=) and alignment of L-values/R-values.
+ ******************************************************************************/
 
 void print_assignment(TSNode node, PrpfmtState *st, bool spaces) {
   uint32_t child_count = ts_node_child_count(node);
@@ -1083,7 +1126,11 @@ void print_assignment_delay(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 5. Functions & Parameters
+/******************************************************************************
+ * 5. Functions & Parameters
+ * Responsibilities: Formats function definitions, lambdas, and call sites. 
+ * Manages generic parameters, capture lists, and argument list spacing.
+ ******************************************************************************/
 
 void print_lambda(TSNode node, PrpfmtState *st) {
   uint32_t child_count = ts_node_child_count(node);
@@ -1492,7 +1539,11 @@ void print_function_call_expression(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 6. Expressions & Selection
+/******************************************************************************
+ * 6. Expressions & Selection
+ * Responsibilities: Formats complex expressions, including binary/unary operations, 
+ * dot access, type casts, and member/bit selection.
+ ******************************************************************************/
 
 void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
@@ -1953,7 +2004,11 @@ void print_bit_select_type(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 7. Types & Identifiers
+/******************************************************************************
+ * 7. Types & Identifiers
+ * Responsibilities: Formats type names and identifiers. Handles primitive, array, 
+ * and complex type signatures, ensuring consistent identifier naming format.
+ ******************************************************************************/
 
 void print__type(TSNode node, PrpfmtState *st) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
@@ -2527,7 +2582,11 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 8. Literals & Numbers
+/******************************************************************************
+ * 8. Literals & Numbers
+ * Responsibilities: Formats constant values including numbers (binary, hex, decimal), 
+ * booleans, and strings. Ensures literal values are emitted as-is from source.
+ ******************************************************************************/
 
 void print_constant(TSNode node, PrpfmtState *st) {
   char *text = get_node_text(node, st->source_code);
@@ -2749,7 +2808,11 @@ void print__unknown_literal(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 9. Comments
+/******************************************************************************
+ * 9. Comments
+ * Responsibilities: Processes and preserves code comments. Distinguishes between 
+ * inline comments (same line as code) and newline comments.
+ ******************************************************************************/
 
 void print_comment(TSNode node, PrpfmtState *st) {
   TSNode prev = ts_node_prev_sibling(node);
@@ -2790,7 +2853,11 @@ void print_comment_newline(TSNode node, PrpfmtState *st) {
   }
 }
 
-// 10. Special Statements & Attributes
+/******************************************************************************
+ * 10. Special Statements & Attributes
+ * Responsibilities: Formats non-standard constructs like imports, assertions, 
+ * and hardware-specific attributes (comb, pipe, flow, delay).
+ ******************************************************************************/
 
 void print_import_statement(TSNode node, PrpfmtState *st) {
   uint32_t child_count = ts_node_child_count(node);
@@ -3068,17 +3135,11 @@ void print__semicolon(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print__space(TSNode node, PrpfmtState *st) {
-  // FIXME: this probably doesn't get parsed
-  fprintf(st->outfile, "_space\n");
-}
-
-void print__timing_sequence(TSNode node, PrpfmtState *st) {
-  // FIXME: is this getting parsed?
-  fprintf(st->outfile, "_timing_sequence\n");
-}
-
-// 11. Utilities
+/******************************************************************************
+ * 11. Utilities
+ * Responsibilities: Provides low-level helper functions for string extraction 
+ * and node analysis from the tree-sitter tree.
+ ******************************************************************************/
 
 char *get_node_text(TSNode node, const char *source_code) {
   // Get byte position of text in original code

@@ -5,15 +5,20 @@
 #include <tree_sitter/api.h>
 
 typedef struct {
-  const char *source_code;
-  FILE *outfile;
-  int indent_level;
-  int indent_size;
-  bool fmt_on;
-  bool inline_exp;
+  const char *source_code; // Input source for text extraction via get_node_text
+  FILE *outfile;           // Output target (stdout or file)
+  int indent_level;        // Nesting depth for indentation
+  int indent_size;         // Spaces per level (default: 4)
+  bool fmt_on;             // Toggle for 'prpfmt on/off' directives
+  bool inline_exp;         // If true, suppresses newlines for nested expressions
 } PrpfmtState;
 
-// Symbol enum from tree-sitter-pyrope/src/parser.c
+/* 
+ * SYMBOL ENUM
+ * These constants must match the symbol IDs generated in 
+ * tree-sitter-pyrope/src/parser.c. If the grammar is re-generated, 
+ * these values may need synchronization.
+ */
 enum {
   sym_identifier = 1,
   anon_sym_SEMI = 2,
@@ -255,13 +260,21 @@ enum {
   aux_sym_complex_string_literal_repeat1 = 238,
 };
 
-// 1. Entry & High-Level Dispatch
+/******************************************************************************
+ * 1. Entry & High-Level Dispatch
+ * Responsibilities: Initiates tree traversal, manages high-level statement dispatch, 
+ * and handles global indentation/formatting state directives.
+ ******************************************************************************/
 void print_tree(TSTree *tree, PrpfmtState *st);
 void print_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print_indent(PrpfmtState *st);
 void check_format_directives(const char *node_text, PrpfmtState *st);
 
-// 2. Structural (Scopes, Lists, Tuples)
+/******************************************************************************
+ * 2. Structural (Scopes, Lists, Tuples)
+ * Responsibilities: Manages code blocks and collection delimiters. Ensures 
+ * indentation level changes for nested scopes and proper spacing for lists.
+ ******************************************************************************/
 void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print_stmt_list(TSNode node, PrpfmtState *st);
 void print_tuple(TSNode node, PrpfmtState *st);
@@ -269,7 +282,11 @@ void print_tuple_sq(TSNode node, PrpfmtState *st);
 void print_tuple_list(TSNode node, PrpfmtState *st);
 void print__tuple_item(TSNode node, PrpfmtState *st);
 
-// 3. Control Flow
+/******************************************************************************
+ * 3. Control Flow
+ * Responsibilities: Formats branching and looping constructs (if, match, for, while). 
+ * Manages keyword spacing and conditional clause alignment.
+ ******************************************************************************/
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline);
 void print_match_expression(TSNode node, PrpfmtState *st);
 void print_match_list(TSNode node, PrpfmtState *st);
@@ -280,7 +297,11 @@ void print_loop_statement(TSNode node, PrpfmtState *st);
 void print_control_statement(TSNode node, PrpfmtState *st);
 void print_when_unless_cond(TSNode node, PrpfmtState *st);
 
-// 4. Assignments & Declarations
+/******************************************************************************
+ * 4. Assignments & Declarations
+ * Responsibilities: Formats variable declarations and value assignments. Handles 
+ * spacing around operators (=, :=) and alignment of L-values/R-values.
+ ******************************************************************************/
 void print_assignment(TSNode node, PrpfmtState *st, bool spaces);
 void print_lvalue_item(TSNode node, PrpfmtState *st);
 void print_lvalue_list(TSNode node, PrpfmtState *st);
@@ -293,7 +314,11 @@ void print_typed_declaration(TSNode node, PrpfmtState *st);
 void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces);
 void print_assignment_delay(TSNode node, PrpfmtState *st);
 
-// 5. Functions & Parameters
+/******************************************************************************
+ * 5. Functions & Parameters
+ * Responsibilities: Formats function definitions, lambdas, and call sites. 
+ * Manages generic parameters, capture lists, and argument list spacing.
+ ******************************************************************************/
 void print_lambda(TSNode node, PrpfmtState *st);
 void print_function_definition(TSNode node, PrpfmtState *st);
 void print_function_definition_decl(TSNode node, PrpfmtState *st);
@@ -304,7 +329,11 @@ void print_arg_item(TSNode node, PrpfmtState *st);
 void print_function_call_statement(TSNode node, PrpfmtState *st);
 void print_function_call_expression(TSNode node, PrpfmtState *st);
 
-// 6. Expressions & Selection
+/******************************************************************************
+ * 6. Expressions & Selection
+ * Responsibilities: Formats complex expressions, including binary/unary operations, 
+ * dot access, type casts, and member/bit selection.
+ ******************************************************************************/
 void print_expression_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print__expression(TSNode node, PrpfmtState *st, bool is_inline);
 void print__expression_with_comprehension(TSNode node, PrpfmtState *st, bool is_inline);
@@ -326,7 +355,11 @@ void print_select(TSNode node, PrpfmtState *st);
 void print_select_options(TSNode node, PrpfmtState *st);
 void print_bit_select_type(TSNode node, PrpfmtState *st);
 
-// 7. Types & Identifiers
+/******************************************************************************
+ * 7. Types & Identifiers
+ * Responsibilities: Formats type names and identifiers. Handles primitive, array, 
+ * and complex type signatures, ensuring consistent identifier naming format.
+ ******************************************************************************/
 void print__type(TSNode node, PrpfmtState *st);
 void print_primitive_type(TSNode node, PrpfmtState *st);
 void print_unsized_integer_type(TSNode node, PrpfmtState *st);
@@ -351,7 +384,11 @@ void print_complex_identifier_list(TSNode node, PrpfmtState *st);
 void print_timed_identifier(TSNode node, PrpfmtState *st);
 void print_var_or_let_or_reg(TSNode node, PrpfmtState *st);
 
-// 8. Literals & Numbers
+/******************************************************************************
+ * 8. Literals & Numbers
+ * Responsibilities: Formats constant values including numbers (binary, hex, decimal), 
+ * booleans, and strings. Ensures literal values are emitted as-is from source.
+ ******************************************************************************/
 void print_constant(TSNode node, PrpfmtState *st);
 void print__number(TSNode node, PrpfmtState *st);
 void print__simple_number(TSNode node, PrpfmtState *st);
@@ -374,12 +411,20 @@ void print__simple_string_literal(TSNode node, PrpfmtState *st);
 void print_complex_string_literal(TSNode node, PrpfmtState *st);
 void print__unknown_literal(TSNode node, PrpfmtState *st);
 
-// 9. Comments
+/******************************************************************************
+ * 9. Comments
+ * Responsibilities: Processes and preserves code comments. Distinguishes between 
+ * inline comments (same line as code) and newline comments.
+ ******************************************************************************/
 void print_comment(TSNode node, PrpfmtState *st);
 void print_comment_inline(TSNode node, PrpfmtState *st);
 void print_comment_newline(TSNode node, PrpfmtState *st);
 
-// 10. Special Statements & Attributes
+/******************************************************************************
+ * 10. Special Statements & Attributes
+ * Responsibilities: Formats non-standard constructs like imports, assertions, 
+ * and hardware-specific attributes (comb, pipe, flow, delay).
+ ******************************************************************************/
 void print_import_statement(TSNode node, PrpfmtState *st);
 void print_impl_statement(TSNode node, PrpfmtState *st);
 void print_test_statement(TSNode node, PrpfmtState *st);
@@ -397,7 +442,11 @@ void print__semicolon(TSNode node, PrpfmtState *st);
 void print__space(TSNode node, PrpfmtState *st);
 void print__timing_sequence(TSNode node, PrpfmtState *st);
 
-// 11. Utilities
+/******************************************************************************
+ * 11. Utilities
+ * Responsibilities: Provides low-level helper functions for string extraction 
+ * and node analysis from the tree-sitter tree.
+ ******************************************************************************/
 char *get_node_text(TSNode node, const char *source_code);
 
 #endif // PRP_FMT_H

@@ -48,6 +48,11 @@ You can run the formatter from the `project-root` directory:
 - `-i, --indent <n>`: Specify the indentation size (default: 4).
 - `-h, --help`: Display the help message.
 
+## Known Issues/Future Work
+- Vertical alignment
+- Multi-line statements with proper indentation/formatting
+- Handling comments within certain statements (ex: comments in a tuple)
+
 ## References
 
 - tree-sitter-pyrope: https://github.com/masc-ucsc/tree-sitter-pyrope
