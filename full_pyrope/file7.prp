@@ -1,8 +1,20 @@
-comb add(a:u8, b:u8) -> (result:u8) {
-    result = a + b
-}
+const div  = comb (self, b) { self / b }  // named input tuple
+const div2 = comb (...x) { x[0] / x[1] }    // unnamed input tuple
 
-// Implicit return
-comb add_simple(a:u8, b:u8) {
-    a + b                       // Returns single-element tuple
-}
+const noarg = comb () { 33 }         // explicit no args
+
+assert 33 == noarg()              // () needed to call
+
+
+b = div(self=8, b=4)     // OK, 2
+d = (self=8).div(b=2)    // OK, 4
+d = (8).div(b=2)         // OK, 4 . self does not need to be named
+d = 8.div(2)             // OK, single character inputs no need to be named
+
+h = div2(8, 4, 3)        // OK, 2 (3rd arg is not used)
+
+j = (8, 4) |> div2       // OK, 2, same as div2(8,4)
+j = (8, 4) |> div2()     // OK, 2, same as div2(8,4)
+k = (4) |> div2(8)       // OK, 2, same as div2(8,4)
+l = (4, 33) |> div2(8)   // OK, 2, same as div2(8,4,33)
+

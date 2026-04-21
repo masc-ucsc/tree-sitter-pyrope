@@ -1,8 +1,21 @@
-comb div(a:int, b:int) -> (q:int) {
-  requires b != 0
-  ensures  a == q*b + (a % b)  // Note: % is compile-time only
-  q = a / b
-}
+mut a:int = ?
+cassert a==0 and a::[valid] == false and not a?
 
-const a = some_call(z)
-optimize a < 1000  // a should never be over 1000, optimize accordingly
+mut b:int = 0
+cassert b==0 and b::[valid] and b?
+b = nil
+cassert b==nil and b::[valid] == false and not b?
+
+mut c:comb(a1) = ?
+cassert c == nil and c::[valid]==false
+c = comb(a1) { cassert true }
+cassert c!= nil and c::[valid]
+
+mut d:[] = ?               // empty tuple
+cassert d != nil and d::[valid]
+cassert d[0] == nil and !d[0]::[valid]
+
+mut e:int = nil
+cassert e==nil and !e::[valid] and not e?
+e = 0
+cassert e==0 and e::[valid] and e?

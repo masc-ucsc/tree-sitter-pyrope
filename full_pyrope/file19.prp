@@ -1,3 +1,22 @@
-mut sum = a + b; mut diff = a - b; mut prod = a * b; mut div = a / b  // Basic arithmetic
-mut left_shift = a << n; mut right_shift = a >> n  // Shifts
-const remainder = a % b  // Modulo (compile-time only due to cost)
+    foo = comb (self) { puts "comb.foo" }
+    a = (
+      ,foo = comb () {
+         bar = comb() { puts "bar" }
+         puts "mem.foo"
+         return (bar=bar)
+      }
+    )
+    b = 3
+    c = "string"
+
+    b.foo         // prints "comb.foo"
+    b.foo()       // prints "comb.foo"
+    x = a.foo     // prints "mem.foo"
+    y = a.foo()   // prints "mem.foo"
+    x()           // prints "bar"
+
+    a.foo.bar()   // prints "mem.foo" and then "bar"
+    a.foo().bar() // prints "mem.foo" and then "bar"
+    a.foo().bar   // prints "mem.foo" and then "bar"
+
+    c.foo         // prints "comb.foo"

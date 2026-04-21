@@ -1,3 +1,17 @@
-// Instantiate external RTL with port mapping
-const (out_t) =  mymod(clock=clk, reset=rst, a=in_a)
-// NOTE: Same form as comb/pipe/flow calls; import handles RTL binding.
+const weird_pick_bits = comb(b:u32) -> (x:u1, _:u4) {
+  (x=b#[2..<3], b#[5])
+}
+
+comb fcall_returns_2_values() -> (xx, yy) {
+  xx = 3
+  yy = 7
+}
+
+const (a,_) = fcall_returns_2_values()
+assert a == 3
+
+mut b:u8 = 3
+_ = a           // legal, but it is just a "read" to 'a'
+_ = 3
+b = ?
+assert b == 0 and not b::[valid]

@@ -1,4 +1,17 @@
-return when    enable
-return unless !enable  // Same
+const ret1 = comb() -> (a:int) {
+  a = 1
+}
 
-assert !enable
+const ret3 = comb() -> (a, b) {
+  a = 3
+  b = 4
+}
+
+const a1 = ret1()
+assert a1.a == 1 and a1 == 1  // single-field tuple auto-unwraps
+
+const a3 = ret3()
+assert a3.a == 3 and a3.b == 4
+
+const (x1, x2) = ret3()
+assert x1 == 3 and x2 == 4

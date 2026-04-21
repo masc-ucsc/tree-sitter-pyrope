@@ -1,4 +1,15 @@
-// No trait keyword, but `type`
-type Show ( comb show(self) -> String )
-impl Show for int ( comb show(self) -> String { "_{self}_" } )
-cassert 42.show() == "_42_"
+const custom = (
+  ,data:i16 = ?
+  ,setter = comb(ref self, v) {
+    self.data = v
+    self::[valid] = v != 33
+  }
+)
+
+mut x:custom = ?
+
+cassert x?
+x.data = 33
+cassert not x?
+x.data = 100
+cassert x?

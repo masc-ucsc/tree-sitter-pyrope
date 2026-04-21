@@ -1,15 +1,34 @@
-enum ADT = (
-  Person:(eats:string) = ?,
-  Robot:(charges_with:string) = ?
-)
+assert((x or !y) == (x or (!y)) == (x or not y))
+assert((3*5+5) == ((3*5) + 5) == 3*5 + 5)
 
-const nourish = comb(x:ADT) {
-  match x {
-    does ADT.Person { puts "eating:{x.eats}" }
-    does ADT.Robot { puts "charging:{x.charges_with}" }
-  }
-}
+a = x1 or x2==x3 // same as b = x1 or (x2==x3)
+c = 3
+  & 4 * 4
+c2 = 3
+  & (4 * 4)
+  & (5 + 3)      // OK
 
-test "my main" {
-  (_:Person="pizza", _:Robot="electricity").each(nourish)
-}
+d = 3 + 3 - 5    // OK, same result right-left
+
+e = 1
+  | 5
+
+f = (1 & 4)
+  | (1 + 5)
+  | 1
+
+g = 1 + 3
+  * 1 + 2
+  + 5           // OK, but not nice
+
+g1= 1 + (3 * 1)
+  + 2
+  + 5           // OK
+
+g2= (1 + 3)
+  * (1 + 2)
+  + 5           // OK
+
+
+i = a == 3 <= b == d
+assert i == (a==3 and 3<=b and b == d)

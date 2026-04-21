@@ -1,3 +1,1 @@
-const name = "Pyrope"
-const msg  = "Hello {name}!"
-puts msg
+cassert((a=1,b=2) has "a")

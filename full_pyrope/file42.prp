@@ -1,19 +1,8 @@
-// Define an ADT with associated values
-enum Expr = (
-    ,,, // extra commas are OK (no meaning)
-    ,number:Int=?
-    ,,, // extra commas are OK (no meaning)
-    ,add:(_:Expr, _:Expr)=?
-    ,,, // extra commas are OK (no meaning)
-)
+mut v = 0b10
+assert v#[0,1] == v#[1,2] == v#[..] == v#[0..=1] == v#[..=1] == 0b10
 
-// Evaluate recursively
-comb eval(e: Expr) -> int {
-    match e {
-      does Expr.number { e.number }
-      does Expr.add    { eval(e.add[0]) + eval(e.add[1]) }
-    }
-}
+mut trans = 0
 
-const expr = Expr.add(Expr.number(2), Expr.number(3))
-puts "result:{eval(expr)} should be 5"
+trans#[0] = v#[1]
+trans#[1] = v#[0]
+assert trans == 0b01

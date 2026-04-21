@@ -1,22 +1,32 @@
-mut buffer:[16]u8 = ?           // Array (no persistence)
-reg memory:[256]u32 = 0         // Memory (persistent)
+mut add:comb(...x) = ?
+add = comb(...x) { x[0] + x[1] + x[2] }     // no IO specified
+add = comb(a, b, c) { a + b + c }        // constrain inputs to a,b,c
+add = comb(a, b, c) { a + b + c }        // same
+add = comb(a:u32, b:s3, c) { a + b + c } // constrain some input types
+add = comb(a, b, c) -> (x:u32) { a + b + c } // constrain result to u32
+add = comb(a, b, c) -> (result) { a + b + c } // constrain result to be named result
+add = comb(a, b:a, c:a) { a + b + c }    // constrain inputs to have same type
+add = comb<T>(a:T, b:T, c:T) { a + b + c } // same
 
-memory[addr] = data             // Write
-mut read_data = memory[addr]    // Read
+const x = 2
+mut add2:comb(a) = ?
+add2 = comb[x    ](a) { x + a }    // explicit capture x
+add2 = comb[foo=x](a) { foo + a }  // capture x but rename to something else
 
-// Range-based access
-mut slice = buffer[1..=4]       // Extract elements 1-4
+mut y = (
+  val:u32 = 1,
+  inc1 = comb (ref self) { self.val = u32(self.val + 1) }
+)
 
-// Memory with synthesis attributes
-reg ram:[1024]u32:[
-  latency=1,                    // 1-cycle read latency
-  fwd=true,                     // Write-to-read forwarding
-  wensize=4,                    // 4-bit write enable (byte enables)
-  rdport=(0,1), wrport=(2,3)    // Port assignment
-] = 0
+const my_log::[debug] = comb (...inp) {
+  print "logging:"
+  for i in inp {
+    print " {}", i
+  }
+  puts
+}
 
-// Dual-port access (simple Pyrope requires explicit port attribute for multiport)
-ram[addr1]:[wrport=2] = data1            // Write port 2
-ram[addr2]:[wrport=3] = data2            // Write port 3
-mut out1 = ram.port[0][addr3]:[rdport=0] // Read port 0
-mut out2 = ram.port[1][addr4]:[rdport=1] // Read port 1
+const f = comb<X>(a:X, b:X) { a + b }   // enforces a and b with same type
+assert f(33:u22, 100:u22) == 133
+
+my_log(a, false, x + 1)

@@ -1,1 +1,2 @@
-enum Token = ( Id:string=?, Lit:variant(IntKind:int, StrKind:string)=? )
+assert a <= b <= c  // same as a<=b and b<=c
+assert a <  b <= c  // same as a< b and b<=c

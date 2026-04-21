@@ -36,7 +36,15 @@
         "named": true
       },
       {
+        "type": "scope_statement",
+        "named": true
+      },
+      {
         "type": "tuple",
+        "named": true
+      },
+      {
+        "type": "tuple_sq",
         "named": true
       },
       {
@@ -170,6 +178,46 @@
     }
   },
   {
+    "type": "assert_statement",
+    "named": true,
+    "fields": {
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      },
+      "msg": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "complex_string_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "assignment",
     "named": true,
     "fields": {
@@ -258,15 +306,30 @@
   {
     "type": "assignment_delay",
     "named": true,
-    "fields": {},
+    "fields": {
+      "timing": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "[",
+            "named": false
+          },
+          {
+            "type": "]",
+            "named": false
+          },
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "_expression",
-          "named": true
-        },
         {
           "type": "delay_tok",
           "named": true
@@ -650,6 +713,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -872,6 +939,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1288,19 +1359,11 @@
     "named": true,
     "fields": {
       "capture": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "[",
-            "named": false
-          },
-          {
-            "type": "]",
-            "named": false
-          },
-          {
-            "type": "typed_identifier_list",
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1404,6 +1467,10 @@
         "required": false,
         "types": [
           {
+            "type": ";",
+            "named": false
+          },
+          {
             "type": "_expression",
             "named": true
           },
@@ -1412,7 +1479,7 @@
             "named": false
           },
           {
-            "type": "scope_statement",
+            "type": "stmt_list",
             "named": true
           }
         ]
@@ -1557,6 +1624,10 @@
           },
           {
             "type": "flow_tok",
+            "named": true
+          },
+          {
+            "type": "mod_tok",
             "named": true
           },
           {
@@ -1804,6 +1875,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -2034,6 +2109,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "assert_statement",
+          "named": true
+        },
         {
           "type": "assignment_or_declaration_statement",
           "named": true
@@ -2359,6 +2438,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -2883,6 +2966,10 @@
     "named": false
   },
   {
+    "type": "always",
+    "named": false
+  },
+  {
     "type": "and",
     "named": false
   },
@@ -2892,6 +2979,10 @@
   },
   {
     "type": "as",
+    "named": false
+  },
+  {
+    "type": "assert",
     "named": false
   },
   {
@@ -2918,6 +3009,10 @@
     "type": "comment",
     "named": true,
     "extra": true
+  },
+  {
+    "type": "comptime",
+    "named": false
   },
   {
     "type": "const",
@@ -3006,6 +3101,10 @@
   {
     "type": "match",
     "named": false
+  },
+  {
+    "type": "mod_tok",
+    "named": true
   },
   {
     "type": "mut",

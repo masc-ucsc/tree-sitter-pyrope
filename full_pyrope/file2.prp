@@ -1,3 +1,11 @@
-const constant = 42     // Compile-time constant (immutable)
-mut wire = 0            // Combinational (no persistence)
-reg state = 0           // Register (persistent across cycles)
+    pipe multiply::[stages=3](a, b) -> (result) {   // fixed 3-cycle latency
+      result = a * b
+    }
+
+    pipe add_pipe::[stages=1..=3](a, b) -> (result) { // compiler chooses 1-3 cycles
+      result = a + b
+    }
+
+    pipe flexible_mul(a, b) -> (result) {  // bare: caller specifies via delay[N]
+      result = a * b
+    }

@@ -1,2 +1,21 @@
-mut and_result = a & b; mut or_result = a | b; mut xor_result = a ^ b  // AND, OR, XOR
-mut not_result = ~a             // NOT
+    foo = comb (self:int) { puts "comb.foo" }
+    a = (
+      ,foo = comb () {
+         bar = comb() { puts "bar" }
+         puts "mem.foo"
+         return (bar=bar)
+      }
+    )
+    b = 3
+    c = "string"
+
+    b.foo         // prints "comb.foo"
+    b.foo()       // prints "comb.foo"
+    x = a.foo     // prints "mem.foo"
+    y = a.foo()   // prints "mem.foo"
+    x()           // prints "bar"
+
+    a.foo.bar()   // prints "mem.foo" and then "bar"
+    a.foo().bar() // prints "mem.foo" and then "bar"
+    a.foo().bar   // prints "mem.foo" and then "bar"
+

@@ -138,7 +138,7 @@ module.exports = grammar({
       , $.test_statement
       , $.type_statement
       , $.impl_statement
-      //, $.cassert_statement
+      , $.assert_statement
     )
     )
     , scope_statement: $ => prec.left('statement', seq(
@@ -192,6 +192,7 @@ module.exports = grammar({
       , field('code', $.scope_statement)
       , field('elif', repseq(
         'elif'
+        , field('init', optseq($.stmt_list, ';'))
         , field('condition', $._expression)
         , field('code', $.scope_statement)
       ))
@@ -222,12 +223,12 @@ module.exports = grammar({
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
-    , loop_statement: $ => seq(
+    , loop_statement: $ => prec.left('statement', seq(
       'loop'
       , field('attributes', optseq('::', $.attribute_list))
       , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
-    )
+    ))
     , match_expression: $ => seq(
       'match'
       , field('init', optseq($.stmt_list, ';'))
@@ -276,9 +277,14 @@ module.exports = grammar({
       , field('implementation', $.tuple)
       , $._semicolon
     )
-    , cassert_statement: $ => seq(
-      'cassert'
+    , assert_statement: $ => seq(
+      optional('always')
+      , 'assert'
       , field('condition', $._expression)
+      , field('msg', optional(seq(
+        ','
+        , $._string_literal
+      )))
       , $._semicolon
     )
     , expression_list: $ => prec.left(seq(
@@ -348,25 +354,14 @@ module.exports = grammar({
       , $._semicolon
     ))
     // (removed) _assignment_or_declaration folded into assignment
-    , assignment_delay: $ => choice(
-      seq(
-        $.delay_tok
-        , '['
-        , $._expression
-        , ']'
-      )
-      , seq(
-        '@'
-        , '['
-        , $._expression
-        , ']'
-      )
-      , seq(
-        '@'
-        , $.constant
-      )
+    , assignment_delay: $ => seq(
+      $.delay_tok
+      , field('timing', seq('[', $._expression, ']'))
     )
-    , var_or_let_or_reg: $ => choice('const', 'mut', 'reg')
+    , var_or_let_or_reg: $ => seq(
+      optional('comptime')
+      , choice('const', 'mut', 'reg')
+    )
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_item: $ => seq(
@@ -377,7 +372,7 @@ module.exports = grammar({
     , attribute_list: $ => seq('[', optional($.attribute_item_list), ']')
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('capture', optseq('[', $.typed_identifier_list, ']'))
+      , field('capture', optseq($.tuple_sq))
       , field('pipe_config', optseq('::', $.attribute_list))
       , field('input', choice($.arg_list, seq('(', ')')))
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
@@ -436,10 +431,7 @@ module.exports = grammar({
     ))
     , _timing_sequence: $ => seq(
       '@'
-      , field('timing', choice(
-        $.constant
-        , seq('[', $._expression, ']')
-      ))
+      , field('timing', seq('[', $._expression, ']'))
     )
     , complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
 
@@ -458,6 +450,7 @@ module.exports = grammar({
       , $.if_expression
       , $.match_expression
       , $._restricted_expression
+      , $.scope_statement
     ))
     , _expression_with_comprehension: $ => seq(
       $._expression
@@ -581,10 +574,11 @@ module.exports = grammar({
       , $.function_call_expression
       , $.lambda
       , $.tuple
+      , $.tuple_sq
       , $.optional_expression
     ))
     , lambda: $ => seq(
-      field('func_type', choice($.comb_tok, $.pipe_tok, $.flow_tok))
+      field('func_type', choice($.comb_tok, $.pipe_tok, $.mod_tok, $.flow_tok))
       , field('name', optional($.identifier))
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
@@ -685,6 +679,7 @@ module.exports = grammar({
     , comb_tok: $ => token('comb')
     , pipe_tok: $ => token('pipe')
     , flow_tok: $ => token('flow')
+    , mod_tok: $ => token('mod')
 
     // Identifiers
     , delay_tok: $ => token('delay')
@@ -762,11 +757,12 @@ module.exports = grammar({
         choice(
           prec(2, /\\./)
           , /[^{"\\\n]+/
-          , seq('{', optional($._expression), '}')
+          , seq('{', optional($._expression), optional($._format_spec), '}')
         )
       )
       , '"'
     )
+    , _format_spec: $ => token(/:[^}"\n]*/)
 
     // Special
     , _space: $ => token(/[\s\p{Zs}\uFEFF\u2060\u200B]/)

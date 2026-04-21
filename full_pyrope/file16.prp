@@ -1,11 +1,18 @@
-// Set attribute (only at declaration)
-mut foo:u32:[comptime=true] = 42    // Set comptime attribute
-reg counter:[reset_pin=rst] = 0     // Set reset pin attribute
+mut a_1 = (
+  x:u10,
+  f1 = comb(ref self, x) -> (self) { // BOTH ref self and return self is OK
+    self.x = x
+    self
+  }
+)
 
-// Read attribute value
-const num_bits = counter::[bits]    // Read number of bits
+a_1.f1(3)
+mut a_2 = a_1.f1(4)  // a_2 is updated, not a_1
+assert a_1.x == 3 and a_2.x == 4
 
-// Check attribute (read and compare)
-cassert counter::[bits] == 8        // Check bit width
-cassert foo::[comptime] == true     // Check if compile-time constant
-cassert z::[bits] < 32              // Check bit width constraint
+// Same behavior as in a function with UFCS
+const set_x = comb (ref self, x) { self.x = x }
+
+a_1.set_x(10)
+mut a_3 = a_1.set_x(20)
+assert a_1 == 10 and a_3 == 20

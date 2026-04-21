@@ -1,5 +1,0 @@
-test "my test" {
-    mut result = my_function(input)
-    assert result == expected
-    step                       // Advance simulation
-}

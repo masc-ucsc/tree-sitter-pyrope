@@ -1,1 +1,13 @@
-const (tmp@0:u32, tmp2@[2]:u3:[something=true], x@0:i3:[comptime=true]) = some_flow_call(a@0, b@3:u32, c@2:[xxx_should_be_set=true])
+no_arg_fun()     // must use explicit parenthesis/called
+arg_fun(1, 2)    // parenthesis recommended
+arg_fun(1, 2)    // OK too
+(1, 2) |> arg_fun // OK too, it is after |>
+
+mut intercepted:(
+  field:u32,
+  getter = comb(self) { self.field + 1 },
+  setter = comb(ref self, v) { self.field = v }
+) = 0
+
+cassert intercepted == 1  // will call getter method without explicit call
+cassert intercepted.field == 0

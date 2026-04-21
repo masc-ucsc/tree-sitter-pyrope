@@ -1,2 +1,0 @@
-const r = regref(top.counter) // library function call
-// NOTE: Treat regref as a library call; no grammar impact.

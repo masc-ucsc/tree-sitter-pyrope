@@ -1,25 +1,13 @@
-pipe counter(enable:bool) -> (reg count:u8) {
-    count += 1 when enable
-}
+mut tup = (
+  f1 = comb(self) { 1 }
+)
 
-pipe fifo(push:bool, pop:bool, data_in:u18) -> (data_out:u18, full:bool, empty:bool) {
-    reg buffer:[16]u18 = _
-    reg head:u4 = 0
-    reg tail:u4 = 0
-    reg count:u5 = 0
+const f1 = comb () { 3 }      // OK, no self
 
-    if push and !full {
-        buffer[head] = data_in
-        head = (head + 1) & 0xF
-        count += 1
-    }
 
-    if pop and !empty {
-        data_out = buffer[tail]
-        tail = (tail + 1) & 0xF
-        count -= 1
-    }
+const xx = comb[tup] { tup.f1() } // OK, function restricted scope for f1
+assert xx() == 1
 
-    full = (count == 16)
-    empty = (count == 0)
-}
+assert (4:tup).f1() == 1
+assert 4.f1() == 3        // UFCS call
+assert tup.f1() == 1

@@ -1,6 +1,6 @@
-// Explicit parentheses required for mixed precedence
-mut result = (a * b) + (c & d)   // Clear precedence
-// mut mixed = a * b + c & d     // Error: use parentheses
-
-// Chained comparisons allowed
-assert a <= b <= c               // Same as: a <= b and b <= c
+test "wait 1 cycle" {
+  const a = 1 + input
+  puts "printed every cycle input={}", a
+  step 1
+  puts "also every cycle a={}",a  // printed on cycle later
+}

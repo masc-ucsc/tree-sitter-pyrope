@@ -1,12 +1,2 @@
-if mut x=3; x<4 {
-  cassert x==3
-}
-while mut z=1; x {
-  x -= z
-}
-mut z=0
-match mut x=2 ; z+x {
-  case 2 { cassert true  }
-  != 7   { cassert true  }
-  else   { cassert false }
-}
+cassert (1,b=2,...(3,c=3),6) == (1,b=2,3,c=3,6)
+cassert (1,b=2,...(nil,c=3),0sb?,6) == (1,b=2,nil,c=3,0sb?,6)

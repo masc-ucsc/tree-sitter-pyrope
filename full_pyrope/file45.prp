@@ -1,12 +1,26 @@
-// ->() is an explicit void return
-type Queue<T> = (push:comb(T)->(), pop:comb()->(T), empty:comb()->(bool))
+mut v1:u32 = ?                 // v1 is zero every cycle AND not valid
+assert v1::[valid] == false
+mut v2:u32 = 0                 // v2 is zero every cycle AND     valid
+assert v2::[valid] == true
 
-// Same meaning, generic list is allowed before tuple declarations
-const Queue = type<T>(push:comb(T)->(), pop:comb()->(T), empty:comb()->(bool))
+cassert v1?
+cassert not v2?
 
-// comb, type, flow, pipe can have an option <parameter_list>
+assert v1 == 0 and v2 == 3     // data still same as usual
 
-const triadd1 = comb<T>(a:T, b:T, c:T) -> T { a + b + c }
-const triadd2 = pipe<T>::[stages=3] (a:T, b:T, c:T) ->T { a + b + c }
-const triadd3 = flow<T> (a:T, b:T, c:T) ->T { a@0 + b@0 + c@0 }
-cassert triadd1(1,2,3) == 6
+v1 = 0sb?                      // OK, poison data
+v2 = 0sb?                      // OK, poison data, and update valid
+assert v2?                     // valid even though data is not
+
+assert v1 != 0                 // usual verilog x logic
+assert v2 != 0                 // usual verilog x logic
+
+const res1 = v1 + 0              // valid with just unknown 0sb? data
+const res2 = v2 + 0              // valid with just unknown 0sb? data
+
+assert res1?
+assert res2?
+
+reg counter:u32 = 0
+
+always assert counter.reset implies !counter?

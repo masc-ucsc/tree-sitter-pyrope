@@ -1,10 +1,5 @@
-assert condition               // Runtime assertion
-cassert compile_time_expr      // Compile-time assertion
+    total = 3
 
-test "counter test" {
-    const cnt = counter(true)
-    puts "Counter value: ", cnt   // Debug output
-    step                      // Advance one cycle
-    assert cnt == 1
-    cassert SIZE == 16         // Compile-time constant check
-}
+    waitfor a_cond  // wait until a_cond is true
+
+    assert total == 3 and a_cond

@@ -1,7 +1,5 @@
-const v = (tag="sum", a=1, b=2)
-const r = match v {
-  case (tag="sum", a, b) { v.a + v.b }
-  case (tag="val", x)     { v.x }
-  else                     { 0 }
-}
-cassert r == 1+2
+cassert ((a=1,c=3) ++ (a=1,b=2,c=nil)) == (a=(1,1), c=3, b=2)
+cassert ((1,2) ++ (a=2,nil,5)) == (1,2,a=2,5)
+cassert ((x=1) ++ (a=2,nil,5)) == (x=1,a=2,nil,5)
+
+cassert ((x=1,b=2) ++ (x=0sb?,3)) == (x=1,b=2,3)
