@@ -1,19 +1,20 @@
 'use strict';
 
 // Helper Functions
-function optseq(rule) {
-  return optional(prec.left(seq.apply(null, arguments)));
+function optseq() {
+  return optional(seq.apply(null, arguments));
 }
 
-function repseq(rule) {
-  return repeat(prec.left(seq.apply(null, arguments)));
+function repseq() {
+  return repeat(seq.apply(null, arguments));
 }
 
-function listseq1(rule) {
+function listseq1() {
+  const item = seq.apply(null, arguments);
   return seq(
     repeat(',')
-    , seq.apply(null, arguments)
-    , repseq(repeat1(','), seq.apply(null, arguments))
+    , item
+    , repeat(seq(repeat1(','), item))
     , repeat(',')
   )
 }
@@ -24,14 +25,10 @@ module.exports = grammar({
 
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
-    // Keep only conflicts still necessary after simplifications
-    // [$.assignment, $._restricted_expression],
     [$.complex_identifier, $.typed_identifier]
     , [$.complex_identifier, $.expression_type]
-    , [$.complex_identifier_list, $._restricted_expression]
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
-    , [$.function_definition_decl, $.arg_list]
     , [$.function_call_statement, $._restricted_expression]
     , [$.timed_identifier, $.typed_identifier]
     , [$.assignment, $._restricted_expression]
@@ -41,7 +38,6 @@ module.exports = grammar({
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
-  , inline: $ => []
 
   , precedences: $ => [
     [
@@ -57,14 +53,12 @@ module.exports = grammar({
       , 'dot_sub'
       , 'dot'
       , 'select'
-      , 'function'
       , 'member_selection'
       , 'bit_selection'
       , 'unary'
       , 'range'
       , 'step'
       , 'type_spec'
-      , 'pipe_concat'   // higher prio than == to allow a |> b == c
       , 'binary_times'
       , 'binary_plus'
       , 'binary_shift'
@@ -81,7 +75,6 @@ module.exports = grammar({
       , 'logical_or'
       , 'logical_nor'
       , 'induction'
-      , 'sequential_condition'
       , 'tuple_relation'
       , 'tuple_concat'
       , 'type_compare'
@@ -95,10 +88,6 @@ module.exports = grammar({
     ]
     , [
       'tuple_list'
-    ]
-    , [
-      'expression'
-      , 'function_call_statement'
     ]
     , [
       'expression'
@@ -120,7 +109,7 @@ module.exports = grammar({
     description: $ => repseq($.statement, repeat(';'))
 
     // Statements
-    , statement: $ => prec.left('statement', choice(
+    , statement: $ => prec('statement', choice(
       // Synthesizable
       $.scope_statement
       , $.declaration_statement
@@ -142,23 +131,23 @@ module.exports = grammar({
       , $.assert_statement
     )
     )
-    , scope_statement: $ => prec.left('statement', seq(
+    , scope_statement: $ => seq(
       '{'
       , repseq($.statement)
       , '}'
-    ))
-    , assignment_or_declaration_statement: $ => prec.right(seq(
+    )
+    , assignment_or_declaration_statement: $ => seq(
       $.assignment
       , $._semicolon
-    ))
-    , declaration_statement: $ => prec.right(seq(
+    )
+    , declaration_statement: $ => seq(
       field('decl', $.var_or_let_or_reg)
       , choice(
         seq('(', field('lvalue', $.typed_identifier_list), ')')
         , field('lvalue', $.typed_identifier)
       )
       , $._semicolon
-    ))
+    )
     , import_statement: $ => seq(
       'import'
       , field('module', choice(
@@ -185,7 +174,7 @@ module.exports = grammar({
       field('item', $._tuple_item)
       , repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
-    , if_expression: $ => prec.left('statement', seq(
+    , if_expression: $ => prec('statement', seq(
       optional('unique')
       , 'if'
       , field('init', optseq($.stmt_list, ';'))
@@ -224,7 +213,7 @@ module.exports = grammar({
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
-    , loop_statement: $ => prec.left('statement', seq(
+    , loop_statement: $ => prec('statement', seq(
       'loop'
       , field('attributes', optseq('::', $.attribute_list))
       , field('init', optional($.stmt_list))
@@ -250,16 +239,15 @@ module.exports = grammar({
       '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
       'equals', '!equals', 'does', '!does', 'is', '!is'
     )
-    , expression_statement: $ => prec.right(seq(
+    , expression_statement: $ => seq(
       $._expression_with_comprehension
       , $._semicolon
-    ))
-    , test_statement: $ => prec.right(seq(
+    )
+    , test_statement: $ => seq(
       'test'
       , field('args', $.expression_list)
-      , field('condition', optseq('where', $.expression_list))
       , field('code', $.scope_statement)
-    ))
+    )
     , type_statement: $ => seq(
       'type'
       , field('name', $.identifier)
@@ -299,7 +287,7 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , function_call_expression: $ => prec.left('function_call_expression', seq(
+    , function_call_expression: $ => prec('function_call_expression', seq(
       field('function', $.complex_identifier)
       , field('argument', $.tuple)
     ))
@@ -314,18 +302,18 @@ module.exports = grammar({
 
     , tuple_sq: $ => seq('[', optional($.tuple_list), ']')
 
-    , tuple_list: $ => prec.left('tuple_list', listseq1(field('item', $._tuple_item)))
-    , _tuple_item: $ => prec.left(choice(
+    , tuple_list: $ => prec('tuple_list', listseq1(field('item', $._tuple_item)))
+    , _tuple_item: $ => choice(
       $.ref_identifier
       , $._expression_with_comprehension
       , $.assignment
       , $.typed_declaration
       , $.lambda
-    ))
+    )
     , attributes: $ => seq(':', $.attribute_list)
 
     // Assignment (single or tuple lvalue)
-    , assignment: $ => prec.right(seq(
+    , assignment: $ => seq(
       field('decl', optional($.var_or_let_or_reg))
       , choice(
         seq('(', field('lvalue', $.lvalue_list), ')')
@@ -341,7 +329,7 @@ module.exports = grammar({
         , $.enum_definition
         , $.ref_identifier
       ))
-    ))
+    )
     , typed_declaration: $ => seq(
       field('decl', $.var_or_let_or_reg)
       , field('lvalue', $.typed_identifier)
@@ -354,10 +342,10 @@ module.exports = grammar({
       )
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
-    , enum_assignment_statement: $ => prec.left('statement', seq(
+    , enum_assignment_statement: $ => seq(
       $.enum_assignment
       , $._semicolon
-    ))
+    )
     , var_or_let_or_reg: $ => seq(
       optional('comptime')
       , choice('const', 'mut', 'reg', prec.right(seq('await', optional($.tuple_sq))))
@@ -374,19 +362,8 @@ module.exports = grammar({
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq($.tuple_sq))
       , field('pipe_config', optseq('::', $.attribute_list))
-      , field('input', choice($.arg_list, seq('(', ')')))
+      , field('input', $.arg_list)
       , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
-    )
-    , function_definition: $ => seq(
-      field('lvalue', $.complex_identifier)
-      , $.function_definition_decl
-      , field('condition', optseq('where', $.expression_list))
-      , field('verification', repeat($.func_def_verification))
-      , field('code', $.scope_statement)
-    )
-    , func_def_verification: $ => seq(
-      choice('requires', 'ensures')
-      , $._expression
     )
     , enum_definition: $ => seq(
       choice('enum', 'variant')
@@ -410,9 +387,9 @@ module.exports = grammar({
       'ref'
       , $.complex_identifier
     )
-    , arg_list: $ => prec.left(seq(
+    , arg_list: $ => seq(
       '(', optional($.arg_item_list), ')'
-    ))
+    )
     , arg_item_list: $ => listseq1($.arg_item)
     , arg_item: $ => seq(
       field('mod', optional(choice('...', 'ref', 'reg')))
@@ -428,10 +405,11 @@ module.exports = grammar({
     , complex_identifier: $ => choice(
       $.identifier
       , $.dot_expression
-      , $.selection
+      , $.member_selection
+      , $.bit_selection
       , $.timed_identifier
     )
-    , timed_identifier: $ => prec.left(1, seq(
+    , timed_identifier: $ => prec(1, seq(
       field('identifier', $.identifier)
       , $._timing_sequence
     ))
@@ -439,7 +417,6 @@ module.exports = grammar({
       '@'
       , field('timing', seq('[', $._expression, ']'))
     )
-    , complex_identifier_list: $ => prec.left(listseq1(field('item', $.complex_identifier)))
 
     , typed_identifier: $ => prec.left('typed_identifier', seq(
       field('identifier', $.identifier)
@@ -449,7 +426,7 @@ module.exports = grammar({
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
 
     // Expressions
-    , _expression: $ => prec.left('expression', choice(
+    , _expression: $ => prec('expression', choice(
       $.type_specification
       , $.unary_expression
       , $.binary_expression
@@ -480,19 +457,15 @@ module.exports = grammar({
         )
       )
     )
-    , selection: $ => choice(
-      $.member_selection
-      , $.bit_selection
-    )
-    , member_selection: $ => prec.right('member_selection', seq(
+    , member_selection: $ => prec('member_selection', seq(
       field('argument', $._restricted_expression)
       , field('select', $.member_select)
     ))
-    , bit_selection: $ => prec.right('bit_selection', seq(
+    , bit_selection: $ => prec('bit_selection', seq(
       field('argument', $._restricted_expression)
       , field('select', $.bit_select)
     ))
-    , type_specification: $ => prec.left('type_spec', seq(
+    , type_specification: $ => prec('type_spec', seq(
       field('argument', $._restricted_expression)
       , ':'
       , choice(
@@ -507,10 +480,10 @@ module.exports = grammar({
       field('operator', choice('!', 'not', '~', '-', '...'))
       , field('argument', $._expression)
     ))
-    , optional_expression: $ => prec.right(seq(
+    , optional_expression: $ => seq(
       field('argument', $._expression)
       , field('operator', '?')
-    ))
+    )
     , binary_expression: $ => choice(
       ...[
         ['..=', 'range']
@@ -523,8 +496,6 @@ module.exports = grammar({
         , ['!or', 'logical_nor']
         , ['implies', 'induction']
         , ['!implies', 'induction']
-        , ['and_then', 'sequential_condition']
-        , ['or_else', 'sequential_condition']
         , ['>>', 'binary_shift']
         , ['<<', 'binary_shift']
         , ['&', 'scalar_and']
@@ -544,7 +515,6 @@ module.exports = grammar({
         , ['>=', 'binary_compare']
         , ['==', 'binary_equal']
         , ['!=', 'binary_equal']
-        , ['|>', 'pipe_concat']
         , ['++', 'tuple_concat']
         , ['has', 'tuple_relation']
         , ['!has', 'tuple_relation']
@@ -619,7 +589,7 @@ module.exports = grammar({
       , field('from_zero', seq(choice('..=', '..<'), $._expression))
     )
     , member_select: $ => prec.right('select', repeat1($.select))
-    , bit_select: $ => prec.right('select', seq(
+    , bit_select: $ => prec('select', seq(
       '#', field('type', optional($.bit_select_type)), field('select', $.select)
     ))
     , bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
@@ -635,13 +605,13 @@ module.exports = grammar({
         , field('attribute', $.attributes)
       )
     ))
-    , _type: $ => prec.left('type', choice(
+    , _type: $ => prec('type', choice(
       $.primitive_type
       , $.array_type
       , $.expression_type
       , $._timing_sequence
     ))
-    , expression_type: $ => prec.left('expression_type', choice(
+    , expression_type: $ => prec('expression_type', choice(
       $.identifier
       , $.constant
       , $.tuple
@@ -654,7 +624,7 @@ module.exports = grammar({
       field('item', $.expression_type)
       , repeat1(prec.right('dot_type_sub', seq('.', field('item', $.expression_type))))
     ))
-    , function_call_type: $ => prec.right('function_call_type', seq(
+    , function_call_type: $ => prec('function_call_type', seq(
       field('function', $.complex_identifier)
       , field('argument', $.tuple)
     ))
@@ -667,24 +637,21 @@ module.exports = grammar({
         , $.expression_type
       )))
     ))
-    , primitive_type: $ => prec.left(choice(
+    , primitive_type: $ => choice(
       $.unsized_integer_type
       , $.sized_integer_type
       , $.range_type
-      //,$.enum_type
       , $.string_type
       , $.boolean_type
-    ))
+    )
     , unsized_integer_type: $ => choice(
       'int'
       , 'integer'
-      , 'signed'
       , 'uint'
       , 'unsigned'
     )
     , sized_integer_type: $ => token(/[siu]\d+/)
     , range_type: $ => seq('range', '(', $.select_options, ')')
-    //,enum_type: $ => seq('enum', $.tuple)
     , string_type: $ => token('string')
     , boolean_type: $ => token('bool')
     , comb_tok: $ => token('comb')
@@ -692,7 +659,6 @@ module.exports = grammar({
     , mod_tok: $ => token('mod')
 
     // Identifiers
-    , delay_tok: $ => token('delay')
     , identifier: $ => token(
       choice(
         // \p{L}  : Letter
@@ -716,17 +682,10 @@ module.exports = grammar({
       , $._unknown_literal
     )
 
-    // Numbers
+    // Numbers. Each form accepts an optional leading '-' as part of the token
+    // so that negative literals are one token (preferred over '-' operator + literal via prec(2)).
     , _number: $ => choice(
-      // Prefer a single negative literal token over '-' operator + literal
-      $._neg_simple_number
-      , $._neg_scaled_number
-      , $._neg_hex_number
-      , $._neg_decimal_number
-      , $._neg_octal_number
-      , $._neg_binary_number
-      , $._neg_typed_number
-      , $._simple_number
+      $._simple_number
       , $._scaled_number
       , $._hex_number
       , $._decimal_number
@@ -734,20 +693,13 @@ module.exports = grammar({
       , $._binary_number
       , $._typed_number
     )
-    , _neg_simple_number: $ => token(prec(2, /-(0|[1-9][0-9]*)/))
-    , _neg_scaled_number: $ => token(prec(2, /-(0|[1-9][0-9]*)[KMGT]/))
-    , _neg_hex_number: $ => token(prec(2, /-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/))
-    , _neg_decimal_number: $ => token(prec(2, /-0(s|S)?(d|D)?[0-9][0-9_]*/))
-    , _neg_octal_number: $ => token(prec(2, /-0(s|S)?(o|O)[0-7][0-7_]*/))
-    , _neg_binary_number: $ => token(prec(2, /-0(s|S)?(b|B)[0-1\?][0-1_\?]*/))
-    , _neg_typed_number: $ => token(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/))
-    , _simple_number: $ => token(/0|[1-9][0-9]*/)
-    , _scaled_number: $ => token(/(0|[1-9][0-9]*)[KMGT]/)
-    , _hex_number: $ => token(/0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)
-    , _decimal_number: $ => token(/0(s|S)?(d|D)?[0-9][0-9_]*/)
-    , _octal_number: $ => token(/0(s|S)?(o|O)[0-7][0-7_]*/)
-    , _binary_number: $ => token(/0(s|S)?(b|B)[0-1\?][0-1_\?]*/)
-    , _typed_number: $ => token(/(0|[1-9][0-9]*)[sui][0-9]+/)
+    , _simple_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)/), /0|[1-9][0-9]*/))
+    , _scaled_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[KMGT]/), /(0|[1-9][0-9]*)[KMGT]/))
+    , _hex_number: $ => token(choice(prec(2, /-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/), /0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/))
+    , _decimal_number: $ => token(choice(prec(2, /-0(s|S)?(d|D)?[0-9][0-9_]*/), /0(s|S)?(d|D)?[0-9][0-9_]*/))
+    , _octal_number: $ => token(choice(prec(2, /-0(s|S)?(o|O)[0-7][0-7_]*/), /0(s|S)?(o|O)[0-7][0-7_]*/))
+    , _binary_number: $ => token(choice(prec(2, /-0(s|S)?(b|B)[0-1\?][0-1_\?]*/), /0(s|S)?(b|B)[0-1\?][0-1_\?]*/))
+    , _typed_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/), /(0|[1-9][0-9]*)[sui][0-9]+/))
 
     // Booleans
     , _bool_literal: $ => token(choice('true', 'false'))
