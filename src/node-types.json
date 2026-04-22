@@ -78,7 +78,7 @@
     ]
   },
   {
-    "type": "arg_item",
+    "type": "arg_list",
     "named": true,
     "fields": {
       "definition": {
@@ -100,7 +100,7 @@
         ]
       },
       "mod": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -119,26 +119,11 @@
       }
     },
     "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "typed_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "arg_list",
-    "named": true,
-    "fields": {},
-    "children": {
       "multiple": true,
       "required": false,
       "types": [
         {
-          "type": "arg_item",
+          "type": "typed_identifier",
           "named": true
         }
       ]
@@ -166,10 +151,6 @@
           },
           {
             "type": "lambda",
-            "named": true
-          },
-          {
-            "type": "range_type",
             "named": true
           },
           {
@@ -331,12 +312,12 @@
     }
   },
   {
-    "type": "attribute_item",
+    "type": "attribute_list",
     "named": true,
     "fields": {
       "name": {
-        "multiple": false,
-        "required": true,
+        "multiple": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -358,22 +339,6 @@
           },
           {
             "type": "ref_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "attribute_list",
-    "named": true,
-    "fields": {
-      "item": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "attribute_item",
             "named": true
           }
         ]
@@ -581,37 +546,6 @@
     }
   },
   {
-    "type": "bit_select",
-    "named": true,
-    "fields": {
-      "select": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "select",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "bit_select_type",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "bit_select_type",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "bit_selection",
     "named": true,
     "fields": {
@@ -670,12 +604,46 @@
         ]
       },
       "select": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "bit_select",
+            "type": "#",
+            "named": false
+          },
+          {
+            "type": "select",
             "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "+",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "sext",
+            "named": false
+          },
+          {
+            "type": "zext",
+            "named": false
+          },
+          {
+            "type": "|",
+            "named": false
           }
         ]
       }
@@ -1543,15 +1511,19 @@
         ]
       },
       "module": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": ".",
+            "named": false
+          },
           {
             "type": "complex_string_literal",
             "named": true
           },
           {
-            "type": "module_path",
+            "type": "identifier",
             "named": true
           }
         ]
@@ -1601,40 +1573,6 @@
           {
             "type": "identifier",
             "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "function_definition_decl",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "lambda_decl",
-    "named": true,
-    "fields": {
-      "func_type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "comb",
-            "named": false
-          },
-          {
-            "type": "mod",
-            "named": false
-          },
-          {
-            "type": "pipe",
-            "named": false
           }
         ]
       }
@@ -1762,13 +1700,143 @@
     "type": "match_expression",
     "named": true,
     "fields": {
+      "code": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
       "condition": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "!and",
+            "named": false
+          },
+          {
+            "type": "!case",
+            "named": false
+          },
+          {
+            "type": "!does",
+            "named": false
+          },
+          {
+            "type": "!equals",
+            "named": false
+          },
+          {
+            "type": "!has",
+            "named": false
+          },
+          {
+            "type": "!in",
+            "named": false
+          },
+          {
+            "type": "!is",
+            "named": false
+          },
+          {
+            "type": "!or",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "case",
+            "named": false
+          },
+          {
+            "type": "does",
+            "named": false
+          },
+          {
+            "type": "else",
+            "named": false
+          },
+          {
+            "type": "equals",
+            "named": false
+          },
+          {
+            "type": "expression_list",
+            "named": true
+          },
+          {
+            "type": "has",
+            "named": false
+          },
+          {
+            "type": "in",
+            "named": false
+          },
+          {
+            "type": "is",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "~&",
+            "named": false
+          },
+          {
+            "type": "~^",
+            "named": false
+          },
+          {
+            "type": "~|",
+            "named": false
           }
         ]
       },
@@ -1787,37 +1855,91 @@
         ]
       },
       "match_list": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
-            "type": "match_list",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "match_list",
-    "named": true,
-    "fields": {
-      "code": {
-        "multiple": true,
-        "required": true,
-        "types": [
+            "type": "!=",
+            "named": false
+          },
           {
-            "type": "scope_statement",
-            "named": true
-          }
-        ]
-      },
-      "condition": {
-        "multiple": true,
-        "required": true,
-        "types": [
+            "type": "!and",
+            "named": false
+          },
+          {
+            "type": "!case",
+            "named": false
+          },
+          {
+            "type": "!does",
+            "named": false
+          },
+          {
+            "type": "!equals",
+            "named": false
+          },
+          {
+            "type": "!has",
+            "named": false
+          },
+          {
+            "type": "!in",
+            "named": false
+          },
+          {
+            "type": "!is",
+            "named": false
+          },
+          {
+            "type": "!or",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "case",
+            "named": false
+          },
+          {
+            "type": "does",
+            "named": false
+          },
           {
             "type": "else",
+            "named": false
+          },
+          {
+            "type": "equals",
             "named": false
           },
           {
@@ -1825,31 +1947,43 @@
             "named": true
           },
           {
-            "type": "match_operator",
+            "type": "has",
+            "named": false
+          },
+          {
+            "type": "in",
+            "named": false
+          },
+          {
+            "type": "is",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "scope_statement",
             "named": true
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "~&",
+            "named": false
+          },
+          {
+            "type": "~^",
+            "named": false
+          },
+          {
+            "type": "~|",
+            "named": false
           }
         ]
       }
-    }
-  },
-  {
-    "type": "match_operator",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "member_select",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "select",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1911,30 +2045,15 @@
         ]
       },
       "select": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "member_select",
+            "type": "select",
             "named": true
           }
         ]
       }
-    }
-  },
-  {
-    "type": "module_path",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1961,21 +2080,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "range_type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "select_options",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -2097,21 +2201,6 @@
   },
   {
     "type": "select",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "select_options",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "select_options",
     "named": true,
     "fields": {
       "from_zero": {
@@ -2465,10 +2554,6 @@
             "named": true
           },
           {
-            "type": "range_type",
-            "named": true
-          },
-          {
             "type": "sized_integer_type",
             "named": true
           },
@@ -2607,10 +2692,6 @@
             "named": true
           },
           {
-            "type": "range_type",
-            "named": true
-          },
-          {
             "type": "sized_integer_type",
             "named": true
           },
@@ -2663,10 +2744,6 @@
             "named": true
           },
           {
-            "type": "range_type",
-            "named": true
-          },
-          {
             "type": "sized_integer_type",
             "named": true
           },
@@ -2687,6 +2764,24 @@
           {
             "type": "tuple",
             "named": true
+          }
+        ]
+      },
+      "func_type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "comb",
+            "named": false
+          },
+          {
+            "type": "mod",
+            "named": false
+          },
+          {
+            "type": "pipe",
+            "named": false
           }
         ]
       },
@@ -2752,7 +2847,7 @@
       "required": false,
       "types": [
         {
-          "type": "lambda_decl",
+          "type": "function_definition_decl",
           "named": true
         }
       ]
@@ -3297,10 +3392,6 @@
   },
   {
     "type": "pipe",
-    "named": false
-  },
-  {
-    "type": "range",
     "named": false
   },
   {

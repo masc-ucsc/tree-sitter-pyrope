@@ -86,7 +86,6 @@ module.exports = grammar({
       'dot_type'
       , 'dot_type_sub'
       , 'array_type'
-      , 'range_type'
       , 'function_call_type'
       , 'expression_type'
       , 'type'
@@ -189,16 +188,15 @@ module.exports = grammar({
     , import_statement: $ => seq(
       'import'
       , field('module', choice(
-        $.module_path
+        seq(
+          $.identifier
+          , repeat(seq('.', $.identifier))
+        )
         , $._string_literal
       ))
       , 'as'
       , field('alias', $.identifier)
       , $._semicolon
-    )
-    , module_path: $ => seq(
-      $.identifier
-      , repeat(seq('.', $.identifier))
     )
     , control_statement: $ => choice(
       choice('continue', 'break')
@@ -256,20 +254,18 @@ module.exports = grammar({
       , field('init', statementInit($))
       , field('condition', $._expression)
       , '{'
-      , field('match_list', optional($.match_list))
+      , field('match_list', optional(repeat1(seq(
+        field('condition', choice(
+          seq(optional(choice(
+            'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
+            '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
+            'equals', '!equals', 'does', '!does', 'is', '!is'
+          )), $.expression_list)
+          , 'else'
+        ))
+        , field('code', $.scope_statement)
+      ))))
       , '}'
-    )
-    , match_list: $ => repeat1(seq(
-      field('condition', choice(
-        seq(optional($.match_operator), $.expression_list)
-        , 'else'
-      ))
-      , field('code', $.scope_statement)
-    ))
-    , match_operator: $ => choice(
-      'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-      '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
-      'equals', '!equals', 'does', '!does', 'is', '!is'
     )
     , test_statement: $ => seq(
       'test'
@@ -284,7 +280,14 @@ module.exports = grammar({
         field('definition', $.tuple),  // trait definition: type Name ( ... )
         seq('=',
           choice(
-            $.lambda_decl
+            seq(
+              field('func_type', choice(
+                'comb'
+                , 'mod'
+                , 'pipe'
+              ))
+              , $.function_definition_decl
+            )
             , field('alias', $._type)  // type alias: type Name = Type
           )
         )
@@ -371,11 +374,10 @@ module.exports = grammar({
     )
 
     // Attribute lists: ::[identifier [= expression], ...]
-    , attribute_item: $ => seq(
+    , attribute_list: $ => seq('[', optional(listseq1(field('item', seq(
       field('name', $.identifier)
       , field('value', optseq('=', choice($._expression, $.ref_identifier)))
-    )
-    , attribute_list: $ => seq('[', optional(listseq1(field('item', $.attribute_item))), ']')
+    )))), ']')
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq($.tuple_sq))
@@ -410,12 +412,11 @@ module.exports = grammar({
       , $._complex_identifier
     )
     , arg_list: $ => seq(
-      '(', optional(listseq1($.arg_item)), ')'
-    )
-    , arg_item: $ => seq(
-      field('mod', optional(choice('...', 'ref', 'reg')))
-      , $.typed_identifier
-      , field('definition', optseq('=', $._expression_with_comprehension))
+      '(', optional(listseq1(seq(
+        field('mod', optional(choice('...', 'ref', 'reg')))
+        , $.typed_identifier
+        , field('definition', optseq('=', $._expression_with_comprehension))
+      ))), ')'
     )
 
     , _complex_identifier: $ => choice(
@@ -469,11 +470,13 @@ module.exports = grammar({
     )
     , member_selection: $ => prec('member_selection', seq(
       field('argument', $._restricted_expression)
-      , field('select', $.member_select)
+      , field('select', prec.right('select', repeat1($.select)))
     ))
     , bit_selection: $ => prec('bit_selection', seq(
       field('argument', $._restricted_expression)
-      , field('select', $.bit_select)
+      , field('select', prec('select', seq(
+        '#', field('type', optional(choice('|', '&', '^', '+', 'sext', 'zext'))), field('select', $.select)
+      )))
     ))
     , type_specification: $ => prec('type_spec', seq(
       field('argument', $._restricted_expression)
@@ -568,14 +571,6 @@ module.exports = grammar({
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
     )
-    , lambda_decl: $ => seq(
-      field('func_type', choice(
-        'comb'
-        , 'mod'
-        , 'pipe'
-      ))
-      , $.function_definition_decl
-    )
     // Operators
     , assignment_operator: $ => token(choice(
       '=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', '<<=', '>>=', '++=', 'or=', 'and='
@@ -584,20 +579,14 @@ module.exports = grammar({
     // Selects
     , select: $ => seq(
       '['
-      , $.select_options
+      , choice(
+        field('list', $.expression_list)
+        , field('open_range', '..')
+        , field('open_range', seq($._expression, '..'))
+        , field('from_zero', seq(choice('..=', '..<'), $._expression))
+      )
       , ']'
     )
-    , select_options: $ => choice(
-      field('list', $.expression_list)
-      , field('open_range', '..')
-      , field('open_range', seq($._expression, '..'))
-      , field('from_zero', seq(choice('..=', '..<'), $._expression))
-    )
-    , member_select: $ => prec.right('select', repeat1($.select))
-    , bit_select: $ => prec('select', seq(
-      '#', field('type', optional($.bit_select_type)), field('select', $.select)
-    ))
-    , bit_select_type: $ => choice('|', '&', '^', '+', 'sext', 'zext')
 
     // Types
     , type_cast: $ => prec.left('type_cast', seq(
@@ -639,7 +628,6 @@ module.exports = grammar({
     , _primitive_type: $ => choice(
       $.unsized_integer_type
       , $.sized_integer_type
-      , $.range_type
       , 'string'
       , 'bool'
     )
@@ -650,7 +638,6 @@ module.exports = grammar({
       , 'unsigned'
     )
     , sized_integer_type: $ => token(/[siu]\d+/)
-    , range_type: $ => seq('range', '(', $.select_options, ')')
 
     // Identifiers
     , identifier: $ => token(
