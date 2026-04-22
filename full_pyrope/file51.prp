@@ -1,17 +1,9 @@
-const weird_pick_bits = comb(b:u32) -> (x:u1, _:u4) {
-  (x=b#[2..<3], b#[5])
+pipe[2..<8] stagetocreate::[elastic=true] (in:int) -> (out:int) {
+  out = in + 1
 }
-
-comb fcall_returns_2_values() -> (xx, yy) {
-  xx = 3
-  yy = 7
+pipe[2..<8] stage2(in:int) -> (out:int) {
+  out = in + 1
 }
-
-const (a,_) = fcall_returns_2_values()
-assert a == 3
-
-mut b:u8 = 3
-_ = a           // legal, but it is just a "read" to 'a'
-_ = 3
-b = ?
-assert b == 0 and not b::[valid]
+// NOTE: `elastic` enables validity checks like `in?`; otherwise same syntax.
+// Example usage:
+const v = if in? { stage(in) } else { 0 }

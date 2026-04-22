@@ -1,21 +1,9 @@
-mut a:int = ?
-cassert a==0 and a::[valid] == false and not a?
-
-mut b:int = 0
-cassert b==0 and b::[valid] and b?
-b = nil
-cassert b==nil and b::[valid] == false and not b?
-
-mut c:comb(a1) = ?
-cassert c == nil and c::[valid]==false
-c = comb(a1) { cassert true }
-cassert c!= nil and c::[valid]
-
-mut d:[] = ?               // empty tuple
-cassert d != nil and d::[valid]
-cassert d[0] == nil and !d[0]::[valid]
-
-mut e:int = nil
-cassert e==nil and !e::[valid] and not e?
-e = 0
-cassert e==0 and e::[valid] and e?
+cover (state == IDLE and start)
+unique if x {
+  y = 1
+} elif z {
+  y = 2
+} else {
+  y = 3
+}
+// NOTE: `unique if` asserts at most one branch condition holds at a time.

@@ -1,18 +1,14 @@
-mut a_1 = (
-  x:u10,
-  f1 = comb(ref self, x) -> (self) { // BOTH ref self and return self is OK
-    self.x = x
-    self
-  }
-)
+// Set attribute (only at declaration)
+reg counter:[reset_pin=ref rst] = 0 // Set reset pin (ref connects the wire)
 
-a_1.f1(3)
-mut a_2 = a_1.f1(4)  // a_2 is updated, not a_1
-assert a_1.x == 3 and a_2.x == 4
+// Read attribute value
+const num_bits = counter::[bits]    // Read number of bits
 
-// Same behavior as in a function with UFCS
-const set_x = comb (ref self, x) { self.x = x }
+// Check attribute (read and compare)
+cassert counter::[bits] == 8        // Check bit width
+cassert z::[bits] < 32              // Check bit width constraint
 
-a_1.set_x(10)
-mut a_3 = a_1.set_x(20)
-assert a_1 == 10 and a_3 == 20
+// Compile-time uses the 'comptime' prefix modifier (not an attribute)
+comptime const SIZE = 16
+comptime mut elaboration_cnt = 0   // mutable at compile time
+cassert SIZE::[comptime] == true   // Can still query comptime status

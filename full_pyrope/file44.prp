@@ -1,2 +1,17 @@
-assert a <= b <= c  // same as a<=b and b<=c
-assert a <  b <= c  // same as a< b and b<=c
+// Declare the lambda types ahead (inline complex lambda types are not allowed in foo:Type).
+type PushFn<T>  = comb(T) -> ()
+type PopFn<T>   = comb()  -> (T)
+type EmptyFn    = comb()  -> (bool)
+
+type Queue<T> = (
+  mut push:PushFn  = nil,
+  mut pop:PopFn    = nil,
+  mut empty:EmptyFn= nil
+)
+
+// comb, type, mod, pipe can have an optional <parameter_list>
+
+comb triadd1<T>(a:T, b:T, c:T) -> T { a + b + c }
+pipe[3] triadd2<T>(a:T, b:T, c:T) -> T { a + b + c }
+mod triadd3<T>(a:T, b:T, c:T) -> T { a + b + c }
+cassert triadd1(1,2,3) == 6

@@ -1,20 +1,15 @@
-const div  = comb (self, b) { self / b }  // named input tuple
-const div2 = comb (...x) { x[0] / x[1] }    // unnamed input tuple
+comb add(a:u8, b:u8) -> (result:u8) {
+    result = a + b
+}
 
-const noarg = comb () { 33 }         // explicit no args
+// Implicit return: last expression is the return value
+comb add_simple(a:u8, b:u8) {
+    a + b                       // Returns single-element tuple
+}
 
-assert 33 == noarg()              // () needed to call
-
-
-b = div(self=8, b=4)     // OK, 2
-d = (self=8).div(b=2)    // OK, 4
-d = (8).div(b=2)         // OK, 4 . self does not need to be named
-d = 8.div(2)             // OK, single character inputs no need to be named
-
-h = div2(8, 4, 3)        // OK, 2 (3rd arg is not used)
-
-j = (8, 4) |> div2       // OK, 2, same as div2(8,4)
-j = (8, 4) |> div2()     // OK, 2, same as div2(8,4)
-k = (4) |> div2(8)       // OK, 2, same as div2(8,4)
-l = (4, 33) |> div2(8)   // OK, 2, same as div2(8,4,33)
-
+// 'return' is only needed for early exits
+comb clamp(x:i16) -> (result:u8) {
+    return 0 when x < 0        // Early exit
+    return 255 when x > 255    // Early exit
+    result = x                  // Normal path, no return needed
+}

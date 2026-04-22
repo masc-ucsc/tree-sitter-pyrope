@@ -1,10 +1,2 @@
-match (a=1,b=3) {
-  case (a=1) { cassert true }
-  else { cassert false }
-}
-
-match const t=(a=1,b=3); t {
-  case (a=1  ,c=4) { cassert false }
-  case (b=nil,a=1) { cassert t.b==3 and t.a==1 }
-  else { cassert false }
-}
+// NOTE: The following snippet is not valid Pyrope
+const a:Option(_:u8) = Some(3)

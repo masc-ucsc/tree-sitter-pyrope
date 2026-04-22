@@ -1,7 +1,22 @@
-    const add = comb(a, b) -> (result) {
-      result = a + b
-    }
+// Integers (signed/unsigned with bit constraints)
+mut a:u8 = 100          // 8-bit unsigned
+mut b:i16 = -50         // 16-bit signed
+mut c:int = 1000        // Unlimited precision (compile-time only)
 
-    comb add(a, b) -> (result) {  // Same as const add = comb(a, b) -> (result)
-      result = a + b
-    }
+// Boolean
+mut flag:bool = true
+
+// String (basic operations)
+mut text:string = "hello"
+mut combined = text ++ " world"  // Tuple concatenation (strings are tuples of characters)
+puts "Debug: value is ", combined   // Print for debugging
+
+// Initialization always requires a concrete value — no bare `_` or `?`.
+mut y:int = 0           // Explicit value
+mut u:int = 0sb?        // Valid, but all bits unknown
+mut z:int = nil         // Invalid; can only be copied until assigned a real value
+
+// Inside bit literals, '?' marks unknown bits (valid but unobserved, like Verilog x)
+// Arithmetic works: 0sb? + 1 = 0sb??, 0sb? | 1 = 1
+mut unknown = 0b101?    // Bit 0 is unknown
+mut partial = 0b??10    // Multiple unknown bits

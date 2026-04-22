@@ -1,31 +1,21 @@
-    mut p1 = (
-      mut found_once:bool = false,
-      setter = mod(ref self, a) {
-        self.found_once or= (a == 0)
-        self._result = a + 1
-      },
-      mut _result = 0,
-      getter = comb(self) { self._result }
-    )
+match state {
+    == 0 { next_state = 1 }
+    == 1 { next_state = 2 }
+    == 2 { next_state = 0 }
+    else { next_state = 0 }
+}
 
-    mut p2 = p1       // copy
-    mut p3 = ref p1   // reference
+// `case` is an alias for `==` in match statements
+match state {
+    case 0 { next_state = 1 }
+    case 1 { next_state = 2 }
+    case 2 { next_state = 0 }
+    else   { next_state = 0 }
+}
 
-    test "testing p1" {
-      assert p1.found_once == false
-      assert p2.found_once == false
-
-      p1 = 3                         // calls setter
-      cassert p1 == 4                // calls getter
-      assert p1.found_once == false
-
-      p1 = 0
-      cassert p1 == 1
-      assert p1.found_once == true
-
-      p1 = 50
-      cassert p1 == 51
-      assert p1.found_once == true
-      assert p2.found_once == false
-      assert p3.found_once == true
-    }
+// Other comparison operators are allowed
+match value {
+    < 0   { result = -1 }
+    == 0  { result = 0 }
+    > 0   { result = 1 }
+}

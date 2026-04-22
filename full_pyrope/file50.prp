@@ -1,21 +1,3 @@
-mut x=_
-mut y=2
-mut z=_
-if rand {
-  x = 3
-  y = 4
-  z = 5
-}else{
-  z = 6
-}
-assert x==3  // Simplified due to the _ initialization
-assert rand      implies x::[valid]
-assert x::[valid] implies rand
-
-assert y::[valid]
-assert  rand implies y == 4
-assert !rand implies y == 2
-
-assert z::[valid]
-assert  rand implies z == 5
-assert !rand implies z == 6
+// Instantiate external RTL with port mapping
+const (out_t) =  mymod(clock=clk, reset=rst, a=in_a)
+// NOTE: Same form as comb/pipe/mod calls; import handles RTL binding.

@@ -1,21 +1,5 @@
-const a = "foo"
+out = core(some_inputs)
 
-mut at1 = (
-  ,a:string
-)
-cassert at1[0] == "foo"
-cassert at1 !has "a"    // at1.a undefined
-
-mut at2 = (
-  ,a:string = ?
-)
-cassert at2.a == ""  and at2.a::[valid]==false
-at2.a = "torrellas"
-cassert at2.a == "torrellas" and at2[0] == "torrellas"
-
-mut at3:at2 = ?
-cassert at3.a == ""  and at3.a::[valid]==false
-
-mut at4:at2 = (a="josep")
-cassert at4.a == "josep"  and at4.a::[valid] and at4::[valid]
-
+x = peek(core.xx.some_wire)
+poke(core.yy.some_register, 1)
+// NOTE: `peek`/`poke` are library functions; no grammar change required.

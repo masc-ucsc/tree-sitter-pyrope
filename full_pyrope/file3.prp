@@ -1,15 +1,14 @@
-    pipe mul(a, b) -> (c) { c = a * b }
-    pipe add(a, b) -> (c) { c = a + b }
+// Code block scope
+mut a = 3
+{
+    assert a == 3       // Visible from outer scope
+    mut b = 4           // Local to this block
+    // const a = 33     // Error: no shadowing allowed
+}
+// assert b == 4       // Error: 'b' not visible outside block
 
-    flow multiply_add(in1, in2) -> (out) {
-      const tmp = delay[3] mul(in1@[0], in2@[0])
-      const in1_d = delay[3] in1@[0]
-      out:@[4] = delay[1] add(tmp@[3], in1_d@[3])
-    }
-
-    flow accum(in1, in2) -> (out) {
-      reg total = 0                             // flow can use reg
-      const tmp = delay[3] mul(in1@[0], in2@[0])
-      total::[defer] = add(total@[0], tmp@[3])
-      out = total@[0]
-    }
+// Functions have their own scope (Small Pyrope does not support capture variables)
+comb example() {
+    mut local = 5       // Function-local variable
+    local + 1
+}

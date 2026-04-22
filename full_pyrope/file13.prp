@@ -1,26 +1,9 @@
-    mut p1 = (
-      mut found_once:bool = false,
-      call = mod(ref self, a) -> (result) {
-        self.found_once or= (a == 0)
-        result = a + 1
-      }
-    )
+// For loops (bounds must be comptime, body is runtime hardware)
+for i in 0..=7 {
+    memory[i] = init_value
+}
 
-    mut p2 = p1       // copy
-    mut p3 = ref p1   // reference
-
-    test "testing p1" {
-      assert p1.found_once == false
-      assert p2.found_once == false
-
-      cassert p1.call(3) == 4
-      assert p1.found_once == false
-
-      cassert p1.call(0) == 1
-      assert p1.found_once == true
-
-      cassert p1.call(50) == 51
-      assert p1.found_once == true
-      assert p2.found_once == false
-      assert p3.found_once == true
-    }
+// Range-based loops
+for val in 1..<10 step 2 {  // 1,3,5,7,9
+    process(val)
+}

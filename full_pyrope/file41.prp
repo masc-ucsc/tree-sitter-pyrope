@@ -1,15 +1,19 @@
-x = 0b1_0110   // positive
-y = 0s1_0110   // negative
-assert x#[0,2] == 0b10
-assert y#[100,200]       == 0b11   and x#[100,200]       == 0
-assert y#sext[0,100,200] == 0sb110 and x#sext[1,100,200] == 0b001
-assert x#|[..] == -1
-assert x#&[0,1] == 0
-assert x#+[0..=5] == x#+[0..<100] == 3
-assert y#[..]#+[..] == 3
-assert y#[0..=5]#+[..] == 3
-assert y#[0..=6]#+[..] == 4
+// Define an ADT with associated values
+enum Expr = (
+    ,,, // extra commas are OK (no meaning)
+    ,number:Int=?
+    ,,, // extra commas are OK (no meaning)
+    ,add:(_:Expr, _:Expr)=?
+    ,,, // extra commas are OK (no meaning)
+)
 
-mut z     = 0b0110
-z#[0] = 1
-assert z == 0b0111
+// Evaluate recursively
+comb eval(e: Expr) -> int {
+    match e {
+      does Expr.number { e.number }
+      does Expr.add    { eval(e.add[0]) + eval(e.add[1]) }
+    }
+}
+
+const expr = Expr.add(Expr.number(2), Expr.number(3))
+puts "result:{eval(expr)} should be 5"

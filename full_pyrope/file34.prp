@@ -1,3 +1,7 @@
-cassert (x=nil,c=3) in (x=3,c=3)
-cassert (x=nil,c=3) in (x=nil,c=3,d=4)
-cassert (c=3)      !in (c=nil,d=4)
+const v = (tag="sum", a=1, b=2)
+const r = match v {
+  case (tag="sum", a, b) { v.a + v.b }
+  case (tag="val", x)     { v.x }
+  else                     { 0 }
+}
+cassert r == 1+2

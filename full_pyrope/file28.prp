@@ -1,1 +1,1 @@
-comptime const Xconst1 = 1    // obvious comptime
+reg counter:u8 = 100            // Reset value is 100

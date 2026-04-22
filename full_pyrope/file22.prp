@@ -1,10 +1,2 @@
-    const add = comb(a,b) { a+b }
-
-    for i in 0..<10 { // 10 tests
-      const a = (-30..<100).rand
-      const b = (-30..<100).rand
-
-      test "test {}+{}",a,b {
-        assert add(a,b) == (a+b)
-      }
-    }
+mut equal = a == b; mut not_equal = a != b  // Equality
+mut less = a < b; mut less_eq = a <= b; mut greater = a > b; mut greater_eq = a >= b  // Comparison

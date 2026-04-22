@@ -1,5 +1,12 @@
-cassert ((a=1,c=3) ++ (a=1,b=2,c=nil)) == (a=(1,1), c=3, b=2)
-cassert ((1,2) ++ (a=2,nil,5)) == (1,2,a=2,5)
-cassert ((x=1) ++ (a=2,nil,5)) == (x=1,a=2,nil,5)
-
-cassert ((x=1,b=2) ++ (x=0sb?,3)) == (x=1,b=2,3)
+if mut x=3; x<4 {
+  cassert x==3
+}
+while mut z=1; x {
+  x -= z
+}
+mut z=0
+match mut x=2 ; z+x {
+  case 2 { cassert true  }
+  != 7   { cassert true  }
+  else   { cassert false }
+}

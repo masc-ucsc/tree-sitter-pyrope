@@ -1,26 +1,4 @@
-mut v1:u32 = ?                 // v1 is zero every cycle AND not valid
-assert v1::[valid] == false
-mut v2:u32 = 0                 // v2 is zero every cycle AND     valid
-assert v2::[valid] == true
-
-cassert v1?
-cassert not v2?
-
-assert v1 == 0 and v2 == 3     // data still same as usual
-
-v1 = 0sb?                      // OK, poison data
-v2 = 0sb?                      // OK, poison data, and update valid
-assert v2?                     // valid even though data is not
-
-assert v1 != 0                 // usual verilog x logic
-assert v2 != 0                 // usual verilog x logic
-
-const res1 = v1 + 0              // valid with just unknown 0sb? data
-const res2 = v2 + 0              // valid with just unknown 0sb? data
-
-assert res1?
-assert res2?
-
-reg counter:u32 = 0
-
-always assert counter.reset implies !counter?
+// No trait keyword, but `type`
+type Show ( comb show(self) -> String )
+impl Show for int ( comb show(self) -> String { "_{self}_" } )
+cassert 42.show() == "_42_"

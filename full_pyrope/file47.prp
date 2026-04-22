@@ -1,30 +1,8 @@
-const complex = (
-  ,reg v1:string = "foo"
-  ,v2:string = ?
+comb div(a:int, b:int) -> (q:int) {
+  requires b != 0
+  ensures  a == q*b + (a % b)  // Note: % is compile-time only
+  q = a / b
+}
 
-  ,setter = comb(ref self, v) {
-     self.v1 = v
-     self.v2 = v
-  }
-)
-
-mut x1:complex = ?
-mut x2:complex:[valid=false] = 0  // toggle valid, and set zero
-mut x3:complex = 0
-x3::[valid] == false                 // set invalid
-
-assert x1.v1 == "" and x1.v2 == ""
-assert not x2? and not x2.v1? and not v2.v2?
-assert x2.v1 == "" and x2.v2 == ""
-
-assert x2?.v1 == "" and x2?.v1 != ""  // any comparison is false
-
-// When x2? is false, any x2?.foo returns 0sb? with the associated x rules
-
-x2.v2 = "hello" // direct access still OK
-
-assert not x2? and x2.v1 == "" and x2.v2 == "hello"
-
-x2 = "world"
-
-assert x2? and x2?.v1 == "world" and x2.v1 == "world"
+const a = some_call(z)
+optimize a < 1000  // a should never be over 1000, optimize accordingly

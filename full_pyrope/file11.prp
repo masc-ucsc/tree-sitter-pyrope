@@ -1,14 +1,5 @@
-const inc1 = comb(ref a) { a += 1 }
-
-const x = 3
-
-mut y = 3
-inc1(ref y)
-assert y == 4
-
-const banner = comb() { puts "hello" }
-const execute_method = comb(fn:comb() -> ()) {  // example with explicit type for fn
-  fn() // prints hello when banner passed as argument
+if condition {
+    result = a
+} else {
+    result = b
 }
-
-execute_method(banner)     // OK

@@ -1,11 +1,5 @@
-    pipe multiply::[stages=3](a, b) -> (result) {   // fixed 3-cycle latency
-      result = a * b
-    }
-
-    pipe add_pipe::[stages=1..=3](a, b) -> (result) { // compiler chooses 1-3 cycles
-      result = a + b
-    }
-
-    pipe flexible_mul(a, b) -> (result) {  // bare: caller specifies via delay[N]
-      result = a * b
-    }
+comptime const SIZE = 16    // Compile-time constant (shorthand for comptime const)
+comptime mut counter = 0    // Mutable at compile time (updated during elaboration)
+const constant = 42         // Immutable after assignment (NOT compile-time)
+mut wire = 0                // Combinational (no persistence, can be reassigned)
+reg state = 0               // Register (persistent across cycles)

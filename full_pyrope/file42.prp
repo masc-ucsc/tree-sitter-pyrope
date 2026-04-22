@@ -1,8 +1,15 @@
-mut v = 0b10
-assert v#[0,1] == v#[1,2] == v#[..] == v#[0..=1] == v#[..=1] == 0b10
+enum ADT = (
+  Person:(eats:string) = ?,
+  Robot:(charges_with:string) = ?
+)
 
-mut trans = 0
+comb nourish(x:ADT) {
+  match x {
+    does ADT.Person { puts "eating:{x.eats}" }
+    does ADT.Robot { puts "charging:{x.charges_with}" }
+  }
+}
 
-trans#[0] = v#[1]
-trans#[1] = v#[0]
-assert trans == 0b01
+test "my main" {
+  (_:Person="pizza", _:Robot="electricity").each(nourish)
+}

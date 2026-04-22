@@ -1,15 +1,4 @@
-const custom = (
-  ,data:i16 = ?
-  ,setter = comb(ref self, v) {
-    self.data = v
-    self::[valid] = v != 33
-  }
-)
-
-mut x:custom = ?
-
-cassert x?
-x.data = 33
-cassert not x?
-x.data = 100
-cassert x?
+// NOTE: Use `...r` binding; prior `..r` was incorrect.
+const r:(z:int) = 100
+const p:(x:int, y:int, ...r) = (x=1, y=2, z=3)
+const q:(x:int, ...r) = (x=1,z=10)  // OK

@@ -132,6 +132,7 @@ module.exports = grammar({
       , $.for_statement
       , $.lambda
       , $.enum_assignment_statement
+      , $.spawn_statement
       , $.loop_statement
       , $.expression_statement
       // Verification Only
@@ -265,7 +266,12 @@ module.exports = grammar({
       , field('generic', optseq('<', $.typed_identifier_list, '>'))
       , choice(
         field('definition', $.tuple),  // trait definition: type Name ( ... )
-        seq('=', field('alias', $._type))  // type alias: type Name = Type
+        seq('=',
+          choice(
+            $.lambda_decl
+            , field('alias', $._type)  // type alias: type Name = Type
+          )
+        )
       )
       , $._semicolon
     )
@@ -279,7 +285,7 @@ module.exports = grammar({
     )
     , assert_statement: $ => seq(
       optional('always')
-      , 'assert'
+      , choice('assert', 'cassert')
       , field('condition', $._expression)
       , field('msg', optional(seq(
         ','
@@ -330,7 +336,6 @@ module.exports = grammar({
         )
       )
       , field('operator', $.assignment_operator)
-      , field('delay', optional($.assignment_delay))
       , field('rvalue', choice(
         $._expression_with_comprehension
         , $.enum_definition
@@ -353,20 +358,15 @@ module.exports = grammar({
       $.enum_assignment
       , $._semicolon
     ))
-    // (removed) _assignment_or_declaration folded into assignment
-    , assignment_delay: $ => seq(
-      $.delay_tok
-      , field('timing', seq('[', $._expression, ']'))
-    )
     , var_or_let_or_reg: $ => seq(
       optional('comptime')
-      , choice('const', 'mut', 'reg')
+      , choice('const', 'mut', 'reg', prec.right(seq('await', optional($.tuple_sq))))
     )
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_item: $ => seq(
       field('name', $.identifier)
-      , field('value', optseq('=', $._expression))
+      , field('value', optseq('=', choice($._expression, $.ref_identifier)))
     )
     , attribute_item_list: $ => listseq1(field('item', $.attribute_item))
     , attribute_list: $ => seq('[', optional($.attribute_item_list), ']')
@@ -399,6 +399,12 @@ module.exports = grammar({
         seq('=', field('values', $.tuple)),
         field('body', $.arg_list)
       )
+    )
+    , spawn_statement: $ => seq(
+      'spawn'
+      , field('name', $.identifier)
+      , seq('=', $.scope_statement)
+      , $._semicolon
     )
     , ref_identifier: $ => seq(
       'ref'
@@ -578,10 +584,22 @@ module.exports = grammar({
       , $.optional_expression
     ))
     , lambda: $ => seq(
-      field('func_type', choice($.comb_tok, $.pipe_tok, $.mod_tok, $.flow_tok))
-      , field('name', optional($.identifier))
+      field('func_type', choice(
+        $.comb_tok
+        , $.mod_tok
+        , seq($.pipe_tok, optional($.tuple_sq)
+        )))
+      , field('name', $.identifier)
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
+    )
+    , lambda_decl: $ => seq(
+      field('func_type', choice(
+        $.comb_tok
+        , $.mod_tok
+        , $.pipe_tok
+      ))
+      , $.function_definition_decl
     )
     // Operators
     , assignment_operator: $ => token(choice(
@@ -620,8 +638,8 @@ module.exports = grammar({
     , _type: $ => prec.left('type', choice(
       $.primitive_type
       , $.array_type
-      , $.lambda
       , $.expression_type
+      , $._timing_sequence
     ))
     , expression_type: $ => prec.left('expression_type', choice(
       $.identifier
@@ -652,12 +670,10 @@ module.exports = grammar({
     , primitive_type: $ => prec.left(choice(
       $.unsized_integer_type
       , $.sized_integer_type
-      , $.bounded_integer_type
       , $.range_type
       //,$.enum_type
       , $.string_type
       , $.boolean_type
-      , $.type_type
     ))
     , unsized_integer_type: $ => choice(
       'int'
@@ -666,19 +682,13 @@ module.exports = grammar({
       , 'uint'
       , 'unsigned'
     )
-    , bounded_integer_type: $ => seq(
-      $.unsized_integer_type
-      , field('constrained', seq('(', $.select_options, ')'))
-    )
     , sized_integer_type: $ => token(/[siu]\d+/)
     , range_type: $ => seq('range', '(', $.select_options, ')')
     //,enum_type: $ => seq('enum', $.tuple)
     , string_type: $ => token('string')
     , boolean_type: $ => token('bool')
-    , type_type: $ => token('type')
     , comb_tok: $ => token('comb')
     , pipe_tok: $ => token('pipe')
-    , flow_tok: $ => token('flow')
     , mod_tok: $ => token('mod')
 
     // Identifiers

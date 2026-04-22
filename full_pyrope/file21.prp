@@ -1,15 +1,2 @@
-const fib1 = comb(n) where n == 0 { 0 }
-        ++ comb(n) where n == 1 { 1 }
-        ++ comb(n) { fib1(n - 1) + fib1(n - 2) }
-
-assert fib1(10) == 55
-
-const fib2 = comb(n) {
-  match n {
-    == 0 { 0 }
-    == 1 { 1 }
-    else { fib2(n - 1) + fib2(n - 2) }
-  }
-}
-
-assert fib2(10) == 55
+mut logical_and = a and b; mut logical_or = a or b  // Logical (no short-circuit)
+mut logical_not = !a            // Logical NOT

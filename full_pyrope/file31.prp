@@ -1,2 +1,12 @@
-reg counter:u32   = 10
-mut not_a_reg:u32 = 20
+mut point = (mut x=10, mut y=20,
+  // Method using tuple scope
+  comb move(self, dx:int, dy:int) -> (out) {
+    out = (x=self.x + dx, y=self.y + dy)
+  }
+  ,comb move2(self, dx:int, dy:int) -> (out:int) { // another method
+    out = (x=self.x + dx, y=self.y + dy)
+  }
+)
+const p2 = point.move(1, -2)
+assert p2.x == 11 and p2.y == 18
+// NOTE: `self` is explicit; earlier drafts suggested implicit `self`, which is invalid.

@@ -1,7 +1,19 @@
-    total = 3
+reg counter:u8 = 0
+mut tmp:u8 = counter
 
-    while !a_cond {
-      step
-    }
+counter += 1                    // Immediate update
+tmp += 1
+assert counter == tmp
 
-    assert total == 3 and a_cond
+counter::[defer] += 1           // Defer write to end of cycle
+assert counter == tmp
+tmp += 1
+
+assert counter != tmp
+assert counter::[defer] == tmp  // Read deferred value (end of cycle)
+
+// Timing syntax summary:
+// counter         - current ('q' value if not modified)
+// counter::[defer]- deferred value (end of current cycle)
+// past(counter)   - value from previous cycle
+// past[2](counter)- two cycles ago

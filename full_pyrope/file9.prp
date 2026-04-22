@@ -1,5 +1,17 @@
-mut tup2 = (
-  val:u8 = ?,
-  upd = comb(ref self) { self.val::[saturate] += 1 },
-  calc = comb(self) { self.val }
-)
+pipe mul(a, b) -> (c) { c = a * b }
+pipe add(a, b) -> (c) { c = a + b }
+
+mod alu(in1, in2) -> (out_pipelined, out_live) {
+  await[3] tmp              = mul(in1, in2)
+  await[3] in2_d            = in2
+  await[1] out_pipelined:@[4] = add(tmp:@[3], in2_d:@[3])
+  await[1] out_live:@[4]      = add(tmp:@[3], in2_d:@[3])
+}
+
+mod accum_alu(in1, in2) -> (out) {
+  reg total:[init=0]
+  await[3] tmp = mul(in1, in2)
+  const sum_aligned = add(total:@[3], tmp:@[3])  // both operands checked at cycle 3
+  total::[defer] = sum_aligned                    // defer write to end of cycle
+  out = total                                     // bare name reads current 'q'
+}
