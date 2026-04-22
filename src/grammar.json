@@ -10,7 +10,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "statement"
+            "name": "_statement"
           },
           {
             "type": "REPEAT",
@@ -22,7 +22,7 @@
         ]
       }
     },
-    "statement": {
+    "_statement": {
       "type": "PREC",
       "value": "statement",
       "content": {
@@ -140,7 +140,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "statement"
+                "name": "_statement"
               }
             ]
           }
@@ -1262,7 +1262,7 @@
             "name": "function",
             "content": {
               "type": "SYMBOL",
-              "name": "complex_identifier"
+              "name": "_complex_identifier"
             }
           },
           {
@@ -1284,7 +1284,7 @@
           "name": "function",
           "content": {
             "type": "SYMBOL",
-            "name": "complex_identifier"
+            "name": "_complex_identifier"
           }
         },
         {
@@ -1516,7 +1516,7 @@
                   "name": "lvalue",
                   "content": {
                     "type": "SYMBOL",
-                    "name": "complex_identifier"
+                    "name": "_complex_identifier"
                   }
                 },
                 {
@@ -1585,7 +1585,7 @@
               "name": "identifier",
               "content": {
                 "type": "SYMBOL",
-                "name": "complex_identifier"
+                "name": "_complex_identifier"
               }
             },
             {
@@ -2110,7 +2110,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "complex_identifier"
+          "name": "_complex_identifier"
         }
       ]
     },
@@ -2250,7 +2250,7 @@
         }
       ]
     },
-    "complex_identifier": {
+    "_complex_identifier": {
       "type": "CHOICE",
       "members": [
         {
@@ -4189,7 +4189,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "constant"
+                        "name": "_constant"
                       }
                     ]
                   }
@@ -4208,11 +4208,11 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "complex_identifier"
+            "name": "_complex_identifier"
           },
           {
             "type": "SYMBOL",
-            "name": "constant"
+            "name": "_constant"
           },
           {
             "type": "SYMBOL",
@@ -4637,7 +4637,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "primitive_type"
+            "name": "_primitive_type"
           },
           {
             "type": "SYMBOL",
@@ -4666,7 +4666,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "constant"
+            "name": "_constant"
           },
           {
             "type": "SYMBOL",
@@ -4743,7 +4743,7 @@
             "name": "function",
             "content": {
               "type": "SYMBOL",
-              "name": "complex_identifier"
+              "name": "_complex_identifier"
             }
           },
           {
@@ -4782,7 +4782,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "primitive_type"
+                      "name": "_primitive_type"
                     },
                     {
                       "type": "SYMBOL",
@@ -4807,7 +4807,7 @@
         ]
       }
     },
-    "primitive_type": {
+    "_primitive_type": {
       "type": "CHOICE",
       "members": [
         {
@@ -4926,7 +4926,7 @@
         ]
       }
     },
-    "constant": {
+    "_constant": {
       "type": "CHOICE",
       "members": [
         {
@@ -5349,11 +5349,11 @@
   ],
   "conflicts": [
     [
-      "complex_identifier",
+      "_complex_identifier",
       "typed_identifier"
     ],
     [
-      "complex_identifier",
+      "_complex_identifier",
       "expression_type"
     ],
     [

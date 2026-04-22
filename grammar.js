@@ -49,7 +49,7 @@ function typedOrAttributed($) {
 
 function tupleCall($, precedence) {
   return prec(precedence, seq(
-    field('function', $.complex_identifier)
+    field('function', $._complex_identifier)
     , field('argument', $.tuple)
   ));
 }
@@ -67,8 +67,8 @@ module.exports = grammar({
 
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
-    [$.complex_identifier, $.typed_identifier]
-    , [$.complex_identifier, $.expression_type]
+    [$._complex_identifier, $.typed_identifier]
+    , [$._complex_identifier, $.expression_type]
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
     , [$.function_call_statement, $._restricted_expression]
@@ -148,10 +148,10 @@ module.exports = grammar({
 
   , rules: {
     // Top
-    description: $ => repseq($.statement, repeat(';'))
+    description: $ => repseq($._statement, repeat(';'))
 
     // Statements
-    , statement: $ => prec('statement', choice(
+    , _statement: $ => prec('statement', choice(
       // Synthesizable
       $.scope_statement
       , $.declaration_statement
@@ -175,7 +175,7 @@ module.exports = grammar({
     )
     , scope_statement: $ => seq(
       '{'
-      , repseq($.statement)
+      , repseq($._statement)
       , '}'
     )
     , declaration_statement: $ => seq(
@@ -318,7 +318,7 @@ module.exports = grammar({
     , function_call_expression: $ => tupleCall($, 'function_call_expression')
     //
     , function_call_statement: $ => seq(
-      field('function', $.complex_identifier)
+      field('function', $._complex_identifier)
       , field('argument', $.expression_list)
       , $._semicolon
     )
@@ -346,7 +346,7 @@ module.exports = grammar({
         seq('(', field('lvalue', $.lvalue_list), ')')
         , field('lvalue', $.typed_identifier)
         , seq(
-          field('lvalue', $.complex_identifier)
+          field('lvalue', $._complex_identifier)
           , field('type', optional($.type_cast))
         )
       )
@@ -360,7 +360,7 @@ module.exports = grammar({
     , lvalue_item: $ => choice(
       $.typed_identifier
       , seq(
-        field('identifier', $.complex_identifier)
+        field('identifier', $._complex_identifier)
         , field('type', optional($.type_cast))
       )
     )
@@ -407,7 +407,7 @@ module.exports = grammar({
     )
     , ref_identifier: $ => seq(
       'ref'
-      , $.complex_identifier
+      , $._complex_identifier
     )
     , arg_list: $ => seq(
       '(', optional(listseq1($.arg_item)), ')'
@@ -418,7 +418,7 @@ module.exports = grammar({
       , field('definition', optseq('=', $._expression_with_comprehension))
     )
 
-    , complex_identifier: $ => choice(
+    , _complex_identifier: $ => choice(
       $.identifier
       , $.dot_expression
       , $.member_selection
@@ -544,14 +544,14 @@ module.exports = grammar({
       $._restricted_expression
       , choice(
         $.identifier
-        , $.constant
+        , $._constant
       )
       , 'dot'
       , 'dot_sub'
     )
     , _restricted_expression: $ => prec('expression', choice(
-      $.complex_identifier
-      , $.constant
+      $._complex_identifier
+      , $._constant
       , $.function_call_expression
       , $.lambda
       , $.tuple
@@ -605,14 +605,14 @@ module.exports = grammar({
       , typedOrAttributed($)
     ))
     , _type: $ => prec('type', choice(
-      $.primitive_type
+      $._primitive_type
       , $.array_type
       , $.expression_type
       , $._timing_sequence
     ))
     , expression_type: $ => prec('expression_type', choice(
       $.identifier
-      , $.constant
+      , $._constant
       , $.tuple
       , $.if_expression
       , $.match_expression
@@ -630,13 +630,13 @@ module.exports = grammar({
     , array_type: $ => prec.left('array_type', seq(
       field('length', $.tuple_sq)
       , optional(field('base', choice(
-        $.primitive_type
+        $._primitive_type
         , $.array_type
         , $.lambda
         , $.expression_type
       )))
     ))
-    , primitive_type: $ => choice(
+    , _primitive_type: $ => choice(
       $.unsized_integer_type
       , $.sized_integer_type
       , $.range_type
@@ -669,7 +669,7 @@ module.exports = grammar({
     )
 
     // Constants
-    , constant: $ => choice(
+    , _constant: $ => choice(
       $._number
       , $._bool_literal
       , $._string_literal
