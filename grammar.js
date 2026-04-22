@@ -128,7 +128,7 @@ module.exports = grammar({
       , 'expression'
     ]
     , [
-      'tuple_list'
+      '_tuple_list'
     ]
     , [
       'expression'
@@ -206,7 +206,7 @@ module.exports = grammar({
         , $._semicolon
       )
     )
-    , stmt_list: $ => prec.left('tuple_list', seq(
+    , stmt_list: $ => prec.left('_tuple_list', seq(
       field('item', $._tuple_item)
       , repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
@@ -326,11 +326,11 @@ module.exports = grammar({
       , $._semicolon
     )
     // Tuple
-    , tuple: $ => seq('(', optional($.tuple_list), ')')
+    , tuple: $ => seq('(', optional($._tuple_list), ')')
 
-    , tuple_sq: $ => seq('[', optional($.tuple_list), ']')
+    , tuple_sq: $ => seq('[', optional($._tuple_list), ']')
 
-    , tuple_list: $ => prec('tuple_list', listseq1(field('item', $._tuple_item)))
+    , _tuple_list: $ => prec('_tuple_list', listseq1(field('item', $._tuple_item)))
     , _tuple_item: $ => choice(
       $.ref_identifier
       , $._expression_with_comprehension

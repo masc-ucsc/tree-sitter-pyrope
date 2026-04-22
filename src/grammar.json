@@ -314,7 +314,7 @@
     },
     "stmt_list": {
       "type": "PREC_LEFT",
-      "value": "tuple_list",
+      "value": "_tuple_list",
       "content": {
         "type": "SEQ",
         "members": [
@@ -1327,7 +1327,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "tuple_list"
+              "name": "_tuple_list"
             },
             {
               "type": "BLANK"
@@ -1352,7 +1352,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "tuple_list"
+              "name": "_tuple_list"
             },
             {
               "type": "BLANK"
@@ -1365,9 +1365,9 @@
         }
       ]
     },
-    "tuple_list": {
+    "_tuple_list": {
       "type": "PREC",
-      "value": "tuple_list",
+      "value": "_tuple_list",
       "content": {
         "type": "SEQ",
         "members": [
@@ -5590,7 +5590,7 @@
     [
       {
         "type": "STRING",
-        "value": "tuple_list"
+        "value": "_tuple_list"
       }
     ],
     [
