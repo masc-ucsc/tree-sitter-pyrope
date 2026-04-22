@@ -19,6 +19,48 @@ function listseq1() {
   )
 }
 
+function statementInit($) {
+  return optseq($.stmt_list, ';');
+}
+
+function forBinding($) {
+  return choice(
+    seq('('
+      , field('index', $.typed_identifier_list)
+      , ')'
+    )
+    , $.typed_identifier
+  );
+}
+
+function attributeSuffix($) {
+  return seq(':', $.attribute_list);
+}
+
+function typedOrAttributed($) {
+  return choice(
+    seq(
+      field('type', $._type)
+      , field('attribute', optional(attributeSuffix($)))
+    )
+    , field('attribute', attributeSuffix($))
+  );
+}
+
+function tupleCall($, precedence) {
+  return prec(precedence, seq(
+    field('function', $.complex_identifier)
+    , field('argument', $.tuple)
+  ));
+}
+
+function dottedChain(item, tail, precedence, subprecedence, associativity = prec.left) {
+  return associativity(precedence, seq(
+    field('item', item)
+    , repeat1(associativity(subprecedence, seq('.', tail)))
+  ));
+}
+
 // Grammar
 module.exports = grammar({
   name: 'pyrope'
@@ -113,17 +155,17 @@ module.exports = grammar({
       // Synthesizable
       $.scope_statement
       , $.declaration_statement
-      , $.assignment_or_declaration_statement
+      , seq($.assignment, $._semicolon)
       , $.import_statement
       , $.function_call_statement
       , $.control_statement
       , $.while_statement
       , $.for_statement
       , $.lambda
-      , $.enum_assignment_statement
+      , seq($.enum_assignment, $._semicolon)
       , $.spawn_statement
       , $.loop_statement
-      , $.expression_statement
+      , seq($._expression_with_comprehension, $._semicolon)
       // Verification Only
       , $.test_statement
       , $.type_statement
@@ -135,10 +177,6 @@ module.exports = grammar({
       '{'
       , repseq($.statement)
       , '}'
-    )
-    , assignment_or_declaration_statement: $ => seq(
-      $.assignment
-      , $._semicolon
     )
     , declaration_statement: $ => seq(
       field('decl', $.var_or_let_or_reg)
@@ -177,12 +215,12 @@ module.exports = grammar({
     , if_expression: $ => prec('statement', seq(
       optional('unique')
       , 'if'
-      , field('init', optseq($.stmt_list, ';'))
+      , field('init', statementInit($))
       , field('condition', $._expression)
       , field('code', $.scope_statement)
       , field('elif', repseq(
         'elif'
-        , field('init', optseq($.stmt_list, ';'))
+        , field('init', statementInit($))
         , field('condition', $._expression)
         , field('code', $.scope_statement)
       ))
@@ -191,14 +229,8 @@ module.exports = grammar({
     , for_statement: $ => seq(
       'for'
       , field('attributes', optseq('::', $.attribute_list))
-      , field('init', optseq($.stmt_list, ';'))
-      , choice(
-        seq('('
-          , field('index', $.typed_identifier_list) // NOTE: maybe constraint to max 3 (elem,index,key)
-          , ')'
-        )
-        , $.typed_identifier
-      )
+      , field('init', statementInit($))
+      , forBinding($) // NOTE: maybe constraint to max 3 (elem,index,key)
       , 'in'
       , choice(
         $.ref_identifier
@@ -209,7 +241,7 @@ module.exports = grammar({
     , while_statement: $ => seq(
       'while'
       , field('attributes', optseq('::', $.attribute_list))
-      , field('init', optseq($.stmt_list, ';'))
+      , field('init', statementInit($))
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
@@ -221,7 +253,7 @@ module.exports = grammar({
     ))
     , match_expression: $ => seq(
       'match'
-      , field('init', optseq($.stmt_list, ';'))
+      , field('init', statementInit($))
       , field('condition', $._expression)
       , '{'
       , field('match_list', optional($.match_list))
@@ -238,10 +270,6 @@ module.exports = grammar({
       'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
       '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
       'equals', '!equals', 'does', '!does', 'is', '!is'
-    )
-    , expression_statement: $ => seq(
-      $._expression_with_comprehension
-      , $._semicolon
     )
     , test_statement: $ => seq(
       'test'
@@ -287,10 +315,7 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , function_call_expression: $ => prec('function_call_expression', seq(
-      field('function', $.complex_identifier)
-      , field('argument', $.tuple)
-    ))
+    , function_call_expression: $ => tupleCall($, 'function_call_expression')
     //
     , function_call_statement: $ => seq(
       field('function', $.complex_identifier)
@@ -307,10 +332,12 @@ module.exports = grammar({
       $.ref_identifier
       , $._expression_with_comprehension
       , $.assignment
-      , $.typed_declaration
+      , seq(
+        field('decl', $.var_or_let_or_reg)
+        , field('lvalue', $.typed_identifier)
+      )
       , $.lambda
     )
-    , attributes: $ => seq(':', $.attribute_list)
 
     // Assignment (single or tuple lvalue)
     , assignment: $ => seq(
@@ -330,10 +357,6 @@ module.exports = grammar({
         , $.ref_identifier
       ))
     )
-    , typed_declaration: $ => seq(
-      field('decl', $.var_or_let_or_reg)
-      , field('lvalue', $.typed_identifier)
-    )
     , lvalue_item: $ => choice(
       $.typed_identifier
       , seq(
@@ -342,10 +365,6 @@ module.exports = grammar({
       )
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
-    , enum_assignment_statement: $ => seq(
-      $.enum_assignment
-      , $._semicolon
-    )
     , var_or_let_or_reg: $ => seq(
       optional('comptime')
       , choice('const', 'mut', 'reg', prec.right(seq('await', optional($.tuple_sq))))
@@ -356,14 +375,17 @@ module.exports = grammar({
       field('name', $.identifier)
       , field('value', optseq('=', choice($._expression, $.ref_identifier)))
     )
-    , attribute_item_list: $ => listseq1(field('item', $.attribute_item))
-    , attribute_list: $ => seq('[', optional($.attribute_item_list), ']')
+    , attribute_list: $ => seq('[', optional(listseq1(field('item', $.attribute_item))), ']')
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq($.tuple_sq))
       , field('pipe_config', optseq('::', $.attribute_list))
       , field('input', $.arg_list)
-      , field('output', optseq('->', choice($.arg_list, $.type_or_identifier)))
+      , field('output', optseq('->', choice(
+        $.arg_list
+        , field('type', $.type_cast)
+        , $.typed_identifier
+      )))
     )
     , enum_definition: $ => seq(
       choice('enum', 'variant')
@@ -388,18 +410,12 @@ module.exports = grammar({
       , $.complex_identifier
     )
     , arg_list: $ => seq(
-      '(', optional($.arg_item_list), ')'
+      '(', optional(listseq1($.arg_item)), ')'
     )
-    , arg_item_list: $ => listseq1($.arg_item)
     , arg_item: $ => seq(
       field('mod', optional(choice('...', 'ref', 'reg')))
       , $.typed_identifier
       , field('definition', optseq('=', $._expression_with_comprehension))
-    )
-
-    , type_or_identifier: $ => choice(
-      field('type', $.type_cast)
-      , $.typed_identifier
     )
 
     , complex_identifier: $ => choice(
@@ -441,13 +457,7 @@ module.exports = grammar({
     )
     , for_comprehension: $ => seq(
       'for'
-      , choice(
-        seq('('
-          , field('index', $.typed_identifier_list)
-          , ')'
-        )
-        , $.typed_identifier
-      )
+      , forBinding($)
       , 'in'
       , field('data', $.expression_list)
       , optional(
@@ -468,13 +478,7 @@ module.exports = grammar({
     , type_specification: $ => prec('type_spec', seq(
       field('argument', $._restricted_expression)
       , ':'
-      , choice(
-        seq(
-          field('type', $._type)
-          , field('attribute', optional($.attributes))
-        )
-        , field('attribute', $.attributes)
-      )
+      , typedOrAttributed($)
     ))
     , unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...'))
@@ -536,14 +540,15 @@ module.exports = grammar({
         ))
       )
     )
-    , dot_expression: $ => prec.left('dot', seq(
-      field('item', $._restricted_expression)
-      , repeat1(prec.left('dot_sub', seq('.',
-        choice(
-          $.identifier
-          , $.constant
-        ))))
-    ))
+    , dot_expression: $ => dottedChain(
+      $._restricted_expression
+      , choice(
+        $.identifier
+        , $.constant
+      )
+      , 'dot'
+      , 'dot_sub'
+    )
     , _restricted_expression: $ => prec('expression', choice(
       $.complex_identifier
       , $.constant
@@ -555,9 +560,9 @@ module.exports = grammar({
     ))
     , lambda: $ => seq(
       field('func_type', choice(
-        $.comb_tok
-        , $.mod_tok
-        , seq($.pipe_tok, optional($.tuple_sq)
+        'comb'
+        , 'mod'
+        , seq('pipe', optional($.tuple_sq)
         )))
       , field('name', $.identifier)
       , $.function_definition_decl
@@ -565,9 +570,9 @@ module.exports = grammar({
     )
     , lambda_decl: $ => seq(
       field('func_type', choice(
-        $.comb_tok
-        , $.mod_tok
-        , $.pipe_tok
+        'comb'
+        , 'mod'
+        , 'pipe'
       ))
       , $.function_definition_decl
     )
@@ -597,13 +602,7 @@ module.exports = grammar({
     // Types
     , type_cast: $ => prec.left('type_cast', seq(
       ':'
-      , choice(
-        seq(
-          field('type', $._type)
-          , field('attribute', optional($.attributes))
-        )
-        , field('attribute', $.attributes)
-      )
+      , typedOrAttributed($)
     ))
     , _type: $ => prec('type', choice(
       $.primitive_type
@@ -620,14 +619,14 @@ module.exports = grammar({
       , $.dot_expression_type
       , $.function_call_type
     ))
-    , dot_expression_type: $ => prec.right('dot_type', seq(
-      field('item', $.expression_type)
-      , repeat1(prec.right('dot_type_sub', seq('.', field('item', $.expression_type))))
-    ))
-    , function_call_type: $ => prec('function_call_type', seq(
-      field('function', $.complex_identifier)
-      , field('argument', $.tuple)
-    ))
+    , dot_expression_type: $ => dottedChain(
+      $.expression_type
+      , field('item', $.expression_type)
+      , 'dot_type'
+      , 'dot_type_sub'
+      , prec.right
+    )
+    , function_call_type: $ => tupleCall($, 'function_call_type')
     , array_type: $ => prec.left('array_type', seq(
       field('length', $.tuple_sq)
       , optional(field('base', choice(
@@ -641,8 +640,8 @@ module.exports = grammar({
       $.unsized_integer_type
       , $.sized_integer_type
       , $.range_type
-      , $.string_type
-      , $.boolean_type
+      , 'string'
+      , 'bool'
     )
     , unsized_integer_type: $ => choice(
       'int'
@@ -652,11 +651,6 @@ module.exports = grammar({
     )
     , sized_integer_type: $ => token(/[siu]\d+/)
     , range_type: $ => seq('range', '(', $.select_options, ')')
-    , string_type: $ => token('string')
-    , boolean_type: $ => token('bool')
-    , comb_tok: $ => token('comb')
-    , pipe_tok: $ => token('pipe')
-    , mod_tok: $ => token('mod')
 
     // Identifiers
     , identifier: $ => token(
