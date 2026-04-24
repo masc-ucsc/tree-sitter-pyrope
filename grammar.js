@@ -77,6 +77,14 @@ module.exports = grammar({
     , [$.lvalue_item, $._restricted_expression]
     , [$.assignment, $.lvalue_item, $._restricted_expression]
     , [$.lvalue_item, $.typed_identifier_list]
+    , [$._binary_times, $._pri2_operand]
+    , [$._binary_other, $._pri3_operand]
+    , [$._binary_compare, $._pri4_operand]
+    , [$._binary_times]
+    , [$._binary_other]
+    , [$._binary_compare]
+    , [$._binary_logical]
+    , [$._expression, $._binary_logical]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -96,30 +104,12 @@ module.exports = grammar({
       , 'select'
       , 'member_selection'
       , 'bit_selection'
-      , 'unary'
-      , 'range'
-      , 'step'
+      , 'unary'            // Pyrope priority 1: !, not, ~, -
       , 'type_spec'
-      , 'binary_times'
-      , 'binary_plus'
-      , 'binary_shift'
-      , 'binary_compare'
-      , 'binary_equal'
-      , 'scalar_and'
-      , 'scalar_nand'
-      , 'scalar_or'
-      , 'scalar_nor'
-      , 'scalar_xor'
-      , 'scalar_xnor'
-      , 'logical_and'
-      , 'logical_nand'
-      , 'logical_or'
-      , 'logical_nor'
-      , 'induction'
-      , 'tuple_relation'
-      , 'tuple_concat'
-      , 'type_compare'
-      , 'type_equal'
+      , 'binary_times'     // Pyrope priority 2: *, /, %
+      , 'binary_other'     // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
+      , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals (+ ! variants)
+      , 'binary_logical'   // Pyrope priority 5: and, or, implies (+ ! variants)
       , 'expression'
     ]
     // Types
@@ -141,9 +131,7 @@ module.exports = grammar({
     ]
   ]
 
-  , supertypes: $ => [
-    $._expression
-  ]
+  , supertypes: $ => []
 
   , rules: {
     // Top
@@ -442,15 +430,14 @@ module.exports = grammar({
     ))
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
 
-    // Expressions
+    // Expressions. Built from the tiered binary-expression operand chain:
+    // _pri4_operand covers everything tighter than tier-5, _binary_logical
+    // is tier-5. Single path eliminates ambiguity between "full expression"
+    // and "operand of an outer tier". Tier-5 is aliased to expression_item
+    // so the tree shows a visible `expression_item` wrapper.
     , _expression: $ => prec('expression', choice(
-      $.type_specification
-      , $.unary_expression
-      , $.binary_expression
-      , $.if_expression
-      , $.match_expression
-      , $._restricted_expression
-      , $.scope_statement
+      $._pri4_operand
+      , alias($._binary_logical, $.expression_item)
     ))
     , _expression_with_comprehension: $ => seq(
       $._expression
@@ -485,76 +472,101 @@ module.exports = grammar({
     ))
     , unary_expression: $ => prec.left('unary', seq(
       field('operator', choice('!', 'not', '~', '-', '...'))
-      , field('argument', $._expression)
+      , field('argument', $._pri1_operand)
     ))
     , optional_expression: $ => seq(
       field('argument', $._expression)
       , field('operator', '?')
     )
-    , binary_expression: $ => choice(
-      ...[
-        ['..=', 'range']
-        , ['..<', 'range']
-        , ['..+', 'range']
-        , ['step', 'step']
-        , ['and', 'logical_and']
-        , ['!and', 'logical_nand']
-        , ['or', 'logical_or']
-        , ['!or', 'logical_nor']
-        , ['implies', 'induction']
-        , ['!implies', 'induction']
-        , ['>>', 'binary_shift']
-        , ['<<', 'binary_shift']
-        , ['&', 'scalar_and']
-        , ['^', 'scalar_xor']
-        , ['|', 'scalar_or']
-        , ['!&', 'scalar_nand']
-        , ['!^', 'scalar_xnor']
-        , ['!|', 'scalar_nor']
-        , ['*', 'binary_times']
-        , ['/', 'binary_times']
-        , ['%', 'binary_times']
-        , ['+', 'binary_plus']
-        , ['-', 'binary_plus']
-        , ['<', 'binary_compare']
-        , ['<=', 'binary_compare']
-        , ['>', 'binary_compare']
-        , ['>=', 'binary_compare']
-        , ['==', 'binary_equal']
-        , ['!=', 'binary_equal']
-        , ['++', 'tuple_concat']
-        , ['has', 'tuple_relation']
-        , ['!has', 'tuple_relation']
-        , ['in', 'tuple_relation']
-        , ['!in', 'tuple_relation']
-        , ['equals', 'type_equal']
-        , ['!equals', 'type_equal']
-        , ['case', 'type_compare']
-        , ['!case', 'type_compare']
-        , ['does', 'type_compare']
-        , ['!does', 'type_compare']
-        , ['is', 'type_compare']
-        , ['!is', 'type_compare']
-      ].map(([operator, precedence]) =>
-        prec.left(precedence, seq(
-          field('left', $._expression)
-          , field('operator', operator)
-          , field('right', $._expression)
-        ))
-      )
+    // expression_item: flat chain of same-priority operators.
+    // Each tier admits only TIGHTER-tier operands, so `a + b + c` parses as a
+    // single node with three operands (not ((a + b) + c)).
+    , expression_item: $ => choice(
+      $._binary_times
+      , $._binary_other
+      , $._binary_compare
+      , $._binary_logical
     )
+    // Pyrope priority 2: *, /, %
+    , _binary_times: $ => prec.left('binary_times', seq(
+      field('operand', $._pri1_operand)
+      , repeat1(seq(
+        field('operator', $.binary_times_op)
+        , field('operand', $._pri1_operand)
+      ))
+    ))
+    , binary_times_op: $ => choice('*', '/', '%')
+    // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
+    , _binary_other: $ => prec.left('binary_other', seq(
+      field('operand', $._pri2_operand)
+      , repeat1(seq(
+        field('operator', $.binary_other_op)
+        , field('operand', $._pri2_operand)
+      ))
+    ))
+    , binary_other_op: $ => choice(
+      '+', '-', '++', '<<', '>>',
+      '&', '|', '^', '!&', '!|', '!^',
+      '..=', '..<', '..+', 'step'
+    )
+    // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals (+ ! variants)
+    , _binary_compare: $ => prec.left('binary_compare', seq(
+      field('operand', $._pri3_operand)
+      , repeat1(seq(
+        field('operator', $.binary_compare_op)
+        , field('operand', $._pri3_operand)
+      ))
+    ))
+    , binary_compare_op: $ => choice(
+      '<', '<=', '>', '>=', '==', '!=',
+      'has', '!has', 'in', '!in',
+      'case', '!case', 'does', '!does', 'is', '!is',
+      'equals', '!equals'
+    )
+    // Pyrope priority 5: and, or, implies (+ ! variants)
+    , _binary_logical: $ => prec.left('binary_logical', seq(
+      field('operand', $._pri4_operand)
+      , repeat1(seq(
+        field('operator', $.binary_logical_op)
+        , field('operand', $._pri4_operand)
+      ))
+    ))
+    , binary_logical_op: $ => choice(
+      'and', '!and', 'or', '!or', 'implies', '!implies'
+    )
+    // Operand tiers: each level adds its own expression_item kind.
+    , _pri1_operand: $ => prec('expression', choice(
+      $.type_specification
+      , $.unary_expression
+      , $.if_expression
+      , $.match_expression
+      , $._restricted_expression
+      , $.scope_statement
+    ))
+    , _pri2_operand: $ => prec('expression', choice(
+      $._pri1_operand
+      , alias($._binary_times, $.expression_item)
+    ))
+    , _pri3_operand: $ => prec('expression', choice(
+      $._pri2_operand
+      , alias($._binary_other, $.expression_item)
+    ))
+    , _pri4_operand: $ => prec('expression', choice(
+      $._pri3_operand
+      , alias($._binary_compare, $.expression_item)
+    ))
     , dot_expression: $ => dottedChain(
       $._restricted_expression
       , choice(
         $.identifier
-        , $._constant
+        , $.constant
       )
       , 'dot'
       , 'dot_sub'
     )
     , _restricted_expression: $ => prec('expression', choice(
       $._complex_identifier
-      , $._constant
+      , $.constant
       , $.function_call_expression
       , $.lambda
       , $.tuple
@@ -601,7 +613,7 @@ module.exports = grammar({
     ))
     , expression_type: $ => prec('expression_type', choice(
       $.identifier
-      , $._constant
+      , $.constant
       , $.tuple
       , $.if_expression
       , $.match_expression
@@ -656,7 +668,7 @@ module.exports = grammar({
     )
 
     // Constants
-    , _constant: $ => choice(
+    , constant: $ => choice(
       $._number
       , $._bool_literal
       , $._string_literal
