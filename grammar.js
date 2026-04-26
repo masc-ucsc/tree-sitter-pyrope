@@ -334,6 +334,14 @@ module.exports = grammar({
         field('decl', $.var_or_let_or_reg)
         , field('lvalue', $.typed_identifier)
       )
+      // Positional tuple field with explicit mutability override:
+      // `(1, const 3)` / `(mut 3, 4)`. Per 04-variables.md, only `const` /
+      // `mut` are meaningful here, but the grammar overparses and accepts
+      // any var_or_let_or_reg prefix; the semantic pass narrows it.
+      , prec(-1, seq(
+        field('decl', $.var_or_let_or_reg)
+        , field('value', $._expression_with_comprehension)
+      ))
       , $.lambda
     )
 

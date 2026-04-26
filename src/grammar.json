@@ -1491,6 +1491,31 @@
           ]
         },
         {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "decl",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "var_or_let_or_reg"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "value",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_expression_with_comprehension"
+                }
+              }
+            ]
+          }
+        },
+        {
           "type": "SYMBOL",
           "name": "lambda"
         }

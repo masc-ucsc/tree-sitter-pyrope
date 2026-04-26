@@ -1,2 +1,2 @@
-comb f(a, b) { a + b }
+comb f(a, b) -> (r) { r = a + b }
 cassert f(2, 3) == 5

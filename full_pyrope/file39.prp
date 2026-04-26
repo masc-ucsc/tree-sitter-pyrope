@@ -7,5 +7,5 @@ mut f = (b=3, const e=5)
 f.b = 4                 // OK
 
 const x = (1,2)
-mut y = (1, const _ = 3)  // 2nd field is unnamed (only const allows that)
+mut y = (1, const 3)    // 2nd field is positional and immutable
 y[0] = 100              // OK
