@@ -1,12 +1,14 @@
-mut point = (mut x=10, mut y=20,
-  // Method using tuple scope
-  comb move(self, dx:int, dy:int) -> (out) {
-    out = (x=self.x + dx, y=self.y + dy)
-  }
-  ,comb move2(self, dx:int, dy:int) -> (out:int) { // another method
-    out = (x=self.x + dx, y=self.y + dy)
-  }
+mut a = (
+  ,r1 = (b=1,c=2)
+  ,r2 = (3,4)
 )
-const p2 = point.move(1, -2)
-assert p2.x == 11 and p2.y == 18
-// NOTE: `self` is explicit; earlier drafts suggested implicit `self`, which is invalid.
+// tuple position is from left to right like most languages
+cassert a.r1 == (1,2) and a.r2 == (3,4)
+cassert a[0] == (1,2) and a[1] == (3,4)
+
+// different ways to access the same field
+cassert a.r1.c    == 2
+cassert a['r1'].c == 2
+cassert a.r1[1]   == 2
+cassert a[0][1]   == 2
+cassert a[0]['c'] == 2

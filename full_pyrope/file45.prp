@@ -1,4 +1,12 @@
-// No trait keyword, but `type`
-type Show ( comb show(self) -> String )
-impl Show for int ( comb show(self) -> String { "_{self}_" } )
-cassert 42.show() == "_42_"
+mut array = (0,1,2)       // size 3, not 4
+mut index = 2
+if runtime {
+  index = 4
+}
+// Index can be 2 or 4
+
+
+mut res2 = 0sb?           // Possible code to be compatible with Verilog
+if index<3 {
+  res = array[index]      // OK
+}

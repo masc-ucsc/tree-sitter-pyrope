@@ -1,3 +1,11 @@
-const cfg = read_file("config.txt")
-puts cfg
-// NOTE: File I/O comes from imported C++ methods; no special grammar.
+mut c=(x=1,const b = 2, mut d=3)
+c.x   = 3  // OK
+c.d   = 30 // OK, d was already mutable type
+
+const d=(x=1, const y=2, mut z=3)
+d.x   = 2  // OK
+
+mut e:d = ?
+assert e.x==1 and e.y==2 and e.z==3
+e.x = 30   // OK
+e.z = 30   // OK

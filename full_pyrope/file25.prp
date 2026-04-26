@@ -1,10 +1,8 @@
-assert condition               // Runtime assertion
-cassert compile_time_expr      // Compile-time assertion
+    mut r1 = fcall1()
+    r1  = fcall2() unless r1
 
-test "counter test" {
-    const cnt = counter(true)
-    puts "Counter value: ", cnt   // Debug output
-    step                      // Advance one cycle
-    assert cnt == 1
-    cassert SIZE == 16         // Compile-time constant check
-}
+    mut r2 = fcall1()
+    r2  = fcall2() when r2
+
+    mut r3 = fcall1()
+    r3 += fcall2()

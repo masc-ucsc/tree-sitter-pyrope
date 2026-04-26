@@ -1,14 +1,8 @@
-// Set attribute (only at declaration)
-reg counter:[reset_pin=ref rst] = 0 // Set reset pin (ref connects the wire)
+mut (a,b,c,d) = ?
+a = 1
+  + 3           // 1st stmt
+(b,c) = (1,3)   // 2nd stmt
+cassert a == 4 and b == 1 and c == 3
 
-// Read attribute value
-const num_bits = counter::[bits]    // Read number of bits
-
-// Check attribute (read and compare)
-cassert counter::[bits] == 8        // Check bit width
-cassert z::[bits] < 32              // Check bit width constraint
-
-// Compile-time uses the 'comptime' prefix modifier (not an attribute)
-comptime const SIZE = 16
-comptime mut elaboration_cnt = 0   // mutable at compile time
-cassert SIZE::[comptime] == true   // Can still query comptime status
+d = 1 +         // OK, but not formatted to style
+    3

@@ -1,2 +1,11 @@
-// NOTE: The following snippet is not valid Pyrope
-const a:Option(_:u8) = Some(3)
+mut b = 100
+mut a = (b:u8, b, b:u8 = ?, const c=4) // a[0] and a[1] are unnamed, a[2]==a.b
+a.b = 200
+assert a == (100, 100, 200, 4)
+
+mut f = (b=3, const e=5)
+f.b = 4                 // OK
+
+const x = (1,2)
+mut y = (1, const _ = 3)  // 2nd field is unnamed (only const allows that)
+y[0] = 100              // OK

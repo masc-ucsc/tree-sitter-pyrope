@@ -1,8 +1,17 @@
-comb div(a:int, b:int) -> (q:int) {
-  requires b != 0
-  ensures  a == q*b + (a % b)  // Note: % is compile-time only
-  q = a / b
+fcall 1,2         // same as: fcall(1,2)
+b = xx[1,2]       // same as: xx[(1,2)]
+
+for a in 1,2,3 {  // same as: for a in (1,2,3) {
+  x = a
+}
+y = match z {
+  in 1,2 { 4 }    // same as: in (1,2) { 4 }
+  else { 5 }
+}
+y2 = match mut one=1 ; one ++ z {  // same as: y2 = match (1,z) {
+  == (1,2) { 4 }
 }
 
-const a = some_call(z)
-optimize a < 1000  // a should never be over 1000, optimize accordingly
+comb addb(a, b:u32) -> (a:u32) {
+  a = a + b
+}

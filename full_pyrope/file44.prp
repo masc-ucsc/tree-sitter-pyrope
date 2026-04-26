@@ -1,17 +1,10 @@
-// Declare the lambda types ahead (inline complex lambda types are not allowed in foo:Type).
-type PushFn<T>  = comb(T) -> ()
-type PopFn<T>   = comb()  -> (T)
-type EmptyFn    = comb()  -> (bool)
+mut bund1 = (0,1,2,3,4) // ordered and can be used as an array
 
-type Queue<T> = (
-  mut push:PushFn  = nil,
-  mut pop:PopFn    = nil,
-  mut empty:EmptyFn= nil
-)
+mut array1 = [0,1,2,3,4]  // [] force array, so all the entries have same type
 
-// comb, type, mod, pipe can have an optional <parameter_list>
-
-comb triadd1<T>(a:T, b:T, c:T) -> T { a + b + c }
-pipe[3] triadd2<T>(a:T, b:T, c:T) -> T { a + b + c }
-mod triadd3<T>(a:T, b:T, c:T) -> T { a + b + c }
-cassert triadd1(1,2,3) == 6
+mut bund2 = (bund1,bund1,((10,20),30))
+cassert bund2[0][1] == 1
+cassert bund2[1][1] == 1
+cassert bund2[2][0] == (10,20)
+cassert bund2[2][0][1] == 20
+cassert bund2[2][1] == 30

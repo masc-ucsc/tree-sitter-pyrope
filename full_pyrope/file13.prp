@@ -1,9 +1,2 @@
-// For loops (bounds must be comptime, body is runtime hardware)
-for i in 0..=7 {
-    memory[i] = init_value
-}
-
-// Range-based loops
-for val in 1..<10 step 2 {  // 1,3,5,7,9
-    process(val)
-}
+a = "hello \n newline"
+b = 'simpler here'

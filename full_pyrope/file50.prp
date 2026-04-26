@@ -1,3 +1,7 @@
-// Instantiate external RTL with port mapping
-const (out_t) =  mymod(clock=clk, reset=rst, a=in_a)
-// NOTE: Same form as comb/pipe/mod calls; import handles RTL binding.
+const b = "foo"
+const c = 1
+const test1     = enum(a=c,b)    // OK
+const something = (b)            // OK
+cassert something == "foo"
+cassert test1.a != test1.b
+cassert test1.a==1 and test1.b==2

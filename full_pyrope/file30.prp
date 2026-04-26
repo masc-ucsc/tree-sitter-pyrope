@@ -1,48 +1,8 @@
-// Import required modules
-const test_utils = import("test/helpers")
+mut b = (f1=3,f2=4) // b is named and ordered
+mut c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
 
-// Simple CPU register file
-pipe[1] reg_file(
-    clk:bool,
-    we:bool,
-    ra:u5,
-    rb:u5,
-    wa:u5,
-    wd:u32
-) -> (
-    rd_a:u32,
-    rd_b:u32
-) {
-    reg registers:[32]u32 = 0
+mut d = (1,2,3,4)     // array or tuple
+cassert d == [1,2,3,4] // the [] also check that all the fields have same type
+cassert b.f1 == 3 and b.f2 == 4
+cassert c[0] == 1 and c.d == 4
 
-    // Read ports (1st read, no forwarding)
-    rd_a = if ra == 0 { 0 } else { registers[ra] }
-    rd_b = if rb == 0 { 0 } else { registers[rb] }
-
-    // Write port
-    if we {
-        registers[wa] = wd when (wa != 0)  // Register 0 is always 0
-    }
-}
-
-test "register file" {
-    // Cycle 0: write 42 to register 1, read regs 3 and 1
-    const rf = reg_file(we=true, ra=3, rb=1, wa=1, wd=42)
-    // pipe[1] outputs are registered — these reflect the initial state (all zeros)
-    assert rf.rd_a == 0          // reg[3] = 0 (initial), delayed 1 cycle
-    assert rf.rd_b == 0          // reg[1] = 0 (initial), delayed 1 cycle
-
-    step
-
-    // Cycle 1: no write, read reg 1 (was written last cycle)
-    const rf2 = reg_file(we=false, ra=1, rb=0, wa=0, wd=0)
-    // Output still reflects cycle 0 reads due to pipe[1] delay
-    assert rf2.rd_a == 0         // reg[3] still 0
-
-    step
-
-    // Cycle 2: pipe[1] output now reflects cycle 1 reads
-    const rf3 = reg_file(we=false, ra=1, rb=0, wa=0, wd=0)
-    assert rf3.rd_a == 42        // reg[1] = 42 (written in cycle 0, read in cycle 1, output in cycle 2)
-    assert rf3.rd_b == 0         // reg[0] always 0
-}

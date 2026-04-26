@@ -1,4 +1,8 @@
-// Basic puts for debugging
-puts "Hello World"            // Simple string output
-puts "Value: ", variable      // Print variable
-puts "Count: ", count, " Max: ", max_val  // Multiple values
+    mut r1 = fcall1() or fcall2()
+
+
+    mut r2 = fcall1() and fcall2()
+
+
+    mut r3 = fcall1()
+    r3 += fcall2()

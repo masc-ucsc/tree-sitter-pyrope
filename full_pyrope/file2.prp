@@ -1,5 +1,8 @@
-comptime const SIZE = 16    // Compile-time constant (shorthand for comptime const)
-comptime mut counter = 0    // Mutable at compile time (updated during elaboration)
-const constant = 42         // Immutable after assignment (NOT compile-time)
-mut wire = 0                // Combinational (no persistence, can be reassigned)
-reg state = 0               // Register (persistent across cycles)
+    mut result = 0
+    mut result1 = do_division(a,b)
+    mut result2 = do_multiplication(a,b)
+    if some_opcode {
+      result = result1
+    }else{
+      result = result2
+    }

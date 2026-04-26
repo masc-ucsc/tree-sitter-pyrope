@@ -1,7 +1,9 @@
-const v = (tag="sum", a=1, b=2)
-const r = match v {
-  case (tag="sum", a, b) { v.a + v.b }
-  case (tag="val", x)     { v.x }
-  else                     { 0 }
-}
-cassert r == 1+2
+type Person = (name:string, age:u32)
+mut a = (one:Person, two:Person)
+
+const x = ('two', 'one')
+a[x].age = (3,4)
+cassert a.one.age == 4 and a.two.age == 3
+
+a[0,1].age = (10,20)
+cassert a.one.age == 10 and a.two.age == 20

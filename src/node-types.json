@@ -12,6 +12,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -174,6 +178,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -288,6 +296,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -331,6 +343,10 @@
         "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -448,6 +464,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -524,6 +544,80 @@
     }
   },
   {
+    "type": "attribute_read",
+    "named": true,
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
+            "type": "bit_selection",
+            "named": true
+          },
+          {
+            "type": "constant",
+            "named": true
+          },
+          {
+            "type": "dot_expression",
+            "named": true
+          },
+          {
+            "type": "function_call_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "lambda",
+            "named": true
+          },
+          {
+            "type": "member_selection",
+            "named": true
+          },
+          {
+            "type": "optional_expression",
+            "named": true
+          },
+          {
+            "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
+          }
+        ]
+      },
+      "attrs": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": ".",
+            "named": false
+          },
+          {
+            "type": "attribute_list",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "binary_compare_op",
     "named": true,
     "fields": {}
@@ -551,6 +645,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -652,6 +750,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_read",
+          "named": true
+        },
+        {
           "type": "bit_selection",
           "named": true
         },
@@ -745,6 +847,10 @@
         "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -885,6 +991,20 @@
             "named": true
           }
         ]
+      },
+      "overflow": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "sat",
+            "named": false
+          },
+          {
+            "type": "wrap",
+            "named": false
+          }
+        ]
       }
     },
     "children": {
@@ -897,6 +1017,10 @@
         },
         {
           "type": "assignment",
+          "named": true
+        },
+        {
+          "type": "attribute_read",
           "named": true
         },
         {
@@ -1030,6 +1154,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -1169,6 +1297,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -1270,6 +1402,10 @@
         "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -1524,6 +1660,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -1565,6 +1705,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -1617,6 +1761,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -1746,6 +1894,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -1822,6 +1974,10 @@
           {
             "type": ";",
             "named": false
+          },
+          {
+            "type": "attribute_read",
+            "named": true
           },
           {
             "type": "bit_selection",
@@ -2052,6 +2208,10 @@
             "named": false
           },
           {
+            "type": "proc",
+            "named": false
+          },
+          {
             "type": "tuple_sq",
             "named": true
           }
@@ -2127,6 +2287,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -2272,6 +2436,10 @@
           {
             "type": "and",
             "named": false
+          },
+          {
+            "type": "attribute_read",
+            "named": true
           },
           {
             "type": "bit_selection",
@@ -2550,6 +2718,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -2615,6 +2787,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -2706,6 +2882,10 @@
       "required": true,
       "types": [
         {
+          "type": "attribute_read",
+          "named": true
+        },
+        {
           "type": "bit_selection",
           "named": true
         },
@@ -2741,6 +2921,20 @@
             "named": true
           }
         ]
+      },
+      "overflow": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "sat",
+            "named": false
+          },
+          {
+            "type": "wrap",
+            "named": false
+          }
+        ]
       }
     },
     "children": {
@@ -2753,6 +2947,10 @@
         },
         {
           "type": "assignment",
+          "named": true
+        },
+        {
+          "type": "attribute_read",
           "named": true
         },
         {
@@ -2895,6 +3093,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -2981,6 +3183,10 @@
           {
             "type": "..",
             "named": false
+          },
+          {
+            "type": "attribute_read",
+            "named": true
           },
           {
             "type": "bit_selection",
@@ -3110,6 +3316,10 @@
         "types": [
           {
             "type": "assignment",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -3263,6 +3473,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -3354,6 +3568,10 @@
         "types": [
           {
             "type": "assignment",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -3474,6 +3692,10 @@
         "types": [
           {
             "type": "assignment",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -3605,6 +3827,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -3692,6 +3918,10 @@
           },
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -3795,6 +4025,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -3865,6 +4099,10 @@
           {
             "type": "]",
             "named": false
+          },
+          {
+            "type": "attribute_read",
+            "named": true
           },
           {
             "type": "bit_selection",
@@ -3954,6 +4192,10 @@
           },
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -4070,6 +4312,10 @@
           },
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {
@@ -4241,6 +4487,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -4349,6 +4599,10 @@
             "named": false
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -4454,6 +4708,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -4577,6 +4835,10 @@
         "required": true,
         "types": [
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },
@@ -4680,6 +4942,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "attribute_read",
+            "named": true
+          },
           {
             "type": "bit_selection",
             "named": true
@@ -5116,6 +5382,10 @@
     "named": false
   },
   {
+    "type": "proc",
+    "named": false
+  },
+  {
     "type": "ref",
     "named": false
   },
@@ -5125,6 +5395,10 @@
   },
   {
     "type": "return",
+    "named": false
+  },
+  {
+    "type": "sat",
     "named": false
   },
   {
@@ -5181,6 +5455,10 @@
   },
   {
     "type": "while",
+    "named": false
+  },
+  {
+    "type": "wrap",
     "named": false
   },
   {

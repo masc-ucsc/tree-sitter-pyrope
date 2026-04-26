@@ -1,3 +1,4 @@
-mut sum = a + b; mut diff = a - b; mut prod = a * b; mut div = a / b  // Basic arithmetic
-mut left_shift = a << n; mut right_shift = a >> n  // Shifts
-const remainder = a % b  // Modulo (debug-only: too expensive for single-cycle hardware)
+const a = 1
+const msg = "Hello a is {a}"
+puts msg
+cassert msg == "Hello a is 1"

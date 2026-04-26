@@ -1,12 +1,7 @@
-if mut x=3; x<4 {
-  cassert x==3
-}
-while mut z=1; x {
-  x -= z
-}
-mut z=0
-match mut x=2 ; z+x {
-  case 2 { cassert true  }
-  != 7   { cassert true  }
-  else   { cassert false }
-}
+mut x=100
+
+mut tup1 = ('x',y=4)
+mut tup2 = (x,y=4)
+
+cassert tup1[0] == 'x'
+cassert tup2[0] == 100

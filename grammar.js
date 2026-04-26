@@ -37,6 +37,8 @@ function attributeSuffix($) {
   return seq(':', $.attribute_list);
 }
 
+// Overparse: `::[...]` and `:Type:[...]` parse anywhere `type_cast` is
+// admitted, including non-declaration contexts. See grammar_overparse.md #1.
 function typedOrAttributed($) {
   return choice(
     seq(
@@ -142,7 +144,9 @@ module.exports = grammar({
       // Synthesizable
       $.scope_statement
       , $.declaration_statement
-      , seq($.assignment, $._semicolon)
+      // Overparse: `wrap`/`sat` are only meaningful when narrowing an integer
+      // RHS into a smaller integer LHS. See grammar_overparse.md #5.
+      , seq(field('overflow', optional(choice('wrap', 'sat'))), $.assignment, $._semicolon)
       , $.import_statement
       , $.function_call_statement
       , $.control_statement
@@ -319,6 +323,9 @@ module.exports = grammar({
     , tuple_sq: $ => seq('[', optional($._tuple_list), ']')
 
     , _tuple_list: $ => prec('_tuple_list', listseq1(field('item', $._tuple_item)))
+    // Overparse: tuple-literal fields require a kind keyword
+    // (`mut`/`const`/`reg`/`comb`/...); bare `a = 1` parses here because the
+    // same node also models named call arguments. See grammar_overparse.md #3.
     , _tuple_item: $ => choice(
       $.ref_identifier
       , $._expression_with_comprehension
@@ -366,6 +373,9 @@ module.exports = grammar({
       field('name', $.identifier)
       , field('value', optseq('=', choice($._expression, $.ref_identifier)))
     )))), ']')
+    // Overparse: the `[...]` slot is a comptime-parameter list; entries must
+    // declare a `:Type`. The grammar accepts old capture-list shapes.
+    // See grammar_overparse.md #4.
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq($.tuple_sq))
@@ -412,6 +422,7 @@ module.exports = grammar({
       , $.dot_expression
       , $.member_selection
       , $.bit_selection
+      , $.attribute_read
       , $.timed_identifier
     )
     , timed_identifier: $ => prec(1, seq(
@@ -465,6 +476,14 @@ module.exports = grammar({
         '#', field('type', optional(choice('|', '&', '^', '+', 'sext', 'zext'))), field('select', $.select)
       )))
     ))
+    , attribute_read: $ => prec.left('member_selection', seq(
+      field('argument', $._restricted_expression)
+      , field('attrs', repeat1(prec('select', seq(
+        '.', $.attribute_list
+      ))))
+    ))
+    // Overparse: `:Type` is only legal at declaration sites; the grammar
+    // permits it on any expression. See grammar_overparse.md #2.
     , type_specification: $ => prec('type_spec', seq(
       field('argument', $._restricted_expression)
       , ':'
@@ -510,6 +529,8 @@ module.exports = grammar({
       '..=', '..<', '..+', 'step'
     )
     // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals (+ ! variants)
+    // Overparse: chained comparisons must all point the same direction;
+    // `a <= b > c` parses but is illegal. See grammar_overparse.md #6.
     , _binary_compare: $ => prec.left('binary_compare', seq(
       field('operand', $._pri3_operand)
       , repeat1(seq(
@@ -577,6 +598,7 @@ module.exports = grammar({
       field('func_type', choice(
         'comb'
         , 'mod'
+        , 'proc'
         , seq('pipe', optional($.tuple_sq)
         )))
       , field('name', $.identifier)
@@ -691,7 +713,7 @@ module.exports = grammar({
     , _hex_number: $ => token(choice(prec(2, /-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/), /0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/))
     , _decimal_number: $ => token(choice(prec(2, /-0(s|S)?(d|D)?[0-9][0-9_]*/), /0(s|S)?(d|D)?[0-9][0-9_]*/))
     , _octal_number: $ => token(choice(prec(2, /-0(s|S)?(o|O)[0-7][0-7_]*/), /0(s|S)?(o|O)[0-7][0-7_]*/))
-    , _binary_number: $ => token(choice(prec(2, /-0(s|S)?(b|B)[0-1\?][0-1_\?]*/), /0(s|S)?(b|B)[0-1\?][0-1_\?]*/))
+    , _binary_number: $ => token(choice(prec(2, /-0(s|S|u|U)?(b|B)[0-1\?][0-1_\?]*/), /0(s|S|u|U)?(b|B)[0-1\?][0-1_\?]*/))
     , _typed_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/), /(0|[1-9][0-9]*)[sui][0-9]+/))
 
     // Booleans

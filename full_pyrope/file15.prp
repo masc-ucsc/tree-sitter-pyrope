@@ -1,15 +1,5 @@
-enum State = (Idle, Active, Done)       // One-hot encoding: 1, 2, 4
-
-reg current_state:State = State.Idle
-
-match current_state {
-    case State.Idle {
-        current_state = State.Active when start
-    }
-    case State.Active {
-        current_state = State.Done when complete
-    }
-    case State.Done {
-        current_state = State.Idle
-    }
-}
+mut a:string = "127"
+mut b:int = a        // same as mut b = int(a)
+mut c:string = b     // same as mut c = string(b)
+cassert a == c
+cassert b == 0x7F

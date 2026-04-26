@@ -1,15 +1,8 @@
-enum ADT = (
-  Person:(eats:string) = ?,
-  Robot:(charges_with:string) = ?
-)
+const x = (first=(second=3))
 
-comb nourish(x:ADT) {
-  match x {
-    does ADT.Person { puts "eating:{x.eats}" }
-    does ADT.Robot { puts "charging:{x.charges_with}" }
-  }
-}
-
-test "my main" {
-  (_:Person="pizza", _:Robot="electricity").each(nourish)
-}
+cassert x.first.second == 3
+cassert x.first        == 3
+cassert x              == 3
+cassert x[0].second    == 3
+cassert x.first[0]     == 3
+cassert x[0]           == 3

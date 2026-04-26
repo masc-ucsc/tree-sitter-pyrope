@@ -1,17 +1,6 @@
-pipe mul(a, b) -> (c) { c = a * b }
-pipe add(a, b) -> (c) { c = a + b }
-
-mod alu(in1, in2) -> (out_pipelined, out_live) {
-  await[3] tmp              = mul(in1, in2)
-  await[3] in2_d            = in2
-  await[1] out_pipelined:@[4] = add(tmp:@[3], in2_d:@[3])
-  await[1] out_live:@[4]      = add(tmp:@[3], in2_d:@[3])
-}
-
-mod accum_alu(in1, in2) -> (out) {
-  reg total:[init=0]
-  await[3] tmp = mul(in1, in2)
-  const sum_aligned = add(total:@[3], tmp:@[3])  // both operands checked at cycle 3
-  total::[defer] = sum_aligned                    // defer write to end of cycle
-  out = total                                     // bare name reads current 'q'
-}
+cassert 0xF_a_0  == 4000 // Underscores have no meaning
+cassert 0ub1100  == 12   // ub explicit unsigned binary
+cassert 0sb1110  == -2   // sb signed binary
+cassert 33       == 33   // 33 in decimal
+cassert 0o111    == 73   // octal
+cassert 0111     == 111  // decimal (some languages use octal here)

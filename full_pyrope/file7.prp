@@ -1,15 +1,27 @@
-comb add(a:u8, b:u8) -> (result:u8) {
-    result = a + b
-}
+    mod gcd(a:u32, b:u32) -> (reg result:u32) {
+      reg x = a
+      reg y = b
 
-// Implicit return: last expression is the return value
-comb add_simple(a:u8, b:u8) {
-    a + b                       // Returns single-element tuple
-}
+      if y != 0 {
+        result = nil
+        if x > y {
+          x -= y
+        } else {
+          y -= x
+        }
+      }else{
+        result = x // Unset nil
+      }
+    }
 
-// 'return' is only needed for early exits
-comb clamp(x:i16) -> (result:u8) {
-    return 0 when x < 0        // Early exit
-    return 255 when x > 255    // Early exit
-    result = x                  // Normal path, no return needed
-}
+    for a in 1..=100 {
+      for b in 1..=100 {
+        test "check.gcd({},{})",a,b {
+          const z = gcd(a, b)
+
+          waitfor z?
+
+          assert z == __my_cpp_gcd(v1=a, v2=b)
+        }
+      }
+    }

@@ -1,9 +1,7 @@
-pipe[2..<8] stagetocreate::[elastic=true] (in:int) -> (out:int) {
-  out = in + 1
-}
-pipe[2..<8] stage2(in:int) -> (out:int) {
-  out = in + 1
-}
-// NOTE: `elastic` enables validity checks like `in?`; otherwise same syntax.
-// Example usage:
-const v = if in? { stage(in) } else { 0 }
+const a = "field"
+const c = (foo=4)
+const my_other_enum = enum(...a,b=3,...c)
+cassert my_other_enum.field != my_other_enum.b
+cassert my_other_enum.b   == 3
+cassert my_other_enum.foo == 4
+cassert my_other_enum.foo != my_other_enum.b

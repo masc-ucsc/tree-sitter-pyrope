@@ -1,1 +1,4 @@
-const (tmp:u32, tmp2:u3:[something=true]) = some_mod_call(a, b:@[3], c:@[2]:[xxx_should_be_set=true])
+cassert 1K == 1024
+cassert 1M == 1024*1024
+cassert 1G == 1024*1024*1024
+cassert 1T == 1024*1024*1024*1024

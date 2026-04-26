@@ -1,17 +1,15 @@
-type v_type = variant(str:String, num:int) // No default value in variant
+mut a=(a=1,b=2)
+const b=(c=3)
 
-const another_x:variant(IntKind:int, StrKind:string)=?
+const ccat1 = a ++ b
+assert ccat1 == (a=1,b=2,c=3)
+assert ccat1 == (1,2,3)
 
-mut vv:v_type = (num=0x65)
-cassert vv.num == 0x65
+mut ccat2 = a ++ (b=20) ++ b
+assert ccat2 == (a=1,b=(2,20),c=3)
+assert ccat2 == (1,(2,20),3)
 
-type Vtype = variant(str:String, num:int, b:bool)
-
-const x1a:Vtype = "hello"                 // implicit variant type
-const x1b:Vtype = (str="hello")           // explicit variant type
-
-comptime const x2:Vtype = "hello"               // comptime
-
-cassert x1a.str == "hello" and x1a == "hello"
-cassert x1b.str == "hello" and x1b == "hello"
+mut join1 = (...a,...b)
+assert join1 == (a=1,b=2,c=3)
+assert join1 == (1,2,3)
 

@@ -1,4 +1,10 @@
-// NOTE: Use `...r` binding; prior `..r` was incorrect.
-const r:(z:int) = 100
-const p:(x:int, y:int, ...r) = (x=1, y=2, z=3)
-const q:(x:int, ...r) = (x=1,z=10)  // OK
+mut x = (
+  ,ff = 1
+)
+
+mut y = (
+  ,ff = 1
+  ,ff ++= 2
+  ,zz ++= 3
+)
+cassert y == (ff=(1,2),zz=3)
