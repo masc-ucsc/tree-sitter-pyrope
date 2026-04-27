@@ -191,12 +191,16 @@ module.exports = grammar({
       , $._semicolon
     )
     , control_statement: $ => choice(
-      choice('continue', 'break')
-      , seq(
-        'return'
-        , field('argument', optional($._expression_with_comprehension))
-        , $._semicolon
-      )
+      $.break_statement
+      , $.continue_statement
+      , $.return_statement
+    )
+    , break_statement: $ => 'break'
+    , continue_statement: $ => 'continue'
+    , return_statement: $ => seq(
+      'return'
+      , field('argument', optional($._expression_with_comprehension))
+      , $._semicolon
     )
     , stmt_list: $ => prec.left('_tuple_list', seq(
       field('item', $._tuple_item)
@@ -372,9 +376,15 @@ module.exports = grammar({
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , var_or_let_or_reg: $ => seq(
-      optional('comptime')
-      , choice('const', 'mut', 'reg', prec.right(seq('await', optional($.tuple_sq))))
+      field('comptime', optional(alias('comptime', $.comptime_modifier)))
+      , field('storage', choice(
+        alias('const', $.const_decl)
+        , alias('mut', $.mut_decl)
+        , alias('reg', $.reg_decl)
+        , $.await_decl
+      ))
     )
+    , await_decl: $ => prec.right(seq('await', optional($.tuple_sq)))
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_list: $ => seq('[', optional(listseq1(field('item', seq(
@@ -481,7 +491,16 @@ module.exports = grammar({
     , bit_selection: $ => prec('bit_selection', seq(
       field('argument', $._restricted_expression)
       , field('select', prec('select', seq(
-        '#', field('type', optional(choice('|', '&', '^', '+', 'sext', 'zext'))), field('select', $.select)
+        '#'
+        , field('reduction', optional(choice(
+          alias('|', $.reduction_or)
+          , alias('&', $.reduction_and)
+          , alias('^', $.reduction_xor)
+          , alias('+', $.reduction_popcount)
+          , alias('sext', $.sign_extend)
+          , alias('zext', $.zero_extend)
+        )))
+        , field('select', $.select)
       )))
     ))
     , attribute_read: $ => prec.left('member_selection', seq(
@@ -498,7 +517,13 @@ module.exports = grammar({
       , typedOrAttributed($)
     ))
     , unary_expression: $ => prec.left('unary', seq(
-      field('operator', choice('!', 'not', '~', '-', '...'))
+      field('operator', choice(
+        alias('!', $.op_log_not)
+        , alias('not', $.op_log_not)
+        , alias('~', $.op_bit_not)
+        , alias('-', $.op_unary_minus)
+        , alias('...', $.op_spread)
+      ))
       , field('argument', $._pri1_operand)
     ))
     , optional_expression: $ => seq(
@@ -522,7 +547,11 @@ module.exports = grammar({
         , field('operand', $._pri1_operand)
       ))
     ))
-    , binary_times_op: $ => choice('*', '/', '%')
+    , binary_times_op: $ => choice(
+      alias('*', $.op_mul)
+      , alias('/', $.op_div)
+      , alias('%', $.op_mod)
+    )
     // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
     , _binary_other: $ => prec.left('binary_other', seq(
       field('operand', $._pri2_operand)
@@ -532,9 +561,21 @@ module.exports = grammar({
       ))
     ))
     , binary_other_op: $ => choice(
-      '+', '-', '++', '<<', '>>',
-      '&', '|', '^', '!&', '!|', '!^',
-      '..=', '..<', '..+', 'step'
+      alias('+', $.op_add)
+      , alias('-', $.op_sub)
+      , alias('++', $.op_tuple_concat)
+      , alias('<<', $.op_shl)
+      , alias('>>', $.op_sra)
+      , alias('&', $.op_bit_and)
+      , alias('|', $.op_bit_or)
+      , alias('^', $.op_bit_xor)
+      , alias('!&', $.op_bit_nand)
+      , alias('!|', $.op_bit_nor)
+      , alias('!^', $.op_bit_xnor)
+      , alias('..=', $.op_range_inclusive)
+      , alias('..<', $.op_range_exclusive)
+      , alias('..+', $.op_range_count)
+      , alias('step', $.op_step)
     )
     // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals (+ ! variants)
     // Overparse: chained comparisons must all point the same direction;
@@ -547,10 +588,24 @@ module.exports = grammar({
       ))
     ))
     , binary_compare_op: $ => choice(
-      '<', '<=', '>', '>=', '==', '!=',
-      'has', '!has', 'in', '!in',
-      'case', '!case', 'does', '!does', 'is', '!is',
-      'equals', '!equals'
+      alias('<', $.op_lt)
+      , alias('<=', $.op_le)
+      , alias('>', $.op_gt)
+      , alias('>=', $.op_ge)
+      , alias('==', $.op_eq)
+      , alias('!=', $.op_ne)
+      , alias('has', $.op_has)
+      , alias('!has', $.op_not_has)
+      , alias('in', $.op_in)
+      , alias('!in', $.op_not_in)
+      , alias('case', $.op_case)
+      , alias('!case', $.op_not_case)
+      , alias('does', $.op_does)
+      , alias('!does', $.op_not_does)
+      , alias('is', $.op_is)
+      , alias('!is', $.op_not_is)
+      , alias('equals', $.op_equals)
+      , alias('!equals', $.op_not_equals)
     )
     // Pyrope priority 5: and, or, implies (+ ! variants)
     , _binary_logical: $ => prec.left('binary_logical', seq(
@@ -561,7 +616,12 @@ module.exports = grammar({
       ))
     ))
     , binary_logical_op: $ => choice(
-      'and', '!and', 'or', '!or', 'implies', '!implies'
+      alias('and', $.op_log_and)
+      , alias('!and', $.op_log_nand)
+      , alias('or', $.op_log_or)
+      , alias('!or', $.op_log_nor)
+      , alias('implies', $.op_implies)
+      , alias('!implies', $.op_not_implies)
     )
     // Operand tiers: each level adds its own expression_item kind.
     , _pri1_operand: $ => prec('expression', choice(
@@ -614,20 +674,36 @@ module.exports = grammar({
       , field('code', optional($.scope_statement))
     )
     // Operators
-    , assignment_operator: $ => token(choice(
-      '=', '+=', '-=', '*=', '/=', '|=', '&=', '^=', '<<=', '>>=', '++=', 'or=', 'and='
-    ))
+    , assignment_operator: $ => choice(
+      alias('=', $.assign)
+      , alias('+=', $.assign_add)
+      , alias('-=', $.assign_sub)
+      , alias('*=', $.assign_mul)
+      , alias('/=', $.assign_div)
+      , alias('|=', $.assign_bit_or)
+      , alias('&=', $.assign_bit_and)
+      , alias('^=', $.assign_bit_xor)
+      , alias('<<=', $.assign_shl)
+      , alias('>>=', $.assign_sra)
+      , alias('++=', $.assign_tuple_concat)
+      , alias('or=', $.assign_log_or)
+      , alias('and=', $.assign_log_and)
+    )
 
     // Selects
     , select: $ => seq(
       '['
       , choice(
         field('list', $.expression_list)
-        , field('open_range', '..')
-        , field('open_range', seq($._expression, '..'))
-        , field('from_zero', seq(choice('..=', '..<'), $._expression))
+        , field('range', $.selection_range)
       )
       , ']'
+    )
+    , selection_range: $ => choice(
+      alias('..', $.open_all)
+      , seq(field('open_from', $._expression), '..')
+      , seq('..=', field('from_zero_inclusive', $._expression))
+      , seq('..<', field('from_zero_exclusive', $._expression))
     )
 
     // Types
@@ -668,18 +744,23 @@ module.exports = grammar({
       )))
     ))
     , _primitive_type: $ => choice(
-      $.unsized_integer_type
-      , $.sized_integer_type
-      , 'string'
-      , 'bool'
+      $.uint_type
+      , $.sint_type
+      , $.bool_type
+      , $.string_type
     )
-    , unsized_integer_type: $ => choice(
+    , uint_type: $ => choice(
+      'uint'
+      , 'unsigned'
+      , token(/u\d+/)
+    )
+    , sint_type: $ => choice(
       'int'
       , 'integer'
-      , 'uint'
-      , 'unsigned'
+      , token(/[si]\d+/)
     )
-    , sized_integer_type: $ => token(/[siu]\d+/)
+    , bool_type: $ => 'bool'
+    , string_type: $ => 'string'
 
     // Identifiers
     , identifier: $ => token(
@@ -699,15 +780,15 @@ module.exports = grammar({
 
     // Constants
     , constant: $ => choice(
-      $._number
-      , $._bool_literal
+      $.integer_literal
+      , $.bool_literal
       , $._string_literal
-      , $._unknown_literal
+      , $.unknown_literal
     )
 
     // Numbers. Each form accepts an optional leading '-' as part of the token
     // so that negative literals are one token (preferred over '-' operator + literal via prec(2)).
-    , _number: $ => choice(
+    , integer_literal: $ => choice(
       $._simple_number
       , $._scaled_number
       , $._hex_number
@@ -725,18 +806,18 @@ module.exports = grammar({
     , _typed_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/), /(0|[1-9][0-9]*)[sui][0-9]+/))
 
     // Booleans
-    , _bool_literal: $ => token(choice('true', 'false'))
+    , bool_literal: $ => token(choice('true', 'false'))
 
     // Unknown/uninitialized value
-    , _unknown_literal: $ => token('?')
+    , unknown_literal: $ => token('?')
 
     // Strings
     , _string_literal: $ => choice(
-      $._simple_string_literal
-      , $.complex_string_literal
+      $.string_literal
+      , $.interpolated_string_literal
     )
-    , _simple_string_literal: $ => token(/\'[^\'\n]*\'/)
-    , complex_string_literal: $ => seq(
+    , string_literal: $ => token(/\'[^\'\n]*\'/)
+    , interpolated_string_literal: $ => seq(
       '"'
       , repeat(
         choice(
