@@ -969,6 +969,20 @@
           }
         ]
       },
+      "extension": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "sign_extend",
+            "named": true
+          },
+          {
+            "type": "zero_extend",
+            "named": true
+          }
+        ]
+      },
       "reduction": {
         "multiple": false,
         "required": false,
@@ -987,14 +1001,6 @@
           },
           {
             "type": "reduction_xor",
-            "named": true
-          },
-          {
-            "type": "sign_extend",
-            "named": true
-          },
-          {
-            "type": "zero_extend",
             "named": true
           }
         ]
@@ -2416,27 +2422,23 @@
         ]
       },
       "func_type": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "comb",
-            "named": false
+            "type": "comb_lambda",
+            "named": true
           },
           {
-            "type": "mod",
-            "named": false
+            "type": "mod_lambda",
+            "named": true
           },
           {
-            "type": "pipe",
-            "named": false
+            "type": "pipe_lambda",
+            "named": true
           },
           {
-            "type": "proc",
-            "named": false
-          },
-          {
-            "type": "tuple_sq",
+            "type": "proc_lambda",
             "named": true
           }
         ]
@@ -3092,6 +3094,22 @@
           {
             "type": "?",
             "named": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "pipe_lambda",
+    "named": true,
+    "fields": {
+      "depth": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       }
@@ -5088,16 +5106,16 @@
         "required": false,
         "types": [
           {
-            "type": "comb",
-            "named": false
+            "type": "comb_lambda",
+            "named": true
           },
           {
-            "type": "mod",
-            "named": false
+            "type": "mod_lambda",
+            "named": true
           },
           {
-            "type": "pipe",
-            "named": false
+            "type": "pipe_lambda",
+            "named": true
           }
         ]
       },
@@ -5596,6 +5614,20 @@
             "named": true
           }
         ]
+      },
+      "kind": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "unless_kw",
+            "named": true
+          },
+          {
+            "type": "when_kw",
+            "named": true
+          }
+        ]
       }
     }
   },
@@ -5954,8 +5986,8 @@
     "named": false
   },
   {
-    "type": "comb",
-    "named": false
+    "type": "comb_lambda",
+    "named": true
   },
   {
     "type": "comment",
@@ -6043,8 +6075,8 @@
     "named": false
   },
   {
-    "type": "mod",
-    "named": false
+    "type": "mod_lambda",
+    "named": true
   },
   {
     "type": "mut_decl",
@@ -6247,8 +6279,8 @@
     "named": false
   },
   {
-    "type": "proc",
-    "named": false
+    "type": "proc_lambda",
+    "named": true
   },
   {
     "type": "reduction_and",
@@ -6319,8 +6351,8 @@
     "named": false
   },
   {
-    "type": "unless",
-    "named": false
+    "type": "unless_kw",
+    "named": true
   },
   {
     "type": "unsigned",
@@ -6331,8 +6363,8 @@
     "named": false
   },
   {
-    "type": "when",
-    "named": false
+    "type": "when_kw",
+    "named": true
   },
   {
     "type": "while",

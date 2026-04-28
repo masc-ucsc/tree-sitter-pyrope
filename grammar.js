@@ -278,9 +278,9 @@ module.exports = grammar({
           choice(
             seq(
               field('func_type', choice(
-                'comb'
-                , 'mod'
-                , 'pipe'
+                alias('comb', $.comb_lambda)
+                , alias('mod', $.mod_lambda)
+                , $.pipe_lambda
               ))
               , $.function_definition_decl
             )
@@ -492,14 +492,18 @@ module.exports = grammar({
       field('argument', $._restricted_expression)
       , field('select', prec('select', seq(
         '#'
-        , field('reduction', optional(choice(
-          alias('|', $.reduction_or)
-          , alias('&', $.reduction_and)
-          , alias('^', $.reduction_xor)
-          , alias('+', $.reduction_popcount)
-          , alias('sext', $.sign_extend)
-          , alias('zext', $.zero_extend)
-        )))
+        , optional(choice(
+          field('reduction', choice(
+            alias('|', $.reduction_or)
+            , alias('&', $.reduction_and)
+            , alias('^', $.reduction_xor)
+            , alias('+', $.reduction_popcount)
+          ))
+          , field('extension', choice(
+            alias('sext', $.sign_extend)
+            , alias('zext', $.zero_extend)
+          ))
+        ))
         , field('select', $.select)
       )))
     ))
@@ -664,15 +668,16 @@ module.exports = grammar({
     ))
     , lambda: $ => seq(
       field('func_type', choice(
-        'comb'
-        , 'mod'
-        , 'proc'
-        , seq('pipe', optional($.tuple_sq)
-        )))
+        alias('comb', $.comb_lambda)
+        , alias('mod', $.mod_lambda)
+        , alias('proc', $.proc_lambda)
+        , $.pipe_lambda
+      ))
       , field('name', $.identifier)
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
     )
+    , pipe_lambda: $ => prec.right(seq('pipe', field('depth', optional($.tuple_sq))))
     // Operators
     , assignment_operator: $ => choice(
       alias('=', $.assign)
@@ -841,7 +846,10 @@ module.exports = grammar({
       , choice($._automatic_semicolon, ';')
     )
     , when_unless_cond: $ => seq(
-      choice('when', 'unless')
+      field('kind', choice(
+        alias('when', $.when_kw)
+        , alias('unless', $.unless_kw)
+      ))
       , field('condition', $._expression)
     )
   }
