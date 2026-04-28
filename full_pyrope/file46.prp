@@ -1,4 +1,10 @@
-// No trait keyword, but `type`
-type Show ( comb show(self) -> String )
-impl Show for int ( comb show(self) -> String { "_{self}_" } )
-cassert 42.show() == "_42_"
+mut x = (
+  ,ff = 1
+)
+
+mut y = (
+  ,ff = 1
+  ,ff ++= 2
+  ,zz ++= 3
+)
+cassert y == (ff=(1,2),zz=3)

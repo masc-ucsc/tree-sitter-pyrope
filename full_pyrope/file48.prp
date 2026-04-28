@@ -1,8 +1,6 @@
-comb div(a:int, b:int) -> (q:int) {
-  requires b != 0
-  ensures  a == q*b + (a % b)  // Note: % is compile-time only
-  q = a / b
-}
+mut (a,b) = (2,3)
+cassert a==2 and b==3
 
-const a = some_call(z)
-optimize a < 1000  // a should never be over 1000, optimize accordingly
+mut c = 1..=2      // OK
+mut (c,d) = (1,2)  // OK
+cassert c == 1 and d == 2

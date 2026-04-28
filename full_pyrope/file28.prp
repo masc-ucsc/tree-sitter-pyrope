@@ -1,1 +1,12 @@
-reg counter:u8 = 100            // Reset value is 100
+mut tup = nil
+
+assert cond.[comptime] // Tuples are compile time, it would fail otherwise
+if cond == true {
+  tup = (a=1,b=2)
+}else{
+  tup = (a=1,b:u4=3,c=3)
+}
+
+cassert tup.a == 1
+cassert cond implies tup.b==2
+cassert !cond implies tup.b==3

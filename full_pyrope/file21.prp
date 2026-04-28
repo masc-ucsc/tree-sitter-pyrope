@@ -1,2 +1,5 @@
-mut logical_and = a and b; mut logical_or = a or b  // Logical (no short-circuit)
-mut logical_not = !a            // Logical NOT
+// src/file1.prp
+puts(priority=2, " world")
+
+// src/file2.prp
+print(priority=1, "hello")

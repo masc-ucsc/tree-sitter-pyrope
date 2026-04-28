@@ -1,3 +1,7 @@
-const name = "Pyrope"
-const msg  = "Hello {name}!"
-puts msg
+mut a = (1,2)   // tuple of 2 entries, 1 and 2
+mut b = (1)     // tuple of 1 entry, 1
+mut c = 1       // tuple of 1 entry, 1
+mut d = (,,1,,) // tuple of 1 entry, 1
+cassert a[0] == b[0] == c[0] == d[0]
+cassert a!=b
+cassert b == c == d

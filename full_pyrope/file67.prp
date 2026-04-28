@@ -1,1 +1,0 @@
-reg r:[left_of=other, max_delay=2, low_power=true, donttouch=true] = 0

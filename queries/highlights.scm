@@ -124,7 +124,7 @@
   (match_operator)
 ] @operator 
 
-(binary_expression
+(expression_item
   operator: _ @operator)
 
 ; Keywords

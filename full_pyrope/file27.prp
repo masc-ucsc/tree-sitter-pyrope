@@ -1,18 +1,14 @@
-reg counter:u8 = 0
-mut tmp:u8 = counter
 
-counter += 1                    // Immediate update
-tmp += 1
-assert counter == tmp
+mut b = 3
+b  = 5        // OK
+b += 1        // OK
+cassert b == 6
 
-counter@[1] += 1               // Defer write to end of cycle
-assert counter == tmp
-tmp += 1
+const (a:u32,b2) = (1,"string_inferred")
+cassert a == 1 and b2 == "string_inferred"
 
-assert counter != tmp
-assert counter@[1] == tmp      // Read deferred value (end of cycle)
+const d = "hello"  // OK
 
-// Timing syntax summary:
-// counter@[0]  - current value (same as just 'counter')
-// counter@[1]  - value at end of cycle (deferred/next)
-// counter@[-1] - value from previous cycle
+mut e:u32 = 33
+cassert e == 33
+

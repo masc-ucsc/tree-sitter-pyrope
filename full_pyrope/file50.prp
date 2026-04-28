@@ -1,5 +1,7 @@
-out = core(some_inputs)
-
-x = peek(core.xx.some_wire)
-poke(core.yy.some_register, 1)
-// NOTE: `peek`/`poke` are library functions; no grammar change required.
+const b = "foo"
+const c = 1
+const test1     = enum(a=c,b)    // OK
+const something = (b)            // OK
+cassert something == "foo"
+cassert test1.a != test1.b
+cassert test1.a==1 and test1.b==2

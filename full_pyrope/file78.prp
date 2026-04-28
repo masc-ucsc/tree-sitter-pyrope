@@ -1,4 +1,0 @@
-// This is COMPILE-TIME elaboration, not runtime loop
-for i in 0..=7 {
-    memory[i] = init_value
-}
