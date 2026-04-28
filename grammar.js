@@ -20,7 +20,7 @@ function listseq1() {
 }
 
 function statementInit($) {
-  return optseq($.stmt_list, ';');
+  return optional($._init_clause);
 }
 
 function forBinding($) {
@@ -219,6 +219,7 @@ module.exports = grammar({
       , field('else', optseq('else', $.scope_statement))
     ))
     , _attr_prefix: $ => seq('::', $.attribute_list)
+    , _init_clause: $ => seq($.stmt_list, ';')
     , for_statement: $ => seq(
       'for'
       , field('attributes', optional($._attr_prefix))

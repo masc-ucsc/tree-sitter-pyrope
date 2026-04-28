@@ -394,17 +394,8 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "stmt_list"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "_init_clause"
               },
               {
                 "type": "BLANK"
@@ -517,6 +508,19 @@
         }
       ]
     },
+    "_init_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "stmt_list"
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
     "for_statement": {
       "type": "SEQ",
       "members": [
@@ -547,17 +551,8 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "stmt_list"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "_init_clause"
               },
               {
                 "type": "BLANK"
@@ -656,17 +651,8 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "stmt_list"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "_init_clause"
               },
               {
                 "type": "BLANK"
@@ -759,17 +745,8 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "stmt_list"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "_init_clause"
               },
               {
                 "type": "BLANK"
