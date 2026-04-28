@@ -206,23 +206,22 @@ module.exports = grammar({
       field('item', $._tuple_item)
       , repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
+    , _if_branch: $ => seq(
+      field('init', statementInit($))
+      , field('condition', $._expression)
+      , field('code', $.scope_statement)
+    )
     , if_expression: $ => prec('statement', seq(
       optional('unique')
       , 'if'
-      , field('init', statementInit($))
-      , field('condition', $._expression)
-      , field('code', $.scope_statement)
-      , field('elif', repseq(
-        'elif'
-        , field('init', statementInit($))
-        , field('condition', $._expression)
-        , field('code', $.scope_statement)
-      ))
+      , $._if_branch
+      , field('elif', repseq('elif', $._if_branch))
       , field('else', optseq('else', $.scope_statement))
     ))
+    , _attr_prefix: $ => seq('::', $.attribute_list)
     , for_statement: $ => seq(
       'for'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', statementInit($))
       , forBinding($) // NOTE: maybe constraint to max 3 (elem,index,key)
       , 'in'
@@ -234,14 +233,14 @@ module.exports = grammar({
     )
     , while_statement: $ => seq(
       'while'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', statementInit($))
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
     , loop_statement: $ => prec('statement', seq(
       'loop'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
     ))
@@ -397,7 +396,7 @@ module.exports = grammar({
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('capture', optseq($.tuple_sq))
-      , field('pipe_config', optseq('::', $.attribute_list))
+      , field('pipe_config', optional($._attr_prefix))
       , field('input', $.arg_list)
       , field('output', optseq('->', choice(
         $.arg_list
