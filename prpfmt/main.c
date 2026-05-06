@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     .inline_exp = false
   };
 
-  print_tree(tree, &state);
+  print_description(tree, &state);
 
   // Free memory
   cleanup(source_code, tree, parser, outfile);
