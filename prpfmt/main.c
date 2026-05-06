@@ -155,10 +155,13 @@ int main(int argc, char **argv) {
     .indent_level = 0,
     .indent_size = indent_size,
     .fmt_on = true,
-    .inline_exp = false
+    .inline_exp = false,
+    .buffer = { .data = NULL, .size = 0, .capacity = 0 }
   };
 
   print_description(tree, &state);
+  prpfmt_render(&state);
+  prpfmt_free_buffer(&state);
 
   // Free memory
   cleanup(source_code, tree, parser, outfile);

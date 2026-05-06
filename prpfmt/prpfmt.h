@@ -3,14 +3,16 @@
 
 #include <stdio.h>
 #include <tree_sitter/api.h>
+#include "ir.h"
 
-typedef struct {
+typedef struct PrpfmtState {
   const char *source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
   int indent_level;        // Nesting depth for indentation
   int indent_size;         // Spaces per level (default: 4)
   bool fmt_on;             // Toggle for 'prpfmt on/off' directives
   bool inline_exp;         // If true, suppresses newlines for nested expressions
+  TokenBuffer buffer;      // Buffer for IR
 } PrpfmtState;
 
 /* 

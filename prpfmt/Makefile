@@ -3,7 +3,7 @@ CFLAGS = -I../../tree-sitter/lib/include -Wall -Wextra
 LDFLAGS = ../../tree-sitter/libtree-sitter.a
 
 # Source files
-SRC = prpfmt.c main.c ../src/parser.c ../src/scanner.c
+SRC = prpfmt.c main.c ir.c ../src/parser.c ../src/scanner.c
 
 # Output executable path (kept in the capstone root folder)
 TARGET = ../../prpfmt
