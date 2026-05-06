@@ -141,7 +141,9 @@ int main(int argc, char **argv) {
   TSNode root = ts_tree_root_node(tree);
 
   if (ts_node_has_error(root)) {
-    fprintf(stderr, "Error: the provided code was unable to be parsed.\n");
+    fprintf(stderr, "Error: the provided code was unable to be parsed.\n"
+                    "Run: `tree-sitter parse -c /path/to/file` and look"
+                    " for MISSING or ERROR nodes.\n");
     cleanup(source_code, tree, parser, outfile);
     exit(1);
   }

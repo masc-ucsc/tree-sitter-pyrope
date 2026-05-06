@@ -11,11 +11,17 @@ PRPFMT_EXECUTABLE = "../../../prpfmt"
 FULL_PYROPE_DIR = "../../full_pyrope"
 
 def remove_comments(text):
+    # Remove block comments
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
     # Remove line comments
     text = re.sub(r'//.*', '', text)
     # Strip each line and remove empty lines to compare essential content
     lines = [line.strip() for line in text.splitlines()]
     return "\n".join(line for line in lines if line)
+
+def remove_whitespace(text):
+    # Remove all whitespace characters including newlines
+    return re.sub(r'\s+', '', text)
 
 def get_file_list(start_num, end_num):
     files = []
@@ -24,8 +30,6 @@ def get_file_list(start_num, end_num):
         file_path = os.path.join(FULL_PYROPE_DIR, file_name)
         if os.path.exists(file_path):
             files.append(file_path)
-        else:
-            print(f"Warning: {file_path} not found. Skipping.")
     return files
 
 def display_side_by_side(original_content, formatted_content, file_path):
@@ -64,8 +68,22 @@ def main():
         print(f"Error: full_pyrope directory not found at {FULL_PYROPE_DIR}")
         sys.exit(1)
 
-    start_num = 1
-    end_num = 84 # Assuming 84 files in full_pyrope, based on previous glob
+    # Dynamically determine the range of files
+    all_files = [f for f in os.listdir(FULL_PYROPE_DIR) if f.startswith("file") and f.endswith(".prp")]
+    file_nums = []
+    for f in all_files:
+        try:
+            num = int(f[4:-4])
+            file_nums.append(num)
+        except ValueError:
+            continue
+    
+    if not file_nums:
+        print(f"No file*.prp files found in {FULL_PYROPE_DIR}")
+        sys.exit(1)
+
+    start_num = min(file_nums)
+    end_num = max(file_nums)
 
     if args.range:
         try:
@@ -92,7 +110,9 @@ def main():
     if args.stats:
         exactly_same_count = 0
         exactly_same_no_comments_count = 0
+        exactly_same_no_whitespace_count = 0
         matching_no_comments_files = []
+        wrong_content_files = []
         total_files_processed = 0
         
         for file_path in files_to_test:
@@ -119,7 +139,6 @@ def main():
                     print(f"--- prpfmt encountered an error for {filename} (Exit Code: {result.returncode}) ---", file=sys.stderr)
                     if result.stderr:
                         print(result.stderr, file=sys.stderr)
-                    # Even with error, compare if content is identical (e.g., prpfmt just outputs error message)
             except FileNotFoundError:
                 print(f"Error: prpfmt executable not found at {PRPFMT_EXECUTABLE}", file=sys.stderr)
                 sys.exit(1)
@@ -131,16 +150,30 @@ def main():
             if original_content == formatted_content:
                 exactly_same_count += 1
             
-            if remove_comments(original_content) == remove_comments(formatted_content):
+            orig_no_comments = remove_comments(original_content)
+            fmt_no_comments = remove_comments(formatted_content)
+            if orig_no_comments == fmt_no_comments:
                 exactly_same_no_comments_count += 1
                 matching_no_comments_files.append(filename)
+
+            if remove_whitespace(orig_no_comments) == remove_whitespace(fmt_no_comments):
+                exactly_same_no_whitespace_count += 1
+            else:
+                try:
+                    num = filename[4:-4]
+                    wrong_content_files.append(num)
+                except:
+                    wrong_content_files.append(filename)
         
         print(f"\n--- prpfmt Statistics ({start_num}-{end_num}) ---")
         print(f"Total files processed: {total_files_processed}")
         print(f"Files with identical original and formatted content: {exactly_same_count}")
         print(f"Files with identical content (comments removed): {exactly_same_no_comments_count}")
-        if matching_no_comments_files:
-            print(f"Matches (no comments): {', '.join(matching_no_comments_files)}")
+        print(f"Files with identical content (whitespace removed): {exactly_same_no_whitespace_count}")
+        if wrong_content_files:
+            print(f"wrong content: [{', '.join(wrong_content_files)}]")
+        # if matching_no_comments_files:
+        #     print(f"Matches (no comments): {', '.join(matching_no_comments_files)}")
         print(f"Files with differences: {total_files_processed - exactly_same_count}")
         print("---------------------------------------")
 

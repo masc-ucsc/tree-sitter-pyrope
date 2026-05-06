@@ -48,6 +48,17 @@ You can run the formatter from the `project-root` directory:
 - `-i, --indent <n>`: Specify the indentation size (default: 4).
 - `-h, --help`: Display the help message.
 
+## Grammar Updates
+If the Pyrope grammar (`grammar.js`) is updated, the following steps must be taken to synchronize the formatter:
+
+1. **Re-generate Parser**: Run `tree-sitter generate` in the `tree-sitter-pyrope` directory.
+2. **Update Symbol IDs**: The symbol IDs in `prpfmt.h` must match those in `tree-sitter-pyrope/src/parser.c`.
+    - Open `tree-sitter-pyrope/src/parser.c`.
+    - Locate the `ts_symbol_identifiers` enum.
+    - Copy these values into the `enum` in `prpfmt.h`.
+3. **Handle Structural Changes**: If grammar rules were renamed or their structure changed (e.g., tiered binary expressions), update the corresponding `print_` functions in `prpfmt.c`.
+4. **Rebuild**: Run `make` in the `prpfmt` directory to recompile the tool with the updated parser and symbol definitions.
+
 ## Known Issues/Future Work
 - Vertical alignment
 - Multi-line statements with proper indentation/formatting
