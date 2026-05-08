@@ -5,6 +5,13 @@
 #include <tree_sitter/api.h>
 #include "ir.h"
 
+typedef enum {
+  SPACE_NONE   = 0,
+  SPACE_BEFORE = 1 << 0,
+  SPACE_AFTER  = 1 << 1,
+  SPACE_BOTH   = 3
+} SpacingConfig;
+
 typedef struct PrpfmtState {
   const char *source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
@@ -18,10 +25,9 @@ typedef struct PrpfmtState {
 /* 
  * SYMBOL ENUM
  * These constants must match the symbol IDs generated in 
- * tree-sitter-pyrope/src/parser.c. If the grammar is re-generated, 
- * these values may need synchronization.
+ * tree-sitter-pyrope/src/parser.c.
  */
-enum {
+typedef enum {
   sym_identifier = 1,
   anon_sym_SEMI = 2,
   anon_sym_wrap = 3,
@@ -306,7 +312,7 @@ enum {
   alias_sym_reduction_or = 282,
   alias_sym_reduction_xor = 283,
   alias_sym_reg_decl = 284,
-};
+} PyropeSymbol;
 
 /******************************************************************************
  * 1. Entry & High-Level Dispatch
@@ -324,15 +330,13 @@ void print_stmt_list(TSNode node, PrpfmtState *st);
 void print_tuple(TSNode node, PrpfmtState *st);
 void print_tuple_sq(TSNode node, PrpfmtState *st);
 void print__tuple_list(TSNode node, PrpfmtState *st);
-void print__tuple_item(TSNode node, PrpfmtState *st);
+void print__tuple_item(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 
 /******************************************************************************
  * 3. Control Flow
  ******************************************************************************/
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline);
 void print_match_expression(TSNode node, PrpfmtState *st);
-void print_match_list(TSNode node, PrpfmtState *st);
-void print_match_compare_op(TSNode node, PrpfmtState *st);
 void print_for_statement(TSNode node, PrpfmtState *st);
 void print_while_statement(TSNode node, PrpfmtState *st);
 void print_when_unless_cond(TSNode node, PrpfmtState *st);
@@ -345,14 +349,14 @@ void print_continue_statement(TSNode node, PrpfmtState *st);
 /******************************************************************************
  * 4. Assignments & Declarations
  ******************************************************************************/
-void print_assignment(TSNode node, PrpfmtState *st, bool spaces);
+void print_assignment(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print_lvalue_item(TSNode node, PrpfmtState *st);
 void print_lvalue_list(TSNode node, PrpfmtState *st);
 void print_declaration_statement(TSNode node, PrpfmtState *st);
 void print_await_decl(TSNode node, PrpfmtState *st);
 void print_enum_assignment(TSNode node, PrpfmtState *st);
 void print_enum_definition(TSNode node, PrpfmtState *st);
-void print_assignment_operator(TSNode node, PrpfmtState *st, bool spaces);
+void print_assignment_operator(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print_spawn_statement(TSNode node, PrpfmtState *st);
 
 /******************************************************************************
@@ -372,13 +376,13 @@ void print__expression_with_comprehension(TSNode node, PrpfmtState *st, bool is_
 void print__restricted_expression(TSNode node, PrpfmtState *st);
 void print_expression_item(TSNode node, PrpfmtState *st);
 void print__binary_times(TSNode node, PrpfmtState *st);
-void print_binary_times_op(TSNode node, PrpfmtState *st);
+void print_binary_times_op(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__binary_other(TSNode node, PrpfmtState *st);
-void print_binary_other_op(TSNode node, PrpfmtState *st);
+void print_binary_other_op(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__binary_compare(TSNode node, PrpfmtState *st);
-void print_binary_compare_op(TSNode node, PrpfmtState *st);
+void print_binary_compare_op(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__binary_logical(TSNode node, PrpfmtState *st);
-void print_binary_logical_op(TSNode node, PrpfmtState *st);
+void print_binary_logical_op(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__pri1_operand(TSNode node, PrpfmtState *st);
 void print__pri2_operand(TSNode node, PrpfmtState *st);
 void print__pri3_operand(TSNode node, PrpfmtState *st);
@@ -451,9 +455,9 @@ void print_import_statement(TSNode node, PrpfmtState *st);
 void print_impl_statement(TSNode node, PrpfmtState *st);
 void print_test_statement(TSNode node, PrpfmtState *st);
 void print_assert_statement(TSNode node, PrpfmtState *st);
+void print_attributes(TSNode node, PrpfmtState *st);
 void print_attribute_list(TSNode node, PrpfmtState *st);
-void print__semicolon(TSNode node, PrpfmtState *st);
-
+void print__semicolon(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__timing_sequence(TSNode node, PrpfmtState *st);
 
 /******************************************************************************
