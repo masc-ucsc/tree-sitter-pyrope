@@ -57,23 +57,35 @@ void emit_indent_dec(struct PrpfmtState *st) {
 
 void prpfmt_render(struct PrpfmtState *st) {
     int current_indent = 0;
+    int at_start_of_line = 1; // Start of file is effectively start of line
+
     for (int i = 0; i < st->buffer.size; i++) {
         Token *t = &st->buffer.data[i];
         switch (t->type) {
             case TOKEN_TEXT:
+                if (at_start_of_line) {
+                    for (int j = 0; j < current_indent * st->indent_size; j++) {
+                        fprintf(st->outfile, " ");
+                    }
+                    at_start_of_line = 0;
+                }
                 fprintf(st->outfile, "%s", t->text);
                 break;
             case TOKEN_SPACE:
-                fprintf(st->outfile, " ");
-                break;
-            case TOKEN_NEWLINE:
-                fprintf(st->outfile, "\n");
-                for (int j = 0; j < current_indent * st->indent_size; j++) {
+                if (at_start_of_line) {
+                   // Skip leading spaces on a line, let indentation handle it
+                } else {
                     fprintf(st->outfile, " ");
                 }
                 break;
+            case TOKEN_NEWLINE:
+                fprintf(st->outfile, "\n");
+                at_start_of_line = 1;
+                break;
             case TOKEN_BREAK_POINT:
-                fprintf(st->outfile, " "); 
+                if (!at_start_of_line) {
+                    fprintf(st->outfile, " ");
+                }
                 break;
             case TOKEN_INDENT_INC:
                 current_indent++;

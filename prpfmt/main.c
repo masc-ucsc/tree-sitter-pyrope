@@ -147,17 +147,15 @@ int main(int argc, char **argv) {
     cleanup(source_code, tree, parser, outfile);
     exit(1);
   }
-
-  // Initialize state
-  PrpfmtState state = {
-    .source_code = source_code,
-    .outfile = outfile,
-    .indent_level = 0,
-    .indent_size = indent_size,
-    .fmt_on = true,
-    .inline_exp = false,
-    .buffer = { .data = NULL, .size = 0, .capacity = 0 }
-  };
+// Initialize state
+PrpfmtState state = {
+  .source_code = source_code,
+  .outfile = outfile,
+  .indent_size = indent_size,
+  .fmt_on = true,
+  .inline_exp = false,
+  .buffer = { .data = NULL, .size = 0, .capacity = 0 }
+};
 
   print_description(tree, &state);
   prpfmt_render(&state);
