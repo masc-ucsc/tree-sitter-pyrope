@@ -2,19 +2,30 @@
 #define PRP_IR_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef enum {
   TOKEN_TEXT,
   TOKEN_SPACE,
   TOKEN_NEWLINE,
-  TOKEN_BREAK_POINT,
+  TOKEN_BREAK_POINT,        // Optional break (space when flat, newline when exploded)
+  TOKEN_SOFT_BREAK,         // Optional break (empty when flat, newline when exploded)
   TOKEN_INDENT_INC,
-  TOKEN_INDENT_DEC
+  TOKEN_INDENT_DEC,
+  TOKEN_GROUP_START,        // Start of a smart-wrapping group
+  TOKEN_GROUP_END,          // End of a smart-wrapping group
+  TOKEN_ALIGN_GROUP_START,  // Start of an alignment block
+  TOKEN_ALIGN_GROUP_END,    // End of an alignment block
+  TOKEN_ALIGN_OPERATOR,     // Operator for alignment
+  TOKEN_ALIGN_COMMENT,      // Comment for alignment
+  TOKEN_FORCE_BREAK         // Forces a newline
 } TokenType;
 
 typedef struct {
   TokenType type;
   char *text;
+  bool exploded;    // For Groups: should this group wrap?
+  int target_col;   // For Alignment: which column should we jump to?
 } Token;
 
 typedef struct {
@@ -23,9 +34,6 @@ typedef struct {
   int capacity;
 } TokenBuffer;
 
-// Forward declaration to avoid circular dependency if needed, 
-// though passing FILE* and indent_size directly to render might be cleaner.
-// For now, we will pass the buffer and the FILE/indent data.
 struct PrpfmtState; 
 
 // Token IR Emitters
@@ -33,10 +41,19 @@ void emit_token(struct PrpfmtState *st, const char *text);
 void emit_space(struct PrpfmtState *st);
 void emit_newline(struct PrpfmtState *st);
 void emit_break_point(struct PrpfmtState *st);
+void emit_soft_break(struct PrpfmtState *st);
 void emit_indent_inc(struct PrpfmtState *st);
 void emit_indent_dec(struct PrpfmtState *st);
+void emit_group_start(struct PrpfmtState *st);
+void emit_group_end(struct PrpfmtState *st);
+void emit_align_group_start(struct PrpfmtState *st);
+void emit_align_group_end(struct PrpfmtState *st);
+void emit_align_operator(struct PrpfmtState *st, const char *text);
+void emit_align_comment(struct PrpfmtState *st, const char *text);
+void emit_force_break(struct PrpfmtState *st);
 
 // Rendering
+void prpfmt_solve(struct PrpfmtState *st);
 void prpfmt_render(struct PrpfmtState *st);
 void prpfmt_free_buffer(struct PrpfmtState *st);
 

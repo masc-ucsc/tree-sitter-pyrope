@@ -5,6 +5,11 @@
 #include <tree_sitter/api.h>
 #include "ir.h"
 
+/* 
+ * SpacingConfig controls the emission of spaces around tokens (primarily operators 
+ * and punctuation) during the initial IR hooking phase. 
+ * It is implemented as a bitmask so flags can be combined.
+ */
 typedef enum {
   SPACE_NONE   = 0,
   SPACE_BEFORE = 1 << 0,
@@ -317,7 +322,7 @@ typedef enum {
  * 1. Entry & High-Level Dispatch                                             *
  ******************************************************************************/
 void print_description(TSTree *tree, PrpfmtState *st);
-void print__statement(TSNode node, PrpfmtState *st, bool is_inline);
+bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_inline);
 void check_format_directives(const char *node_text, PrpfmtState *st);
 
 /******************************************************************************
@@ -437,6 +442,7 @@ void print__format_spec(TSNode node, PrpfmtState *st);
 void print_comment(TSNode node, PrpfmtState *st);
 void print_comment_inline(TSNode node, PrpfmtState *st);
 void print_comment_newline(TSNode node, PrpfmtState *st);
+void print_comment_trailing(TSNode node, PrpfmtState *st);
 
 /******************************************************************************
  * 10. Special Statements & Attributes                                        *
@@ -455,6 +461,7 @@ void print__timing_sequence(TSNode node, PrpfmtState *st);
  * 11. Utilities                                                              *
  ******************************************************************************/
 void preserve_whitespace(TSNode prev, TSNode curr, PrpfmtState *st);
+bool has_recursive_comment(TSNode node);
 char *get_node_text(TSNode node, const char *source_code);
 void emit_node_text(TSNode node, PrpfmtState *st);
 

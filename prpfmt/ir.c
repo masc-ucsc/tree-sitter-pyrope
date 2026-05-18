@@ -3,108 +3,444 @@
 #include <string.h>
 
 #include "ir.h"
-#include "prpfmt.h" // Needed because emit functions access PrpfmtState internals
+#include "prpfmt.h"
 
-// Initialize buffer
 static void ensure_capacity(struct PrpfmtState *st) {
-    if (st->buffer.size >= st->buffer.capacity) {
-        st->buffer.capacity = st->buffer.capacity == 0 ? 1024 : st->buffer.capacity * 2;
-        st->buffer.data = realloc(st->buffer.data, st->buffer.capacity * sizeof(Token));
-    }
+  if (st->buffer.size >= st->buffer.capacity) {
+    st->buffer.capacity = st->buffer.capacity == 0 ? 1024 : st->buffer.capacity * 2;
+    st->buffer.data = realloc(st->buffer.data, st->buffer.capacity * sizeof(Token));
+  }
+}
+
+static void init_token(Token *t, TokenType type, char *text) {
+  t->type = type;
+  t->text = text;
+  t->exploded = false;
+  t->target_col = 0;
 }
 
 void emit_token(struct PrpfmtState *st, const char *text) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_TEXT;
-    st->buffer.data[st->buffer.size].text = strdup(text);
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_TEXT, strdup(text));
+  st->buffer.size++;
 }
 
 void emit_space(struct PrpfmtState *st) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_SPACE;
-    st->buffer.data[st->buffer.size].text = NULL;
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_SPACE, NULL);
+  st->buffer.size++;
 }
 
 void emit_newline(struct PrpfmtState *st) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_NEWLINE;
-    st->buffer.data[st->buffer.size].text = NULL;
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_NEWLINE, NULL);
+  st->buffer.size++;
 }
 
 void emit_break_point(struct PrpfmtState *st) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_BREAK_POINT;
-    st->buffer.data[st->buffer.size].text = NULL;
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_BREAK_POINT, NULL);
+  st->buffer.size++;
+}
+
+void emit_soft_break(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_SOFT_BREAK, NULL);
+  st->buffer.size++;
 }
 
 void emit_indent_inc(struct PrpfmtState *st) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_INDENT_INC;
-    st->buffer.data[st->buffer.size].text = NULL;
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_INDENT_INC, NULL);
+  st->buffer.size++;
 }
 
 void emit_indent_dec(struct PrpfmtState *st) {
-    ensure_capacity(st);
-    st->buffer.data[st->buffer.size].type = TOKEN_INDENT_DEC;
-    st->buffer.data[st->buffer.size].text = NULL;
-    st->buffer.size++;
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_INDENT_DEC, NULL);
+  st->buffer.size++;
 }
 
-void prpfmt_render(struct PrpfmtState *st) {
-    int current_indent = 0;
-    int at_start_of_line = 1; // Start of file is effectively start of line
+void emit_group_start(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_START, NULL);
+  st->buffer.size++;
+}
 
-    for (int i = 0; i < st->buffer.size; i++) {
-        Token *t = &st->buffer.data[i];
-        switch (t->type) {
-            case TOKEN_TEXT:
-                if (at_start_of_line) {
-                    for (int j = 0; j < current_indent * st->indent_size; j++) {
-                        fprintf(st->outfile, " ");
-                    }
-                    at_start_of_line = 0;
-                }
-                fprintf(st->outfile, "%s", t->text);
-                break;
-            case TOKEN_SPACE:
-                if (at_start_of_line) {
-                   // Skip leading spaces on a line, let indentation handle it
-                } else {
-                    fprintf(st->outfile, " ");
-                }
-                break;
-            case TOKEN_NEWLINE:
-                fprintf(st->outfile, "\n");
-                at_start_of_line = 1;
-                break;
-            case TOKEN_BREAK_POINT:
-                if (!at_start_of_line) {
-                    fprintf(st->outfile, " ");
-                }
-                break;
-            case TOKEN_INDENT_INC:
-                current_indent++;
-                break;
-            case TOKEN_INDENT_DEC:
-                current_indent--;
-                break;
-        }
-    }
+void emit_group_end(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_END, NULL);
+  st->buffer.size++;
+}
+
+void emit_align_group_start(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_GROUP_START, NULL);
+  st->buffer.size++;
+}
+
+void emit_align_group_end(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_GROUP_END, NULL);
+  st->buffer.size++;
+}
+
+void emit_align_operator(struct PrpfmtState *st, const char *text) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_OPERATOR, strdup(text));
+  st->buffer.size++;
+}
+
+void emit_align_comment(struct PrpfmtState *st, const char *text) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_COMMENT, strdup(text));
+  st->buffer.size++;
+}
+
+void emit_force_break(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_FORCE_BREAK, NULL);
+  st->buffer.size++;
 }
 
 void prpfmt_free_buffer(struct PrpfmtState *st) {
-    for (int i = 0; i < st->buffer.size; i++) {
-        if (st->buffer.data[i].text) {
-            free(st->buffer.data[i].text);
-        }
+  for (int i = 0; i < st->buffer.size; i++) {
+    if (st->buffer.data[i].text) {
+      free(st->buffer.data[i].text);
     }
-    free(st->buffer.data);
-    st->buffer.data = NULL;
-    st->buffer.size = 0;
-    st->buffer.capacity = 0;
+  }
+
+  free(st->buffer.data);
+  st->buffer.data = NULL;
+  st->buffer.size = 0;
+  st->buffer.capacity = 0;
+}
+
+// Internal helper for column simulation during solver passes
+static void simulate_step(Token *t, int *col, int *indent, int *at_start, int indent_size, bool *exp_stack, int *anc_stack, int *stack_ptr) {
+  bool is_exploded = *stack_ptr >= 0 ? exp_stack[*stack_ptr] : false;
+  int current_anchor = *stack_ptr >= 0 ? anc_stack[*stack_ptr] : -1;
+
+  if (*at_start && (t->type == TOKEN_TEXT || t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_COMMENT)) {
+    int baseline = (current_anchor >= 0) ? current_anchor : 0;
+    *col += baseline + (*indent * indent_size);
+    *at_start = 0;
+  }
+
+  switch (t->type) {
+    case TOKEN_TEXT:
+      if (t->text) {
+        *col += strlen(t->text);
+      }
+      break;
+    case TOKEN_ALIGN_OPERATOR:
+    case TOKEN_ALIGN_COMMENT:
+      if (t->target_col > 0) {
+        *col = t->target_col;
+      }
+      if (t->type == TOKEN_ALIGN_OPERATOR && *stack_ptr >= 0) {
+        anc_stack[*stack_ptr] = *col;
+      }
+      if (t->text) {
+        *col += strlen(t->text);
+      }
+      break;
+    case TOKEN_SPACE:
+      (*col)++;
+      break;
+    case TOKEN_NEWLINE:
+    case TOKEN_FORCE_BREAK:
+      *col = 0;
+      *at_start = 1;
+      break;
+    case TOKEN_BREAK_POINT:
+      if (is_exploded) {
+        *col = 0;
+        *at_start = 1;
+      } else {
+        (*col)++;
+      }
+      break;
+    case TOKEN_SOFT_BREAK:
+      if (is_exploded) {
+        *col = 0;
+        *at_start = 1;
+      }
+      break;
+    case TOKEN_INDENT_INC:
+      (*indent)++;
+      break;
+    case TOKEN_INDENT_DEC:
+      (*indent)--;
+      break;
+    case TOKEN_GROUP_START:
+      (*stack_ptr)++;
+      if (*stack_ptr < 256) {
+        exp_stack[*stack_ptr] = t->exploded;
+        anc_stack[*stack_ptr] = (*stack_ptr > 0) ? anc_stack[*stack_ptr - 1] : -1;
+      }
+      break;
+    case TOKEN_GROUP_END:
+      if (*stack_ptr > 0) {
+        (*stack_ptr)--;
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+void prpfmt_solve(struct PrpfmtState *st) {
+  // Pass 1: Decide explosion status for groups
+  for (int i = 0; i < st->buffer.size; i++) {
+    if (st->buffer.data[i].type == TOKEN_GROUP_START) {
+      int flat_length = 0;
+      bool force_explode = false;
+      int depth = 1;
+      for (int j = i + 1; j < st->buffer.size; j++) {
+        Token *t = &st->buffer.data[j];
+        if (t->type == TOKEN_GROUP_START) {
+          depth++;
+        }
+        if (t->type == TOKEN_GROUP_END) {
+          depth--;
+        }
+        if (depth == 0) {
+          break;
+        }
+        switch (t->type) {
+          case TOKEN_TEXT:
+          case TOKEN_ALIGN_OPERATOR:
+            if (t->text) {
+              flat_length += strlen(t->text);
+            }
+            break;
+          case TOKEN_ALIGN_COMMENT:
+            {
+              bool has_more = false;
+              int inner_depth = 0;
+              for (int k = j + 1; k < st->buffer.size; k++) {
+                TokenType nt = st->buffer.data[k].type;
+                if (nt == TOKEN_GROUP_START) {
+                  inner_depth++;
+                }
+                if (nt == TOKEN_GROUP_END) {
+                  if (inner_depth == 0) {
+                    break;
+                  }
+                  inner_depth--;
+                }
+                if (nt == TOKEN_TEXT || nt == TOKEN_ALIGN_OPERATOR || nt == TOKEN_ALIGN_COMMENT) {
+                  has_more = true;
+                  break;
+                }
+              }
+              if (has_more) {
+                force_explode = true;
+              }
+            }
+            break;
+          case TOKEN_SPACE:
+          case TOKEN_BREAK_POINT:
+            flat_length += 1;
+            break;
+          case TOKEN_SOFT_BREAK:
+            break;
+          case TOKEN_FORCE_BREAK:
+          case TOKEN_NEWLINE:
+            force_explode = true;
+            break;
+          default:
+            break;
+        }
+        if (force_explode) {
+          break;
+        }
+      }
+      st->buffer.data[i].exploded = force_explode || flat_length > 80;
+    }
+  }
+
+  // Pass 2: Vertical Alignment (Sequential Channels)
+  for (int i = 0; i < st->buffer.size; i++) {
+    if (st->buffer.data[i].type == TOKEN_ALIGN_GROUP_START) {
+      int group_end = -1;
+      int depth = 1;
+      for (int j = i + 1; j < st->buffer.size; j++) {
+        if (st->buffer.data[j].type == TOKEN_ALIGN_GROUP_START) {
+          depth++;
+        }
+        if (st->buffer.data[j].type == TOKEN_ALIGN_GROUP_END) {
+          depth--;
+        }
+        if (depth == 0) {
+          group_end = j;
+          break;
+        }
+      }
+      if (group_end == -1) {
+        continue;
+      }
+
+      // Sequential Channels: 1. Operators, then 2. Comments
+      TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_COMMENT};
+
+      for (int c = 0; c < 2; c++) {
+        TokenType current_channel = channels[c];
+        int max_col = 0;
+
+        // Sub-pass 1: Measure current channel
+        int col = 0, indent = 0, at_start = 1, s_ptr = 0;
+        bool e_stack[256];
+        e_stack[0] = false;
+        int a_stack[256];
+        a_stack[0] = -1;
+
+        for (int j = i + 1; j < group_end; j++) {
+          Token *t = &st->buffer.data[j];
+          if (t->type == current_channel) {
+            // Check if we are at start of line (standalone)
+            int actual_col = col;
+            if (at_start) {
+              int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+              actual_col = baseline + (indent * st->indent_size);
+            }
+            if (actual_col > max_col) {
+              max_col = actual_col;
+            }
+          }
+          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr);
+        }
+
+        // Sub-pass 2: Set target columns for current channel
+        col = 0;
+        indent = 0;
+        at_start = 1;
+        s_ptr = 0;
+        a_stack[0] = -1;
+        for (int j = i + 1; j < group_end; j++) {
+          Token *t = &st->buffer.data[j];
+          if (t->type == current_channel) {
+            int actual_col = col;
+            if (at_start) {
+              int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+              actual_col = baseline + (indent * st->indent_size);
+            }
+            if (max_col > actual_col && max_col - actual_col < 25) {
+              t->target_col = max_col;
+            }
+          }
+          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr);
+        }
+      }
+      i = group_end;
+    }
+  }
+}
+
+void prpfmt_render(struct PrpfmtState *st) {
+  int current_indent = 0;
+  int current_col = 0;
+  int at_start_of_line = 1;
+
+  // Small stack to track exploded status of nested groups
+  bool exploded_stack[256];
+  // Small stack to track anchor columns for relative indentation
+  int anchor_stack[256];
+
+  int stack_ptr = 0;
+  exploded_stack[0] = false;
+  anchor_stack[0] = -1; // -1 means no anchor, use normal indent
+
+  for (int i = 0; i < st->buffer.size; i++) {
+    Token *t = &st->buffer.data[i];
+    bool current_exploded = stack_ptr >= 0 ? exploded_stack[stack_ptr] : false;
+    int current_anchor = stack_ptr >= 0 ? anchor_stack[stack_ptr] : -1;
+
+    switch (t->type) {
+      case TOKEN_TEXT:
+      case TOKEN_ALIGN_OPERATOR:
+      case TOKEN_ALIGN_COMMENT:
+        if (at_start_of_line) {
+          int baseline = (current_anchor >= 0) ? current_anchor : 0;
+          int indent_spaces = baseline + (current_indent * st->indent_size);
+          for (int j = 0; j < indent_spaces; j++) {
+            fprintf(st->outfile, " ");
+            current_col++;
+          }
+          at_start_of_line = 0;
+        }
+
+        if (t->target_col > current_col) {
+          int padding = t->target_col - current_col;
+          for (int j = 0; j < padding; j++) {
+            fprintf(st->outfile, " ");
+            current_col++;
+          }
+        }
+
+        // If this is an alignment operator, it updates the anchor for its group
+        if (t->type == TOKEN_ALIGN_OPERATOR) {
+          if (stack_ptr >= 0) {
+            anchor_stack[stack_ptr] = current_col;
+          }
+        }
+
+        if (t->text) {
+          fprintf(st->outfile, "%s", t->text);
+          current_col += strlen(t->text);
+        }
+        break;
+      case TOKEN_SPACE:
+        if (!at_start_of_line) {
+          fprintf(st->outfile, " ");
+          current_col++;
+        }
+        break;
+      case TOKEN_NEWLINE:
+      case TOKEN_FORCE_BREAK:
+        fprintf(st->outfile, "\n");
+        at_start_of_line = 1;
+        current_col = 0;
+        break;
+      case TOKEN_BREAK_POINT:
+        if (current_exploded) {
+          fprintf(st->outfile, "\n");
+          at_start_of_line = 1;
+          current_col = 0;
+        } else if (!at_start_of_line) {
+          fprintf(st->outfile, " ");
+          current_col++;
+        }
+        break;
+      case TOKEN_SOFT_BREAK:
+        if (current_exploded) {
+          fprintf(st->outfile, "\n");
+          at_start_of_line = 1;
+          current_col = 0;
+        }
+        break;
+      case TOKEN_INDENT_INC:
+        current_indent++;
+        break;
+      case TOKEN_INDENT_DEC:
+        current_indent--;
+        break;
+      case TOKEN_GROUP_START:
+        stack_ptr++;
+        if (stack_ptr < 256) {
+          exploded_stack[stack_ptr] = t->exploded;
+          // Inherit anchor from parent by default
+          anchor_stack[stack_ptr] = (stack_ptr > 0) ? anchor_stack[stack_ptr - 1] : -1;
+        }
+        break;
+      case TOKEN_GROUP_END:
+        if (stack_ptr > 0) {
+          stack_ptr--;
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }

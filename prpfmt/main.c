@@ -158,6 +158,7 @@ PrpfmtState state = {
 };
 
   print_description(tree, &state);
+  prpfmt_solve(&state);
   prpfmt_render(&state);
   prpfmt_free_buffer(&state);
 
