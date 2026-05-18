@@ -16,7 +16,8 @@ typedef enum {
   TOKEN_GROUP_END,          // End of a smart-wrapping group
   TOKEN_ALIGN_GROUP_START,  // Start of an alignment block
   TOKEN_ALIGN_GROUP_END,    // End of an alignment block
-  TOKEN_ALIGN_OPERATOR,     // Operator for alignment
+  TOKEN_ALIGN_OPERATOR,     // Operator for alignment (e.g., =)
+  TOKEN_ALIGN_RELATIONAL,   // Relational operator for alignment (e.g., ==, !=)
   TOKEN_ALIGN_COMMENT,      // Comment for alignment
   TOKEN_FORCE_BREAK         // Forces a newline
 } TokenType;
@@ -49,6 +50,7 @@ void emit_group_end(struct PrpfmtState *st);
 void emit_align_group_start(struct PrpfmtState *st);
 void emit_align_group_end(struct PrpfmtState *st);
 void emit_align_operator(struct PrpfmtState *st, const char *text);
+void emit_align_relational(struct PrpfmtState *st, const char *text);
 void emit_align_comment(struct PrpfmtState *st, const char *text);
 void emit_force_break(struct PrpfmtState *st);
 

@@ -164,6 +164,7 @@ PrpfmtState state = {
   .outfile = outfile,
   .indent_size = indent_size,
   .max_width = max_width,
+  .in_assert = false,
   .fmt_on = true,
   .inline_exp = false,
   .buffer = { .data = NULL, .size = 0, .capacity = 0 }

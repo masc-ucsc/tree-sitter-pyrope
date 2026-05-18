@@ -91,6 +91,12 @@ void emit_align_operator(struct PrpfmtState *st, const char *text) {
   st->buffer.size++;
 }
 
+void emit_align_relational(struct PrpfmtState *st, const char *text) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_RELATIONAL, strdup(text));
+  st->buffer.size++;
+}
+
 void emit_align_comment(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_COMMENT, strdup(text));
@@ -117,11 +123,11 @@ void prpfmt_free_buffer(struct PrpfmtState *st) {
 }
 
 // Internal helper for column simulation during solver passes
-static void simulate_step(Token *t, int *col, int *indent, int *at_start, int indent_size, bool *exp_stack, int *anc_stack, int *stack_ptr) {
+static void simulate_step(Token *t, int *col, int *indent, int *at_start, int indent_size, bool *exp_stack, int *anc_stack, int *stack_ptr, TokenType channel_filter) {
   bool is_exploded = *stack_ptr >= 0 ? exp_stack[*stack_ptr] : false;
   int current_anchor = *stack_ptr >= 0 ? anc_stack[*stack_ptr] : -1;
 
-  if (*at_start && (t->type == TOKEN_TEXT || t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_COMMENT)) {
+  if (*at_start && (t->type == TOKEN_TEXT || t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL || t->type == TOKEN_ALIGN_COMMENT)) {
     int baseline = (current_anchor >= 0) ? current_anchor : 0;
     *col += baseline + (*indent * indent_size);
     *at_start = 0;
@@ -134,11 +140,14 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
       }
       break;
     case TOKEN_ALIGN_OPERATOR:
+    case TOKEN_ALIGN_RELATIONAL:
     case TOKEN_ALIGN_COMMENT:
-      if (t->target_col > 0) {
+      // Only apply padding if we are simulating this specific channel,
+      // or if we are doing a full simulation (filter == TOKEN_TEXT)
+      if (t->target_col > 0 && (channel_filter == TOKEN_TEXT || t->type == channel_filter)) {
         *col = t->target_col;
       }
-      if (t->type == TOKEN_ALIGN_OPERATOR && *stack_ptr >= 0) {
+      if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && *stack_ptr >= 0) {
         anc_stack[*stack_ptr] = *col;
       }
       if (t->text) {
@@ -152,6 +161,9 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
     case TOKEN_FORCE_BREAK:
       *col = 0;
       *at_start = 1;
+      if (*stack_ptr >= 0) {
+        anc_stack[*stack_ptr] = -1;
+      }
       break;
     case TOKEN_BREAK_POINT:
       if (is_exploded) {
@@ -211,6 +223,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
         switch (t->type) {
           case TOKEN_TEXT:
           case TOKEN_ALIGN_OPERATOR:
+          case TOKEN_ALIGN_RELATIONAL:
             if (t->text) {
               flat_length += strlen(t->text);
             }
@@ -282,15 +295,17 @@ void prpfmt_solve(struct PrpfmtState *st) {
         continue;
       }
 
-      // Sequential Channels: 1. Operators, then 2. Comments
-      TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_COMMENT};
+      // Sequential Channels: 1. Assignment, 2. Relational, then 3. Comments
+      TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL, TOKEN_ALIGN_COMMENT};
 
-      for (int c = 0; c < 2; c++) {
+      for (int c = 0; c < 3; c++) {
         TokenType current_channel = channels[c];
         int max_col = 0;
 
-        // Sub-pass 1: Measure current channel
+        // Sub-pass 1: Measure current channel (clean simulation)
         int col = 0, indent = 0, at_start = 1, s_ptr = 0;
+        int current_line = 0;
+        int last_aligned_line = -1;
         bool e_stack[256];
         e_stack[0] = false;
         int a_stack[256];
@@ -298,39 +313,59 @@ void prpfmt_solve(struct PrpfmtState *st) {
 
         for (int j = i + 1; j < group_end; j++) {
           Token *t = &st->buffer.data[j];
+          
+          if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
+            current_line++;
+          }
+
           if (t->type == current_channel) {
-            // Check if we are at start of line (standalone)
-            int actual_col = col;
-            if (at_start) {
-              int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
-              actual_col = baseline + (indent * st->indent_size);
-            }
-            if (actual_col > max_col) {
-              max_col = actual_col;
+            // Logic: 
+            // 1. Only align the FIRST one on a line (last_aligned_line check)
+            // 2. For comments, only align if we are at the top-level indent (indent == 0)
+            if (current_line != last_aligned_line) {
+              if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
+                int actual_col = col;
+                if (at_start) {
+                  int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+                  actual_col = baseline + (indent * st->indent_size);
+                }
+                if (actual_col > max_col) {
+                  max_col = actual_col;
+                }
+                last_aligned_line = current_line;
+              }
             }
           }
-          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr);
+          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, TOKEN_TEXT);
         }
 
         // Sub-pass 2: Set target columns for current channel
-        col = 0;
-        indent = 0;
-        at_start = 1;
-        s_ptr = 0;
-        a_stack[0] = -1;
+        col = 0; indent = 0; at_start = 1; s_ptr = 0; a_stack[0] = -1;
+        current_line = 0;
+        last_aligned_line = -1;
         for (int j = i + 1; j < group_end; j++) {
           Token *t = &st->buffer.data[j];
+
+          if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
+            current_line++;
+          }
+
           if (t->type == current_channel) {
-            int actual_col = col;
-            if (at_start) {
-              int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
-              actual_col = baseline + (indent * st->indent_size);
-            }
-            if (max_col > actual_col && max_col - actual_col < 25) {
-              t->target_col = max_col;
+            if (current_line != last_aligned_line) {
+              if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
+                int actual_col = col;
+                if (at_start) {
+                  int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+                  actual_col = baseline + (indent * st->indent_size);
+                }
+                if (max_col > actual_col && max_col - actual_col < 25) {
+                  t->target_col = max_col;
+                }
+                last_aligned_line = current_line;
+              }
             }
           }
-          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr);
+          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
         }
       }
       i = group_end;
@@ -360,6 +395,7 @@ void prpfmt_render(struct PrpfmtState *st) {
     switch (t->type) {
       case TOKEN_TEXT:
       case TOKEN_ALIGN_OPERATOR:
+      case TOKEN_ALIGN_RELATIONAL:
       case TOKEN_ALIGN_COMMENT:
         if (at_start_of_line) {
           int baseline = (current_anchor >= 0) ? current_anchor : 0;
@@ -380,7 +416,7 @@ void prpfmt_render(struct PrpfmtState *st) {
         }
 
         // If this is an alignment operator, it updates the anchor for its group
-        if (t->type == TOKEN_ALIGN_OPERATOR) {
+        if (t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) {
           if (stack_ptr >= 0) {
             anchor_stack[stack_ptr] = current_col;
           }
@@ -402,6 +438,9 @@ void prpfmt_render(struct PrpfmtState *st) {
         fprintf(st->outfile, "\n");
         at_start_of_line = 1;
         current_col = 0;
+        if (stack_ptr >= 0) {
+          anchor_stack[stack_ptr] = -1;
+        }
         break;
       case TOKEN_BREAK_POINT:
         if (current_exploded) {

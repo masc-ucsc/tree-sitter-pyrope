@@ -18,6 +18,7 @@ static bool is_alignable(TSNode node) {
     case sym_declaration_statement:
     case sym_enum_assignment:
     case sym_type_statement:
+    case sym_assert_statement:
     case sym_comment:
       return true;
     default:
@@ -388,12 +389,9 @@ void print_tuple(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case anon_sym_LPAREN:
         emit_token(st, "(");
-        emit_indent_inc(st);
-        emit_soft_break(st);
+        emit_align_operator(st, ""); // Set anchor for hanging indent
         break;
       case anon_sym_RPAREN:
-        emit_soft_break(st);
-        emit_indent_dec(st);
         emit_token(st, ")");
         break;
       case sym_comment:
@@ -422,12 +420,9 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case anon_sym_LBRACK:
         emit_token(st, "[");
-        emit_indent_inc(st);
-        emit_soft_break(st);
+        emit_align_operator(st, ""); // Set anchor for hanging indent
         break;
       case anon_sym_RBRACK:
-        emit_soft_break(st);
-        emit_indent_dec(st);
         emit_token(st, "]");
         break;
       case sym_comment:
@@ -1001,7 +996,7 @@ void print_assignment(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
             }
             emit_align_operator(st, op_text);
             if (spacing & SPACE_AFTER) {
-              emit_break_point(st);
+              emit_space(st);
             }
             free(op_text);
           }
@@ -1756,8 +1751,20 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_binary_compare_op:
-        emit_break_point(st);
-        emit_operator(child, st, SPACE_AFTER);
+        {
+          char *op_text = get_node_text(child, st->source_code);
+          if (op_text) {
+            emit_break_point(st);
+            if (st->in_assert && (strcmp(op_text, "==") == 0 || strcmp(op_text, "!=") == 0)) {
+              emit_align_relational(st, op_text);
+              emit_space(st);
+            } else {
+              emit_token(st, op_text);
+              emit_space(st);
+            }
+            free(op_text);
+          }
+        }
         break;
       case sym_comment:
         print_comment(child, st);
@@ -2964,6 +2971,7 @@ void print_test_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_assert_statement(TSNode node, PrpfmtState *st) {
+  st->in_assert = true;
   emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
@@ -3010,6 +3018,7 @@ void print_assert_statement(TSNode node, PrpfmtState *st) {
     }
   }
   emit_group_end(st);
+  st->in_assert = false;
 }
 
 void print_attributes(TSNode node, PrpfmtState *st) {
