@@ -257,7 +257,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
           break;
         }
       }
-      st->buffer.data[i].exploded = force_explode || flat_length > 80;
+      st->buffer.data[i].exploded = force_explode || flat_length > st->max_width;
     }
   }
 

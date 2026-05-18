@@ -6,11 +6,12 @@
 #include "prpfmt.h"
 
 void print_help() {
-  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>]\n");
+  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>]\n");
   printf("       ./prpfmt [-h | --help]\n\n");
   printf("Options:\n");
   printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
   printf("  -i, --indent <n>  Specify the indentation size (default: 4).\n");
+  printf("  -w, --width <n>   Specify the maximum line width (default: 80).\n");
   printf("  -h, --help        Display this help message.\n");
 }
 
@@ -84,8 +85,9 @@ int main(int argc, char **argv) {
   char *infile_path = argv[1];
   char *outfile_path = NULL;
   int indent_size = 4;
+  int max_width = 80;
 
-  // Parse for -o, -i options
+  // Parse for -o, -i, -w options
   for (int i = 2; i < argc; i++) {
     if (strcmp(argv[i], "-o") == 0) {
       if (i + 1 < argc) {
@@ -102,6 +104,15 @@ int main(int argc, char **argv) {
         i++;
       } else {
         fprintf(stderr, "Error: -i/--indent requires an integer value.\n");
+        print_help();
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--width") == 0) {
+      if (i + 1 < argc) {
+        max_width = atoi(argv[i + 1]);
+        i++;
+      } else {
+        fprintf(stderr, "Error: -w/--width requires an integer value.\n");
         print_help();
         exit(1);
       }
@@ -152,6 +163,7 @@ PrpfmtState state = {
   .source_code = source_code,
   .outfile = outfile,
   .indent_size = indent_size,
+  .max_width = max_width,
   .fmt_on = true,
   .inline_exp = false,
   .buffer = { .data = NULL, .size = 0, .capacity = 0 }

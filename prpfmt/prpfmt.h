@@ -21,6 +21,7 @@ typedef struct PrpfmtState {
   const char *source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
   int indent_size;         // Spaces per level (default: 4)
+  int max_width;           // Maximum line width (default: 80)
   bool fmt_on;             // Toggle for 'prpfmt on/off' directives
   bool inline_exp;         // If true, suppresses newlines for nested expressions
   TokenBuffer buffer;      // Buffer for IR
