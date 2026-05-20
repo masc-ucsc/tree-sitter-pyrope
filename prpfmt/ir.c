@@ -180,7 +180,8 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
       if (t->target_col > 0 && (channel_filter == TOKEN_TEXT || t->type == channel_filter)) {
         *col = t->target_col;
       }
-      if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && *stack_ptr >= 0) {
+      if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && 
+          t->text && strcmp(t->text, ":") != 0 && *stack_ptr >= 0) {
         anc_stack[*stack_ptr] = *col;
       }
       if (t->text) {
@@ -474,7 +475,8 @@ void prpfmt_render(struct PrpfmtState *st) {
         }
 
         // If this is an alignment operator, it updates the anchor for its group
-        if (t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) {
+        if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && 
+            t->text && strcmp(t->text, ":") != 0) {
           if (stack_ptr >= 0) {
             anchor_stack[stack_ptr] = current_col;
           }

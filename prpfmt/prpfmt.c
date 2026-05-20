@@ -2017,15 +2017,7 @@ void print_type_specification(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_COLON:
-        {
-          bool prev_colon = (i > 0 && ts_node_grammar_symbol(ts_node_child(node, i - 1)) == anon_sym_COLON);
-          bool next_colon = (i + 1 < child_count && ts_node_grammar_symbol(ts_node_child(node, i + 1)) == anon_sym_COLON);
-          if (prev_colon || next_colon) {
-            emit_token(st, ":");
-          } else {
-            emit_token(st, ": ");
-          }
-        }
+        emit_token(st, ":");
         break;
       case sym_comment:
         print_comment(child, st);
@@ -2063,15 +2055,7 @@ void print_type_cast(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_COLON:
-        {
-          bool prev_colon = (i > 0 && ts_node_grammar_symbol(ts_node_child(node, i - 1)) == anon_sym_COLON);
-          bool next_colon = (i + 1 < child_count && ts_node_grammar_symbol(ts_node_child(node, i + 1)) == anon_sym_COLON);
-          if (prev_colon || next_colon) {
-            emit_token(st, ":");
-          } else {
-            emit_token(st, ": ");
-          }
-        }
+        emit_token(st, ":");
         break;
       case sym_attribute_list:
         print_attribute_list(child, st);
