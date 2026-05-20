@@ -17,6 +17,7 @@ static void init_token(Token *t, TokenType type, char *text) {
   t->text = text;
   t->exploded = false;
   t->target_col = 0;
+  t->penalty = 0;
 }
 
 void emit_token(struct PrpfmtState *st, const char *text) {
@@ -26,6 +27,30 @@ void emit_token(struct PrpfmtState *st, const char *text) {
 }
 
 void emit_space(struct PrpfmtState *st) {
+  // Look back to prevent duplicate spaces or spaces after newlines
+  for (int i = st->buffer.size - 1; i >= 0; i--) {
+    TokenType type = st->buffer.data[i].type;
+
+    if (type == TOKEN_SPACE || type == TOKEN_BREAK_POINT) {
+      return; // Already has a space or potential space
+    }
+
+    if (type == TOKEN_NEWLINE || type == TOKEN_FORCE_BREAK) {
+      return; // No space needed at start of line
+    }
+
+    // Skip structural/zero-width tokens that don't affect horizontal spacing
+    if (type == TOKEN_GROUP_START || type == TOKEN_GROUP_END ||
+        type == TOKEN_ALIGN_GROUP_START || type == TOKEN_ALIGN_GROUP_END ||
+        type == TOKEN_INDENT_INC || type == TOKEN_INDENT_DEC ||
+        type == TOKEN_ANCHOR || type == TOKEN_SOFT_BREAK) {
+      continue;
+    }
+
+    // If we hit TEXT or an OPERATOR, we need the space
+    break;
+  }
+
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_SPACE, NULL);
   st->buffer.size++;
@@ -37,15 +62,17 @@ void emit_newline(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_break_point(struct PrpfmtState *st) {
+void emit_break_point(struct PrpfmtState *st, int penalty) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_BREAK_POINT, NULL);
+  st->buffer.data[st->buffer.size].penalty = penalty;
   st->buffer.size++;
 }
 
-void emit_soft_break(struct PrpfmtState *st) {
+void emit_soft_break(struct PrpfmtState *st, int penalty) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_SOFT_BREAK, NULL);
+  st->buffer.data[st->buffer.size].penalty = penalty;
   st->buffer.size++;
 }
 
@@ -103,6 +130,12 @@ void emit_align_comment(struct PrpfmtState *st, const char *text) {
   st->buffer.size++;
 }
 
+void emit_anchor(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ANCHOR, NULL);
+  st->buffer.size++;
+}
+
 void emit_force_break(struct PrpfmtState *st) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_FORCE_BREAK, NULL);
@@ -152,6 +185,11 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
       }
       if (t->text) {
         *col += strlen(t->text);
+      }
+      break;
+    case TOKEN_ANCHOR:
+      if (*stack_ptr >= 0) {
+        anc_stack[*stack_ptr] = *col;
       }
       break;
     case TOKEN_SPACE:
@@ -207,6 +245,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
   for (int i = 0; i < st->buffer.size; i++) {
     if (st->buffer.data[i].type == TOKEN_GROUP_START) {
       int flat_length = 0;
+      int explode_cost = 0;
       bool force_explode = false;
       int depth = 1;
       for (int j = i + 1; j < st->buffer.size; j++) {
@@ -228,36 +267,39 @@ void prpfmt_solve(struct PrpfmtState *st) {
               flat_length += strlen(t->text);
             }
             break;
-          case TOKEN_ALIGN_COMMENT:
-            {
-              bool has_more = false;
-              int inner_depth = 0;
-              for (int k = j + 1; k < st->buffer.size; k++) {
-                TokenType nt = st->buffer.data[k].type;
-                if (nt == TOKEN_GROUP_START) {
-                  inner_depth++;
-                }
-                if (nt == TOKEN_GROUP_END) {
-                  if (inner_depth == 0) {
-                    break;
-                  }
-                  inner_depth--;
-                }
-                if (nt == TOKEN_TEXT || nt == TOKEN_ALIGN_OPERATOR || nt == TOKEN_ALIGN_COMMENT) {
-                  has_more = true;
+          case TOKEN_ALIGN_COMMENT: {
+            bool has_more = false;
+            int inner_depth = 0;
+            for (int k = j + 1; k < st->buffer.size; k++) {
+              TokenType nt = st->buffer.data[k].type;
+              if (nt == TOKEN_GROUP_START) {
+                inner_depth++;
+              }
+              if (nt == TOKEN_GROUP_END) {
+                if (inner_depth == 0) {
                   break;
                 }
+                inner_depth--;
               }
-              if (has_more) {
-                force_explode = true;
+              if (nt == TOKEN_TEXT || nt == TOKEN_ALIGN_OPERATOR || nt == TOKEN_ALIGN_COMMENT) {
+                has_more = true;
+                break;
               }
             }
+            if (has_more) {
+              force_explode = true;
+            }
             break;
+          }
           case TOKEN_SPACE:
-          case TOKEN_BREAK_POINT:
             flat_length += 1;
             break;
+          case TOKEN_BREAK_POINT:
+            flat_length += 1;
+            explode_cost += t->penalty;
+            break;
           case TOKEN_SOFT_BREAK:
+            explode_cost += t->penalty;
             break;
           case TOKEN_FORCE_BREAK:
           case TOKEN_NEWLINE:
@@ -270,7 +312,14 @@ void prpfmt_solve(struct PrpfmtState *st) {
           break;
         }
       }
-      st->buffer.data[i].exploded = force_explode || flat_length > st->max_width;
+
+      if (force_explode) {
+        st->buffer.data[i].exploded = true;
+      } else {
+        int overflow = flat_length - st->max_width;
+        long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
+        st->buffer.data[i].exploded = (flat_cost > explode_cost);
+      }
     }
   }
 
@@ -301,6 +350,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
       for (int c = 0; c < 3; c++) {
         TokenType current_channel = channels[c];
         int max_col = 0;
+        int channel_count = 0;
 
         // Sub-pass 1: Measure current channel (clean simulation)
         int col = 0, indent = 0, at_start = 1, s_ptr = 0;
@@ -313,13 +363,13 @@ void prpfmt_solve(struct PrpfmtState *st) {
 
         for (int j = i + 1; j < group_end; j++) {
           Token *t = &st->buffer.data[j];
-          
+
           if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
             current_line++;
           }
 
           if (t->type == current_channel) {
-            // Logic: 
+            // Logic:
             // 1. Only align the FIRST one on a line (last_aligned_line check)
             // 2. For comments, only align if we are at the top-level indent (indent == 0)
             if (current_line != last_aligned_line) {
@@ -333,6 +383,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
                   max_col = actual_col;
                 }
                 last_aligned_line = current_line;
+                channel_count++;
               }
             }
           }
@@ -340,32 +391,39 @@ void prpfmt_solve(struct PrpfmtState *st) {
         }
 
         // Sub-pass 2: Set target columns for current channel
-        col = 0; indent = 0; at_start = 1; s_ptr = 0; a_stack[0] = -1;
-        current_line = 0;
-        last_aligned_line = -1;
-        for (int j = i + 1; j < group_end; j++) {
-          Token *t = &st->buffer.data[j];
+        // Only align if there are at least two instances to align with each other
+        if (channel_count > 1) {
+          col = 0;
+          indent = 0;
+          at_start = 1;
+          s_ptr = 0;
+          a_stack[0] = -1;
+          current_line = 0;
+          last_aligned_line = -1;
+          for (int j = i + 1; j < group_end; j++) {
+            Token *t = &st->buffer.data[j];
 
-          if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
-            current_line++;
-          }
+            if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
+              current_line++;
+            }
 
-          if (t->type == current_channel) {
-            if (current_line != last_aligned_line) {
-              if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
-                int actual_col = col;
-                if (at_start) {
-                  int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
-                  actual_col = baseline + (indent * st->indent_size);
+            if (t->type == current_channel) {
+              if (current_line != last_aligned_line) {
+                if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
+                  int actual_col = col;
+                  if (at_start) {
+                    int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+                    actual_col = baseline + (indent * st->indent_size);
+                  }
+                  if (max_col > actual_col && max_col - actual_col < 25) {
+                    t->target_col = max_col;
+                  }
+                  last_aligned_line = current_line;
                 }
-                if (max_col > actual_col && max_col - actual_col < 25) {
-                  t->target_col = max_col;
-                }
-                last_aligned_line = current_line;
               }
             }
+            simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
           }
-          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
         }
       }
       i = group_end;
@@ -425,6 +483,11 @@ void prpfmt_render(struct PrpfmtState *st) {
         if (t->text) {
           fprintf(st->outfile, "%s", t->text);
           current_col += strlen(t->text);
+        }
+        break;
+      case TOKEN_ANCHOR:
+        if (stack_ptr >= 0) {
+          anchor_stack[stack_ptr] = current_col;
         }
         break;
       case TOKEN_SPACE:

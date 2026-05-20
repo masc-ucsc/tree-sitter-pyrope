@@ -19,6 +19,7 @@ typedef enum {
   TOKEN_ALIGN_OPERATOR,     // Operator for alignment (e.g., =)
   TOKEN_ALIGN_RELATIONAL,   // Relational operator for alignment (e.g., ==, !=)
   TOKEN_ALIGN_COMMENT,      // Comment for alignment
+  TOKEN_ANCHOR,             // Sets a vertical anchor for hanging indent without aligning
   TOKEN_FORCE_BREAK         // Forces a newline
 } TokenType;
 
@@ -27,6 +28,7 @@ typedef struct {
   char *text;
   bool exploded;    // For Groups: should this group wrap?
   int target_col;   // For Alignment: which column should we jump to?
+  int penalty;      // For Break Points: cost of breaking here
 } Token;
 
 typedef struct {
@@ -41,8 +43,8 @@ struct PrpfmtState;
 void emit_token(struct PrpfmtState *st, const char *text);
 void emit_space(struct PrpfmtState *st);
 void emit_newline(struct PrpfmtState *st);
-void emit_break_point(struct PrpfmtState *st);
-void emit_soft_break(struct PrpfmtState *st);
+void emit_break_point(struct PrpfmtState *st, int penalty);
+void emit_soft_break(struct PrpfmtState *st, int penalty);
 void emit_indent_inc(struct PrpfmtState *st);
 void emit_indent_dec(struct PrpfmtState *st);
 void emit_group_start(struct PrpfmtState *st);
@@ -52,6 +54,7 @@ void emit_align_group_end(struct PrpfmtState *st);
 void emit_align_operator(struct PrpfmtState *st, const char *text);
 void emit_align_relational(struct PrpfmtState *st, const char *text);
 void emit_align_comment(struct PrpfmtState *st, const char *text);
+void emit_anchor(struct PrpfmtState *st);
 void emit_force_break(struct PrpfmtState *st);
 
 // Rendering
