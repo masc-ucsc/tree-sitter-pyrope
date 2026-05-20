@@ -325,82 +325,48 @@ void prpfmt_solve(struct PrpfmtState *st) {
   }
 
   // Pass 2: Vertical Alignment (Sequential Channels)
+  int m_col = 0, m_indent = 0, m_at_start = 1, m_s_ptr = 0;
+  bool m_e_stack[256]; for(int k=0; k<256; k++) m_e_stack[k] = false;
+  int m_a_stack[256]; for(int k=0; k<256; k++) m_a_stack[k] = -1;
+
   for (int i = 0; i < st->buffer.size; i++) {
-    if (st->buffer.data[i].type == TOKEN_ALIGN_GROUP_START) {
+    Token *main_t = &st->buffer.data[i];
+
+    if (main_t->type == TOKEN_ALIGN_GROUP_START) {
+      int base_indent = m_indent;
+      int base_s_ptr = m_s_ptr;
+
       int group_end = -1;
-      int depth = 1;
+      int align_depth = 1;
       for (int j = i + 1; j < st->buffer.size; j++) {
         if (st->buffer.data[j].type == TOKEN_ALIGN_GROUP_START) {
-          depth++;
+          align_depth++;
         }
         if (st->buffer.data[j].type == TOKEN_ALIGN_GROUP_END) {
-          depth--;
+          align_depth--;
         }
-        if (depth == 0) {
+        if (align_depth == 0) {
           group_end = j;
           break;
         }
       }
-      if (group_end == -1) {
-        continue;
-      }
 
-      // Sequential Channels: 1. Assignment, 2. Relational, then 3. Comments
-      TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL, TOKEN_ALIGN_COMMENT};
+      if (group_end != -1) {
+        TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL, TOKEN_ALIGN_COMMENT};
 
-      for (int c = 0; c < 3; c++) {
-        TokenType current_channel = channels[c];
-        int max_col = 0;
-        int channel_count = 0;
+        for (int c = 0; c < 3; c++) {
+          TokenType current_channel = channels[c];
+          int max_col = 0;
+          int channel_count = 0;
 
-        // Sub-pass 1: Measure current channel (clean simulation)
-        int col = 0, indent = 0, at_start = 1, s_ptr = 0;
-        int current_line = 0;
-        int last_aligned_line = -1;
-        bool e_stack[256];
-        e_stack[0] = false;
-        int a_stack[256];
-        a_stack[0] = -1;
+          // Sub-pass 1: Measure current channel (clean simulation)
+          int col = 0, indent = base_indent, at_start = 1, s_ptr = base_s_ptr;
+          int current_line = 0, last_aligned_line = -1;
+          bool e_stack[256];
+          for(int k=0; k<=base_s_ptr && k<256; k++) e_stack[k] = m_e_stack[k];
+          int a_stack[256];
+          for(int k=0; k<=base_s_ptr && k<256; k++) a_stack[k] = m_a_stack[k];
 
-        for (int j = i + 1; j < group_end; j++) {
-          Token *t = &st->buffer.data[j];
-
-          if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
-            current_line++;
-          }
-
-          if (t->type == current_channel) {
-            // Logic:
-            // 1. Only align the FIRST one on a line (last_aligned_line check)
-            // 2. For comments, only align if we are at the top-level indent (indent == 0)
-            if (current_line != last_aligned_line) {
-              if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
-                int actual_col = col;
-                if (at_start) {
-                  int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
-                  actual_col = baseline + (indent * st->indent_size);
-                }
-                if (actual_col > max_col) {
-                  max_col = actual_col;
-                }
-                last_aligned_line = current_line;
-                channel_count++;
-              }
-            }
-          }
-          simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, TOKEN_TEXT);
-        }
-
-        // Sub-pass 2: Set target columns for current channel
-        // Only align if there are at least two instances to align with each other
-        if (channel_count > 1) {
-          col = 0;
-          indent = 0;
-          at_start = 1;
-          s_ptr = 0;
-          a_stack[0] = -1;
-          current_line = 0;
-          last_aligned_line = -1;
           for (int j = i + 1; j < group_end; j++) {
             Token *t = &st->buffer.data[j];
 
@@ -409,26 +375,78 @@ void prpfmt_solve(struct PrpfmtState *st) {
             }
 
             if (t->type == current_channel) {
-              if (current_line != last_aligned_line) {
-                if (current_channel != TOKEN_ALIGN_COMMENT || indent == 0) {
+              // Logic:
+              // 1. Only align the FIRST one on a line (last_aligned_line check)
+              // 2. Only align if we are at the BASE baseline (indent == base_indent, s_ptr == base_s_ptr)
+              //    (We allow s_ptr to be up to base_s_ptr + 2 for assignments)
+              if (current_line != last_aligned_line && indent == base_indent && s_ptr <= base_s_ptr + 2) {
+                if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
                   int actual_col = col;
                   if (at_start) {
                     int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
                     actual_col = baseline + (indent * st->indent_size);
                   }
-                  if (max_col > actual_col && max_col - actual_col < 25) {
-                    t->target_col = max_col;
+
+                  int measure_val = actual_col;
+                  if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL) {
+                    if (t->text) {
+                      measure_val += strlen(t->text);
+                    }
+                  }
+
+                  if (measure_val > max_col) {
+                    max_col = measure_val;
                   }
                   last_aligned_line = current_line;
+                  channel_count++;
                 }
               }
             }
-            simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
+            simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, TOKEN_TEXT);
+          }
+
+          // Sub-pass 2: Set target columns for current channel
+          if (channel_count > 1) {
+            col = 0; indent = base_indent; at_start = 1; s_ptr = base_s_ptr;
+            for(int k=0; k<=base_s_ptr && k<256; k++) a_stack[k] = m_a_stack[k];
+            current_line = 0; last_aligned_line = -1;
+            for (int j = i + 1; j < group_end; j++) {
+              Token *t = &st->buffer.data[j];
+
+              if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
+                current_line++;
+              }
+
+              if (t->type == current_channel) {
+                if (current_line != last_aligned_line && indent == base_indent && s_ptr <= base_s_ptr + 2) {
+                  if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
+                    int actual_col = col;
+                    if (at_start) {
+                      int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+                      actual_col = baseline + (indent * st->indent_size);
+                    }
+
+                    int target = max_col;
+                    if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL) {
+                      if (t->text) {
+                        target -= strlen(t->text);
+                      }
+                    }
+
+                    if (target > actual_col && target - actual_col < 25) {
+                      t->target_col = target;
+                    }
+                    last_aligned_line = current_line;
+                  }
+                }
+              }
+              simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
+            }
           }
         }
       }
-      i = group_end;
     }
+    simulate_step(main_t, &m_col, &m_indent, &m_at_start, st->indent_size, m_e_stack, m_a_stack, &m_s_ptr, TOKEN_TEXT);
   }
 }
 

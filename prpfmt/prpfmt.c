@@ -54,6 +54,28 @@ static bool is_alignable(TSNode node) {
   }
 }
 
+static bool is_inline_eligible(TSNode node) {
+  if (has_recursive_comment(node)) {
+    return false;
+  }
+
+  uint32_t named_child_count = 0;
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    if (symbol == sym_stmt_list) {
+      named_child_count += ts_node_named_child_count(child);
+    } else if (ts_node_is_named(child)) {
+      named_child_count++;
+    }
+  }
+
+  return named_child_count <= 1;
+}
+
 static bool has_blank_line_between(TSNode prev, TSNode curr) {
   if (ts_node_is_null(prev) || ts_node_is_null(curr)) {
     return false;
@@ -446,9 +468,6 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
 
 void print_tuple(TSNode node, PrpfmtState *st) {
   emit_group_start(st);
-  if (has_recursive_comment(node)) {
-    emit_force_break(st);
-  }
 
   uint32_t child_count = ts_node_child_count(node);
   for (uint32_t i = 0; i < child_count; i++) {
@@ -463,9 +482,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
         emit_token(st, ")");
         break;
       case sym_comment:
-        emit_force_break(st);
         print_comment(child, st);
-        emit_force_break(st);
         break;
       default:
         print__tuple_list(child, st);
@@ -477,9 +494,6 @@ void print_tuple(TSNode node, PrpfmtState *st) {
 
 void print_tuple_sq(TSNode node, PrpfmtState *st) {
   emit_group_start(st);
-  if (has_recursive_comment(node)) {
-    emit_force_break(st);
-  }
 
   uint32_t child_count = ts_node_child_count(node);
   for (uint32_t i = 0; i < child_count; i++) {
@@ -494,9 +508,7 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
         emit_token(st, "]");
         break;
       case sym_comment:
-        emit_force_break(st);
         print_comment(child, st);
-        emit_force_break(st);
         break;
       default:
         print__tuple_list(child, st);
@@ -511,8 +523,17 @@ void print__tuple_list(TSNode node, PrpfmtState *st) {
 
   switch (symbol) {
     case anon_sym_COMMA:
-      emit_token(st, ",");
-      emit_break_point(st, 10);
+      {
+        TSNode prev = ts_node_prev_sibling(node);
+        if (!ts_node_is_null(prev) && ts_node_end_point(prev).row < ts_node_start_point(node).row) {
+          // Leading comma: keep it with the next item
+          emit_token(st, ", ");
+        } else {
+          // Normal comma: add a break point after
+          emit_token(st, ",");
+          emit_break_point(st, 10);
+        }
+      }
       break;
     default:
       print__tuple_item(node, st, SPACE_NONE);
@@ -599,7 +620,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
         break;
       case sym_scope_statement:
         emit_space(st);
-        print_scope_statement(child, st, is_inline);
+        print_scope_statement(child, st, is_inline && is_inline_eligible(child));
         has_init = false;
         break;
       case sym_comment:
@@ -1322,10 +1343,38 @@ void print_enum_definition(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_enum:
-        emit_token(st, "enum ");
+        {
+          bool next_is_paren = false;
+          if (i + 1 < child_count) {
+            TSNode next = ts_node_child(node, i + 1);
+            TSSymbol s = ts_node_grammar_symbol(next);
+            if (s == sym_arg_list || s == sym_tuple) {
+              next_is_paren = true;
+            }
+          }
+          if (next_is_paren) {
+            emit_token(st, "enum");
+          } else {
+            emit_token(st, "enum ");
+          }
+        }
         break;
       case anon_sym_variant:
-        emit_token(st, "variant ");
+        {
+          bool next_is_paren = false;
+          if (i + 1 < child_count) {
+            TSNode next = ts_node_child(node, i + 1);
+            TSSymbol s = ts_node_grammar_symbol(next);
+            if (s == sym_arg_list || s == sym_tuple) {
+              next_is_paren = true;
+            }
+          }
+          if (next_is_paren) {
+            emit_token(st, "variant");
+          } else {
+            emit_token(st, "variant ");
+          }
+        }
         break;
       case sym_arg_list:
         print_arg_list(child, st);
@@ -1428,7 +1477,7 @@ void print_lambda(TSNode node, PrpfmtState *st) {
         break;
       case sym_scope_statement:
         emit_space(st);
-        print_scope_statement(child, st, false);
+        print_scope_statement(child, st, is_inline_eligible(child));
         break;
       case sym_comment:
         print_comment(child, st);
