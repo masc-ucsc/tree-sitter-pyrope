@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
                     "Run: `tree-sitter parse -c /path/to/file` and look"
                     " for MISSING or ERROR nodes.\n");
     cleanup(source_code, tree, parser, outfile);
-    exit(1);
+    exit(2);
   }
 // Initialize state
 PrpfmtState state = {
@@ -225,5 +225,5 @@ PrpfmtState state = {
   // Free memory
   cleanup(source_code, tree, parser, outfile);
 
-  return parse_error ? 1 : 0;
+  return parse_error ? 3 : 0;
 }
