@@ -6,12 +6,13 @@
 #include "prpfmt.h"
 
 void print_help() {
-  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>]\n");
+  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>] [-v]\n");
   printf("       ./prpfmt [-h | --help]\n\n");
   printf("Options:\n");
   printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
   printf("  -i, --indent <n>  Specify the indentation size (default: 4).\n");
   printf("  -w, --width <n>   Specify the maximum line width (default: 80).\n");
+  printf("  -v, --verify      Verify that the formatted output is still parseable.\n");
   printf("  -h, --help        Display this help message.\n");
 }
 
@@ -86,6 +87,7 @@ int main(int argc, char **argv) {
   char *outfile_path = NULL;
   int indent_size = 4;
   int max_width = 80;
+  bool verify_output = false;
 
   // Parse for -o, -i, -w options
   for (int i = 2; i < argc; i++) {
@@ -116,6 +118,8 @@ int main(int argc, char **argv) {
         print_help();
         exit(1);
       }
+    } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verify") == 0) {
+      verify_output = true;
     } else {
       fprintf(stderr, "Error: Invalid argument '%s'.\n", argv[i]);
       print_help();
@@ -172,11 +176,54 @@ PrpfmtState state = {
 
   print_description(tree, &state);
   prpfmt_solve(&state);
-  prpfmt_render(&state);
+
+  bool parse_error = false;
+  if (verify_output) {
+    // Render to a memory buffer first to verify the output
+    char *formatted_buf = NULL;
+    size_t formatted_size = 0;
+    FILE *mem_stream = open_memstream(&formatted_buf, &formatted_size);
+    if (!mem_stream) {
+      perror("open_memstream failed");
+      exit(1);
+    }
+
+    // Temporary swap outfile to capture render
+    state.outfile = mem_stream;
+    prpfmt_render(&state);
+    fclose(mem_stream);
+
+    // Verify the formatted output
+    TSTree *verify_tree = ts_parser_parse_string(parser, NULL, formatted_buf, formatted_size);
+    TSNode verify_root = ts_tree_root_node(verify_tree);
+    parse_error = ts_node_has_error(verify_root);
+    
+    // Now write to the actual destination
+    if (outfile == stdout) {
+      printf("%s", formatted_buf);
+    } else {
+      fwrite(formatted_buf, 1, formatted_size, outfile);
+    }
+
+    if (parse_error) {
+      fprintf(stderr, "\n----------------------------------------------------------------\n");
+      fprintf(stderr, "WARNING: Formatted output contains PARSE ERRORS!\n");
+      fprintf(stderr, "This suggests an unsafe break or a bug in the formatter logic.\n");
+      fprintf(stderr, "Please check the output carefully.\n");
+      fprintf(stderr, "----------------------------------------------------------------\n\n");
+    }
+
+    ts_tree_delete(verify_tree);
+    free(formatted_buf);
+  } else {
+    // Direct rendering to outfile
+    prpfmt_render(&state);
+  }
+
   prpfmt_free_buffer(&state);
 
   // Free memory
   cleanup(source_code, tree, parser, outfile);
 
-  return 0;
+  return parse_error ? 1 : 0;
 }

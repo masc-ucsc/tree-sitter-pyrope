@@ -224,10 +224,12 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
       break;
     */
     case anon_sym_wrap:
-      emit_token(st, "wrap ");
+      emit_token(st, "wrap");
+      emit_space(st);
       break;
     case anon_sym_sat:
-      emit_token(st, "sat ");
+      emit_token(st, "sat");
+      emit_space(st);
       break;
     case sym_assignment:
       print_assignment(node, st, SPACE_BOTH);
@@ -527,7 +529,8 @@ void print__tuple_list(TSNode node, PrpfmtState *st) {
         TSNode prev = ts_node_prev_sibling(node);
         if (!ts_node_is_null(prev) && ts_node_end_point(prev).row < ts_node_start_point(node).row) {
           // Leading comma: keep it with the next item
-          emit_token(st, ", ");
+          emit_token(st, ",");
+          emit_space(st);
         } else {
           // Normal comma: add a break point after
           emit_token(st, ",");
@@ -586,7 +589,8 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
 
     switch (symbol) {
       case anon_sym_unique:
-        emit_token(st, "unique ");
+        emit_token(st, "unique");
+        emit_space(st);
         break;
       case anon_sym_if:
         emit_token(st, "if");
@@ -1218,7 +1222,8 @@ void print_lvalue_list(TSNode node, PrpfmtState *st) {
         print_comment(child, st);
         break;
       case anon_sym_COMMA:
-        emit_token(st, ", ");
+        emit_token(st, ",");
+        emit_space(st);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1301,10 +1306,12 @@ void print_enum_assignment(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_enum:
-        emit_token(st, "enum ");
+        emit_token(st, "enum");
+        emit_space(st);
         break;
       case anon_sym_variant:
-        emit_token(st, "variant ");
+        emit_token(st, "variant");
+        emit_space(st);
         break;
       case sym_identifier:
         print_identifier(child, st);
@@ -1355,7 +1362,8 @@ void print_enum_definition(TSNode node, PrpfmtState *st) {
           if (next_is_paren) {
             emit_token(st, "enum");
           } else {
-            emit_token(st, "enum ");
+            emit_token(st, "enum");
+            emit_space(st);
           }
         }
         break;
@@ -1372,7 +1380,8 @@ void print_enum_definition(TSNode node, PrpfmtState *st) {
           if (next_is_paren) {
             emit_token(st, "variant");
           } else {
-            emit_token(st, "variant ");
+            emit_token(st, "variant");
+            emit_space(st);
           }
         }
         break;
@@ -1406,7 +1415,8 @@ void print_spawn_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_spawn:
-        emit_token(st, "spawn ");
+        emit_token(st, "spawn");
+        emit_space(st);
         break;
       case sym_identifier:
         print_identifier(child, st);
@@ -1581,17 +1591,21 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
         emit_token(st, "...");
         break;
       case anon_sym_ref:
-        emit_token(st, "ref ");
+        emit_token(st, "ref");
+        emit_space(st);
         break;
       case anon_sym_const:
-        emit_token(st, "const ");
+        emit_token(st, "const");
+        emit_space(st);
         break;
       case anon_sym_mut:
-        emit_token(st, "mut ");
+        emit_token(st, "mut");
+        emit_space(st);
         break;
       case alias_sym_reg_decl:
       case anon_sym_reg:
-        emit_token(st, "reg ");
+        emit_token(st, "reg");
+        emit_space(st);
         break;
       case sym_typed_identifier:
         print_typed_identifier(child, st);
@@ -1970,7 +1984,8 @@ void print_unary_expression(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_not:
-        emit_token(st, "not ");
+        emit_token(st, "not");
+        emit_space(st);
         break;
       case anon_sym_BANG:
         emit_token(st, "!");
@@ -2172,7 +2187,8 @@ void print_for_comprehension(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_for:
-        emit_token(st, "for ");
+        emit_token(st, "for");
+        emit_space(st);
         break;
       case anon_sym_in:
         emit_space(st);
@@ -2531,7 +2547,8 @@ void print_type_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_type:
-        emit_token(st, "type ");
+        emit_token(st, "type");
+        emit_space(st);
         break;
       case sym_identifier:
         print_identifier(child, st);
@@ -2645,7 +2662,8 @@ void print_typed_identifier_list(TSNode node, PrpfmtState *st) {
         print_typed_identifier(child, st);
         break;
       case anon_sym_COMMA:
-        emit_token(st, ", ");
+        emit_token(st, ",");
+        emit_space(st);
         break;
       case sym_comment:
         print_comment(child, st);
@@ -2668,7 +2686,8 @@ void print_ref_identifier(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_ref:
-        emit_token(st, "ref ");
+        emit_token(st, "ref");
+        emit_space(st);
         break;
       case sym_comment:
         print_comment(child, st);
@@ -2766,17 +2785,21 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_comptime:
-        emit_token(st, "comptime ");
+        emit_token(st, "comptime");
+        emit_space(st);
         break;
       case anon_sym_const:
-        emit_token(st, "const ");
+        emit_token(st, "const");
+        emit_space(st);
         break;
       case anon_sym_mut:
-        emit_token(st, "mut ");
+        emit_token(st, "mut");
+        emit_space(st);
         break;
       case anon_sym_reg:
       case alias_sym_reg_decl:
-        emit_token(st, "reg ");
+        emit_token(st, "reg");
+        emit_space(st);
         break;
       case sym_await_decl:
         print_await_decl(child, st);
@@ -3004,7 +3027,8 @@ void print_import_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_import:
-        emit_token(st, "import ");
+        emit_token(st, "import");
+        emit_space(st);
         break;
       case anon_sym_as:
         emit_space(st);
@@ -3049,7 +3073,8 @@ void print_impl_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_impl:
-        emit_token(st, "impl ");
+        emit_token(st, "impl");
+        emit_space(st);
         break;
       case anon_sym_for:
         emit_space(st);
@@ -3125,16 +3150,20 @@ void print_assert_statement(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case anon_sym_always:
-        emit_token(st, "always ");
+        emit_token(st, "always");
+        emit_space(st);
         break;
       case anon_sym_assert:
-        emit_token(st, "assert ");
+        emit_token(st, "assert");
+        emit_space(st);
         break;
       case anon_sym_cassert:
-        emit_token(st, "cassert ");
+        emit_token(st, "cassert");
+        emit_space(st);
         break;
       case anon_sym_COMMA:
-        emit_token(st, ", ");
+        emit_token(st, ",");
+        emit_space(st);
         break;
       case sym_string_literal:
       case sym_interpolated_string_literal:
