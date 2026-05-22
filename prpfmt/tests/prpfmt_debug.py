@@ -53,15 +53,15 @@ def run_interactive_loop(files_to_test, prpfmt_executable):
     print(f"\nExecutable: {prpfmt_executable} (Last compiled: {last_compiled_time})")
     print("Interactive Mode:")
     print("  - [Enter]: Next file")
-    print("  - [Index]: Type 0-{0} to jump to that index".format(len(files_to_test)-1))
+    print("  - [Index]: Type 1-{0} to jump to that file".format(len(files_to_test)))
     print("  - [Name]: Type part of a filename to jump")
     print("  - [q]: Quit")
-    
+
     current_index = 0
     while current_index < len(files_to_test):
         file_path = files_to_test[current_index]
         filename = os.path.basename(file_path)
-        
+
         try:
             with open(file_path, 'r') as f:
                 original_content = f.read()
@@ -90,7 +90,7 @@ def run_interactive_loop(files_to_test, prpfmt_executable):
         display_side_by_side(original_content, formatted_content, file_path)
 
         while True:
-            prompt = f"({current_index}/{len(files_to_test)-1}) {filename} > Next (Enter), Jump, or Quit (q): "
+            prompt = f"({current_index + 1}/{len(files_to_test)}) {filename} > Next (Enter), Jump, or Quit (q): "
             user_input = input(prompt).strip()
             if user_input.lower() == 'q':
                 return
@@ -98,7 +98,7 @@ def run_interactive_loop(files_to_test, prpfmt_executable):
                 current_index += 1
                 break
             elif user_input.isdigit():
-                target_idx = int(user_input)
+                target_idx = int(user_input) - 1 # Adjusted for 1-based user input
                 if 0 <= target_idx < len(files_to_test):
                     current_index = target_idx
                     break
