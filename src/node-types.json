@@ -1931,16 +1931,6 @@
     "type": "function_definition_decl",
     "named": true,
     "fields": {
-      "capture": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "tuple_sq",
-            "named": true
-          }
-        ]
-      },
       "generic": {
         "multiple": true,
         "required": false,

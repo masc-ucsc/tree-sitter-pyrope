@@ -391,12 +391,8 @@ module.exports = grammar({
       field('name', $.identifier)
       , field('value', optseq('=', choice($._expression, $.ref_identifier)))
     )))), ']')
-    // Overparse: the `[...]` slot is a comptime-parameter list; entries must
-    // declare a `:Type`. The grammar accepts old capture-list shapes.
-    // See grammar_overparse.md #4.
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('capture', optseq($.tuple_sq))
       , field('pipe_config', optional($._attr_prefix))
       , field('input', $.arg_list)
       , field('output', optseq('->', choice(

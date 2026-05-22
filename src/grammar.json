@@ -1976,27 +1976,6 @@
         },
         {
           "type": "FIELD",
-          "name": "capture",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "tuple_sq"
-                  }
-                ]
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          }
-        },
-        {
-          "type": "FIELD",
           "name": "pipe_config",
           "content": {
             "type": "CHOICE",
