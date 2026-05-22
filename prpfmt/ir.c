@@ -88,9 +88,10 @@ void emit_indent_dec(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_group_start(struct PrpfmtState *st) {
+void emit_group_start(struct PrpfmtState *st, bool propagate) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_START, NULL);
+  st->buffer.data[st->buffer.size].propagate = propagate;
   st->buffer.size++;
 }
 
@@ -154,6 +155,12 @@ static bool has_recent_break(struct PrpfmtState *st) {
     }
   }
   return true; // Start of buffer is a break
+}
+
+void emit_anchor_off(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ANCHOR_OFF, NULL);
+  st->buffer.size++;
 }
 
 void emit_line_break(struct PrpfmtState *st) {
@@ -221,6 +228,11 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
         anc_stack[*stack_ptr] = *col;
       }
       break;
+    case TOKEN_ANCHOR_OFF:
+      if (*stack_ptr >= 0) {
+        anc_stack[*stack_ptr] = -1;
+      }
+      break;
     case TOKEN_SPACE:
       (*col)++;
       break;
@@ -270,81 +282,104 @@ void prpfmt_solve(struct PrpfmtState *st) {
   // Pass 1: Decide explosion status for groups
   for (int i = 0; i < st->buffer.size; i++) {
     if (st->buffer.data[i].type == TOKEN_GROUP_START) {
-      int flat_length = 0;
-      int explode_cost = 0;
-      bool force_explode = false;
-      int depth = 1;
-      for (int j = i + 1; j < st->buffer.size; j++) {
-        Token *t = &st->buffer.data[j];
-        if (t->type == TOKEN_GROUP_START) {
-          depth++;
-        }
-        if (t->type == TOKEN_GROUP_END) {
-          depth--;
-        }
-        if (depth == 0) {
-          break;
-        }
-        switch (t->type) {
-          case TOKEN_TEXT:
-          case TOKEN_ALIGN_OPERATOR:
-          case TOKEN_ALIGN_RELATIONAL:
-            if (t->text) {
-              flat_length += strlen(t->text);
-            }
-            break;
-          case TOKEN_ALIGN_COMMENT: {
-            bool has_more = false;
-            int inner_depth = 0;
-            for (int k = j + 1; k < st->buffer.size; k++) {
-              TokenType nt = st->buffer.data[k].type;
-              if (nt == TOKEN_GROUP_START) {
-                inner_depth++;
-              }
-              if (nt == TOKEN_GROUP_END) {
-                if (inner_depth == 0) {
-                  break;
-                }
-                inner_depth--;
-              }
-              if (nt == TOKEN_TEXT || nt == TOKEN_ALIGN_OPERATOR || nt == TOKEN_ALIGN_COMMENT) {
-                has_more = true;
-                break;
-              }
-            }
-            if (has_more) {
-              force_explode = true;
-            }
+      if (!st->buffer.data[i].exploded) {
+        int flat_length = 0;
+        int explode_cost = 0;
+        bool force_explode = false;
+        int depth = 1;
+        for (int j = i + 1; j < st->buffer.size; j++) {
+          Token *t = &st->buffer.data[j];
+          if (t->type == TOKEN_GROUP_START) {
+            depth++;
+          }
+          if (t->type == TOKEN_GROUP_END) {
+            depth--;
+          }
+          if (depth == 0) {
             break;
           }
-          case TOKEN_SPACE:
-            flat_length += 1;
+          switch (t->type) {
+            case TOKEN_TEXT:
+            case TOKEN_ALIGN_OPERATOR:
+            case TOKEN_ALIGN_RELATIONAL:
+              if (t->text) {
+                flat_length += strlen(t->text);
+              }
+              break;
+            case TOKEN_ALIGN_COMMENT: {
+              bool has_more = false;
+              int inner_depth = 0;
+              for (int k = j + 1; k < st->buffer.size; k++) {
+                TokenType nt = st->buffer.data[k].type;
+                if (nt == TOKEN_GROUP_START) {
+                  inner_depth++;
+                }
+                if (nt == TOKEN_GROUP_END) {
+                  if (inner_depth == 0) {
+                    break;
+                  }
+                  inner_depth--;
+                }
+                if (nt == TOKEN_TEXT ||
+                    nt == TOKEN_ALIGN_OPERATOR ||
+                    nt == TOKEN_ALIGN_COMMENT) {
+                  has_more = true;
+                  break;
+                }
+              }
+              if (has_more) {
+                force_explode = true;
+              }
+              break;
+            }
+            case TOKEN_SPACE:
+              flat_length += 1;
+              break;
+            case TOKEN_BREAK_POINT:
+              flat_length += 1;
+              explode_cost += t->penalty;
+              break;
+            case TOKEN_SOFT_BREAK:
+              explode_cost += t->penalty;
+              break;
+            case TOKEN_FORCE_BREAK:
+            case TOKEN_NEWLINE:
+              force_explode = true;
+              break;
+            default:
+              break;
+          }
+          if (force_explode) {
             break;
-          case TOKEN_BREAK_POINT:
-            flat_length += 1;
-            explode_cost += t->penalty;
-            break;
-          case TOKEN_SOFT_BREAK:
-            explode_cost += t->penalty;
-            break;
-          case TOKEN_FORCE_BREAK:
-          case TOKEN_NEWLINE:
-            force_explode = true;
-            break;
-          default:
-            break;
+          }
         }
+
         if (force_explode) {
-          break;
+          st->buffer.data[i].exploded = true;
+        } else {
+          int overflow = flat_length - st->max_width;
+          long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
+          st->buffer.data[i].exploded = (flat_cost > explode_cost);
         }
       }
 
-      if (force_explode) {
-        st->buffer.data[i].exploded = true;
-      } else {
-        int overflow = flat_length - st->max_width;
-        long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
-        st->buffer.data[i].exploded = (flat_cost > explode_cost);
+      // If this group exploded and has propagate=true, force all nested groups to explode
+      if (st->buffer.data[i].exploded &&
+          st->buffer.data[i].propagate) {
+        int inner_depth = 1;
+        for (int j = i + 1; j < st->buffer.size; j++) {
+          Token *t = &st->buffer.data[j];
+          if (t->type == TOKEN_GROUP_START) {
+            inner_depth++;
+            t->exploded = true;
+          }
+          if (t->type == TOKEN_GROUP_END) {
+            inner_depth--;
+          }
+          if (inner_depth == 0) {
+            break;
+          }
+        }
       }
     }
   }
@@ -537,6 +572,11 @@ void prpfmt_render(struct PrpfmtState *st) {
       case TOKEN_ANCHOR:
         if (stack_ptr >= 0) {
           anchor_stack[stack_ptr] = current_col;
+        }
+        break;
+      case TOKEN_ANCHOR_OFF:
+        if (stack_ptr >= 0) {
+          anchor_stack[stack_ptr] = -1;
         }
         break;
       case TOKEN_SPACE:
