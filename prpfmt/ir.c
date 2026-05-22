@@ -56,7 +56,7 @@ void emit_space(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_newline(struct PrpfmtState *st) {
+void emit_blank_line(struct PrpfmtState *st) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_NEWLINE, NULL);
   st->buffer.size++;
@@ -136,10 +136,38 @@ void emit_anchor(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
+static bool has_recent_break(struct PrpfmtState *st) {
+  for (int i = st->buffer.size - 1; i >= 0; i--) {
+    TokenType type = st->buffer.data[i].type;
+    if (type == TOKEN_NEWLINE ||
+        type == TOKEN_FORCE_BREAK ||
+        type == TOKEN_BREAK_POINT ||
+        type == TOKEN_SOFT_BREAK) {
+      return true;
+    }
+    if (type == TOKEN_TEXT ||
+        type == TOKEN_SPACE ||
+        type == TOKEN_ALIGN_OPERATOR ||
+        type == TOKEN_ALIGN_RELATIONAL ||
+        type == TOKEN_ALIGN_COMMENT) {
+      return false;
+    }
+  }
+  return true; // Start of buffer is a break
+}
+
+void emit_line_break(struct PrpfmtState *st) {
+  if (!has_recent_break(st)) {
+    emit_blank_line(st);
+  }
+}
+
 void emit_force_break(struct PrpfmtState *st) {
-  ensure_capacity(st);
-  init_token(&st->buffer.data[st->buffer.size], TOKEN_FORCE_BREAK, NULL);
-  st->buffer.size++;
+  if (!has_recent_break(st)) {
+    ensure_capacity(st);
+    init_token(&st->buffer.data[st->buffer.size], TOKEN_FORCE_BREAK, NULL);
+    st->buffer.size++;
+  }
 }
 
 void prpfmt_free_buffer(struct PrpfmtState *st) {
@@ -200,9 +228,6 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
     case TOKEN_FORCE_BREAK:
       *col = 0;
       *at_start = 1;
-      if (*stack_ptr >= 0) {
-        anc_stack[*stack_ptr] = -1;
-      }
       break;
     case TOKEN_BREAK_POINT:
       if (is_exploded) {
@@ -378,8 +403,10 @@ void prpfmt_solve(struct PrpfmtState *st) {
               // Logic:
               // 1. Only align the FIRST one on a line (last_aligned_line check)
               // 2. Only align if we are at the BASE baseline (indent == base_indent, s_ptr == base_s_ptr)
-              //    (We allow s_ptr to be up to base_s_ptr + 2 for assignments)
-              if (current_line != last_aligned_line && indent == base_indent && s_ptr <= base_s_ptr + 2) {
+              //    (We allow s_ptr to be up to base_s_ptr + 3 for assignments and assertions)
+              if (current_line != last_aligned_line &&
+                  indent == base_indent &&
+                  s_ptr <= base_s_ptr + 3) {
                 if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
                   int actual_col = col;
                   if (at_start) {
@@ -418,7 +445,9 @@ void prpfmt_solve(struct PrpfmtState *st) {
               }
 
               if (t->type == current_channel) {
-                if (current_line != last_aligned_line && indent == base_indent && s_ptr <= base_s_ptr + 2) {
+                if (current_line != last_aligned_line &&
+                    indent == base_indent &&
+                    s_ptr <= base_s_ptr + 3) {
                   if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
                     int actual_col = col;
                     if (at_start) {
@@ -521,9 +550,6 @@ void prpfmt_render(struct PrpfmtState *st) {
         fprintf(st->outfile, "\n");
         at_start_of_line = 1;
         current_col = 0;
-        if (stack_ptr >= 0) {
-          anchor_stack[stack_ptr] = -1;
-        }
         break;
       case TOKEN_BREAK_POINT:
         if (current_exploded) {

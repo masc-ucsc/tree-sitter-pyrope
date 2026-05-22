@@ -42,7 +42,7 @@ struct PrpfmtState;
 // Token IR Emitters
 void emit_token(struct PrpfmtState *st, const char *text);
 void emit_space(struct PrpfmtState *st);
-void emit_newline(struct PrpfmtState *st);
+void emit_blank_line(struct PrpfmtState *st);
 void emit_break_point(struct PrpfmtState *st, int penalty);
 void emit_soft_break(struct PrpfmtState *st, int penalty);
 void emit_indent_inc(struct PrpfmtState *st);
@@ -55,6 +55,7 @@ void emit_align_operator(struct PrpfmtState *st, const char *text);
 void emit_align_relational(struct PrpfmtState *st, const char *text);
 void emit_align_comment(struct PrpfmtState *st, const char *text);
 void emit_anchor(struct PrpfmtState *st);
+void emit_line_break(struct PrpfmtState *st);
 void emit_force_break(struct PrpfmtState *st);
 
 // Rendering

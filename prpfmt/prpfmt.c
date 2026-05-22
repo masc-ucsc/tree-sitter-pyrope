@@ -48,6 +48,9 @@ static bool is_alignable(TSNode node) {
     case sym_enum_assignment:
     case sym_type_statement:
     case sym_assert_statement:
+    case sym_typed_identifier:
+    case sym__tuple_list:
+    case sym__tuple_item:
       return true;
     default:
       return false;
@@ -85,18 +88,19 @@ static bool has_blank_line_between(TSNode prev, TSNode curr) {
 }
 
 static void emit_vertical_transition(PrpfmtState *st, TSNode curr, TSNode next, bool force_break) {
-  if (ts_node_start_point(next).row > ts_node_end_point(curr).row) {
+  if (ts_node_start_point(next).row >
+      ts_node_end_point(curr).row) {
     if (force_break) {
       emit_force_break(st);
     } else {
-      emit_newline(st);
+      emit_line_break(st);
     }
 
     if (has_blank_line_between(curr, next)) {
       if (force_break) {
         emit_force_break(st);
       } else {
-        emit_newline(st);
+        emit_blank_line(st);
       }
     }
   } else {
@@ -157,7 +161,7 @@ void print_description(TSTree *tree, PrpfmtState *st) {
     prev_child = child;
   }
   // EOF: trailing newline
-  emit_newline(st);
+  emit_blank_line(st);
 }
 
 
@@ -335,28 +339,45 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
       blank_line_after = has_blank_line_between(child, next);
     }
 
-    if (!is_inline && current_alignable && next_alignable && !blank_line_after && !in_align_group) {
+    if (!is_inline &&
+        current_alignable &&
+        next_alignable &&
+        !blank_line_after &&
+        !in_align_group) {
       emit_align_group_start(st);
       in_align_group = true;
+    }
+
+    // Vertical transitions from previous node
+    if (i > 0) {
+      TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+
+      // Special case: skip mandatory break if we are about to print a trailing comment
+      bool has_trailing_comment = false;
+      if (symbol == sym_comment &&
+          ts_node_start_point(child).row == ts_node_end_point(prev_child).row) {
+        has_trailing_comment = true;
+      }
+
+      if (has_trailing_comment) {
+        emit_space(st);
+      } else if (is_inline) {
+        emit_break_point(st, 10);
+      } else if (prev_sym == anon_sym_LBRACE ||
+                 symbol == anon_sym_RBRACE) {
+        emit_line_break(st);
+      } else {
+        emit_vertical_transition(st, prev_child, child, true);
+      }
     }
 
     switch (symbol) {
       case anon_sym_LBRACE:
         emit_token(st, "{");
-        if (is_inline) {
-          emit_break_point(st, 10);
-        } else {
-          emit_force_break(st);
-        }
         emit_indent_inc(st);
         break;
       case anon_sym_RBRACE:
         emit_indent_dec(st);
-        if (is_inline) {
-          emit_break_point(st, 10);
-        } else {
-          emit_force_break(st);
-        }
         emit_token(st, "}");
         break;
       case sym_when_unless_cond:
@@ -368,32 +389,17 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         } else {
           print__semicolon(child, st, SPACE_NONE);
         }
-        
-        if (is_inline) {
-          emit_break_point(st, 10);
-        } else {
-          emit_force_break(st);
-        }
+        break;
+      case sym_comment:
+        print_comment(child, st);
         break;
       default:
         was_raw = print__statement(child, st, prev_child, is_inline);
-
-        if (i + 1 < child_count && !was_raw) {
-          TSNode next = ts_node_child(node, i + 1);
-          TSSymbol next_sym = ts_node_grammar_symbol(next);
-
-          if (next_sym != anon_sym_RBRACE) {
-            if (is_inline) {
-              emit_break_point(st, 10);
-            } else {
-              emit_vertical_transition(st, child, next, true);
-            }
-          }
-        }
         break;
     }
 
-    if (in_align_group && (!next_alignable || blank_line_after)) {
+    if (in_align_group &&
+        (!next_alignable || blank_line_after)) {
       emit_align_group_end(st);
       in_align_group = false;
     }
@@ -472,24 +478,111 @@ void print_tuple(TSNode node, PrpfmtState *st) {
   emit_group_start(st);
 
   uint32_t child_count = ts_node_child_count(node);
+  TSNode prev_child = {0};
+  bool in_align_group = false;
+
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
-    switch (symbol) {
-      case anon_sym_LPAREN:
-        emit_token(st, "(");
-        emit_anchor(st); // Set anchor for hanging indent
-        break;
-      case anon_sym_RPAREN:
-        emit_token(st, ")");
-        break;
-      case sym_comment:
-        print_comment(child, st);
-        break;
-      default:
-        print__tuple_list(child, st);
-        break;
+
+    if (symbol == anon_sym_LPAREN) {
+      emit_token(st, "(");
+      emit_anchor(st); // Set anchor for hanging indent
+      prev_child = child;
+      continue;
     }
+
+    // Transitions for all nodes (including closing paren and comments)
+    if (symbol != sym_comment) {
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      } else {
+        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+        if (symbol != anon_sym_RPAREN &&
+            symbol != anon_sym_COMMA &&
+            prev_sym != anon_sym_LPAREN &&
+            prev_sym != anon_sym_COMMA) {
+          emit_space(st);
+        }
+      }
+    }
+
+    if (symbol == anon_sym_RPAREN) {
+      // Transitions for closing paren
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      }
+      emit_token(st, ")");
+    } else {
+      bool current_alignable = is_alignable(child);
+      bool next_alignable = false;
+      bool blank_line_after = false;
+
+      if (current_alignable) {
+        for (uint32_t j = i + 1; j < child_count; j++) {
+          TSNode next = ts_node_child(node, j);
+          TSSymbol next_sym = ts_node_grammar_symbol(next);
+          if (next_sym != anon_sym_COMMA &&
+              next_sym != sym_comment) {
+            if (next_sym != anon_sym_RPAREN) {
+              next_alignable = is_alignable(next);
+              blank_line_after = has_blank_line_between(child, next);
+            }
+            break;
+          }
+        }
+      }
+
+      if (current_alignable &&
+          next_alignable &&
+          !blank_line_after &&
+          !in_align_group) {
+        emit_align_group_start(st);
+        in_align_group = true;
+      }
+
+      // Final simplified transition logic: no soft breaks, just smart newlines or spaces.
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      } else {
+        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+        if (symbol != anon_sym_COMMA &&
+            prev_sym != anon_sym_LPAREN &&
+            prev_sym != anon_sym_COMMA) {
+          emit_space(st);
+        }
+      }
+
+      switch (symbol) {
+        case sym_comment:
+          print_comment(child, st);
+          break;
+        default:
+          print__tuple_list(child, st);
+          break;
+      }
+
+      // Keep group open for trailing comments
+      bool next_is_trailing_comment = false;
+      if (i + 1 < child_count) {
+        TSNode next = ts_node_child(node, i + 1);
+        if (ts_node_grammar_symbol(next) == sym_comment &&
+            ts_node_start_point(next).row == ts_node_end_point(child).row) {
+          next_is_trailing_comment = true;
+        }
+      }
+
+      if (in_align_group &&
+          symbol != anon_sym_COMMA &&
+          symbol != sym_comment &&
+          !next_is_trailing_comment &&
+          (!next_alignable || blank_line_after)) {
+        emit_align_group_end(st);
+        in_align_group = false;
+      }
+    }
+
+    prev_child = child;
   }
   emit_group_end(st);
 }
@@ -498,24 +591,96 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
   emit_group_start(st);
 
   uint32_t child_count = ts_node_child_count(node);
+  TSNode prev_child = {0};
+  bool in_align_group = false;
+
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
-    switch (symbol) {
-      case anon_sym_LBRACK:
-        emit_token(st, "[");
-        emit_anchor(st); // Set anchor for hanging indent
-        break;
-      case anon_sym_RBRACK:
-        emit_token(st, "]");
-        break;
-      case sym_comment:
-        print_comment(child, st);
-        break;
-      default:
-        print__tuple_list(child, st);
-        break;
+
+    if (symbol == anon_sym_LBRACK) {
+      emit_token(st, "[");
+      emit_anchor(st); // Set anchor for hanging indent
+      prev_child = child;
+      continue;
     }
+
+    if (symbol == anon_sym_RBRACK) {
+      // Transitions for closing bracket
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      }
+      emit_token(st, "]");
+    } else {
+      bool current_alignable = is_alignable(child);
+      bool next_alignable = false;
+      bool blank_line_after = false;
+
+      if (current_alignable) {
+        for (uint32_t j = i + 1; j < child_count; j++) {
+          TSNode next = ts_node_child(node, j);
+          TSSymbol next_sym = ts_node_grammar_symbol(next);
+          if (next_sym != anon_sym_COMMA &&
+              next_sym != sym_comment) {
+            if (next_sym != anon_sym_RBRACK) {
+              next_alignable = is_alignable(next);
+              blank_line_after = has_blank_line_between(child, next);
+            }
+            break;
+          }
+        }
+      }
+
+      if (current_alignable &&
+          next_alignable &&
+          !blank_line_after &&
+          !in_align_group) {
+        emit_align_group_start(st);
+        in_align_group = true;
+      }
+
+      // Final simplified transition logic: no soft breaks, just smart newlines or spaces.
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      } else {
+        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+        if (symbol != anon_sym_COMMA &&
+            prev_sym != anon_sym_LBRACK &&
+            prev_sym != anon_sym_COMMA) {
+          emit_space(st);
+        }
+      }
+
+      switch (symbol) {
+        case sym_comment:
+          print_comment(child, st);
+          break;
+        default:
+          print__tuple_list(child, st);
+          break;
+      }
+
+      // Keep group open for trailing comments
+      bool next_is_trailing_comment = false;
+      if (i + 1 < child_count) {
+        TSNode next = ts_node_child(node, i + 1);
+        if (ts_node_grammar_symbol(next) == sym_comment &&
+            ts_node_start_point(next).row == ts_node_end_point(child).row) {
+          next_is_trailing_comment = true;
+        }
+      }
+
+      if (in_align_group &&
+          symbol != anon_sym_COMMA &&
+          symbol != sym_comment &&
+          !next_is_trailing_comment &&
+          (!next_alignable || blank_line_after)) {
+        emit_align_group_end(st);
+        in_align_group = false;
+      }
+    }
+
+    prev_child = child;
   }
   emit_group_end(st);
 }
@@ -527,10 +692,11 @@ void print__tuple_list(TSNode node, PrpfmtState *st) {
     case anon_sym_COMMA:
       {
         TSNode prev = ts_node_prev_sibling(node);
-        if (!ts_node_is_null(prev) && ts_node_end_point(prev).row < ts_node_start_point(node).row) {
+        if (!ts_node_is_null(prev) &&
+            ts_node_end_point(prev).row < ts_node_start_point(node).row) {
           // Leading comma: keep it with the next item
           emit_token(st, ",");
-          emit_space(st);
+          // Leading comma: no space after leading comma
         } else {
           // Normal comma: add a break point after
           emit_token(st, ",");
@@ -674,13 +840,27 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
       case anon_sym_LBRACE:
         emit_space(st);
         emit_token(st, "{");
-        emit_newline(st);
+        {
+          bool has_trailing_comment = false;
+          if (i + 1 < child_count) {
+            TSNode next = ts_node_child(node, i + 1);
+            if (ts_node_grammar_symbol(next) == sym_comment &&
+                ts_node_start_point(next).row ==
+                    ts_node_start_point(child).row) {
+              has_trailing_comment = true;
+            }
+          }
+
+          if (!has_trailing_comment) {
+            emit_line_break(st);
+          }
+        }
         emit_indent_inc(st);
         seen_lbrace = true;
         break;
       case anon_sym_RBRACE:
         emit_indent_dec(st);
-        emit_newline(st); // Add newline before closing brace
+        emit_line_break(st); // Add newline before closing brace
         emit_token(st, "}");
         break;
       case sym_stmt_list:
@@ -1100,7 +1280,11 @@ void print_assignment(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
             if (spacing & SPACE_BEFORE) {
               emit_space(st);
             }
-            emit_align_operator(st, op_text);
+            if (spacing == SPACE_NONE) {
+              emit_token(st, op_text);
+            } else {
+              emit_align_operator(st, op_text);
+            }
             if (spacing & SPACE_AFTER) {
               emit_space(st);
             }
@@ -2995,12 +3179,16 @@ void print_comment_trailing(TSNode node, PrpfmtState *st) {
     check_format_directives(node_text, st);
     emit_space(st);
     emit_align_comment(st, node_text);
-    
-    // If it's a line comment and there's more code following, add a soft break.
-    // The solver will force an explosion, turning this into a newline.
-    if (strncmp(node_text, "//", 2) == 0 && !ts_node_is_null(ts_node_next_sibling(node))) {
-      emit_soft_break(st, 1);
+
+    // If it's a line comment and more code follows on a new line in source,
+    // we MUST ensure a newline exists so the next token isn't swallowed.
+    TSNode next = ts_node_next_sibling(node);
+    if (!ts_node_is_null(next) &&
+        strncmp(node_text, "//", 2) == 0 &&
+        ts_node_start_point(next).row > ts_node_end_point(node).row) {
+      emit_line_break(st);
     }
+
     free(node_text);
   }
 }
@@ -3337,7 +3525,7 @@ void preserve_whitespace(TSNode prev, TSNode curr, PrpfmtState *st) {
   if (curr_start.row > prev_end.row + 1) {
     uint32_t blank_lines = curr_start.row - prev_end.row - 1;
     for (uint32_t i = 0; i < blank_lines; i++) {
-      emit_newline(st);
+      emit_blank_line(st);
     }
   }
 }
