@@ -88,10 +88,9 @@ void emit_indent_dec(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_group_start(struct PrpfmtState *st, bool propagate) {
+void emit_group_start(struct PrpfmtState *st) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_START, NULL);
-  st->buffer.data[st->buffer.size].propagate = propagate;
   st->buffer.size++;
 }
 
@@ -360,25 +359,6 @@ void prpfmt_solve(struct PrpfmtState *st) {
           int overflow = flat_length - st->max_width;
           long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
           st->buffer.data[i].exploded = (flat_cost > explode_cost);
-        }
-      }
-
-      // If this group exploded and has propagate=true, force all nested groups to explode
-      if (st->buffer.data[i].exploded &&
-          st->buffer.data[i].propagate) {
-        int inner_depth = 1;
-        for (int j = i + 1; j < st->buffer.size; j++) {
-          Token *t = &st->buffer.data[j];
-          if (t->type == TOKEN_GROUP_START) {
-            inner_depth++;
-            t->exploded = true;
-          }
-          if (t->type == TOKEN_GROUP_END) {
-            inner_depth--;
-          }
-          if (inner_depth == 0) {
-            break;
-          }
         }
       }
     }

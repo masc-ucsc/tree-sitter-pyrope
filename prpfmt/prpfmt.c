@@ -97,11 +97,7 @@ static void emit_vertical_transition(PrpfmtState *st, TSNode curr, TSNode next, 
     }
 
     if (has_blank_line_between(curr, next)) {
-      if (force_break) {
-        emit_force_break(st);
-      } else {
-        emit_blank_line(st);
-      }
+      emit_blank_line(st);
     }
   } else {
     emit_space(st);
@@ -174,7 +170,7 @@ void print_description(TSTree *tree, PrpfmtState *st) {
  * Returns: true if raw text was printed, false otherwise.
  */
 bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_inline) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   TSSymbol symbol = ts_node_grammar_symbol(node);
 
   // Special Case: Comments handle their own transition/newline logic
@@ -319,7 +315,7 @@ void check_format_directives(const char *node_text, PrpfmtState *st) {
  */
 void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
-  emit_group_start(st, false);
+  emit_group_start(st);
   TSNode prev_child = {0};
   bool in_align_group = false;
 
@@ -441,7 +437,7 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
       in_align_group = true;
     }
 
-    emit_group_start(st, false);
+    emit_group_start(st);
 
     switch (symbol) {
       case sym_comment:
@@ -475,7 +471,7 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
 }
 
 void print_tuple(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
 
   uint32_t child_count = ts_node_child_count(node);
   TSNode prev_child = {0};
@@ -588,7 +584,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
 }
 
 void print_tuple_sq(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
 
   uint32_t child_count = ts_node_child_count(node);
   TSNode prev_child = {0};
@@ -744,7 +740,7 @@ void print__tuple_item(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
  ******************************************************************************/
 
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   emit_anchor(st);
   uint32_t child_count = ts_node_child_count(node);
 
@@ -813,7 +809,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
 
 
 void print_match_expression(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
   bool seen_lbrace = false;
   bool arm_started = false;
@@ -932,7 +928,7 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
 }
 
 void print_for_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
 
@@ -1013,7 +1009,7 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_while_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
 
@@ -1116,7 +1112,7 @@ void print_when_unless_cond(TSNode node, PrpfmtState *st) {
 }
 
 void print_loop_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1155,7 +1151,7 @@ void print_loop_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_control_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1183,7 +1179,7 @@ void print_control_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_return_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1220,7 +1216,7 @@ void print_return_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_break_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   (void)node;
   (void)st;
   emit_token(st, "break");
@@ -1228,7 +1224,7 @@ void print_break_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_continue_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   (void)node;
   (void)st;
   emit_token(st, "continue");
@@ -1240,7 +1236,7 @@ void print_continue_statement(TSNode node, PrpfmtState *st) {
  ******************************************************************************/
 
 void print_assignment(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1515,7 +1511,7 @@ void print_enum_assignment(TSNode node, PrpfmtState *st) {
 }
 
 void print_enum_definition(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1580,7 +1576,7 @@ void print_assignment_operator(TSNode node, PrpfmtState *st, SpacingConfig spaci
 }
 
 void print_spawn_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1626,7 +1622,7 @@ void print_spawn_statement(TSNode node, PrpfmtState *st) {
  ******************************************************************************/
 
 void print_lambda(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
   bool header_done = false;
 
@@ -1677,7 +1673,7 @@ void print_lambda(TSNode node, PrpfmtState *st) {
 }
 
 void print_function_definition_decl(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1731,7 +1727,7 @@ void print_function_definition_decl(TSNode node, PrpfmtState *st) {
 }
 
 void print_arg_list(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   if (has_recursive_comment(node)) {
     emit_force_break(st);
   }
@@ -2013,7 +2009,7 @@ void print_expression_item(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_times(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2043,7 +2039,7 @@ void print__binary_times(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_other(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2084,7 +2080,7 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_compare(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2127,7 +2123,7 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_logical(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2199,7 +2195,7 @@ void print_unary_expression(TSNode node, PrpfmtState *st) {
 }
 
 void print_dot_expression(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2332,7 +2328,7 @@ void print_type_cast(TSNode node, PrpfmtState *st) {
 }
 
 void print_expression_list(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   emit_indent_inc(st);
   uint32_t child_count = ts_node_child_count(node);
 
@@ -2469,7 +2465,7 @@ void print_bit_selection(TSNode node, PrpfmtState *st) {
 }
 
 void print_attribute_read(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2614,7 +2610,7 @@ void print_expression_type(TSNode node, PrpfmtState *st) {
 }
 
 void print_dot_expression_type(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -3306,7 +3302,7 @@ void print_impl_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_test_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, true);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -3340,7 +3336,7 @@ void print_test_statement(TSNode node, PrpfmtState *st) {
 
 void print_assert_statement(TSNode node, PrpfmtState *st) {
   st->in_assert = true;
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -3394,7 +3390,7 @@ void print_assert_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_attributes(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -3422,7 +3418,7 @@ void print_attributes(TSNode node, PrpfmtState *st) {
 }
 
 void print_attribute_list(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false);
+  emit_group_start(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
