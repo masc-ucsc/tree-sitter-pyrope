@@ -77,6 +77,12 @@ void emit_soft_break(struct PrpfmtState *st, int penalty) {
   st->buffer.size++;
 }
 
+void emit_soft_space(struct PrpfmtState *st) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_SOFT_SPACE, NULL);
+  st->buffer.size++;
+}
+
 void emit_indent_inc(struct PrpfmtState *st) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_INDENT_INC, NULL);
@@ -124,6 +130,12 @@ void emit_align_operator(struct PrpfmtState *st, const char *text) {
 void emit_align_relational(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_RELATIONAL, strdup(text));
+  st->buffer.size++;
+}
+
+void emit_align_math(struct PrpfmtState *st, const char *text) {
+  ensure_capacity(st);
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_MATH, strdup(text));
   st->buffer.size++;
 }
 
@@ -211,13 +223,14 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
       break;
     case TOKEN_ALIGN_OPERATOR:
     case TOKEN_ALIGN_RELATIONAL:
+    case TOKEN_ALIGN_MATH:
     case TOKEN_ALIGN_COMMENT:
       // Only apply padding if we are simulating this specific channel,
       // or if we are doing a full simulation (filter == TOKEN_TEXT)
       if (t->target_col > 0 && (channel_filter == TOKEN_TEXT || t->type == channel_filter)) {
         *col = t->target_col;
       }
-      if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && 
+      if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL || t->type == TOKEN_ALIGN_MATH) && 
           t->text && strcmp(t->text, ":") != 0 && *stack_ptr >= 0) {
         anc_stack[*stack_ptr] = *col;
       }
@@ -255,6 +268,11 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
       if (is_exploded) {
         *col = 0;
         *at_start = 1;
+      }
+      break;
+    case TOKEN_SOFT_SPACE:
+      if (is_exploded) {
+        (*col)++;
       }
       break;
     case TOKEN_INDENT_INC:
@@ -301,36 +319,34 @@ void prpfmt_solve(struct PrpfmtState *st) {
           Token *nt = &st->buffer.data[j];
           if (nt->type == TOKEN_GROUP_START) {
             depth++;
-            // If the child group is a firewall, don't count its contents for our flat length.
-            // It will be on its own line(s) anyway.
-            if (!nt->propagates) {
-              int inner_depth = 1;
-              while (inner_depth > 0 && j + 1 < st->buffer.size) {
-                j++;
-                if (st->buffer.data[j].type == TOKEN_GROUP_START) inner_depth++;
-                if (st->buffer.data[j].type == TOKEN_GROUP_END) inner_depth--;
-              }
-              depth--;
-              continue;
-            }
           }
-          if (nt->type == TOKEN_GROUP_END) depth--;
-          if (depth == 0) break;
+          if (nt->type == TOKEN_GROUP_END) {
+            depth--;
+          }
+          if (depth == 0) {
+            break;
+          }
           
           switch (nt->type) {
             case TOKEN_TEXT:
             case TOKEN_ALIGN_OPERATOR:
             case TOKEN_ALIGN_RELATIONAL:
-              if (nt->text) flat_length += strlen(nt->text);
+              if (nt->text) {
+                flat_length += strlen(nt->text);
+              }
               break;
             case TOKEN_ALIGN_COMMENT: {
               bool has_more = false;
               int inner_depth = 0;
               for (int k = j + 1; k < st->buffer.size; k++) {
                 TokenType next_t = st->buffer.data[k].type;
-                if (next_t == TOKEN_GROUP_START) inner_depth++;
+                if (next_t == TOKEN_GROUP_START) {
+                  inner_depth++;
+                }
                 if (next_t == TOKEN_GROUP_END) {
-                  if (inner_depth == 0) break;
+                  if (inner_depth == 0) {
+                    break;
+                  }
                   inner_depth--;
                 }
                 if (next_t == TOKEN_TEXT || next_t == TOKEN_ALIGN_OPERATOR || next_t == TOKEN_ALIGN_COMMENT) {
@@ -338,7 +354,9 @@ void prpfmt_solve(struct PrpfmtState *st) {
                   break;
                 }
               }
-              if (has_more) force_explode = true;
+              if (has_more) {
+                force_explode = true;
+              }
               break;
             }
             case TOKEN_SPACE:
@@ -357,7 +375,9 @@ void prpfmt_solve(struct PrpfmtState *st) {
               break;
             default: break;
           }
-          if (force_explode) break;
+          if (force_explode) {
+            break;
+          }
         }
 
         bool parent_exploded = (s_ptr >= 0) ? e_stack[s_ptr] : false;
@@ -365,7 +385,9 @@ void prpfmt_solve(struct PrpfmtState *st) {
 
         bool should_explode = force_explode;
         if (!should_explode) {
-          should_explode = (col + flat_length > st->max_width);
+          int overflow = (col + flat_length) - st->max_width;
+          long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
+          should_explode = (flat_cost > explode_cost);
         }
         if (!should_explode && parent_exploded && parent_propagates && t->propagates) {
           should_explode = true;
@@ -382,9 +404,13 @@ void prpfmt_solve(struct PrpfmtState *st) {
     // Manual sync for the propagation stack when simulate_step hits a group start/end
     if (t->type == TOKEN_GROUP_START) {
       s_ptr++;
-      if (s_ptr >= 0 && s_ptr < 256) p_stack[s_ptr] = t->propagates;
+      if (s_ptr >= 0 && s_ptr < 256) {
+        p_stack[s_ptr] = t->propagates;
+      }
     } else if (t->type == TOKEN_GROUP_END) {
-      if (s_ptr >= 0) s_ptr--;
+      if (s_ptr >= 0) {
+        s_ptr--;
+      }
     }
   }
 
@@ -416,9 +442,9 @@ void prpfmt_solve(struct PrpfmtState *st) {
       }
 
       if (group_end != -1) {
-        TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL, TOKEN_ALIGN_COMMENT};
+        TokenType channels[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL, TOKEN_ALIGN_MATH, TOKEN_ALIGN_COMMENT};
 
-        for (int c = 0; c < 3; c++) {
+        for (int c = 0; c < 4; c++) {
           TokenType current_channel = channels[c];
           int max_col = 0;
           int channel_count = 0;
@@ -441,11 +467,13 @@ void prpfmt_solve(struct PrpfmtState *st) {
             if (t->type == current_channel) {
               // Logic:
               // 1. Only align the FIRST one on a line (last_aligned_line check)
-              // 2. Only align if we are at the BASE baseline (indent == base_indent, s_ptr == base_s_ptr)
-              //    (We allow s_ptr to be up to base_s_ptr + 3 for assignments and assertions)
+              // 2. Only align if we are at the BASE baseline (indent == base_indent, s_ptr <= base_s_ptr + 3)
+              // 3. For MATH: Only align if we are at the START of a line (i.e. it wrapped).
+              bool is_math = (current_channel == TOKEN_ALIGN_MATH);
               if (current_line != last_aligned_line &&
                   indent == base_indent &&
-                  s_ptr <= base_s_ptr + 3) {
+                  s_ptr <= base_s_ptr + 3 &&
+                  (!is_math || at_start)) {
                 if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
                   int actual_col = col;
                   if (at_start) {
@@ -454,7 +482,7 @@ void prpfmt_solve(struct PrpfmtState *st) {
                   }
 
                   int measure_val = actual_col;
-                  if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL) {
+                  if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL || current_channel == TOKEN_ALIGN_MATH) {
                     if (t->text) {
                       measure_val += strlen(t->text);
                     }
@@ -484,9 +512,11 @@ void prpfmt_solve(struct PrpfmtState *st) {
               }
 
               if (t->type == current_channel) {
+                bool is_math = (current_channel == TOKEN_ALIGN_MATH);
                 if (current_line != last_aligned_line &&
                     indent == base_indent &&
-                    s_ptr <= base_s_ptr + 3) {
+                    s_ptr <= base_s_ptr + 3 &&
+                    (!is_math || at_start)) {
                   if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
                     int actual_col = col;
                     if (at_start) {
@@ -495,14 +525,27 @@ void prpfmt_solve(struct PrpfmtState *st) {
                     }
 
                     int target = max_col;
-                    if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL) {
+                    if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL || current_channel == TOKEN_ALIGN_MATH) {
                       if (t->text) {
                         target -= strlen(t->text);
                       }
                     }
 
-                    if (target > actual_col && target - actual_col < 25) {
-                      t->target_col = target;
+                    int padding = target - actual_col;
+                    bool allow_align = false;
+                    if (target > actual_col) {
+                      if (current_channel == TOKEN_ALIGN_COMMENT) {
+                        allow_align = (padding < 40);
+                      } else {
+                        int max_padding = actual_col / 4;
+                        if (max_padding < 4) {
+                          max_padding = 4;
+                        }
+                        allow_align = (padding <= max_padding);
+                      }
+                      if (allow_align) {
+                        t->target_col = target;
+                      }
                     }
                     last_aligned_line = current_line;
                   }
@@ -541,6 +584,7 @@ void prpfmt_render(struct PrpfmtState *st) {
       case TOKEN_TEXT:
       case TOKEN_ALIGN_OPERATOR:
       case TOKEN_ALIGN_RELATIONAL:
+      case TOKEN_ALIGN_MATH:
       case TOKEN_ALIGN_COMMENT:
         if (at_start_of_line) {
           int baseline = (current_anchor >= 0) ? current_anchor : 0;
@@ -561,7 +605,7 @@ void prpfmt_render(struct PrpfmtState *st) {
         }
 
         // If this is an alignment operator, it updates the anchor for its group
-        if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL) && 
+        if ((t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL || t->type == TOKEN_ALIGN_MATH) && 
             t->text && strcmp(t->text, ":") != 0) {
           if (stack_ptr >= 0) {
             anchor_stack[stack_ptr] = current_col;
@@ -610,6 +654,12 @@ void prpfmt_render(struct PrpfmtState *st) {
           fprintf(st->outfile, "\n");
           at_start_of_line = 1;
           current_col = 0;
+        }
+        break;
+      case TOKEN_SOFT_SPACE:
+        if (current_exploded && !at_start_of_line) {
+          fprintf(st->outfile, " ");
+          current_col++;
         }
         break;
       case TOKEN_INDENT_INC:

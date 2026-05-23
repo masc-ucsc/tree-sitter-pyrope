@@ -24,6 +24,31 @@ static bool has_trailing_comment(TSNode node) {
   return false;
 }
 
+static bool is_block_style_tuple(TSNode node) {
+  uint32_t child_count = ts_node_child_count(node);
+  TSNode prev = {0};
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    if (symbol == anon_sym_COMMA) {
+      TSNode prev_sib = ts_node_prev_sibling(child);
+      if (!ts_node_is_null(prev_sib) &&
+          ts_node_end_point(prev_sib).row < ts_node_start_point(child).row) {
+        return true;
+      }
+    }
+
+    if (!ts_node_is_null(prev)) {
+      if (ts_node_start_point(child).row > ts_node_end_point(prev).row) {
+        return true;
+      }
+    }
+    prev = child;
+  }
+  return false;
+}
+
 static bool is_alignable(TSNode node) {
   // Rule 1: Any node with a trailing comment is alignable (Clang-style)
   if (has_trailing_comment(node)) {
@@ -322,7 +347,6 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
-    bool was_raw = false;
 
     // Alignment logic for statements within scope
     bool current_alignable = is_alignable(child);
@@ -390,7 +414,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         print_comment(child, st);
         break;
       default:
-        was_raw = print__statement(child, st, prev_child, is_inline);
+        print__statement(child, st, prev_child, is_inline);
         break;
     }
 
@@ -472,6 +496,7 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
 
 void print_tuple(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, true);
+  bool is_block = is_block_style_tuple(node);
 
   uint32_t child_count = ts_node_child_count(node);
   TSNode prev_child = {0};
@@ -483,7 +508,13 @@ void print_tuple(TSNode node, PrpfmtState *st) {
 
     if (symbol == anon_sym_LPAREN) {
       emit_token(st, "(");
-      emit_anchor(st); // Set anchor for hanging indent
+      if (is_block) {
+        emit_anchor_off(st); // Disable inherited assignment anchor
+        emit_indent_inc(st);
+        emit_soft_break(st, 10);
+      } else {
+        emit_anchor(st); // Set anchor for hanging indent
+      }
       prev_child = child;
       continue;
     }
@@ -504,6 +535,10 @@ void print_tuple(TSNode node, PrpfmtState *st) {
     }
 
     if (symbol == anon_sym_RPAREN) {
+      if (is_block) {
+        emit_soft_break(st, 10);
+        emit_indent_dec(st);
+      }
       // Transitions for closing paren
       if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
         emit_line_break(st);
@@ -587,6 +622,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
 
 void print_tuple_sq(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, true);
+  bool is_block = is_block_style_tuple(node);
 
   uint32_t child_count = ts_node_child_count(node);
   TSNode prev_child = {0};
@@ -598,12 +634,22 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
 
     if (symbol == anon_sym_LBRACK) {
       emit_token(st, "[");
-      emit_anchor(st); // Set anchor for hanging indent
+      if (is_block) {
+        emit_anchor_off(st); // Disable inherited anchor
+        emit_indent_inc(st);
+        emit_soft_break(st, 10);
+      } else {
+        emit_anchor(st); // Set anchor for hanging indent
+      }
       prev_child = child;
       continue;
     }
 
     if (symbol == anon_sym_RBRACK) {
+      if (is_block) {
+        emit_soft_break(st, 10);
+        emit_indent_dec(st);
+      }
       // Transitions for closing bracket
       if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
         emit_line_break(st);
@@ -745,7 +791,6 @@ void print__tuple_item(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
 
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
   emit_group_start(st, false, true);
-  emit_anchor(st);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -761,13 +806,17 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
       case anon_sym_if:
         emit_token(st, "if");
         emit_space(st);
+        emit_anchor(st);
         break;
       case anon_sym_elif:
+        emit_anchor_off(st);
         emit_space(st);
         emit_token(st, "elif");
         emit_space(st);
+        emit_anchor(st);
         break;
       case anon_sym_else:
+        emit_anchor_off(st);
         emit_space(st);
         emit_token(st, "else");
         emit_space(st);
@@ -781,6 +830,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, is_inline && is_inline_eligible(child));
         break;
@@ -996,6 +1046,7 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
         print_expression_list(child, st);
         break;
       case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, false);
         break;
@@ -1052,6 +1103,7 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, false);
         break;
@@ -1138,6 +1190,7 @@ void print_loop_statement(TSNode node, PrpfmtState *st) {
         print_stmt_list(child, st);
         break;
       case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, false);
         break;
@@ -2015,7 +2068,7 @@ void print_expression_item(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_times(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false, false);
+  emit_group_start(st, false, true); // Symmetrical unit
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2025,12 +2078,21 @@ void print__binary_times(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_binary_times_op:
-        emit_operator(child, st, SPACE_NONE);
+        {
+          char *op_text = get_node_text(child, st->source_code);
+          emit_soft_break(st, 100);
+          emit_align_math(st, op_text); // Use MATH channel
+          emit_soft_space(st);
+          if (op_text) {
+            free(op_text);
+          }
+        }
         break;
       case sym_comment:
         print_comment(child, st);
         break;
       default:
+        emit_group_start(st, false, false); // FIREWALL
         if (fn && strcmp(fn, "operand") == 0) {
           print__expression(child, st, true);
         } else if (!ts_node_is_named(child)) {
@@ -2038,6 +2100,7 @@ void print__binary_times(TSNode node, PrpfmtState *st) {
         } else {
           print__expression(child, st, true);
         }
+        emit_group_end(st);
         break;
     }
   }
@@ -2045,7 +2108,7 @@ void print__binary_times(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_other(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false, false);
+  emit_group_start(st, false, true); // Symmetrical unit
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2062,16 +2125,20 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
             if (strcmp(op_text, "*") == 0 || strcmp(op_text, "/") == 0) {
               penalty = 100;
             }
-            free(op_text);
           }
           emit_break_point(st, penalty);
+          emit_align_math(st, op_text); // Use MATH channel
+          emit_space(st);
+          if (op_text) {
+            free(op_text);
+          }
         }
-        emit_operator(child, st, SPACE_AFTER);
         break;
       case sym_comment:
         print_comment(child, st);
         break;
       default:
+        emit_group_start(st, false, false); // FIREWALL
         if (fn && strcmp(fn, "operand") == 0) {
           print__expression(child, st, true);
         } else if (!ts_node_is_named(child)) {
@@ -2079,6 +2146,7 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
         } else {
           print__expression(child, st, true);
         }
+        emit_group_end(st);
         break;
     }
   }
@@ -2115,6 +2183,7 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
         print_comment(child, st);
         break;
       default:
+        emit_group_start(st, false, false); // FIREWALL
         if (fn && strcmp(fn, "operand") == 0) {
           print__expression(child, st, true);
         } else if (!ts_node_is_named(child)) {
@@ -2122,6 +2191,7 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
         } else {
           print__expression(child, st, true);
         }
+        emit_group_end(st);
         break;
     }
   }
@@ -2129,7 +2199,7 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
 }
 
 void print__binary_logical(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false, false);
+  emit_group_start(st, false, true); // Symmetrical unit
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2139,13 +2209,21 @@ void print__binary_logical(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_binary_logical_op:
-        emit_break_point(st, 20);
-        emit_operator(child, st, SPACE_AFTER);
+        {
+          char *op_text = get_node_text(child, st->source_code);
+          emit_break_point(st, 20);
+          emit_align_math(st, op_text);
+          emit_space(st);
+          if (op_text) {
+            free(op_text);
+          }
+        }
         break;
       case sym_comment:
         print_comment(child, st);
         break;
       default:
+        emit_group_start(st, false, false); // FIREWALL
         if (fn && strcmp(fn, "operand") == 0) {
           print__expression(child, st, true);
         } else if (!ts_node_is_named(child)) {
@@ -2153,6 +2231,7 @@ void print__binary_logical(TSNode node, PrpfmtState *st) {
         } else {
           print__expression(child, st, true);
         }
+        emit_group_end(st);
         break;
     }
   }
@@ -3324,6 +3403,7 @@ void print_test_statement(TSNode node, PrpfmtState *st) {
         print_expression_list(child, st);
         break;
       case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, false);
         break;
