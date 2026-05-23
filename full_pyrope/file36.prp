@@ -1,4 +1,4 @@
 const aa = 3
 const a = enum(,aa, ,b=3)
-cassert a==b
+cassert(a==b)
 

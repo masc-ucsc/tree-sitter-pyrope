@@ -1,8 +1,8 @@
 const x = (first=(second=3))
 
-cassert x.first.second == 3
-cassert x.first        == 3
-cassert x              == 3
-cassert x[0].second    == 3
-cassert x.first[0]     == 3
-cassert x[0]           == 3
+cassert(x.first.second == 3)
+cassert(x.first        == 3)
+cassert(x              == 3)
+cassert(x[0].second    == 3)
+cassert(x.first[0]     == 3)
+cassert(x[0]           == 3)

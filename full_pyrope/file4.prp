@@ -1,2 +1,2 @@
     mut c = mul(a,b)
-    assert c == past(a) * past(b) // compare against last-cycle a and b
+    assert(c == past(a) * past(b)) // compare against last-cycle a and b

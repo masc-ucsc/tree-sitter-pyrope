@@ -1,6 +1,6 @@
 mut (a,b) = (2,3)
-cassert a==2 and b==3
+cassert(a==2 and b==3)
 
 mut c = 1..=2      // OK
 mut (c,d) = (1,2)  // OK
-cassert c == 1 and d == 2
+cassert(c == 1 and d == 2)

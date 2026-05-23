@@ -3,7 +3,7 @@ mut a = (one:Person, two:Person)
 
 const x = ('two', 'one')
 a[x].age = (3,4)
-cassert a.one.age == 4 and a.two.age == 3
+cassert(a.one.age == 4 and a.two.age == 3)
 
 a[0,1].age = (10,20)
-cassert a.one.age == 10 and a.two.age == 20
+cassert(a.one.age == 10 and a.two.age == 20)

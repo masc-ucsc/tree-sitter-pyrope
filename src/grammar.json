@@ -80,10 +80,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "function_call_statement"
-          },
-          {
-            "type": "SYMBOL",
             "name": "control_statement"
           },
           {
@@ -143,10 +139,6 @@
           {
             "type": "SYMBOL",
             "name": "impl_statement"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "assert_statement"
           }
         ]
       }
@@ -308,12 +300,30 @@
       ]
     },
     "break_statement": {
-      "type": "STRING",
-      "value": "break"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "break"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
     },
     "continue_statement": {
-      "type": "STRING",
-      "value": "continue"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "continue"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_semicolon"
+        }
+      ]
     },
     "return_statement": {
       "type": "SEQ",
@@ -768,177 +778,172 @@
         },
         {
           "type": "FIELD",
-          "name": "match_list",
+          "name": "cases",
           "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "FIELD",
-                      "name": "condition",
-                      "content": {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "condition",
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SEQ",
+                            "type": "CHOICE",
                             "members": [
                               {
-                                "type": "CHOICE",
-                                "members": [
-                                  {
-                                    "type": "CHOICE",
-                                    "members": [
-                                      {
-                                        "type": "STRING",
-                                        "value": "and"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!and"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "or"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!or"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "&"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "^"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "|"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "~&"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "~^"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "~|"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "<"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "<="
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": ">"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": ">="
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "=="
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!="
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "has"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!has"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "case"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!case"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "in"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!in"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "equals"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!equals"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "does"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!does"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "is"
-                                      },
-                                      {
-                                        "type": "STRING",
-                                        "value": "!is"
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "type": "BLANK"
-                                  }
-                                ]
+                                "type": "STRING",
+                                "value": "and"
                               },
                               {
-                                "type": "SYMBOL",
-                                "name": "expression_list"
+                                "type": "STRING",
+                                "value": "!and"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "or"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!or"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "&"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "^"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "|"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "~&"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "~^"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "~|"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "<"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "<="
+                              },
+                              {
+                                "type": "STRING",
+                                "value": ">"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": ">="
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "=="
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!="
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "has"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!has"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "case"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!case"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "in"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!in"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "equals"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!equals"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "does"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!does"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "is"
+                              },
+                              {
+                                "type": "STRING",
+                                "value": "!is"
                               }
                             ]
                           },
                           {
-                            "type": "STRING",
-                            "value": "else"
+                            "type": "BLANK"
                           }
                         ]
-                      }
-                    },
-                    {
-                      "type": "FIELD",
-                      "name": "code",
-                      "content": {
+                      },
+                      {
                         "type": "SYMBOL",
-                        "name": "scope_statement"
+                        "name": "expression_list"
                       }
-                    }
-                  ]
+                    ]
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "code",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "scope_statement"
+                  }
                 }
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
+              ]
+            }
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "else"
+        },
+        {
+          "type": "FIELD",
+          "name": "else_code",
+          "content": {
+            "type": "SYMBOL",
+            "name": "scope_statement"
           }
         },
         {
@@ -1138,73 +1143,6 @@
         }
       ]
     },
-    "assert_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "always"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "assert"
-            },
-            {
-              "type": "STRING",
-              "value": "cassert"
-            }
-          ]
-        },
-        {
-          "type": "FIELD",
-          "name": "condition",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_expression"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "msg",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ","
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_string_literal"
-                  }
-                ]
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_semicolon"
-        }
-      ]
-    },
     "expression_list": {
       "type": "PREC_LEFT",
       "value": 0,
@@ -1266,31 +1204,6 @@
           }
         ]
       }
-    },
-    "function_call_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "function",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_complex_identifier"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "argument",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression_list"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_semicolon"
-        }
-      ]
     },
     "tuple": {
       "type": "SEQ",
@@ -1743,14 +1656,14 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "await_decl"
+                "name": "stage_decl"
               }
             ]
           }
         }
       ]
     },
-    "await_decl": {
+    "stage_decl": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -1758,7 +1671,7 @@
         "members": [
           {
             "type": "STRING",
-            "value": "await"
+            "value": "stage"
           },
           {
             "type": "CHOICE",
@@ -4942,10 +4855,6 @@
     ],
     [
       "lambda"
-    ],
-    [
-      "function_call_statement",
-      "_restricted_expression"
     ],
     [
       "timed_identifier",

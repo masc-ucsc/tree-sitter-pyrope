@@ -2,6 +2,6 @@ const b = "foo"
 const c = 1
 const test1     = enum(a=c,b)    // OK
 const something = (b)            // OK
-cassert something == "foo"
-cassert test1.a != test1.b
-cassert test1.a==1 and test1.b==2
+cassert(something == "foo")
+cassert(test1.a != test1.b)
+cassert(test1.a==1 and test1.b==2)

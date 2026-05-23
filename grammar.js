@@ -73,7 +73,6 @@ module.exports = grammar({
     , [$._complex_identifier, $.expression_type]
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
-    , [$.function_call_statement, $._restricted_expression]
     , [$.timed_identifier, $.typed_identifier]
     , [$.assignment, $._restricted_expression]
     , [$.lvalue_item, $._restricted_expression]
@@ -148,7 +147,6 @@ module.exports = grammar({
       // RHS into a smaller integer LHS. See grammar_overparse.md #5.
       , seq(field('overflow', optional(choice('wrap', 'sat'))), $.assignment, $._semicolon)
       , $.import_statement
-      , $.function_call_statement
       , $.control_statement
       , $.while_statement
       , $.for_statement
@@ -161,7 +159,6 @@ module.exports = grammar({
       , $.test_statement
       , $.type_statement
       , $.impl_statement
-      , $.assert_statement
     )
     )
     , scope_statement: $ => seq(
@@ -195,8 +192,8 @@ module.exports = grammar({
       , $.continue_statement
       , $.return_statement
     )
-    , break_statement: $ => 'break'
-    , continue_statement: $ => 'continue'
+    , break_statement: $ => seq('break', $._semicolon)
+    , continue_statement: $ => seq('continue', $._semicolon)
     , return_statement: $ => seq(
       'return'
       , field('argument', optional($._expression_with_comprehension))
@@ -250,17 +247,16 @@ module.exports = grammar({
       , field('init', statementInit($))
       , field('condition', $._expression)
       , '{'
-      , field('match_list', optional(repeat1(seq(
-        field('condition', choice(
-          seq(optional(choice(
-            'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-            '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
-            'equals', '!equals', 'does', '!does', 'is', '!is'
-          )), $.expression_list)
-          , 'else'
-        ))
+      , field('cases', repeat(seq(
+        field('condition', seq(optional(choice(
+          'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
+          '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
+          'equals', '!equals', 'does', '!does', 'is', '!is'
+        )), $.expression_list))
         , field('code', $.scope_statement)
-      ))))
+      )))
+      , 'else'
+      , field('else_code', $.scope_statement)
       , '}'
     )
     , test_statement: $ => seq(
@@ -298,16 +294,6 @@ module.exports = grammar({
       , field('implementation', $.tuple)
       , $._semicolon
     )
-    , assert_statement: $ => seq(
-      optional('always')
-      , choice('assert', 'cassert')
-      , field('condition', $._expression)
-      , field('msg', optional(seq(
-        ','
-        , $._string_literal
-      )))
-      , $._semicolon
-    )
     , expression_list: $ => prec.left(seq(
       field('item', $._expression)
       , repseq(',', field('item', $._expression))
@@ -315,12 +301,6 @@ module.exports = grammar({
 
     // Function Call
     , function_call_expression: $ => tupleCall($, 'function_call_expression')
-    //
-    , function_call_statement: $ => seq(
-      field('function', $._complex_identifier)
-      , field('argument', $.expression_list)
-      , $._semicolon
-    )
     // Tuple
     , tuple: $ => seq('(', optional($._tuple_list), ')')
 
@@ -381,10 +361,10 @@ module.exports = grammar({
         alias('const', $.const_decl)
         , alias('mut', $.mut_decl)
         , alias('reg', $.reg_decl)
-        , $.await_decl
+        , $.stage_decl
       ))
     )
-    , await_decl: $ => prec.right(seq('await', optional($.tuple_sq)))
+    , stage_decl: $ => prec.right(seq('stage', optional($.tuple_sq)))
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_list: $ => seq('[', optional(listseq1(field('item', seq(
