@@ -20,7 +20,7 @@ function listseq1() {
 }
 
 function statementInit($) {
-  return optseq($.stmt_list, ';');
+  return optional($._init_clause);
 }
 
 function forBinding($) {
@@ -73,7 +73,6 @@ module.exports = grammar({
     , [$._complex_identifier, $.expression_type]
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
-    , [$.function_call_statement, $._restricted_expression]
     , [$.timed_identifier, $.typed_identifier]
     , [$.assignment, $._restricted_expression]
     , [$.lvalue_item, $._restricted_expression]
@@ -148,7 +147,6 @@ module.exports = grammar({
       // RHS into a smaller integer LHS. See grammar_overparse.md #5.
       , seq(field('overflow', optional(choice('wrap', 'sat'))), $.assignment, $._semicolon)
       , $.import_statement
-      , $.function_call_statement
       , $.control_statement
       , $.while_statement
       , $.for_statement
@@ -161,7 +159,6 @@ module.exports = grammar({
       , $.test_statement
       , $.type_statement
       , $.impl_statement
-      , $.assert_statement
     )
     )
     , scope_statement: $ => seq(
@@ -195,8 +192,8 @@ module.exports = grammar({
       , $.continue_statement
       , $.return_statement
     )
-    , break_statement: $ => 'break'
-    , continue_statement: $ => 'continue'
+    , break_statement: $ => seq('break', $._semicolon)
+    , continue_statement: $ => seq('continue', $._semicolon)
     , return_statement: $ => seq(
       'return'
       , field('argument', optional($._expression_with_comprehension))
@@ -206,23 +203,23 @@ module.exports = grammar({
       field('item', $._tuple_item)
       , repeat(seq(repeat1(';'), field('item', $._tuple_item)))
     ))
+    , _if_branch: $ => seq(
+      field('init', statementInit($))
+      , field('condition', $._expression)
+      , field('code', $.scope_statement)
+    )
     , if_expression: $ => prec('statement', seq(
       optional('unique')
       , 'if'
-      , field('init', statementInit($))
-      , field('condition', $._expression)
-      , field('code', $.scope_statement)
-      , field('elif', repseq(
-        'elif'
-        , field('init', statementInit($))
-        , field('condition', $._expression)
-        , field('code', $.scope_statement)
-      ))
+      , $._if_branch
+      , field('elif', repseq('elif', $._if_branch))
       , field('else', optseq('else', $.scope_statement))
     ))
+    , _attr_prefix: $ => seq('::', $.attribute_list)
+    , _init_clause: $ => seq($.stmt_list, ';')
     , for_statement: $ => seq(
       'for'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', statementInit($))
       , forBinding($) // NOTE: maybe constraint to max 3 (elem,index,key)
       , 'in'
@@ -234,14 +231,14 @@ module.exports = grammar({
     )
     , while_statement: $ => seq(
       'while'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', statementInit($))
       , field('condition', $._expression)
       , field('code', $.scope_statement)
     )
     , loop_statement: $ => prec('statement', seq(
       'loop'
-      , field('attributes', optseq('::', $.attribute_list))
+      , field('attributes', optional($._attr_prefix))
       , field('init', optional($.stmt_list))
       , field('code', $.scope_statement)
     ))
@@ -250,17 +247,16 @@ module.exports = grammar({
       , field('init', statementInit($))
       , field('condition', $._expression)
       , '{'
-      , field('match_list', optional(repeat1(seq(
-        field('condition', choice(
-          seq(optional(choice(
-            'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-            '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
-            'equals', '!equals', 'does', '!does', 'is', '!is'
-          )), $.expression_list)
-          , 'else'
-        ))
+      , field('cases', repeat(seq(
+        field('condition', seq(optional(choice(
+          'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
+          '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
+          'equals', '!equals', 'does', '!does', 'is', '!is'
+        )), $.expression_list))
         , field('code', $.scope_statement)
-      ))))
+      )))
+      , 'else'
+      , field('else_code', $.scope_statement)
       , '}'
     )
     , test_statement: $ => seq(
@@ -278,9 +274,9 @@ module.exports = grammar({
           choice(
             seq(
               field('func_type', choice(
-                'comb'
-                , 'mod'
-                , 'pipe'
+                alias('comb', $.comb_lambda)
+                , alias('mod', $.mod_lambda)
+                , $.pipe_lambda
               ))
               , $.function_definition_decl
             )
@@ -298,16 +294,6 @@ module.exports = grammar({
       , field('implementation', $.tuple)
       , $._semicolon
     )
-    , assert_statement: $ => seq(
-      optional('always')
-      , choice('assert', 'cassert')
-      , field('condition', $._expression)
-      , field('msg', optional(seq(
-        ','
-        , $._string_literal
-      )))
-      , $._semicolon
-    )
     , expression_list: $ => prec.left(seq(
       field('item', $._expression)
       , repseq(',', field('item', $._expression))
@@ -315,12 +301,6 @@ module.exports = grammar({
 
     // Function Call
     , function_call_expression: $ => tupleCall($, 'function_call_expression')
-    //
-    , function_call_statement: $ => seq(
-      field('function', $._complex_identifier)
-      , field('argument', $.expression_list)
-      , $._semicolon
-    )
     // Tuple
     , tuple: $ => seq('(', optional($._tuple_list), ')')
 
@@ -381,23 +361,19 @@ module.exports = grammar({
         alias('const', $.const_decl)
         , alias('mut', $.mut_decl)
         , alias('reg', $.reg_decl)
-        , $.await_decl
+        , $.stage_decl
       ))
     )
-    , await_decl: $ => prec.right(seq('await', optional($.tuple_sq)))
+    , stage_decl: $ => prec.right(seq('stage', optional($.tuple_sq)))
 
     // Attribute lists: ::[identifier [= expression], ...]
     , attribute_list: $ => seq('[', optional(listseq1(field('item', seq(
       field('name', $.identifier)
       , field('value', optseq('=', choice($._expression, $.ref_identifier)))
     )))), ']')
-    // Overparse: the `[...]` slot is a comptime-parameter list; entries must
-    // declare a `:Type`. The grammar accepts old capture-list shapes.
-    // See grammar_overparse.md #4.
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
-      , field('capture', optseq($.tuple_sq))
-      , field('pipe_config', optseq('::', $.attribute_list))
+      , field('pipe_config', optional($._attr_prefix))
       , field('input', $.arg_list)
       , field('output', optseq('->', choice(
         $.arg_list
@@ -492,14 +468,18 @@ module.exports = grammar({
       field('argument', $._restricted_expression)
       , field('select', prec('select', seq(
         '#'
-        , field('reduction', optional(choice(
-          alias('|', $.reduction_or)
-          , alias('&', $.reduction_and)
-          , alias('^', $.reduction_xor)
-          , alias('+', $.reduction_popcount)
-          , alias('sext', $.sign_extend)
-          , alias('zext', $.zero_extend)
-        )))
+        , optional(choice(
+          field('reduction', choice(
+            alias('|', $.reduction_or)
+            , alias('&', $.reduction_and)
+            , alias('^', $.reduction_xor)
+            , alias('+', $.reduction_popcount)
+          ))
+          , field('extension', choice(
+            alias('sext', $.sign_extend)
+            , alias('zext', $.zero_extend)
+          ))
+        ))
         , field('select', $.select)
       )))
     ))
@@ -664,15 +644,16 @@ module.exports = grammar({
     ))
     , lambda: $ => seq(
       field('func_type', choice(
-        'comb'
-        , 'mod'
-        , 'proc'
-        , seq('pipe', optional($.tuple_sq)
-        )))
+        alias('comb', $.comb_lambda)
+        , alias('mod', $.mod_lambda)
+        , alias('proc', $.proc_lambda)
+        , $.pipe_lambda
+      ))
       , field('name', $.identifier)
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
     )
+    , pipe_lambda: $ => prec.right(seq('pipe', field('depth', optional($.tuple_sq))))
     // Operators
     , assignment_operator: $ => choice(
       alias('=', $.assign)
@@ -841,7 +822,10 @@ module.exports = grammar({
       , choice($._automatic_semicolon, ';')
     )
     , when_unless_cond: $ => seq(
-      choice('when', 'unless')
+      field('kind', choice(
+        alias('when', $.when_kw)
+        , alias('unless', $.unless_kw)
+      ))
       , field('condition', $._expression)
     )
   }

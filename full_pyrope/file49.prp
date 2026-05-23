@@ -1,6 +1,6 @@
 const c = 4
-cassert c does u3                  // type check on 'c' is a separate statement
+cassert(c does u3) // type check on 'c' is a separate statement
 const (x, b) = (true, c)           // assign x=true, b=4
 
-cassert x == true
-cassert b == 4
+cassert(x == true)
+cassert(b == 4)

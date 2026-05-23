@@ -1,2 +1,2 @@
     mut c = mul(a,b)
-    assert c == a * b // assert fails!!
+    assert(c == a * b) // assert fails!!

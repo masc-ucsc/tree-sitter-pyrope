@@ -3,12 +3,12 @@ mut a = (
   ,r2 = (3,4)
 )
 // tuple position is from left to right like most languages
-cassert a.r1 == (1,2) and a.r2 == (3,4)
-cassert a[0] == (1,2) and a[1] == (3,4)
+cassert(a.r1 == (1,2) and a.r2 == (3,4))
+cassert(a[0] == (1,2) and a[1] == (3,4))
 
 // different ways to access the same field
-cassert a.r1.c    == 2
-cassert a['r1'].c == 2
-cassert a.r1[1]   == 2
-cassert a[0][1]   == 2
-cassert a[0]['c'] == 2
+cassert(a.r1.c    == 2)
+cassert(a['r1'].c == 2)
+cassert(a.r1[1]   == 2)
+cassert(a[0][1]   == 2)
+cassert(a[0]['c'] == 2)

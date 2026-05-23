@@ -170,118 +170,6 @@
     }
   },
   {
-    "type": "assert_statement",
-    "named": true,
-    "fields": {
-      "condition": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "attribute_read",
-            "named": true
-          },
-          {
-            "type": "bit_selection",
-            "named": true
-          },
-          {
-            "type": "constant",
-            "named": true
-          },
-          {
-            "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "expression_item",
-            "named": true
-          },
-          {
-            "type": "function_call_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "member_selection",
-            "named": true
-          },
-          {
-            "type": "optional_expression",
-            "named": true
-          },
-          {
-            "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "timed_identifier",
-            "named": true
-          },
-          {
-            "type": "tuple",
-            "named": true
-          },
-          {
-            "type": "tuple_sq",
-            "named": true
-          },
-          {
-            "type": "type_specification",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "gate": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "when_unless_cond",
-            "named": true
-          }
-        ]
-      },
-      "msg": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": ",",
-            "named": false
-          },
-          {
-            "type": "interpolated_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "assignment",
     "named": true,
     "fields": {
@@ -685,21 +573,6 @@
     }
   },
   {
-    "type": "await_decl",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "tuple_sq",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "binary_compare_op",
     "named": true,
     "fields": {},
@@ -969,6 +842,20 @@
           }
         ]
       },
+      "extension": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "sign_extend",
+            "named": true
+          },
+          {
+            "type": "zero_extend",
+            "named": true
+          }
+        ]
+      },
       "reduction": {
         "multiple": false,
         "required": false,
@@ -988,14 +875,6 @@
           {
             "type": "reduction_xor",
             "named": true
-          },
-          {
-            "type": "sign_extend",
-            "named": true
-          },
-          {
-            "type": "zero_extend",
-            "named": true
           }
         ]
       },
@@ -1009,6 +888,22 @@
           },
           {
             "type": "select",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "break_statement",
+    "named": true,
+    "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
             "named": true
           }
         ]
@@ -1044,6 +939,22 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "continue_statement",
+    "named": true,
+    "fields": {
+      "gate": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "when_unless_cond",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1144,10 +1055,6 @@
       "required": false,
       "types": [
         {
-          "type": "assert_statement",
-          "named": true
-        },
-        {
           "type": "assignment",
           "named": true
         },
@@ -1193,10 +1100,6 @@
         },
         {
           "type": "function_call_expression",
-          "named": true
-        },
-        {
-          "type": "function_call_statement",
           "named": true
         },
         {
@@ -1820,62 +1723,6 @@
     }
   },
   {
-    "type": "function_call_statement",
-    "named": true,
-    "fields": {
-      "argument": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "attribute_read",
-            "named": true
-          },
-          {
-            "type": "bit_selection",
-            "named": true
-          },
-          {
-            "type": "dot_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "member_selection",
-            "named": true
-          },
-          {
-            "type": "timed_identifier",
-            "named": true
-          }
-        ]
-      },
-      "gate": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "when_unless_cond",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "function_call_type",
     "named": true,
     "fields": {
@@ -1925,16 +1772,6 @@
     "type": "function_definition_decl",
     "named": true,
     "fields": {
-      "capture": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "tuple_sq",
-            "named": true
-          }
-        ]
-      },
       "generic": {
         "multiple": true,
         "required": false,
@@ -2416,27 +2253,23 @@
         ]
       },
       "func_type": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "comb",
-            "named": false
+            "type": "comb_lambda",
+            "named": true
           },
           {
-            "type": "mod",
-            "named": false
+            "type": "mod_lambda",
+            "named": true
           },
           {
-            "type": "pipe",
-            "named": false
+            "type": "pipe_lambda",
+            "named": true
           },
           {
-            "type": "proc",
-            "named": false
-          },
-          {
-            "type": "tuple_sq",
+            "type": "proc_lambda",
             "named": true
           }
         ]
@@ -2579,6 +2412,132 @@
     "type": "match_expression",
     "named": true,
     "fields": {
+      "cases": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "!and",
+            "named": false
+          },
+          {
+            "type": "!case",
+            "named": false
+          },
+          {
+            "type": "!does",
+            "named": false
+          },
+          {
+            "type": "!equals",
+            "named": false
+          },
+          {
+            "type": "!has",
+            "named": false
+          },
+          {
+            "type": "!in",
+            "named": false
+          },
+          {
+            "type": "!is",
+            "named": false
+          },
+          {
+            "type": "!or",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "case",
+            "named": false
+          },
+          {
+            "type": "does",
+            "named": false
+          },
+          {
+            "type": "equals",
+            "named": false
+          },
+          {
+            "type": "expression_list",
+            "named": true
+          },
+          {
+            "type": "has",
+            "named": false
+          },
+          {
+            "type": "in",
+            "named": false
+          },
+          {
+            "type": "is",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "scope_statement",
+            "named": true
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "~&",
+            "named": false
+          },
+          {
+            "type": "~^",
+            "named": false
+          },
+          {
+            "type": "~|",
+            "named": false
+          }
+        ]
+      },
       "code": {
         "multiple": true,
         "required": false,
@@ -2686,10 +2645,6 @@
             "named": true
           },
           {
-            "type": "else",
-            "named": false
-          },
-          {
             "type": "equals",
             "named": false
           },
@@ -2787,6 +2742,16 @@
           }
         ]
       },
+      "else_code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
       "init": {
         "multiple": true,
         "required": false,
@@ -2798,136 +2763,6 @@
           {
             "type": "stmt_list",
             "named": true
-          }
-        ]
-      },
-      "match_list": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "!=",
-            "named": false
-          },
-          {
-            "type": "!and",
-            "named": false
-          },
-          {
-            "type": "!case",
-            "named": false
-          },
-          {
-            "type": "!does",
-            "named": false
-          },
-          {
-            "type": "!equals",
-            "named": false
-          },
-          {
-            "type": "!has",
-            "named": false
-          },
-          {
-            "type": "!in",
-            "named": false
-          },
-          {
-            "type": "!is",
-            "named": false
-          },
-          {
-            "type": "!or",
-            "named": false
-          },
-          {
-            "type": "&",
-            "named": false
-          },
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": "<=",
-            "named": false
-          },
-          {
-            "type": "==",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
-          },
-          {
-            "type": ">=",
-            "named": false
-          },
-          {
-            "type": "^",
-            "named": false
-          },
-          {
-            "type": "and",
-            "named": false
-          },
-          {
-            "type": "case",
-            "named": false
-          },
-          {
-            "type": "does",
-            "named": false
-          },
-          {
-            "type": "else",
-            "named": false
-          },
-          {
-            "type": "equals",
-            "named": false
-          },
-          {
-            "type": "expression_list",
-            "named": true
-          },
-          {
-            "type": "has",
-            "named": false
-          },
-          {
-            "type": "in",
-            "named": false
-          },
-          {
-            "type": "is",
-            "named": false
-          },
-          {
-            "type": "or",
-            "named": false
-          },
-          {
-            "type": "scope_statement",
-            "named": true
-          },
-          {
-            "type": "|",
-            "named": false
-          },
-          {
-            "type": "~&",
-            "named": false
-          },
-          {
-            "type": "~^",
-            "named": false
-          },
-          {
-            "type": "~|",
-            "named": false
           }
         ]
       }
@@ -3092,6 +2927,22 @@
           {
             "type": "?",
             "named": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "pipe_lambda",
+    "named": true,
+    "fields": {
+      "depth": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       }
@@ -3264,10 +3115,6 @@
       "required": false,
       "types": [
         {
-          "type": "assert_statement",
-          "named": true
-        },
-        {
           "type": "assignment",
           "named": true
         },
@@ -3313,10 +3160,6 @@
         },
         {
           "type": "function_call_expression",
-          "named": true
-        },
-        {
-          "type": "function_call_statement",
           "named": true
         },
         {
@@ -3710,6 +3553,21 @@
       "types": [
         {
           "type": "scope_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "stage_decl",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "tuple_sq",
           "named": true
         }
       ]
@@ -5088,16 +4946,16 @@
         "required": false,
         "types": [
           {
-            "type": "comb",
-            "named": false
+            "type": "comb_lambda",
+            "named": true
           },
           {
-            "type": "mod",
-            "named": false
+            "type": "mod_lambda",
+            "named": true
           },
           {
-            "type": "pipe",
-            "named": false
+            "type": "pipe_lambda",
+            "named": true
           }
         ]
       },
@@ -5496,10 +5354,6 @@
         "required": true,
         "types": [
           {
-            "type": "await_decl",
-            "named": true
-          },
-          {
             "type": "const_decl",
             "named": true
           },
@@ -5509,6 +5363,10 @@
           },
           {
             "type": "reg_decl",
+            "named": true
+          },
+          {
+            "type": "stage_decl",
             "named": true
           }
         ]
@@ -5593,6 +5451,20 @@
           },
           {
             "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "kind": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "unless_kw",
+            "named": true
+          },
+          {
+            "type": "when_kw",
             "named": true
           }
         ]
@@ -5862,19 +5734,11 @@
     "named": false
   },
   {
-    "type": "always",
-    "named": false
-  },
-  {
     "type": "and",
     "named": false
   },
   {
     "type": "as",
-    "named": false
-  },
-  {
-    "type": "assert",
     "named": false
   },
   {
@@ -5930,10 +5794,6 @@
     "named": true
   },
   {
-    "type": "await",
-    "named": false
-  },
-  {
     "type": "bool_literal",
     "named": true
   },
@@ -5942,20 +5802,16 @@
     "named": true
   },
   {
-    "type": "break_statement",
-    "named": true
+    "type": "break",
+    "named": false
   },
   {
     "type": "case",
     "named": false
   },
   {
-    "type": "cassert",
-    "named": false
-  },
-  {
-    "type": "comb",
-    "named": false
+    "type": "comb_lambda",
+    "named": true
   },
   {
     "type": "comment",
@@ -5971,8 +5827,8 @@
     "named": true
   },
   {
-    "type": "continue_statement",
-    "named": true
+    "type": "continue",
+    "named": false
   },
   {
     "type": "does",
@@ -6043,8 +5899,8 @@
     "named": false
   },
   {
-    "type": "mod",
-    "named": false
+    "type": "mod_lambda",
+    "named": true
   },
   {
     "type": "mut_decl",
@@ -6247,8 +6103,8 @@
     "named": false
   },
   {
-    "type": "proc",
-    "named": false
+    "type": "proc_lambda",
+    "named": true
   },
   {
     "type": "reduction_and",
@@ -6295,6 +6151,10 @@
     "named": false
   },
   {
+    "type": "stage",
+    "named": false
+  },
+  {
     "type": "string_literal",
     "named": true
   },
@@ -6319,8 +6179,8 @@
     "named": false
   },
   {
-    "type": "unless",
-    "named": false
+    "type": "unless_kw",
+    "named": true
   },
   {
     "type": "unsigned",
@@ -6331,8 +6191,8 @@
     "named": false
   },
   {
-    "type": "when",
-    "named": false
+    "type": "when_kw",
+    "named": true
   },
   {
     "type": "while",

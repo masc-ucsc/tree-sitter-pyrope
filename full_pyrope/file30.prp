@@ -2,7 +2,7 @@ mut b = (f1=3,f2=4) // b is named and ordered
 mut c = (1,d=4)     // c is ordered and unnamed (some entries are not named)
 
 mut d = (1,2,3,4)     // array or tuple
-cassert d == [1,2,3,4] // the [] also check that all the fields have same type
-cassert b.f1 == 3 and b.f2 == 4
-cassert c[0] == 1 and c.d == 4
+cassert(d == [1,2,3,4]) // the [] also check that all the fields have same type
+cassert(b.f1 == 3 and b.f2 == 4)
+cassert(c[0] == 1 and c.d == 4)
 

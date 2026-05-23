@@ -3,5 +3,5 @@ mut x=100
 mut tup1 = ('x',y=4)
 mut tup2 = (x,y=4)
 
-cassert tup1[0] == 'x'
-cassert tup2[0] == 100
+cassert(tup1[0] == 'x')
+cassert(tup2[0] == 100)

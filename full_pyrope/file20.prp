@@ -1,4 +1,4 @@
 a = 1
 
-puts "{}:{} a:{} tracing a", a.[file], a.[loc], a
-puts "{a.[file]}:{a.[loc]} a:{a} tracing a"          // Same
+puts("{}:{} a:{} tracing a", a.[file], a.[loc], a)
+puts("{a.[file]}:{a.[loc]} a:{a} tracing a")          // Same
