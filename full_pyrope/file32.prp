@@ -1,7 +1,5 @@
 mut a = (foo = 3)
 cassert(a has 'foo')
-cassert(!(a has 'bar'))
-cassert(a !has 'bar') // "has no" is the opposite of "has"
+cassert(not (a has 'bar'))
 cassert(a has 0)
-cassert(a !has 1)
-cassert(a !has 1)
+cassert(not (a has 1))

@@ -616,7 +616,7 @@
               "name": "data",
               "content": {
                 "type": "SYMBOL",
-                "name": "expression_list"
+                "name": "_expression"
               }
             }
           ]
@@ -802,15 +802,7 @@
                               },
                               {
                                 "type": "STRING",
-                                "value": "!and"
-                              },
-                              {
-                                "type": "STRING",
                                 "value": "or"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "!or"
                               },
                               {
                                 "type": "STRING",
@@ -866,15 +858,7 @@
                               },
                               {
                                 "type": "STRING",
-                                "value": "!has"
-                              },
-                              {
-                                "type": "STRING",
                                 "value": "case"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "!case"
                               },
                               {
                                 "type": "STRING",
@@ -882,15 +866,7 @@
                               },
                               {
                                 "type": "STRING",
-                                "value": "!in"
-                              },
-                              {
-                                "type": "STRING",
                                 "value": "equals"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "!equals"
                               },
                               {
                                 "type": "STRING",
@@ -898,15 +874,7 @@
                               },
                               {
                                 "type": "STRING",
-                                "value": "!does"
-                              },
-                              {
-                                "type": "STRING",
                                 "value": "is"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "!is"
                               }
                             ]
                           },
@@ -917,7 +885,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "expression_list"
+                        "name": "_expression"
                       }
                     ]
                   }
@@ -1813,17 +1781,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "enum"
-            },
-            {
-              "type": "STRING",
-              "value": "variant"
-            }
-          ]
+          "type": "STRING",
+          "value": "enum"
         },
         {
           "type": "FIELD",
@@ -1839,17 +1798,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "enum"
-            },
-            {
-              "type": "STRING",
-              "value": "variant"
-            }
-          ]
+          "type": "STRING",
+          "value": "enum"
         },
         {
           "type": "FIELD",
@@ -2403,7 +2353,7 @@
           "name": "data",
           "content": {
             "type": "SYMBOL",
-            "name": "expression_list"
+            "name": "_expression"
           }
         },
         {
@@ -2784,27 +2734,6 @@
           }
         ]
       }
-    },
-    "optional_expression": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "argument",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_expression"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "operator",
-          "content": {
-            "type": "STRING",
-            "value": "?"
-          }
-        }
-      ]
     },
     "expression_item": {
       "type": "CHOICE",
@@ -3192,28 +3121,10 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "!has"
-          },
-          "named": true,
-          "value": "op_not_has"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "in"
           },
           "named": true,
           "value": "op_in"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!in"
-          },
-          "named": true,
-          "value": "op_not_in"
         },
         {
           "type": "ALIAS",
@@ -3228,28 +3139,10 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "!case"
-          },
-          "named": true,
-          "value": "op_not_case"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "does"
           },
           "named": true,
           "value": "op_does"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!does"
-          },
-          "named": true,
-          "value": "op_not_does"
         },
         {
           "type": "ALIAS",
@@ -3264,28 +3157,10 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "!is"
-          },
-          "named": true,
-          "value": "op_not_is"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "equals"
           },
           "named": true,
           "value": "op_equals"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!equals"
-          },
-          "named": true,
-          "value": "op_not_equals"
         }
       ]
     },
@@ -3346,15 +3221,6 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "!and"
-          },
-          "named": true,
-          "value": "op_log_nand"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "or"
           },
           "named": true,
@@ -3364,28 +3230,10 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "!or"
-          },
-          "named": true,
-          "value": "op_log_nor"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "implies"
           },
           "named": true,
           "value": "op_implies"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!implies"
-          },
-          "named": true,
-          "value": "op_not_implies"
         }
       ]
     },
@@ -3563,10 +3411,6 @@
           {
             "type": "SYMBOL",
             "name": "tuple_sq"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "optional_expression"
           }
         ]
       }
@@ -3597,15 +3441,6 @@
                 },
                 "named": true,
                 "value": "mod_lambda"
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "proc"
-                },
-                "named": true,
-                "value": "proc_lambda"
               },
               {
                 "type": "SYMBOL",

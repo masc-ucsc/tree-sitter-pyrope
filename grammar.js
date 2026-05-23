@@ -116,8 +116,8 @@ module.exports = grammar({
       , 'type_spec'
       , 'binary_times'     // Pyrope priority 2: *, /, %
       , 'binary_other'     // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
-      , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals (+ ! variants)
-      , 'binary_logical'   // Pyrope priority 5: and, or, implies (+ ! variants)
+      , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals
+      , 'binary_logical'   // Pyrope priority 5: and, or, implies
       , 'expression'
     ]
     // Types
@@ -232,7 +232,7 @@ module.exports = grammar({
       , 'in'
       , choice(
         $.ref_identifier
-        , field('data', $.expression_list)
+        , field('data', $._expression)
       )
       , field('code', $.scope_statement)
     )
@@ -256,10 +256,10 @@ module.exports = grammar({
       , '{'
       , field('cases', repeat(seq(
         field('condition', seq(optional(choice(
-          'and', '!and', 'or', '!or', '&', '^', '|', '~&', '~^', '~|',
-          '<', '<=', '>', '>=', '==', '!=', 'has', '!has', 'case', '!case', 'in', '!in',
-          'equals', '!equals', 'does', '!does', 'is', '!is'
-        )), $.expression_list))
+          'and', 'or', '&', '^', '|', '~&', '~^', '~|',
+          '<', '<=', '>', '>=', '==', '!=', 'has', 'case', 'in',
+          'equals', 'does', 'is'
+        )), $._expression))
         , field('code', $.scope_statement)
       )))
       , 'else'
@@ -394,11 +394,11 @@ module.exports = grammar({
       )))
     )
     , enum_definition: $ => seq(
-      choice('enum', 'variant')
+      'enum'
       , field('input', $.arg_list)
     )
     , enum_assignment: $ => seq(
-      choice('enum', 'variant')
+      'enum'
       , field('name', $.identifier)
       , choice(
         seq('=', field('values', $.tuple)),
@@ -464,7 +464,7 @@ module.exports = grammar({
       'for'
       , forBinding($)
       , 'in'
-      , field('data', $.expression_list)
+      , field('data', $._expression)
       , optional(
         seq(
           'if'
@@ -518,10 +518,6 @@ module.exports = grammar({
       ))
       , field('argument', $._pri1_operand)
     ))
-    , optional_expression: $ => seq(
-      field('argument', $._expression)
-      , field('operator', '?')
-    )
     // expression_item: flat chain of same-priority operators.
     // Each tier admits only TIGHTER-tier operands, so `a + b + c` parses as a
     // single node with three operands (not ((a + b) + c)).
@@ -569,7 +565,7 @@ module.exports = grammar({
       , alias('..+', $.op_range_count)
       , alias('step', $.op_step)
     )
-    // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals (+ ! variants)
+    // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals
     // Overparse: chained comparisons must all point the same direction;
     // `a <= b > c` parses but is illegal. See grammar_overparse.md #6.
     , _binary_compare: $ => prec.left('binary_compare', seq(
@@ -587,19 +583,13 @@ module.exports = grammar({
       , alias('==', $.op_eq)
       , alias('!=', $.op_ne)
       , alias('has', $.op_has)
-      , alias('!has', $.op_not_has)
       , alias('in', $.op_in)
-      , alias('!in', $.op_not_in)
       , alias('case', $.op_case)
-      , alias('!case', $.op_not_case)
       , alias('does', $.op_does)
-      , alias('!does', $.op_not_does)
       , alias('is', $.op_is)
-      , alias('!is', $.op_not_is)
       , alias('equals', $.op_equals)
-      , alias('!equals', $.op_not_equals)
     )
-    // Pyrope priority 5: and, or, implies (+ ! variants)
+    // Pyrope priority 5: and, or, implies
     , _binary_logical: $ => prec.left('binary_logical', seq(
       field('operand', $._pri4_operand)
       , repeat1(seq(
@@ -609,11 +599,8 @@ module.exports = grammar({
     ))
     , binary_logical_op: $ => choice(
       alias('and', $.op_log_and)
-      , alias('!and', $.op_log_nand)
       , alias('or', $.op_log_or)
-      , alias('!or', $.op_log_nor)
       , alias('implies', $.op_implies)
-      , alias('!implies', $.op_not_implies)
     )
     // Operand tiers: each level adds its own expression_item kind.
     , _pri1_operand: $ => prec('expression', choice(
@@ -652,13 +639,11 @@ module.exports = grammar({
       , $.lambda
       , $.tuple
       , $.tuple_sq
-      , $.optional_expression
     ))
     , lambda: $ => seq(
       field('func_type', choice(
         alias('comb', $.comb_lambda)
         , alias('mod', $.mod_lambda)
-        , alias('proc', $.proc_lambda)
         , $.pipe_lambda
       ))
       , field('name', $.identifier)
