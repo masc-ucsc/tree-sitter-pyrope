@@ -982,7 +982,7 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
 }
 
 void print_for_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false, false);
+  emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
 
@@ -994,6 +994,8 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case anon_sym_for:
         emit_token(st, "for");
+        emit_space(st);
+        emit_anchor(st); // Anchor after keyword
         break;
       case anon_sym_COLON_COLON:
         emit_token(st, "::");
@@ -1064,7 +1066,7 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
 }
 
 void print_while_statement(TSNode node, PrpfmtState *st) {
-  emit_group_start(st, false, false);
+  emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
 
@@ -1076,6 +1078,8 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case anon_sym_while:
         emit_token(st, "while");
+        emit_space(st);
+        emit_anchor(st); // Anchor after keyword
         break;
       case anon_sym_COLON_COLON:
         emit_token(st, "::");
