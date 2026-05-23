@@ -33,8 +33,13 @@ function forBinding($) {
   );
 }
 
+// Write-side attribute lists (`::[…]`, `:Type:[…]`) share the same bracketed
+// tuple shape as `tuple_sq`. Reusing tuple_sq here keeps the grammar small —
+// the read side (`.[…]`) cannot, because it must accept reserved keywords
+// like `comptime` as identifiers, which the expression-based tuple item
+// path does not allow.
 function attributeSuffix($) {
-  return seq(':', $.attribute_list);
+  return seq(':', $.tuple_sq);
 }
 
 // Overparse: `::[...]` and `:Type:[...]` parse anywhere `type_cast` is
@@ -86,6 +91,8 @@ module.exports = grammar({
     , [$._binary_compare]
     , [$._binary_logical]
     , [$._expression, $._binary_logical]
+    , [$._expression_with_comprehension, $.array_length]
+    , [$.tuple_sq, $.array_length]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -215,7 +222,7 @@ module.exports = grammar({
       , field('elif', repseq('elif', $._if_branch))
       , field('else', optseq('else', $.scope_statement))
     ))
-    , _attr_prefix: $ => seq('::', $.attribute_list)
+    , _attr_prefix: $ => seq('::', $.tuple_sq)
     , _init_clause: $ => seq($.stmt_list, ';')
     , for_statement: $ => seq(
       'for'
@@ -364,13 +371,18 @@ module.exports = grammar({
         , $.stage_decl
       ))
     )
-    , stage_decl: $ => prec.right(seq('stage', optional($.tuple_sq)))
+    // `stage[N]` / `stage[A..<B]` — a single expression or range, not a tuple
+    // literal. Reuses the same `select` rule as `[...]` indexing.
+    , stage_decl: $ => prec.right(seq('stage', optional($.select)))
 
-    // Attribute lists: ::[identifier [= expression], ...]
-    , attribute_list: $ => seq('[', optional(listseq1(field('item', seq(
-      field('name', $.identifier)
-      , field('value', optseq('=', choice($._expression, $.ref_identifier)))
-    )))), ']')
+    // Read-side attribute name (`.[identifier]`). Exactly one identifier in
+    // the brackets — reads never carry `=value`, and the docs show one
+    // attribute per `.[…]` (chain reads via repeated `.[a].[b]`). Kept as a
+    // distinct rule (not folded into `tuple_sq`) because attribute names
+    // routinely collide with reserved keywords (`comptime`, ...); routing
+    // through `$.identifier` directly lets the lexer accept those keywords
+    // here as plain identifiers.
+    , attribute_list: $ => seq('[', field('name', $.identifier), ']')
     , function_definition_decl: $ => seq(
       field('generic', optseq('<', $.typed_identifier_list, '>'))
       , field('pipe_config', optional($._attr_prefix))
@@ -653,7 +665,8 @@ module.exports = grammar({
       , $.function_definition_decl
       , field('code', optional($.scope_statement))
     )
-    , pipe_lambda: $ => prec.right(seq('pipe', field('depth', optional($.tuple_sq))))
+    // `pipe[N]` / `pipe[A..=B]` — a single depth expression or range slot.
+    , pipe_lambda: $ => prec.right(seq('pipe', field('depth', optional($.select))))
     // Operators
     , assignment_operator: $ => choice(
       alias('=', $.assign)
@@ -672,10 +685,15 @@ module.exports = grammar({
     )
 
     // Selects
+    // A selector takes a single expression (integer, string, range, or any
+    // expression producing one of those, including a conditional). Multi-entry
+    // tuple indices like `a[0,1]` or `foo#[0,2,3]` are intentionally not
+    // accepted — the ordering of a bit/field set is ambiguous; use one
+    // bit-range assignment per group instead.
     , select: $ => seq(
       '['
       , choice(
-        field('list', $.expression_list)
+        field('index', $._expression)
         , field('range', $.selection_range)
       )
       , ']'
@@ -715,8 +733,12 @@ module.exports = grammar({
       , prec.right
     )
     , function_call_type: $ => tupleCall($, 'function_call_type')
+    // Array length is one expression per dimension, or empty `[]` to defer
+    // sizing to the initializer. Multi-dim is chained (`[8][8]u16`, not
+    // `[8,8]u16`), so each length slot is either empty or a single
+    // expression / range.
     , array_type: $ => prec.left('array_type', seq(
-      field('length', $.tuple_sq)
+      field('length', $.array_length)
       , optional(field('base', choice(
         $._primitive_type
         , $.array_type
@@ -724,6 +746,14 @@ module.exports = grammar({
         , $.expression_type
       )))
     ))
+    , array_length: $ => seq(
+      '['
+      , optional(choice(
+        field('index', $._expression)
+        , field('range', $.selection_range)
+      ))
+      , ']'
+    )
     , _primitive_type: $ => choice(
       $.uint_type
       , $.sint_type
