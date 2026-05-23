@@ -16,6 +16,7 @@ static void init_token(Token *t, TokenType type, char *text) {
   t->type = type;
   t->text = text;
   t->exploded = false;
+  t->propagates = true;
   t->target_col = 0;
   t->penalty = 0;
 }
@@ -88,9 +89,11 @@ void emit_indent_dec(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_group_start(struct PrpfmtState *st) {
+void emit_group_start(struct PrpfmtState *st, bool force_explode, bool propagates) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_START, NULL);
+  st->buffer.data[st->buffer.size].exploded = force_explode;
+  st->buffer.data[st->buffer.size].propagates = propagates;
   st->buffer.size++;
 }
 
@@ -278,57 +281,64 @@ static void simulate_step(Token *t, int *col, int *indent, int *at_start, int in
 }
 
 void prpfmt_solve(struct PrpfmtState *st) {
-  // Pass 1: Decide explosion status for groups
+  // Pass 1: Decide explosion status for groups using a virtual cursor
+  int col = 0, indent = 0, at_start = 1, s_ptr = -1;
+  bool e_stack[256];
+  bool p_stack[256];
+  int a_stack[256];
+
   for (int i = 0; i < st->buffer.size; i++) {
-    if (st->buffer.data[i].type == TOKEN_GROUP_START) {
-      if (!st->buffer.data[i].exploded) {
+    Token *t = &st->buffer.data[i];
+    
+    if (t->type == TOKEN_GROUP_START) {
+      if (!t->exploded) {
         int flat_length = 0;
         int explode_cost = 0;
         bool force_explode = false;
         int depth = 1;
+        // Recursive Lookahead (includes nested groups for honest math)
         for (int j = i + 1; j < st->buffer.size; j++) {
-          Token *t = &st->buffer.data[j];
-          if (t->type == TOKEN_GROUP_START) {
+          Token *nt = &st->buffer.data[j];
+          if (nt->type == TOKEN_GROUP_START) {
             depth++;
+            // If the child group is a firewall, don't count its contents for our flat length.
+            // It will be on its own line(s) anyway.
+            if (!nt->propagates) {
+              int inner_depth = 1;
+              while (inner_depth > 0 && j + 1 < st->buffer.size) {
+                j++;
+                if (st->buffer.data[j].type == TOKEN_GROUP_START) inner_depth++;
+                if (st->buffer.data[j].type == TOKEN_GROUP_END) inner_depth--;
+              }
+              depth--;
+              continue;
+            }
           }
-          if (t->type == TOKEN_GROUP_END) {
-            depth--;
-          }
-          if (depth == 0) {
-            break;
-          }
-          switch (t->type) {
+          if (nt->type == TOKEN_GROUP_END) depth--;
+          if (depth == 0) break;
+          
+          switch (nt->type) {
             case TOKEN_TEXT:
             case TOKEN_ALIGN_OPERATOR:
             case TOKEN_ALIGN_RELATIONAL:
-              if (t->text) {
-                flat_length += strlen(t->text);
-              }
+              if (nt->text) flat_length += strlen(nt->text);
               break;
             case TOKEN_ALIGN_COMMENT: {
               bool has_more = false;
               int inner_depth = 0;
               for (int k = j + 1; k < st->buffer.size; k++) {
-                TokenType nt = st->buffer.data[k].type;
-                if (nt == TOKEN_GROUP_START) {
-                  inner_depth++;
-                }
-                if (nt == TOKEN_GROUP_END) {
-                  if (inner_depth == 0) {
-                    break;
-                  }
+                TokenType next_t = st->buffer.data[k].type;
+                if (next_t == TOKEN_GROUP_START) inner_depth++;
+                if (next_t == TOKEN_GROUP_END) {
+                  if (inner_depth == 0) break;
                   inner_depth--;
                 }
-                if (nt == TOKEN_TEXT ||
-                    nt == TOKEN_ALIGN_OPERATOR ||
-                    nt == TOKEN_ALIGN_COMMENT) {
+                if (next_t == TOKEN_TEXT || next_t == TOKEN_ALIGN_OPERATOR || next_t == TOKEN_ALIGN_COMMENT) {
                   has_more = true;
                   break;
                 }
               }
-              if (has_more) {
-                force_explode = true;
-              }
+              if (has_more) force_explode = true;
               break;
             }
             case TOKEN_SPACE:
@@ -336,31 +346,45 @@ void prpfmt_solve(struct PrpfmtState *st) {
               break;
             case TOKEN_BREAK_POINT:
               flat_length += 1;
-              explode_cost += t->penalty;
+              explode_cost += nt->penalty;
               break;
             case TOKEN_SOFT_BREAK:
-              explode_cost += t->penalty;
+              explode_cost += nt->penalty;
               break;
             case TOKEN_FORCE_BREAK:
             case TOKEN_NEWLINE:
               force_explode = true;
               break;
-            default:
-              break;
+            default: break;
           }
-          if (force_explode) {
-            break;
-          }
+          if (force_explode) break;
         }
 
-        if (force_explode) {
-          st->buffer.data[i].exploded = true;
-        } else {
-          int overflow = flat_length - st->max_width;
-          long flat_cost = (overflow > 0) ? (overflow * 1000) : 0;
-          st->buffer.data[i].exploded = (flat_cost > explode_cost);
+        bool parent_exploded = (s_ptr >= 0) ? e_stack[s_ptr] : false;
+        bool parent_propagates = (s_ptr >= 0) ? p_stack[s_ptr] : false;
+
+        bool should_explode = force_explode;
+        if (!should_explode) {
+          should_explode = (col + flat_length > st->max_width);
         }
+        if (!should_explode && parent_exploded && parent_propagates && t->propagates) {
+          should_explode = true;
+        }
+        t->exploded = should_explode;
       }
+    }
+
+    // Simulation step to advance the virtual cursor for the next token
+    // We use a temporary s_ptr for simulate_step to avoid interference
+    int temp_s_ptr = s_ptr;
+    simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &temp_s_ptr, TOKEN_TEXT);
+    
+    // Manual sync for the propagation stack when simulate_step hits a group start/end
+    if (t->type == TOKEN_GROUP_START) {
+      s_ptr++;
+      if (s_ptr >= 0 && s_ptr < 256) p_stack[s_ptr] = t->propagates;
+    } else if (t->type == TOKEN_GROUP_END) {
+      if (s_ptr >= 0) s_ptr--;
     }
   }
 

@@ -28,6 +28,7 @@ typedef struct {
   TokenType type;
   char *text;
   bool exploded;    // For Groups: should this group wrap?
+  bool propagates;  // For Groups: should explosion propagate to children?
   int target_col;   // For Alignment: which column should we jump to?
   int penalty;      // For Break Points: cost of breaking here
 } Token;
@@ -38,7 +39,7 @@ typedef struct {
   int capacity;
 } TokenBuffer;
 
-struct PrpfmtState; 
+struct PrpfmtState;
 
 // Token IR Emitters
 void emit_token(struct PrpfmtState *st, const char *text);
@@ -48,7 +49,7 @@ void emit_break_point(struct PrpfmtState *st, int penalty);
 void emit_soft_break(struct PrpfmtState *st, int penalty);
 void emit_indent_inc(struct PrpfmtState *st);
 void emit_indent_dec(struct PrpfmtState *st);
-void emit_group_start(struct PrpfmtState *st);
+void emit_group_start(struct PrpfmtState *st, bool force_explode, bool propagates);
 void emit_group_end(struct PrpfmtState *st);
 void emit_align_group_start(struct PrpfmtState *st);
 void emit_align_group_end(struct PrpfmtState *st);
