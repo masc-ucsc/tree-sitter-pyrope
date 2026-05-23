@@ -72,7 +72,6 @@ static bool is_alignable(TSNode node) {
     case sym_declaration_statement:
     case sym_enum_assignment:
     case sym_type_statement:
-    case sym_assert_statement:
     case sym_typed_identifier:
     case sym__tuple_list:
     case sym__tuple_item:
@@ -271,14 +270,8 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
     case sym_spawn_statement:
       print_spawn_statement(node, st);
       break;
-    case sym_assert_statement:
-      print_assert_statement(node, st);
-      break;
     case sym_for_statement:
       print_for_statement(node, st);
-      break;
-    case sym_function_call_statement:
-      print_function_call_statement(node, st);
       break;
     case sym_impl_statement:
       print_impl_statement(node, st);
@@ -819,20 +812,22 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
         emit_anchor_off(st);
         emit_space(st);
         emit_token(st, "else");
-        emit_space(st);
         break;
       case sym_stmt_list:
+        // This is the promoted 'init' stmt_list
         print_stmt_list(child, st);
-        break;
-      case sym_when_unless_cond:
-      case anon_sym_SEMI:
-      case sym__automatic_semicolon:
-        print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_scope_statement:
         emit_anchor_off(st); // Kill condition anchor before block
         emit_space(st);
         print_scope_statement(child, st, is_inline && is_inline_eligible(child));
+        break;
+      case anon_sym_SEMI:
+      case sym__semicolon:
+      case sym__automatic_semicolon:
+        // This is the semicolon from the init clause or a statement terminator
+        emit_token(st, ";");
+        emit_space(st);
         break;
       case sym_comment:
         print_comment(child, st);
@@ -842,12 +837,10 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
           if (strcmp(fn, "condition") == 0) {
             print__expression(child, st, is_inline);
           } else if (strcmp(fn, "code") == 0 ||
-                     strcmp(fn, "else") == 0 ||
-                     strcmp(fn, "elif") == 0) {
-            if (ts_node_is_named(child)) {
-              TSNode null_node = {0};
-              print__statement(child, st, null_node, is_inline);
-            }
+                     strcmp(fn, "else_code") == 0) {
+            emit_anchor_off(st);
+            emit_space(st);
+            print_scope_statement(child, st, is_inline && is_inline_eligible(child));
           }
         } else if (!ts_node_is_named(child)) {
           emit_node_text(child, st);
@@ -876,48 +869,22 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case anon_sym_match:
         emit_token(st, "match");
+        emit_space(st);
         break;
       case anon_sym_LBRACE:
         emit_space(st);
         emit_token(st, "{");
-        {
-          bool has_trailing_comment = false;
-          if (i + 1 < child_count) {
-            TSNode next = ts_node_child(node, i + 1);
-            if (ts_node_grammar_symbol(next) == sym_comment &&
-                ts_node_start_point(next).row ==
-                    ts_node_start_point(child).row) {
-              has_trailing_comment = true;
-            }
-          }
-
-          if (!has_trailing_comment) {
-            emit_line_break(st);
-          }
-        }
         emit_indent_inc(st);
+        emit_line_break(st);
         seen_lbrace = true;
         break;
       case anon_sym_RBRACE:
         emit_indent_dec(st);
-        emit_line_break(st); // Add newline before closing brace
+        emit_line_break(st);
         emit_token(st, "}");
         break;
       case sym_stmt_list:
-        if (fn && strcmp(fn, "init") == 0) {
-          emit_space(st);
-          print_stmt_list(child, st);
-        } else {
-          print_stmt_list(child, st);
-        }
-        break;
-      case anon_sym_SEMI:
-      case sym__automatic_semicolon:
-        if (fn && strcmp(fn, "init") == 0) {
-          print__semicolon(child, st, SPACE_AFTER);
-        } else {
-          print__semicolon(child, st, SPACE_NONE);
-        }
+        print_stmt_list(child, st);
         break;
       case sym_expression_list:
         ensure_match_arm_started(seen_lbrace, &arm_started);
@@ -926,26 +893,20 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
       case sym_scope_statement:
         emit_space(st);
         print_scope_statement(child, st, false);
-        if (i + 1 < child_count) {
-          TSNode next = ts_node_child(node, i + 1);
-          if (ts_node_grammar_symbol(next) != anon_sym_RBRACE) {
-            emit_vertical_transition(st, child, next, false);
+        if (fn && (strcmp(fn, "code") == 0 || strcmp(fn, "else_code") == 0)) {
+          if (i + 1 < child_count) {
+            TSNode next = ts_node_child(node, i + 1);
+            if (ts_node_grammar_symbol(next) != anon_sym_RBRACE) {
+              emit_vertical_transition(st, child, next, false);
+            }
           }
+          arm_started = false;
         }
-        arm_started = false;
-        break;
-      case anon_sym_in:
-      case anon_sym_is:
-      case anon_sym_has:
-      case anon_sym_EQ_EQ:
-      case anon_sym_BANG_EQ:
-        ensure_match_arm_started(seen_lbrace, &arm_started);
-        emit_node_text(child, st);
-        emit_space(st);
         break;
       case anon_sym_else:
         ensure_match_arm_started(seen_lbrace, &arm_started);
         emit_token(st, "else");
+        emit_space(st);
         break;
       case sym_comment:
         print_comment(child, st);
@@ -954,24 +915,27 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
         if (fn && strcmp(fn, "condition") == 0) {
           if (seen_lbrace) {
             ensure_match_arm_started(seen_lbrace, &arm_started);
-            print__expression(child, st, true);
-            if (i + 1 < child_count) {
-              const char *nfn = ts_node_field_name_for_child(node, i + 1);
-              if (nfn && strcmp(nfn, "condition") == 0) {
-                emit_space(st);
-              }
-            }
           } else {
             emit_space(st);
-            print__expression(child, st, true);
+          }
+          if (ts_node_grammar_symbol(child) == sym_expression_list) {
+            print_expression_list(child, st);
+          } else {
+            print__expression(child, st, false);
           }
         } else {
           char *text = get_node_text(child, st->source_code);
           if (text) {
-            if (strcmp(text, ",") != 0) {
+            bool is_comma = (strcmp(text, ",") == 0);
+            if (!is_comma) {
               ensure_match_arm_started(seen_lbrace, &arm_started);
             }
             emit_token(st, text);
+            // Add space after keywords/operators that aren't punctuation
+            if (!is_comma && strcmp(text, "{") != 0 && strcmp(text, "}") != 0 && 
+                strcmp(text, "(") != 0 && strcmp(text, ")") != 0 && strcmp(text, ";") != 0) {
+              emit_space(st);
+            }
             free(text);
           }
         }
@@ -1010,6 +974,7 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
         break;
       case sym_when_unless_cond:
       case anon_sym_SEMI:
+      case sym__semicolon:
       case sym__automatic_semicolon:
         if (fn && strcmp(fn, "init") == 0) {
           print__semicolon(child, st, SPACE_AFTER);
@@ -1505,7 +1470,7 @@ void print_declaration_statement(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print_await_decl(TSNode node, PrpfmtState *st) {
+void print_stage_decl(TSNode node, PrpfmtState *st) {
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -1513,8 +1478,8 @@ void print_await_decl(TSNode node, PrpfmtState *st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch (symbol) {
-      case anon_sym_await:
-        emit_token(st, "await");
+      case anon_sym_stage:
+        emit_token(st, "stage");
         break;
       case sym_tuple_sq:
         print_tuple_sq(child, st);
@@ -1697,6 +1662,7 @@ void print_lambda(TSNode node, PrpfmtState *st) {
       case anon_sym_mod:
       case anon_sym_proc:
       case anon_sym_pipe:
+      case sym_pipe_lambda:
         emit_node_text(child, st);
         break;
       case sym_tuple_sq:
@@ -2541,8 +2507,14 @@ void print_bit_selection(TSNode node, PrpfmtState *st) {
         print_comment(child, st);
         break;
       default:
-        if (fn && strcmp(fn, "argument") == 0) {
-          print__expression(child, st, true);
+        if (fn && (strcmp(fn, "argument") == 0 || 
+                   strcmp(fn, "reduction") == 0 || 
+                   strcmp(fn, "extension") == 0)) {
+          if (ts_node_is_named(child)) {
+             print__expression(child, st, true);
+          } else {
+             emit_node_text(child, st);
+          }
         } else if (!ts_node_is_named(child)) {
           emit_node_text(child, st);
         } else {
@@ -3080,8 +3052,8 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState *st) {
         emit_token(st, "reg");
         emit_space(st);
         break;
-      case sym_await_decl:
-        print_await_decl(child, st);
+      case sym_stage_decl:
+        print_stage_decl(child, st);
         emit_space(st);
         break;
       case sym_comment:
@@ -3424,60 +3396,7 @@ void print_test_statement(TSNode node, PrpfmtState *st) {
   emit_group_end(st);
 }
 
-void print_assert_statement(TSNode node, PrpfmtState *st) {
-  st->in_assert = true;
-  emit_group_start(st, false, false);
-  uint32_t child_count = ts_node_child_count(node);
 
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-    const char *fn = ts_node_field_name_for_child(node, i);
-
-    switch (symbol) {
-      case anon_sym_always:
-        emit_token(st, "always");
-        emit_space(st);
-        break;
-      case anon_sym_assert:
-        emit_token(st, "assert");
-        emit_space(st);
-        break;
-      case anon_sym_cassert:
-        emit_token(st, "cassert");
-        emit_space(st);
-        break;
-      case anon_sym_COMMA:
-        emit_token(st, ",");
-        emit_space(st);
-        break;
-      case sym_string_literal:
-      case sym_interpolated_string_literal:
-      case sym__string_literal:
-        print__string_literal(child, st);
-        break;
-      case sym_when_unless_cond:
-      case anon_sym_SEMI:
-      case sym__automatic_semicolon:
-        print__semicolon(child, st, SPACE_NONE);
-        break;
-      case sym_comment:
-        print_comment(child, st);
-        break;
-      default:
-        if (fn && strcmp(fn, "condition") == 0) {
-          print__expression(child, st, true);
-        } else if (!ts_node_is_named(child)) {
-          emit_node_text(child, st);
-        } else {
-          print__expression(child, st, true);
-        }
-        break;
-    }
-  }
-  emit_group_end(st);
-  st->in_assert = false;
-}
 
 void print_attributes(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, false);
