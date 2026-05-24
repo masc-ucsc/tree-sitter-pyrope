@@ -455,8 +455,10 @@ void prpfmt_solve(struct PrpfmtState *st) {
 
         for (int c = 0; c < 4; c++) {
           TokenType current_channel = channels[c];
-          int max_col = 0;
-          int channel_count = 0;
+
+          int *line_has_base_tokens = calloc(st->buffer.size, sizeof(int));
+          int *line_has_op = calloc(st->buffer.size, sizeof(int));
+          int *line_measure_val = calloc(st->buffer.size, sizeof(int));
 
           // Sub-pass 1: Measure current channel (clean simulation)
           int col = 0, indent = base_indent, at_start = 1, s_ptr = base_s_ptr;
@@ -471,6 +473,12 @@ void prpfmt_solve(struct PrpfmtState *st) {
 
             if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
               current_line++;
+            }
+
+            if (indent == base_indent && s_ptr <= base_s_ptr + 3) {
+              if (t->type == TOKEN_TEXT || t->type == TOKEN_ALIGN_OPERATOR || t->type == TOKEN_ALIGN_RELATIONAL || t->type == TOKEN_ALIGN_MATH || t->type == TOKEN_ALIGN_COMMENT) {
+                line_has_base_tokens[current_line] = 1;
+              }
             }
 
             if (t->type == current_channel) {
@@ -497,43 +505,87 @@ void prpfmt_solve(struct PrpfmtState *st) {
                     }
                   }
 
-                  if (measure_val > max_col) {
-                    max_col = measure_val;
-                  }
+                  line_has_op[current_line] = 1;
+                  line_measure_val[current_line] = measure_val;
                   last_aligned_line = current_line;
-                  channel_count++;
                 }
               }
             }
             simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, TOKEN_TEXT);
           }
 
-          // Sub-pass 2: Set target columns for current channel
-          if (channel_count > 1) {
-            col = 0; indent = base_indent; at_start = 1; s_ptr = base_s_ptr;
-            for(int k=0; k<=base_s_ptr && k<256; k++) a_stack[k] = m_a_stack[k];
-            current_line = 0; last_aligned_line = -1;
-            for (int j = i + 1; j < group_end; j++) {
-              Token *t = &st->buffer.data[j];
-
-              if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
-                current_line++;
+          int max_current_line = current_line;
+          int *cluster_max = calloc(max_current_line + 1, sizeof(int));
+          
+          if (current_channel == TOKEN_ALIGN_COMMENT) {
+            // Global cluster for comments
+            int global_max = 0;
+            int global_count = 0;
+            for (int l = 0; l <= max_current_line; l++) {
+              if (line_has_op[l]) {
+                if (line_measure_val[l] > global_max) global_max = line_measure_val[l];
+                global_count++;
               }
+            }
+            if (global_count <= 1) global_max = 0;
+            for (int l = 0; l <= max_current_line; l++) {
+              cluster_max[l] = global_max;
+            }
+          } else {
+            // Sub-clusters for operators
+            int current_cluster_max = 0;
+            int current_cluster_count = 0;
+            int cluster_start = 0;
+            for (int l = 0; l <= max_current_line; l++) {
+              if (line_has_base_tokens[l]) {
+                if (line_has_op[l]) {
+                  if (line_measure_val[l] > current_cluster_max) {
+                    current_cluster_max = line_measure_val[l];
+                  }
+                  current_cluster_count++;
+                } else {
+                  // A base line without the operator breaks the cluster
+                  for (int cl = cluster_start; cl < l; cl++) {
+                    cluster_max[cl] = (current_cluster_count > 1) ? current_cluster_max : 0;
+                  }
+                  current_cluster_max = 0;
+                  current_cluster_count = 0;
+                  cluster_start = l + 1;
+                }
+              }
+            }
+            // Finish the last cluster
+            for (int cl = cluster_start; cl <= max_current_line; cl++) {
+              cluster_max[cl] = (current_cluster_count > 1) ? current_cluster_max : 0;
+            }
+          }
 
-              if (t->type == current_channel) {
-                bool is_math = (current_channel == TOKEN_ALIGN_MATH);
-                if (current_line != last_aligned_line &&
-                    indent == base_indent &&
-                    s_ptr <= base_s_ptr + 3 &&
-                    (!is_math || at_start)) {
-                  if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
-                    int actual_col = col;
-                    if (at_start) {
-                      int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
-                      actual_col = baseline + (indent * st->indent_size);
-                    }
+          // Sub-pass 2: Set target columns for current channel
+          col = 0; indent = base_indent; at_start = 1; s_ptr = base_s_ptr;
+          for(int k=0; k<=base_s_ptr && k<256; k++) a_stack[k] = m_a_stack[k];
+          current_line = 0; last_aligned_line = -1;
+          for (int j = i + 1; j < group_end; j++) {
+            Token *t = &st->buffer.data[j];
 
-                    int target = max_col;
+            if (t->type == TOKEN_NEWLINE || t->type == TOKEN_FORCE_BREAK || (t->type == TOKEN_BREAK_POINT && (s_ptr >= 0 && e_stack[s_ptr]))) {
+              current_line++;
+            }
+
+            if (t->type == current_channel) {
+              bool is_math = (current_channel == TOKEN_ALIGN_MATH);
+              if (current_line != last_aligned_line &&
+                  indent == base_indent &&
+                  s_ptr <= base_s_ptr + 3 &&
+                  (!is_math || at_start)) {
+                if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_indent) {
+                  int actual_col = col;
+                  if (at_start) {
+                    int baseline = (s_ptr >= 0 && a_stack[s_ptr] >= 0) ? a_stack[s_ptr] : 0;
+                    actual_col = baseline + (indent * st->indent_size);
+                  }
+
+                  int target = cluster_max[current_line];
+                  if (target > 0) {
                     if (current_channel == TOKEN_ALIGN_OPERATOR || current_channel == TOKEN_ALIGN_RELATIONAL || current_channel == TOKEN_ALIGN_MATH) {
                       if (t->text) {
                         target -= strlen(t->text);
@@ -556,13 +608,18 @@ void prpfmt_solve(struct PrpfmtState *st) {
                         t->target_col = target;
                       }
                     }
-                    last_aligned_line = current_line;
                   }
+                  last_aligned_line = current_line;
                 }
               }
-              simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
             }
+            simulate_step(t, &col, &indent, &at_start, st->indent_size, e_stack, a_stack, &s_ptr, current_channel);
           }
+
+          free(line_has_base_tokens);
+          free(line_has_op);
+          free(line_measure_val);
+          free(cluster_max);
         }
       }
     }
