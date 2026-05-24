@@ -21,6 +21,26 @@ static void init_token(Token *t, TokenType type, char *text) {
   t->penalty = 0;
 }
 
+static bool has_recent_break(struct PrpfmtState *st) {
+  for (int i = st->buffer.size - 1; i >= 0; i--) {
+    TokenType type = st->buffer.data[i].type;
+    if (type == TOKEN_NEWLINE ||
+        type == TOKEN_FORCE_BREAK ||
+        type == TOKEN_BREAK_POINT ||
+        type == TOKEN_SOFT_BREAK) {
+      return true;
+    }
+    if (type == TOKEN_TEXT ||
+        type == TOKEN_SPACE ||
+        type == TOKEN_ALIGN_OPERATOR ||
+        type == TOKEN_ALIGN_RELATIONAL ||
+        type == TOKEN_ALIGN_COMMENT) {
+      return false;
+    }
+  }
+  return true; // Start of buffer is a break
+}
+
 void emit_token(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_TEXT, strdup(text));
@@ -44,7 +64,8 @@ void emit_space(struct PrpfmtState *st) {
     if (type == TOKEN_GROUP_START || type == TOKEN_GROUP_END ||
         type == TOKEN_ALIGN_GROUP_START || type == TOKEN_ALIGN_GROUP_END ||
         type == TOKEN_INDENT_INC || type == TOKEN_INDENT_DEC ||
-        type == TOKEN_ANCHOR || type == TOKEN_SOFT_BREAK) {
+        type == TOKEN_ANCHOR || type == TOKEN_ANCHOR_OFF ||
+        type == TOKEN_SOFT_BREAK || type == TOKEN_SOFT_SPACE) {
       continue;
     }
 
@@ -64,6 +85,10 @@ void emit_blank_line(struct PrpfmtState *st) {
 }
 
 void emit_break_point(struct PrpfmtState *st, int penalty) {
+  if (has_recent_break(st)) {
+    return;
+  }
+
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_BREAK_POINT, NULL);
   st->buffer.data[st->buffer.size].penalty = penalty;
@@ -71,6 +96,10 @@ void emit_break_point(struct PrpfmtState *st, int penalty) {
 }
 
 void emit_soft_break(struct PrpfmtState *st, int penalty) {
+  if (has_recent_break(st)) {
+    return;
+  }
+
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_SOFT_BREAK, NULL);
   st->buffer.data[st->buffer.size].penalty = penalty;
@@ -149,26 +178,6 @@ void emit_anchor(struct PrpfmtState *st) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_ANCHOR, NULL);
   st->buffer.size++;
-}
-
-static bool has_recent_break(struct PrpfmtState *st) {
-  for (int i = st->buffer.size - 1; i >= 0; i--) {
-    TokenType type = st->buffer.data[i].type;
-    if (type == TOKEN_NEWLINE ||
-        type == TOKEN_FORCE_BREAK ||
-        type == TOKEN_BREAK_POINT ||
-        type == TOKEN_SOFT_BREAK) {
-      return true;
-    }
-    if (type == TOKEN_TEXT ||
-        type == TOKEN_SPACE ||
-        type == TOKEN_ALIGN_OPERATOR ||
-        type == TOKEN_ALIGN_RELATIONAL ||
-        type == TOKEN_ALIGN_COMMENT) {
-      return false;
-    }
-  }
-  return true; // Start of buffer is a break
 }
 
 void emit_anchor_off(struct PrpfmtState *st) {

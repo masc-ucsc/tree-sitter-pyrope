@@ -554,21 +554,6 @@ void print_tuple(TSNode node, PrpfmtState *st) {
       continue;
     }
 
-    // Transitions for all items (excluding closing paren and comments)
-    if (symbol != sym_comment && symbol != anon_sym_RPAREN) {
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      } else {
-        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
-        if (symbol != anon_sym_RPAREN &&
-            symbol != anon_sym_COMMA &&
-            prev_sym != anon_sym_LPAREN &&
-            prev_sym != anon_sym_COMMA) {
-          emit_space(st);
-        }
-      }
-    }
-
     if (symbol == anon_sym_RPAREN) {
       if (is_block) {
         emit_soft_break(st, 10);
@@ -603,7 +588,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
         in_align_group = true;
       }
 
-      // Final simplified transition logic: no soft breaks, just smart newlines or spaces.
+      // Transition logic
       if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
         emit_line_break(st);
       } else {
@@ -621,7 +606,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
           print_comment(child, st);
           break;
         default:
-          print__tuple_list(child, st);
+          print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
           break;
       }
       emit_group_end(st);
@@ -690,7 +675,7 @@ void print_assertion_args(TSNode node, PrpfmtState *st) {
           print_comment(child, st);
           break;
         default:
-          print__tuple_list(child, st);
+          print__tuple_list(child, st, SPACE_NONE);
           break;
       }
     }
@@ -778,7 +763,7 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
           print_comment(child, st);
           break;
         default:
-          print__tuple_list(child, st);
+          print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
           break;
       }
       emit_group_end(st);
@@ -808,7 +793,7 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
   emit_group_end(st);
 }
 
-void print__tuple_list(TSNode node, PrpfmtState *st) {
+void print__tuple_list(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
 
   switch (symbol) {
@@ -828,7 +813,7 @@ void print__tuple_list(TSNode node, PrpfmtState *st) {
       }
       break;
     default:
-      print__tuple_item(node, st, SPACE_NONE);
+      print__tuple_item(node, st, spacing);
       break;
   }
 }
@@ -1940,13 +1925,11 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
   }
 
   uint32_t child_count = ts_node_child_count(node);
-  TSNode prev_child = {0};
   bool in_align_group = false;
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
-    const char *fn = ts_node_field_name_for_child(node, i);
 
     switch (symbol) {
       case anon_sym_LPAREN:
@@ -2033,7 +2016,6 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
         }
         break;
     }
-    prev_child = child;
   }
   emit_group_end(st);
 }

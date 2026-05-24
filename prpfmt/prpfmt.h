@@ -335,7 +335,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline);
 void print_stmt_list(TSNode node, PrpfmtState *st);
 void print_tuple(TSNode node, PrpfmtState *st);
 void print_tuple_sq(TSNode node, PrpfmtState *st);
-void print__tuple_list(TSNode node, PrpfmtState *st);
+void print__tuple_list(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 void print__tuple_item(TSNode node, PrpfmtState *st, SpacingConfig spacing);
 
 /******************************************************************************
