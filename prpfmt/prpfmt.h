@@ -387,13 +387,15 @@ void print__binary_compare(TSNode node, PrpfmtState *st);
 void print__binary_logical(TSNode node, PrpfmtState *st);
 void print_unary_expression(TSNode node, PrpfmtState *st);
 void print_dot_expression(TSNode node, PrpfmtState *st);
+void print_member_selection(TSNode node, PrpfmtState *st);
 void print_optional_expression(TSNode node, PrpfmtState *st);
 void print_type_specification(TSNode node, PrpfmtState *st);
 void print_type_cast(TSNode node, PrpfmtState *st);
 void print_expression_list(TSNode node, PrpfmtState *st);
 void print_for_comprehension(TSNode node, PrpfmtState *st);
-void print_member_selection(TSNode node, PrpfmtState *st);
+void print_match_expression(TSNode node, PrpfmtState *st);
 void print_bit_selection(TSNode node, PrpfmtState *st);
+
 void print_attribute_read(TSNode node, PrpfmtState *st);
 void print_select(TSNode node, PrpfmtState *st);
 void print_selection_range(TSNode node, PrpfmtState *st);
@@ -463,7 +465,7 @@ void print__timing_sequence(TSNode node, PrpfmtState *st);
  * 11. Utilities                                                              *
  ******************************************************************************/
 void preserve_whitespace(TSNode prev, TSNode curr, PrpfmtState *st);
-bool has_recursive_comment(TSNode node);
+bool has_recursive_line_comment(TSNode node, PrpfmtState *st);
 char *get_node_text(TSNode node, const char *source_code);
 void emit_node_text(TSNode node, PrpfmtState *st);
 
