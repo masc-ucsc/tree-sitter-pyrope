@@ -23,6 +23,8 @@ typedef struct PrpfmtState {
   int indent_size;         // Spaces per level (default: 4)
   int max_width;           // Maximum line width (default: 80)
   bool in_assert;          // True if currently printing an assertion (for alignment)
+  bool allow_inline;       // Contextual permission for blocks to stay on one line
+  int nesting_level;       // Current block depth (0 = top level)
   bool fmt_on;             // Toggle for 'prpfmt on/off' directives
   bool inline_exp;         // If true, suppresses newlines for nested expressions
   TokenBuffer buffer;      // Buffer for IR

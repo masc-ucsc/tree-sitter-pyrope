@@ -375,7 +375,15 @@ void check_format_directives(const char *node_text, PrpfmtState *st) {
  */
 void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
-  emit_group_start(st, false, true);
+  bool originally_one_line = (ts_node_start_point(node).row == ts_node_end_point(node).row);
+  
+  // Force block format (vertical) at top level (nesting_level == 0)
+  // unless explicitly forced inline by parent (e.g. lambda) or st->allow_inline
+  bool can_inline = is_inline || st->allow_inline || (st->nesting_level > 0 && originally_one_line);
+  
+  emit_group_start(st, false, !can_inline);
+  st->nesting_level++;
+  
   TSNode prev_child = {0};
   bool in_align_group = false;
 
@@ -395,6 +403,8 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
     }
 
     if (!is_inline &&
+        !originally_one_line &&
+        !st->allow_inline &&
         current_alignable &&
         next_alignable &&
         !blank_line_after &&
@@ -416,7 +426,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
 
       if (has_trailing_comment) {
         emit_space(st);
-      } else if (is_inline) {
+      } else if (can_inline) {
         emit_break_point(st, 10);
       } else if (prev_sym == anon_sym_LBRACE ||
                  symbol == anon_sym_RBRACE) {
@@ -449,7 +459,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         print_comment(child, st);
         break;
       default:
-        print__statement(child, st, prev_child, is_inline);
+        print__statement(child, st, prev_child, can_inline);
         break;
     }
 
@@ -461,6 +471,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
 
     prev_child = child;
   }
+  st->nesting_level--;
   emit_group_end(st);
 }
 
@@ -852,6 +863,14 @@ void print__tuple_item(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
  ******************************************************************************/
 
 void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
+  bool old_allow = st->allow_inline;
+  // Allow inlining only if nested and originally on one line
+  if (st->nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
+    st->allow_inline = true;
+  } else {
+    st->allow_inline = false;
+  }
+
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool header_open = false;
@@ -945,10 +964,19 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
   }
   emit_anchor_off(st);
   emit_group_end(st);
+  st->allow_inline = old_allow;
 }
 
 
 void print_match_expression(TSNode node, PrpfmtState *st) {
+  bool old_allow = st->allow_inline;
+  // Allow inlining only if nested and originally on one line
+  if (st->nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
+    st->allow_inline = true;
+  } else {
+    st->allow_inline = false;
+  }
+
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool seen_lbrace = false;
@@ -975,12 +1003,14 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
         emit_space(st);
         emit_token(st, "{");
         emit_indent_inc(st);
+        st->nesting_level++;
         if (!has_trailing_comment(child)) {
           emit_line_break(st);
         }
         seen_lbrace = true;
         break;
       case anon_sym_RBRACE:
+        st->nesting_level--;
         emit_indent_dec(st);
         emit_line_break(st);
         emit_token(st, "}");
@@ -1088,9 +1118,18 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
     emit_group_end(st);
   }
   emit_group_end(st);
+  st->allow_inline = old_allow;
 }
 
 void print_for_statement(TSNode node, PrpfmtState *st) {
+  bool old_allow = st->allow_inline;
+  // Allow inlining only if nested and originally on one line
+  if (st->nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
+    st->allow_inline = true;
+  } else {
+    st->allow_inline = false;
+  }
+
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
@@ -1183,9 +1222,18 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
     emit_group_end(st);
   }
   emit_group_end(st);
+  st->allow_inline = old_allow;
 }
 
 void print_while_statement(TSNode node, PrpfmtState *st) {
+  bool old_allow = st->allow_inline;
+  // Allow inlining only if nested and originally on one line
+  if (st->nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
+    st->allow_inline = true;
+  } else {
+    st->allow_inline = false;
+  }
+
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
   bool has_init = false;
@@ -1259,6 +1307,7 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
     emit_group_end(st);
   }
   emit_group_end(st);
+  st->allow_inline = old_allow;
 }
 
 /* 
