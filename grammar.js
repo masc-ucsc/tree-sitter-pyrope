@@ -91,8 +91,14 @@ module.exports = grammar({
     , [$._binary_compare]
     , [$._binary_logical]
     , [$._expression, $._binary_logical]
-    , [$._expression_with_comprehension, $.array_length]
+    , [$._expression, $.array_length]
     , [$.tuple_sq, $.array_length]
+    , [$.assignment, $._suffix_head]
+    , [$.assignment, $.lvalue_item, $._suffix_head]
+    , [$.lvalue_item, $._suffix_head]
+    , [$.paren_group, $.tuple]
+    , [$._tuple_item, $.paren_group]
+    , [$.named_lvalue, $._complex_identifier, $.typed_identifier]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -161,7 +167,7 @@ module.exports = grammar({
       , seq($.enum_assignment, $._semicolon)
       , $.spawn_statement
       , $.loop_statement
-      , seq($._expression_with_comprehension, $._semicolon)
+      , seq($._expression, $._semicolon)
       // Verification Only
       , $.test_statement
       , $.type_statement
@@ -203,7 +209,7 @@ module.exports = grammar({
     , continue_statement: $ => seq('continue', $._semicolon)
     , return_statement: $ => seq(
       'return'
-      , field('argument', optional($._expression_with_comprehension))
+      , field('argument', optional($._expression))
       , $._semicolon
     )
     , stmt_list: $ => prec.left('_tuple_list', seq(
@@ -319,7 +325,7 @@ module.exports = grammar({
     // same node also models named call arguments. See grammar_overparse.md #3.
     , _tuple_item: $ => choice(
       $.ref_identifier
-      , $._expression_with_comprehension
+      , $._expression
       , $.assignment
       , seq(
         field('decl', $.var_or_let_or_reg)
@@ -331,7 +337,7 @@ module.exports = grammar({
       // any var_or_let_or_reg prefix; the semantic pass narrows it.
       , prec(-1, seq(
         field('decl', $.var_or_let_or_reg)
-        , field('value', $._expression_with_comprehension)
+        , field('value', $._expression)
       ))
       , $.lambda
     )
@@ -349,17 +355,31 @@ module.exports = grammar({
       )
       , field('operator', $.assignment_operator)
       , field('rvalue', choice(
-        $._expression_with_comprehension
+        $._expression
         , $.enum_definition
         , $.ref_identifier
       ))
     )
+    // An lvalue inside a parenthesized destructuring assignment.
+    //  * `x` / `x:u8` — bare identifier (optionally typed). Binds the
+    //    matching return field BY NAME — the rvalue must have a field
+    //    whose name matches `x`. (Mirrors call-site rule for named args.)
+    //  * `name = local` — explicit named binding. Local `local` receives
+    //    rvalue field `name`. Order on the LHS is irrelevant.
+    //  * `obj.field` / `arr[i]` — assign into an existing complex lvalue.
+    //    Bound by position (no name to match).
     , lvalue_item: $ => choice(
       $.typed_identifier
       , seq(
         field('identifier', $._complex_identifier)
         , field('type', optional($.type_cast))
       )
+      , $.named_lvalue
+    )
+    , named_lvalue: $ => seq(
+      field('name', $.identifier)
+      , '='
+      , field('lvalue', $.typed_identifier)
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , var_or_let_or_reg: $ => seq(
@@ -371,9 +391,14 @@ module.exports = grammar({
         , $.stage_decl
       ))
     )
-    // `stage[N]` / `stage[A..<B]` — a single expression or range, not a tuple
-    // literal. Reuses the same `select` rule as `[...]` indexing.
-    , stage_decl: $ => prec.right(seq('stage', optional($.select)))
+    // `stage` annotation on the LHS of a pipelined assignment inside a
+    // `mod`. Picks how many pipeline stages the RHS `pipe` call inserts.
+    // Forms:
+    //   `stage`        — declaration without picking a count.
+    //   `stage[N]`     — request exactly N pipeline stages from the call.
+    //   `stage[A..<B]` — accept any count in the range.
+    //   `stage[]`      — let the toolchain pick (default or auto).
+    , stage_decl: $ => prec.right(seq('stage', optional($.timing_slot)))
 
     // Read-side attribute name (`.[identifier]`). Exactly one identifier in
     // the brackets — reads never carry `=value`, and the docs show one
@@ -419,7 +444,7 @@ module.exports = grammar({
       '(', optional(listseq1(seq(
         field('mod', optional(choice('...', 'ref', 'reg')))
         , $.typed_identifier
-        , field('definition', optseq('=', $._expression_with_comprehension))
+        , field('definition', optseq('=', $._expression))
       ))), ')'
     )
 
@@ -437,7 +462,24 @@ module.exports = grammar({
     ))
     , _timing_sequence: $ => seq(
       '@'
-      , field('timing', seq('[', $._expression, ']'))
+      , field('timing', $.timing_slot)
+    )
+    // Bracketed slot used by `stage[…]` on the LHS of a pipelined
+    // assignment and by `x@[…]` on a value read.
+    //   * In `stage[N]`, `N` is the number of pipeline stages the called
+    //     `pipe` should insert (a `pipe` may accept a range; `stage[N]`
+    //     picks within it). `stage[]` lets the toolchain pick a default.
+    //   * In `x@[N]`, `N` is the absolute cycle (counted from the
+    //     enclosing `mod`/`pipe`'s inputs) at which the value should be
+    //     read or produced — a compile-time typecheck. `x@[]` opts out
+    //     of that check.
+    , timing_slot: $ => seq(
+      '['
+      , optional(choice(
+        field('index', $._expression)
+        , field('range', $.selection_range)
+      ))
+      , ']'
     )
 
     , typed_identifier: $ => prec.left('typed_identifier', seq(
@@ -456,28 +498,12 @@ module.exports = grammar({
       $._pri4_operand
       , alias($._binary_logical, $.expression_item)
     ))
-    , _expression_with_comprehension: $ => seq(
-      $._expression
-      , optional($.for_comprehension)
-    )
-    , for_comprehension: $ => seq(
-      'for'
-      , forBinding($)
-      , 'in'
-      , field('data', $._expression)
-      , optional(
-        seq(
-          'if'
-          , field('condition', $.stmt_list)
-        )
-      )
-    )
     , member_selection: $ => prec('member_selection', seq(
-      field('argument', $._restricted_expression)
+      field('argument', $._suffix_head)
       , field('select', prec.right('select', repeat1($.select)))
     ))
     , bit_selection: $ => prec('bit_selection', seq(
-      field('argument', $._restricted_expression)
+      field('argument', $._suffix_head)
       , field('select', prec('select', seq(
         '#'
         , optional(choice(
@@ -496,7 +522,7 @@ module.exports = grammar({
       )))
     ))
     , attribute_read: $ => prec.left('member_selection', seq(
-      field('argument', $._restricted_expression)
+      field('argument', $._suffix_head)
       , field('attrs', repeat1(prec('select', seq(
         '.', $.attribute_list
       ))))
@@ -504,7 +530,7 @@ module.exports = grammar({
     // Overparse: `:Type` is only legal at declaration sites; the grammar
     // permits it on any expression. See grammar_overparse.md #2.
     , type_specification: $ => prec('type_spec', seq(
-      field('argument', $._restricted_expression)
+      field('argument', $._suffix_head)
       , ':'
       , typedOrAttributed($)
     ))
@@ -624,7 +650,7 @@ module.exports = grammar({
       , alias($._binary_compare, $.expression_item)
     ))
     , dot_expression: $ => dottedChain(
-      $._restricted_expression
+      $._suffix_head
       , choice(
         $.identifier
         , $.constant
@@ -632,6 +658,8 @@ module.exports = grammar({
       , 'dot'
       , 'dot_sub'
     )
+    // Standalone expression operand. Allowed anywhere a leaf expression is
+    // expected (operand position, statement-level expression).
     , _restricted_expression: $ => prec('expression', choice(
       $._complex_identifier
       , $.constant
@@ -639,6 +667,27 @@ module.exports = grammar({
       , $.lambda
       , $.tuple
       , $.tuple_sq
+    ))
+    // Single-expression parenthesized grouping. Lets `(expr).foo`,
+    // `(expr)#[..]`, `(expr):type` work where the parens are just grouping
+    // one expression. Distinct from `tuple` so that multi-element /
+    // assignment-form tuples cannot serve as suffix heads (the RD-lookahead
+    // problem only bites for those).
+    , paren_group: $ => seq('(', $._expression, ')')
+    // Head of a suffix chain (`.field`, `[i]`, `#[bits]`, `.[attr]`, `:type`).
+    // Deliberately excludes bare `tuple` (multi-element / assignment-form):
+    // an RD parser would otherwise need unbounded lookahead past a `(a,b,c)`
+    // to know whether the closing `)` is followed by a suffix or by `=`
+    // (tuple-lvalue) or by an operator. With this restriction,
+    // `(a, b, c).foo`, `(x=1, y=2).foo`, etc. are rejected — write
+    // `let t = (a,b,c); t.foo` instead. Single-expression parens use
+    // `paren_group` so `(expr).foo` still works.
+    , _suffix_head: $ => prec('expression', choice(
+      $._complex_identifier
+      , $.constant
+      , $.function_call_expression
+      , $.lambda
+      , $.paren_group
     ))
     , lambda: $ => seq(
       field('func_type', choice(

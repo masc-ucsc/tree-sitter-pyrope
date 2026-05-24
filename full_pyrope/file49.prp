@@ -1,6 +1,6 @@
-const c = 4
-cassert(c does u3) // type check on 'c' is a separate statement
-const (x, b) = (true, c)           // assign x=true, b=4
+comb dox(a) -> (b, c) { b = a + 1; c = a + 2 }
 
-cassert(x == true)
-cassert(b == 4)
+(b, c) = dox(a=3)        // local `b` ← dox.b, local `c` ← dox.c
+(c, b) = dox(a=3)        // same: order doesn't matter
+(b=x, c=y) = dox(a=3)    // rename: dox.b → x, dox.c → y
+(c=y, b=x) = dox(a=3)    // same as above

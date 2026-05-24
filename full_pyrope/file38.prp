@@ -1,11 +1,10 @@
-mut c=(x=1,const b = 2, mut d=3)
-c.x   = 3  // OK
-c.d   = 30 // OK, d was already mutable type
+mut c = (x=1, const b=2, mut d=3)
+c.x = 3   // OK     (mut tuple, default-mut field)
+c.d = 30  // OK     (mut tuple, mut field)
 
-const d=(x=1, const y=2, mut z=3)
-d.x   = 2  // OK
+const d = (x=1, const y=2, mut z=3)
 
 mut e:d = ?
 assert(e.x==1 and e.y==2 and e.z==3)
-e.x = 30   // OK
-e.z = 30   // OK
+e.x = 30  // OK
+e.z = 30  // OK     (outer mut + inner mut)
