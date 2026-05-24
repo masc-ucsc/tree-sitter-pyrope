@@ -535,11 +535,11 @@ void prpfmt_solve(struct PrpfmtState *st) {
                     bool allow_align = false;
                     if (target > actual_col) {
                       if (current_channel == TOKEN_ALIGN_COMMENT) {
-                        allow_align = (padding < 40);
+                        allow_align = (padding <= 20);
                       } else {
                         int max_padding = actual_col / 4;
-                        if (max_padding < 4) {
-                          max_padding = 4;
+                        if (max_padding < 15) {
+                          max_padding = 15;
                         }
                         allow_align = (padding <= max_padding);
                       }

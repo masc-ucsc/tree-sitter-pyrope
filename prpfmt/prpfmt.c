@@ -49,7 +49,29 @@ static bool is_block_style_tuple(TSNode node) {
   return false;
 }
 
-static bool is_alignable(TSNode node) {
+static bool is_assertion(TSNode node, PrpfmtState *st) {
+  if (ts_node_grammar_symbol(node) != sym_function_call_expression) {
+    return false;
+  }
+
+  TSNode func_name = ts_node_child(node, 0);
+  if (ts_node_is_null(func_name) || ts_node_grammar_symbol(func_name) != sym_identifier) {
+    return false;
+  }
+
+  char *name = get_node_text(func_name, st->source_code);
+  if (!name) {
+    return false;
+  }
+
+  bool match = (strcmp(name, "cassert") == 0 ||
+                strcmp(name, "assert") == 0 ||
+                strcmp(name, "always") == 0);
+  free(name);
+  return match;
+}
+
+static bool is_alignable(TSNode node, PrpfmtState *st) {
   // Rule 1: Any node with a trailing comment is alignable (Clang-style)
   if (has_trailing_comment(node)) {
     return true;
@@ -58,15 +80,16 @@ static bool is_alignable(TSNode node) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
 
   // Rule 2: A comment itself is only alignable if it is a TRAILING comment.
-  // This allows trailing comments to join the group of the code they follow,
-  // but ensures standalone comments (at the start of a line) break the group.
   if (symbol == sym_comment) {
     TSNode prev = ts_node_prev_sibling(node);
     bool at_start = ts_node_is_null(prev) || (ts_node_end_point(prev).row < ts_node_start_point(node).row);
     return !at_start;
   }
 
-  // Rule 3: Structural nodes with internal alignment operators
+  // Rule 3: Function calls named 'assert', 'cassert', or 'always' are alignable
+  if (is_assertion(node, st)) return true;
+
+  // Rule 4: Structural nodes with internal alignment operators
   switch (symbol) {
     case sym_assignment:
     case sym_declaration_statement:
@@ -150,13 +173,13 @@ void print_description(TSTree *tree, PrpfmtState *st) {
     TSNode child = ts_node_child(root_node, i);
 
     // Lookahead logic to determine if we should start/end a vertical alignment group
-    bool current_alignable = is_alignable(child);
+    bool current_alignable = is_alignable(child, st);
     bool next_alignable = false;
     bool blank_line_after = false;
 
     if (i + 1 < root_child_count) {
       TSNode next = ts_node_child(root_node, i + 1);
-      next_alignable = is_alignable(next);
+      next_alignable = is_alignable(next, st);
       blank_line_after = has_blank_line_between(child, next);
     }
 
@@ -342,13 +365,13 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     // Alignment logic for statements within scope
-    bool current_alignable = is_alignable(child);
+    bool current_alignable = is_alignable(child, st);
     bool next_alignable = false;
     bool blank_line_after = false;
 
     if (i + 1 < child_count) {
       TSNode next = ts_node_child(node, i + 1);
-      next_alignable = is_alignable(next);
+      next_alignable = is_alignable(next, st);
       blank_line_after = has_blank_line_between(child, next);
     }
 
@@ -439,13 +462,13 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
     bool was_raw = false;
 
-    bool current_alignable = is_alignable(child);
+    bool current_alignable = is_alignable(child, st);
     bool next_alignable = false;
     bool blank_line_after = false;
 
     if (i + 1 < child_count) {
       TSNode next = ts_node_child(node, i + 1);
-      next_alignable = is_alignable(next);
+      next_alignable = is_alignable(next, st);
       blank_line_after = has_blank_line_between(child, next);
     }
 
@@ -512,8 +535,8 @@ void print_tuple(TSNode node, PrpfmtState *st) {
       continue;
     }
 
-    // Transitions for all nodes (including closing paren and comments)
-    if (symbol != sym_comment) {
+    // Transitions for all items (excluding closing paren and comments)
+    if (symbol != sym_comment && symbol != anon_sym_RPAREN) {
       if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
         emit_line_break(st);
       } else {
@@ -532,13 +555,9 @@ void print_tuple(TSNode node, PrpfmtState *st) {
         emit_soft_break(st, 10);
         emit_indent_dec(st);
       }
-      // Transitions for closing paren
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      }
       emit_token(st, ")");
     } else {
-      bool current_alignable = is_alignable(child);
+      bool current_alignable = is_alignable(child, st);
       bool next_alignable = false;
       bool blank_line_after = false;
 
@@ -549,7 +568,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
           if (next_sym != anon_sym_COMMA &&
               next_sym != sym_comment) {
             if (next_sym != anon_sym_RPAREN) {
-              next_alignable = is_alignable(next);
+              next_alignable = is_alignable(next, st);
               blank_line_after = has_blank_line_between(child, next);
             }
             break;
@@ -613,6 +632,50 @@ void print_tuple(TSNode node, PrpfmtState *st) {
   emit_group_end(st);
 }
 
+/*
+ * print_assertion_args is a specialized, "flattened" version of print_tuple
+ * used exclusively for cassert/assert calls to ensure relational operators
+ * are not isolated in a sub-group, allowing them to align vertically.
+ */
+void print_assertion_args(TSNode node, PrpfmtState *st) {
+  uint32_t child_count = ts_node_child_count(node);
+  TSNode prev_child = {0};
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    if (symbol == anon_sym_LPAREN) {
+      emit_token(st, "(");
+      prev_child = child;
+      continue;
+    }
+
+    if (symbol == anon_sym_RPAREN) {
+      emit_token(st, ")");
+    } else {
+      // Transitions
+      if (!ts_node_is_null(prev_child)) {
+        if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+          emit_line_break(st);
+        } else {
+           TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+           if (symbol != anon_sym_COMMA && prev_sym != anon_sym_LPAREN && prev_sym != anon_sym_COMMA) {
+             emit_space(st);
+           }
+        }
+      }
+
+      if (ts_node_is_named(child)) {
+        print__tuple_list(child, st);
+      } else {
+        emit_node_text(child, st);
+      }
+    }
+    prev_child = child;
+  }
+}
+
 void print_tuple_sq(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, true);
   bool is_block = is_block_style_tuple(node);
@@ -638,18 +701,29 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
       continue;
     }
 
+    // Transitions for all nodes (including closing bracket and comments)
+    if (symbol != sym_comment && symbol != anon_sym_RBRACK) {
+      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
+        emit_line_break(st);
+      } else {
+        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
+        if (symbol != anon_sym_RBRACK &&
+            symbol != anon_sym_COMMA &&
+            prev_sym != anon_sym_LBRACK &&
+            prev_sym != anon_sym_COMMA) {
+          emit_space(st);
+        }
+      }
+    }
+
     if (symbol == anon_sym_RBRACK) {
       if (is_block) {
         emit_soft_break(st, 10);
         emit_indent_dec(st);
       }
-      // Transitions for closing bracket
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      }
       emit_token(st, "]");
     } else {
-      bool current_alignable = is_alignable(child);
+      bool current_alignable = is_alignable(child, st);
       bool next_alignable = false;
       bool blank_line_after = false;
 
@@ -660,7 +734,7 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
           if (next_sym != anon_sym_COMMA &&
               next_sym != sym_comment) {
             if (next_sym != anon_sym_RBRACK) {
-              next_alignable = is_alignable(next);
+              next_alignable = is_alignable(next, st);
               blank_line_after = has_blank_line_between(child, next);
             }
             break;
@@ -674,18 +748,6 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
           !in_align_group) {
         emit_align_group_start(st);
         in_align_group = true;
-      }
-
-      // Final simplified transition logic: no soft breaks, just smart newlines or spaces.
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      } else {
-        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
-        if (symbol != anon_sym_COMMA &&
-            prev_sym != anon_sym_LBRACK &&
-            prev_sym != anon_sym_COMMA) {
-          emit_space(st);
-        }
       }
 
       emit_group_start(st, false, false); // FIREWALL
@@ -1760,6 +1822,8 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
   }
 
   uint32_t child_count = ts_node_child_count(node);
+  TSNode prev_child = {0};
+  bool in_align_group = false;
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -1814,17 +1878,44 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
         print_comment(child, st);
         break;
       default:
-        emit_group_start(st, false, false); // FIREWALL
-        if (fn && strcmp(fn, "definition") == 0) {
-          print__expression_with_comprehension(child, st, true);
-        } else if (!ts_node_is_named(child)) {
-          emit_node_text(child, st);
-        } else {
-          print__expression_with_comprehension(child, st, true);
+        {
+          bool current_alignable = is_alignable(child, st);
+          bool next_alignable = false;
+          bool blank_line_after = false;
+
+          if (current_alignable) {
+            for (uint32_t j = i + 1; j < child_count; j++) {
+              TSNode next = ts_node_child(node, j);
+              TSSymbol next_sym = ts_node_grammar_symbol(next);
+              if (next_sym != anon_sym_COMMA && next_sym != sym_comment) {
+                if (next_sym != anon_sym_RPAREN) {
+                  next_alignable = is_alignable(next, st);
+                  blank_line_after = has_blank_line_between(child, next);
+                }
+                break;
+              }
+            }
+          }
+
+          if (current_alignable && next_alignable && !blank_line_after && !in_align_group) {
+            emit_align_group_start(st);
+            in_align_group = true;
+          }
+
+          if (ts_node_is_named(child)) {
+            print__expression(child, st, true);
+          } else {
+            emit_node_text(child, st);
+          }
+
+          if (in_align_group && symbol != anon_sym_COMMA && symbol != sym_comment && (!next_alignable || blank_line_after)) {
+            emit_align_group_end(st);
+            in_align_group = false;
+          }
         }
-        emit_group_end(st);
         break;
     }
+    prev_child = child;
   }
   emit_group_end(st);
 }
@@ -1864,6 +1955,19 @@ void print_function_call_statement(TSNode node, PrpfmtState *st) {
 
 void print_function_call_expression(TSNode node, PrpfmtState *st) {
   uint32_t child_count = ts_node_child_count(node);
+  bool old_in_assert = st->in_assert;
+
+  // Check if this is an assertion call to enable vertical alignment
+  TSNode func_name = ts_node_child(node, 0);
+  if (!ts_node_is_null(func_name)) {
+    char *name = get_node_text(func_name, st->source_code);
+    if (name) {
+      if (strcmp(name, "cassert") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "always") == 0) {
+        st->in_assert = true;
+      }
+      free(name);
+    }
+  }
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -1872,7 +1976,11 @@ void print_function_call_expression(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_tuple:
-        print_tuple(child, st);
+        if (st->in_assert) {
+          print_assertion_args(child, st);
+        } else {
+          print_tuple(child, st);
+        }
         break;
       case sym_comment:
         print_comment(child, st);
@@ -1888,6 +1996,7 @@ void print_function_call_expression(TSNode node, PrpfmtState *st) {
         break;
     }
   }
+  st->in_assert = old_in_assert;
 }
 
 /******************************************************************************
@@ -2140,11 +2249,10 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
             emit_break_point(st, 30);
             if (st->in_assert && (strcmp(op_text, "==") == 0 || strcmp(op_text, "!=") == 0)) {
               emit_align_relational(st, op_text);
-              emit_space(st);
             } else {
               emit_token(st, op_text);
-              emit_space(st);
             }
+            emit_space(st);
             free(op_text);
           }
         }
