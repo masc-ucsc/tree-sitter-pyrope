@@ -685,10 +685,13 @@ void print_assertion_args(TSNode node, PrpfmtState *st) {
         }
       }
 
-      if (ts_node_is_named(child)) {
-        print__tuple_list(child, st);
-      } else {
-        emit_node_text(child, st);
+      switch (symbol) {
+        case sym_comment:
+          print_comment(child, st);
+          break;
+        default:
+          print__tuple_list(child, st);
+          break;
       }
     }
     prev_child = child;
