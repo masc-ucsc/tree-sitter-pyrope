@@ -1,6 +1,8 @@
 # Rust artifacts
 target/
 
+full_pyrope
+
 # Node artifacts
 build/
 prebuilds/

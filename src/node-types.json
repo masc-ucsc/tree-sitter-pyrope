@@ -533,6 +533,14 @@
           {
             "type": "timed_identifier",
             "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
+            "named": true
           }
         ]
       },
@@ -774,6 +782,14 @@
           },
           {
             "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -1155,6 +1171,14 @@
           },
           {
             "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -2720,6 +2744,14 @@
           },
           {
             "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]
@@ -4344,6 +4376,14 @@
           },
           {
             "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "tuple_sq",
             "named": true
           }
         ]

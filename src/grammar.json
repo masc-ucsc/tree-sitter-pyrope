@@ -3418,6 +3418,14 @@
           {
             "type": "SYMBOL",
             "name": "paren_group"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "tuple"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "tuple_sq"
           }
         ]
       }
@@ -4676,6 +4684,10 @@
       "named_lvalue",
       "_complex_identifier",
       "typed_identifier"
+    ],
+    [
+      "_tuple_item",
+      "array_length"
     ]
   ],
   "precedences": [

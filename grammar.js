@@ -99,6 +99,7 @@ module.exports = grammar({
     , [$.paren_group, $.tuple]
     , [$._tuple_item, $.paren_group]
     , [$.named_lvalue, $._complex_identifier, $.typed_identifier]
+    , [$._tuple_item, $.array_length]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -675,19 +676,19 @@ module.exports = grammar({
     // problem only bites for those).
     , paren_group: $ => seq('(', $._expression, ')')
     // Head of a suffix chain (`.field`, `[i]`, `#[bits]`, `.[attr]`, `:type`).
-    // Deliberately excludes bare `tuple` (multi-element / assignment-form):
-    // an RD parser would otherwise need unbounded lookahead past a `(a,b,c)`
-    // to know whether the closing `)` is followed by a suffix or by `=`
-    // (tuple-lvalue) or by an operator. With this restriction,
-    // `(a, b, c).foo`, `(x=1, y=2).foo`, etc. are rejected — write
-    // `let t = (a,b,c); t.foo` instead. Single-expression parens use
-    // `paren_group` so `(expr).foo` still works.
+    // Includes bare `tuple` / `tuple_sq` so UFCS forms `(a,b).foo()` and
+    // `[x,y,z].foo()` parse — needed for receiver-style calls on tuple /
+    // array literals. Single-expression parens still resolve via
+    // `paren_group` (which has higher static precedence than `tuple` with a
+    // single item via the listed conflict).
     , _suffix_head: $ => prec('expression', choice(
       $._complex_identifier
       , $.constant
       , $.function_call_expression
       , $.lambda
       , $.paren_group
+      , $.tuple
+      , $.tuple_sq
     ))
     , lambda: $ => seq(
       field('func_type', choice(
