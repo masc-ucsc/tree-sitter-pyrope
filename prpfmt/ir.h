@@ -33,6 +33,12 @@ typedef struct {
   bool propagates;  // For Groups: should explosion propagate to children?
   int target_col;   // For Alignment: which column should we jump to?
   int penalty;      // For Break Points: cost of breaking here
+
+  // Pre-calculated metrics for O(n) solver
+  int pre_flat_length;
+  int pre_explode_cost;
+  int pre_force_counter;
+  int pre_group_end;
 } Token;
 
 typedef struct {

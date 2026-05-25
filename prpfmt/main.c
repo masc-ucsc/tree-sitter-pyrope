@@ -1,18 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <tree_sitter/api.h>
 
 #include "prpfmt.h"
 
+double get_time_ms() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+}
+
 void print_help() {
-  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>] [-v]\n");
+  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>] [-v] [-b]\n");
   printf("       ./prpfmt [-h | --help]\n\n");
   printf("Options:\n");
   printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
   printf("  -i, --indent <n>  Specify the indentation size (default: 4).\n");
   printf("  -w, --width <n>   Specify the maximum line width (default: 80).\n");
   printf("  -v, --verify      Verify that the formatted output is still parseable.\n");
+  printf("  -b, --bench       Run in benchmark mode and print timing statistics.\n");
   printf("  -h, --help        Display this help message.\n");
 }
 
@@ -88,6 +96,7 @@ int main(int argc, char **argv) {
   int indent_size = 4;
   int max_width = 80;
   bool verify_output = false;
+  bool run_benchmark = false;
 
   // Parse for -o, -i, -w options
   for (int i = 2; i < argc; i++) {
@@ -120,6 +129,8 @@ int main(int argc, char **argv) {
       }
     } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verify") == 0) {
       verify_output = true;
+    } else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bench") == 0) {
+      run_benchmark = true;
     } else {
       fprintf(stderr, "Error: Invalid argument '%s'.\n", argv[i]);
       print_help();
@@ -149,8 +160,14 @@ int main(int argc, char **argv) {
 
   // Parse the source code
   char *source_code = file_to_string(infile_path);
+  
+  double parse_start = 0, parse_end = 0;
+  if (run_benchmark) parse_start = get_time_ms();
+  
   TSTree *tree =
       ts_parser_parse_string(parser, NULL, source_code, strlen(source_code));
+
+  if (run_benchmark) parse_end = get_time_ms();
 
   // Check if tree has any ERROR or MISSING nodes
   TSNode root = ts_tree_root_node(tree);
@@ -176,6 +193,9 @@ PrpfmtState state = {
   .buffer = { .data = NULL, .size = 0, .capacity = 0 }
 };
 
+  double format_start = 0, format_end = 0;
+  if (run_benchmark) format_start = get_time_ms();
+
   print_description(tree, &state);
   prpfmt_solve(&state);
 
@@ -193,6 +213,7 @@ PrpfmtState state = {
     // Temporary swap outfile to capture render
     state.outfile = mem_stream;
     prpfmt_render(&state);
+    if (run_benchmark) format_end = get_time_ms();
     fclose(mem_stream);
 
     // Verify the formatted output
@@ -220,9 +241,26 @@ PrpfmtState state = {
   } else {
     // Direct rendering to outfile
     prpfmt_render(&state);
+    if (run_benchmark) format_end = get_time_ms();
   }
 
   prpfmt_free_buffer(&state);
+
+  if (run_benchmark) {
+    double parse_time = parse_end - parse_start;
+    double format_time = format_end - format_start;
+    double total_time = parse_time + format_time;
+    size_t file_bytes = strlen(source_code);
+    double mb_per_sec = (file_bytes / 1024.0 / 1024.0) / (total_time / 1000.0);
+    
+    fprintf(stderr, "\nBenchmark Results:\n");
+    fprintf(stderr, "------------------\n");
+    fprintf(stderr, "File Size:   %.2f KB\n", file_bytes / 1024.0);
+    fprintf(stderr, "Parse Time:  %.3f ms\n", parse_time);
+    fprintf(stderr, "Format Time: %.3f ms\n", format_time);
+    fprintf(stderr, "Total Time:  %.3f ms\n", total_time);
+    fprintf(stderr, "Throughput:  %.2f MB/s\n\n", mb_per_sec);
+  }
 
   // Free memory
   cleanup(source_code, tree, parser, outfile);
