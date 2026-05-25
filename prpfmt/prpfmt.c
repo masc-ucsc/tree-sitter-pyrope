@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <tree_sitter/api.h>
 
 #include "prpfmt.h"
@@ -109,7 +110,9 @@ bool has_recursive_line_comment(TSNode node, PrpfmtState *st) {
   if (symbol == sym_comment) {
     char *text = get_node_text(node, st->source_code);
     if (text) {
-      bool is_line = (strncmp(text, "//", 2) == 0);
+      const char *ptr = text;
+      while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+      bool is_line = (strncmp(ptr, "//", 2) == 0);
       free(text);
       if (is_line) return true;
     }
@@ -2350,14 +2353,8 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
     switch (symbol) {
       case sym_binary_other_op:
         {
-          int penalty = 50;
           char *op_text = get_node_text(child, st->source_code);
-          if (op_text) {
-            if (strcmp(op_text, "*") == 0 || strcmp(op_text, "/") == 0) {
-              penalty = 100;
-            }
-          }
-          emit_break_point(st, penalty);
+          emit_break_point(st, 50);
           emit_align_math(st, op_text); // Use MATH channel
           emit_space(st);
           if (op_text) {
@@ -2722,6 +2719,27 @@ void print_for_comprehension(TSNode node, PrpfmtState *st) {
   }
 }
 
+static void handle_select_contents(TSNode node, PrpfmtState *st) {
+  uint32_t count = ts_node_child_count(node);
+  for (uint32_t i = 0; i < count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    const char *fn = ts_node_field_name_for_child(node, i);
+
+    if (symbol == sym_select) {
+      print_select(child, st);
+    } else if (symbol == sym_comment) {
+      print_comment(child, st);
+    } else if (fn && (strcmp(fn, "reduction") == 0 || strcmp(fn, "extension") == 0)) {
+      handle_select_contents(child, st);
+    } else if (ts_node_is_named(child)) {
+      print__expression(child, st, true);
+    } else {
+      emit_node_text(child, st);
+    }
+  }
+}
+
 void print_member_selection(TSNode node, PrpfmtState *st) {
   uint32_t child_count = ts_node_child_count(node);
 
@@ -2760,8 +2778,11 @@ void print_bit_selection(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_select:
-        emit_token(st, "@");
-        print_select(child, st);
+        if (ts_node_is_named(child)) {
+          print_select(child, st);
+        } else {
+          handle_select_contents(child, st);
+        }
         break;
       case sym_comment:
         print_comment(child, st);
@@ -2821,6 +2842,7 @@ void print_attribute_read(TSNode node, PrpfmtState *st) {
 }
 
 void print_select(TSNode node, PrpfmtState *st) {
+  emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2828,6 +2850,18 @@ void print_select(TSNode node, PrpfmtState *st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch (symbol) {
+      case anon_sym_LBRACK:
+        emit_node_text(child, st);
+        emit_indent_inc(st);
+        if (!has_trailing_comment(child)) {
+          emit_soft_break(st, 0);
+        }
+        break;
+      case anon_sym_RBRACK:
+        emit_soft_break(st, 0);
+        emit_indent_dec(st);
+        emit_node_text(child, st);
+        break;
       case sym_selection_range:
         print_selection_range(child, st);
         break;
@@ -2836,16 +2870,20 @@ void print_select(TSNode node, PrpfmtState *st) {
         break;
       default:
         if (ts_node_is_named(child)) {
+          emit_group_start(st, false, false);
           print__expression(child, st, true);
+          emit_group_end(st);
         } else {
           emit_node_text(child, st);
         }
         break;
     }
   }
+  emit_group_end(st);
 }
 
 void print_selection_range(TSNode node, PrpfmtState *st) {
+  emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t j = 0; j < child_count; j++) {
@@ -2858,13 +2896,16 @@ void print_selection_range(TSNode node, PrpfmtState *st) {
         break;
       default:
         if (ts_node_is_named(child)) {
+          emit_group_start(st, false, false);
           print__expression(child, st, true);
+          emit_group_end(st);
         } else {
           emit_node_text(child, st);
         }
         break;
     }
   }
+  emit_group_end(st);
 }
 
 /******************************************************************************
@@ -3510,8 +3551,11 @@ void print_comment_trailing(TSNode node, PrpfmtState *st) {
     // If it's a line comment and more code follows on a new line in source,
     // we MUST ensure a newline exists so the next token isn't swallowed.
     TSNode next = ts_node_next_sibling(node);
+    const char *ptr = node_text;
+    while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+    
     if (!ts_node_is_null(next) &&
-        strncmp(node_text, "//", 2) == 0 &&
+        strncmp(ptr, "//", 2) == 0 &&
         ts_node_start_point(next).row > ts_node_end_point(node).row) {
       emit_line_break(st);
     }
