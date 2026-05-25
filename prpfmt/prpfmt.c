@@ -357,11 +357,18 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
 }
 
 void check_format_directives(const char *node_text, PrpfmtState *st) {
-  // Search for formatting toggle directives
-  if (strstr(node_text, "prpfmt off")) {
-    st->fmt_on = false;
-  } else if (strstr(node_text, "prpfmt on")) {
-    st->fmt_on = true;
+  const char *ptr = node_text;
+  while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+  
+  if (strncmp(ptr, "//", 2) == 0) {
+    ptr += 2;
+    while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+    
+    if (strncmp(ptr, "prpfmt off", 10) == 0) {
+      st->fmt_on = false;
+    } else if (strncmp(ptr, "prpfmt on", 9) == 0) {
+      st->fmt_on = true;
+    }
   }
 }
 
