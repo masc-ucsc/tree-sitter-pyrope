@@ -1470,17 +1470,63 @@ void print_return_statement(TSNode node, PrpfmtState *st) {
 
 void print_break_statement(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, false);
-  (void)node;
-  (void)st;
-  emit_token(st, "break");
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_break:
+        emit_token(st, "break");
+        break;
+      case sym_when_unless_cond:
+      case sym__semicolon:
+      case anon_sym_SEMI:
+      case sym__automatic_semicolon:
+        print__semicolon(child, st, SPACE_NONE);
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);
+        }
+        break;
+    }
+  }
   emit_group_end(st);
 }
 
 void print_continue_statement(TSNode node, PrpfmtState *st) {
   emit_group_start(st, false, false);
-  (void)node;
-  (void)st;
-  emit_token(st, "continue");
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_continue:
+        emit_token(st, "continue");
+        break;
+      case sym_when_unless_cond:
+      case sym__semicolon:
+      case anon_sym_SEMI:
+      case sym__automatic_semicolon:
+        print__semicolon(child, st, SPACE_NONE);
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);
+        }
+        break;
+    }
+  }
   emit_group_end(st);
 }
 
@@ -2958,6 +3004,9 @@ void print_expression_type(TSNode node, PrpfmtState *st) {
   switch (symbol) {
     case sym_identifier:
       print_identifier(node, st);
+      break;
+    case sym_constant:
+      print_constant(node, st);
       break;
     case sym_dot_expression_type:
       print_dot_expression_type(node, st);
