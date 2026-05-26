@@ -221,7 +221,9 @@ void print_description(TSTree *tree, PrpfmtState *st) {
 
     if (i + 1 < root_child_count) {
       TSNode next = ts_node_child(root_node, i + 1);
-      emit_vertical_transition(st, child, next, true);
+      if (st->fmt_on) {
+        emit_vertical_transition(st, child, next, true);
+      }
     }
     prev_child = child;
   }
@@ -241,8 +243,9 @@ void print_description(TSTree *tree, PrpfmtState *st) {
 bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_inline) {
   emit_group_start(st, false, false);
   TSSymbol symbol = ts_node_grammar_symbol(node);
+  bool was_fmt_on = st->fmt_on;
 
-  // 1. Peek at directives if it's a comment to keep the toggle working
+  // 1. Peek at directives if it's a comment
   if (symbol == sym_comment) {
     char *text = get_node_text(node, st->source_code);
     if (text) {
@@ -251,16 +254,16 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
     }
   }
 
-  // 2. If formatting is DISABLED, use raw passthrough for EVERYTHING (including the comment)
-  if (!st->fmt_on) {
+  // 2. Use raw passthrough if we were ALREADY off, 
+  // OR if this was the comment that toggled us off.
+  // This ensures directives themselves are printed as raw text.
+  if (!was_fmt_on || !st->fmt_on) {
     uint32_t start_byte = 0;
 
     if (ts_node_is_null(prev_node)) {
       start_byte = ts_node_start_byte(node);
-    } else if (ts_node_end_point(prev_node).row == ts_node_start_point(node).row) {
-      start_byte = ts_node_end_byte(prev_node);
     } else {
-      start_byte = ts_node_end_byte(prev_node) + 1;
+      start_byte = ts_node_end_byte(prev_node);
     }
 
     uint32_t end_byte = ts_node_end_byte(node);
@@ -286,7 +289,7 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
 
   // 3. Special Case: Comments in ENABLED mode handle their own transition logic
   if (symbol == sym_comment) {
-    print_comment(node, st, true); // true = already peeked for directives
+    print_comment(node, st, true); // true = already peeked
     emit_group_end(st);
     return false;
   }
