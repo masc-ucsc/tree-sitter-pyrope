@@ -188,7 +188,7 @@ void print_description(TSTree *tree, PrpfmtState *st) {
   TSNode root_node = ts_tree_root_node(tree);
   uint32_t root_child_count = ts_node_child_count(root_node);
 
-  TSNode prev_child;
+  TSNode prev_child = {0};
   bool in_align_group = false;
 
   for (uint32_t i = 0; i < root_child_count; i++) {
@@ -242,14 +242,16 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
   emit_group_start(st, false, false);
   TSSymbol symbol = ts_node_grammar_symbol(node);
 
-  // Special Case: Comments handle their own transition/newline logic
+  // 1. Peek at directives if it's a comment to keep the toggle working
   if (symbol == sym_comment) {
-    print_comment(node, st);
-    emit_group_end(st);
-    return false;
+    char *text = get_node_text(node, st->source_code);
+    if (text) {
+      check_format_directives(text, st);
+      free(text);
+    }
   }
 
-  // Print original text if prpfmt off
+  // 2. If formatting is DISABLED, use raw passthrough for EVERYTHING (including the comment)
   if (!st->fmt_on) {
     uint32_t start_byte = 0;
 
@@ -269,29 +271,27 @@ bool print__statement(TSNode node, PrpfmtState *st, TSNode prev_node, bool is_in
       if (raw_text) {
         strncpy(raw_text, st->source_code + start_byte, length);
         raw_text[length] = '\0';
-
-        /*
-        // Check for prpfmt on (to update st->fmt_on)
-        if (symbol == sym_comment) {
-          check_format_directives(raw_text, st);
-        }
-        */
-
         emit_token(st, raw_text);
         free(raw_text);
       }
     }
     emit_group_end(st);
-    // Signal container to skip transition
+
+    // If it was a comment, don't trigger a statement separator transition
+    if (symbol == sym_comment) {
+      return false;
+    }
     return true;
   }
 
+  // 3. Special Case: Comments in ENABLED mode handle their own transition logic
+  if (symbol == sym_comment) {
+    print_comment(node, st, true); // true = already peeked for directives
+    emit_group_end(st);
+    return false;
+  }
+
   switch (symbol) {
-    /*
-    case sym_comment:
-      print_comment(node, st);
-      break;
-    */
     case anon_sym_wrap:
       emit_token(st, "wrap");
       emit_space(st);
@@ -466,7 +466,7 @@ void print_scope_statement(TSNode node, PrpfmtState *st, bool is_inline) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         print__statement(child, st, prev_child, can_inline);
@@ -521,7 +521,7 @@ void print_stmt_list(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       case sym_when_unless_cond:
       case anon_sym_SEMI:
@@ -624,7 +624,7 @@ void print_tuple(TSNode node, PrpfmtState *st) {
       emit_group_start(st, false, false); // FIREWALL
       switch (symbol) {
         case sym_comment:
-          print_comment(child, st);
+          print_comment(child, st, false);
           break;
         default:
           print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
@@ -693,7 +693,7 @@ void print_assertion_args(TSNode node, PrpfmtState *st) {
 
       switch (symbol) {
         case sym_comment:
-          print_comment(child, st);
+          print_comment(child, st, false);
           break;
         default:
           print__tuple_list(child, st, SPACE_NONE);
@@ -781,7 +781,7 @@ void print_tuple_sq(TSNode node, PrpfmtState *st) {
       emit_group_start(st, false, false); // FIREWALL
       switch (symbol) {
         case sym_comment:
-          print_comment(child, st);
+          print_comment(child, st, false);
           break;
         default:
           print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
@@ -945,7 +945,7 @@ void print_if_expression(TSNode node, PrpfmtState *st, bool is_inline) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn) {
@@ -1095,7 +1095,7 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "condition") == 0) {
@@ -1219,7 +1219,7 @@ void print_for_statement(TSNode node, PrpfmtState *st) {
         print_scope_statement(child, st, false);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1297,7 +1297,7 @@ void print_while_statement(TSNode node, PrpfmtState *st) {
         print_scope_statement(child, st, false);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "condition") == 0) {
@@ -1345,7 +1345,7 @@ void print_when_unless_cond(TSNode node, PrpfmtState *st) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "condition") == 0) {
@@ -1388,7 +1388,7 @@ void print_loop_statement(TSNode node, PrpfmtState *st) {
         print_scope_statement(child, st, false);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1418,7 +1418,7 @@ void print_control_statement(TSNode node, PrpfmtState *st) {
         print_continue_statement(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_node_text(child, st);
@@ -1447,7 +1447,7 @@ void print_return_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "argument") == 0) {
@@ -1535,7 +1535,7 @@ void print_assignment(TSNode node, PrpfmtState *st, SpacingConfig spacing) {
         print_ref_identifier(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         // Handle expression-like rvalues and anonymous tokens (braces)
@@ -1607,7 +1607,7 @@ void print_lvalue_item(TSNode node, PrpfmtState *st) {
               print_type_cast(child, st);
               break;
             case sym_comment:
-              print_comment(child, st);
+              print_comment(child, st, false);
               break;
             default:
               if (fn) {
@@ -1639,7 +1639,7 @@ void print_lvalue_list(TSNode node, PrpfmtState *st) {
         print_lvalue_item(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       case anon_sym_COMMA:
         emit_token(st, ",");
@@ -1683,7 +1683,7 @@ void print_declaration_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1709,7 +1709,7 @@ void print_stage_decl(TSNode node, PrpfmtState *st) {
         print_tuple_sq(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         break;
@@ -1748,7 +1748,7 @@ void print_enum_assignment(TSNode node, PrpfmtState *st) {
         print_arg_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1809,7 +1809,7 @@ void print_enum_definition(TSNode node, PrpfmtState *st) {
         print_arg_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1855,7 +1855,7 @@ void print_spawn_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1911,7 +1911,7 @@ void print_lambda(TSNode node, PrpfmtState *st) {
         print_scope_statement(child, st, is_inline_eligible(child, st));
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -1965,7 +1965,7 @@ void print_function_definition_decl(TSNode node, PrpfmtState *st) {
         print_typed_identifier(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -2035,7 +2035,7 @@ void print_arg_list(TSNode node, PrpfmtState *st) {
         print_arg_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         {
@@ -2094,7 +2094,7 @@ void print_function_call_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn) {
@@ -2142,7 +2142,7 @@ void print_function_call_expression(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "function") == 0) {
@@ -2330,7 +2330,7 @@ void print__binary_times(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_group_start(st, false, false); // FIREWALL
@@ -2370,7 +2370,7 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_group_start(st, false, false); // FIREWALL
@@ -2414,7 +2414,7 @@ void print__binary_compare(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_group_start(st, false, false); // FIREWALL
@@ -2454,7 +2454,7 @@ void print__binary_logical(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_group_start(st, false, false); // FIREWALL
@@ -2498,7 +2498,7 @@ void print_unary_expression(TSNode node, PrpfmtState *st) {
         emit_token(st, "...");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "argument") == 0) {
@@ -2528,7 +2528,7 @@ void print_dot_expression(TSNode node, PrpfmtState *st) {
         emit_token(st, ".");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn &&
@@ -2558,7 +2558,7 @@ void print_optional_expression(TSNode node, PrpfmtState *st) {
         emit_token(st, "?");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "argument") == 0) {
@@ -2586,7 +2586,7 @@ void print_type_specification(TSNode node, PrpfmtState *st) {
         emit_token(st, ":");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn) {
@@ -2627,7 +2627,7 @@ void print_type_cast(TSNode node, PrpfmtState *st) {
         print_attribute_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn) {
@@ -2660,7 +2660,7 @@ void print_expression_list(TSNode node, PrpfmtState *st) {
         print_ref_identifier(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       case anon_sym_COMMA:
         emit_token(st, ",");
@@ -2715,7 +2715,7 @@ void print_for_comprehension(TSNode node, PrpfmtState *st) {
         print_typed_identifier_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -2736,7 +2736,7 @@ static void handle_select_contents(TSNode node, PrpfmtState *st) {
     if (symbol == sym_select) {
       print_select(child, st);
     } else if (symbol == sym_comment) {
-      print_comment(child, st);
+      print_comment(child, st, false);
     } else if (fn && (strcmp(fn, "reduction") == 0 || strcmp(fn, "extension") == 0)) {
       handle_select_contents(child, st);
     } else if (ts_node_is_named(child)) {
@@ -2760,7 +2760,7 @@ void print_member_selection(TSNode node, PrpfmtState *st) {
         print_select(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "argument") == 0) {
@@ -2792,7 +2792,7 @@ void print_bit_selection(TSNode node, PrpfmtState *st) {
         }
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && (strcmp(fn, "argument") == 0 || 
@@ -2831,7 +2831,7 @@ void print_attribute_read(TSNode node, PrpfmtState *st) {
         print_attribute_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn &&
@@ -2873,7 +2873,7 @@ void print_select(TSNode node, PrpfmtState *st) {
         print_selection_range(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (ts_node_is_named(child)) {
@@ -2899,7 +2899,7 @@ void print_selection_range(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (ts_node_is_named(child)) {
@@ -2998,7 +2998,7 @@ void print_dot_expression_type(TSNode node, PrpfmtState *st) {
         print_identifier(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3023,7 +3023,7 @@ void print_function_call_type(TSNode node, PrpfmtState *st) {
         print_tuple(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "function") == 0) {
@@ -3051,7 +3051,7 @@ void print_array_type(TSNode node, PrpfmtState *st) {
         print_tuple_sq(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "base") == 0) {
@@ -3145,7 +3145,7 @@ void print_type_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && (strcmp(fn, "alias") == 0 || strcmp(fn, "type") == 0)) {
@@ -3190,7 +3190,7 @@ void print_typed_identifier(TSNode node, PrpfmtState *st) {
         print_type_cast(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "identifier") == 0) {
@@ -3225,7 +3225,7 @@ void print_typed_identifier_list(TSNode node, PrpfmtState *st) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3249,7 +3249,7 @@ void print_ref_identifier(TSNode node, PrpfmtState *st) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3320,7 +3320,7 @@ void print_timed_identifier(TSNode node, PrpfmtState *st) {
         emit_token(st, "]");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "timing") == 0) {
@@ -3365,7 +3365,7 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState *st) {
         emit_space(st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3519,7 +3519,7 @@ void print__format_spec(TSNode node, PrpfmtState *st) {
  * 9. Comments
  ******************************************************************************/
 
-void print_comment(TSNode node, PrpfmtState *st) {
+void print_comment(TSNode node, PrpfmtState *st, bool is_prechecked) {
   TSNode prev = ts_node_prev_sibling(node);
   TSNode next = ts_node_next_sibling(node);
 
@@ -3527,20 +3527,22 @@ void print_comment(TSNode node, PrpfmtState *st) {
   bool at_end = ts_node_is_null(next) || (ts_node_start_point(next).row > ts_node_end_point(node).row);
 
   if (at_start && at_end) {
-    print_comment_newline(node, st);
+    print_comment_newline(node, st, is_prechecked);
   } else if (at_end) {
-    print_comment_trailing(node, st);
+    print_comment_trailing(node, st, is_prechecked);
   } else if (at_start) {
-    print_comment_inline(node, st);
+    print_comment_inline(node, st, is_prechecked);
   } else {
-    print_comment_inline(node, st);
+    print_comment_inline(node, st, is_prechecked);
   }
 }
 
-void print_comment_inline(TSNode node, PrpfmtState *st) {
+void print_comment_inline(TSNode node, PrpfmtState *st, bool is_prechecked) {
   char *node_text = get_node_text(node, st->source_code);
   if (node_text) {
-    check_format_directives(node_text, st);
+    if (!is_prechecked) {
+      check_format_directives(node_text, st);
+    }
     emit_space(st);
     emit_token(st, node_text);
     emit_space(st);
@@ -3548,10 +3550,12 @@ void print_comment_inline(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print_comment_trailing(TSNode node, PrpfmtState *st) {
+void print_comment_trailing(TSNode node, PrpfmtState *st, bool is_prechecked) {
   char *node_text = get_node_text(node, st->source_code);
   if (node_text) {
-    check_format_directives(node_text, st);
+    if (!is_prechecked) {
+      check_format_directives(node_text, st);
+    }
     emit_space(st);
     emit_align_comment(st, node_text);
 
@@ -3571,10 +3575,12 @@ void print_comment_trailing(TSNode node, PrpfmtState *st) {
   }
 }
 
-void print_comment_newline(TSNode node, PrpfmtState *st) {
+void print_comment_newline(TSNode node, PrpfmtState *st, bool is_prechecked) {
   char *node_text = get_node_text(node, st->source_code);
   if (node_text) {
-    check_format_directives(node_text, st);
+    if (!is_prechecked) {
+      check_format_directives(node_text, st);
+    }
     emit_token(st, node_text);
     free(node_text);
   }
@@ -3618,7 +3624,7 @@ void print_import_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3660,7 +3666,7 @@ void print_impl_statement(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_NONE);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && (strcmp(fn, "trait_name") == 0 || strcmp(fn, "type_name") == 0)) {
@@ -3695,7 +3701,7 @@ void print_test_statement(TSNode node, PrpfmtState *st) {
         print_scope_statement(child, st, false);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3725,7 +3731,7 @@ void print_attributes(TSNode node, PrpfmtState *st) {
         print_attribute_list(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (!ts_node_is_named(child)) {
@@ -3767,7 +3773,7 @@ void print_attribute_list(TSNode node, PrpfmtState *st) {
         print_ref_identifier(child, st);
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         emit_group_start(st, false, false); // FIREWALL
@@ -3825,7 +3831,7 @@ void print__timing_sequence(TSNode node, PrpfmtState *st) {
         emit_token(st, "]");
         break;
       case sym_comment:
-        print_comment(child, st);
+        print_comment(child, st, false);
         break;
       default:
         if (fn && strcmp(fn, "timing") == 0) {

@@ -445,10 +445,10 @@ void print__format_spec(TSNode node, PrpfmtState *st);
 /******************************************************************************
  * 9. Comments                                                                *
  ******************************************************************************/
-void print_comment(TSNode node, PrpfmtState *st);
-void print_comment_inline(TSNode node, PrpfmtState *st);
-void print_comment_newline(TSNode node, PrpfmtState *st);
-void print_comment_trailing(TSNode node, PrpfmtState *st);
+void print_comment(TSNode node, PrpfmtState *st, bool is_prechecked);
+void print_comment_inline(TSNode node, PrpfmtState *st, bool is_prechecked);
+void print_comment_newline(TSNode node, PrpfmtState *st, bool is_prechecked);
+void print_comment_trailing(TSNode node, PrpfmtState *st, bool is_prechecked);
 
 /******************************************************************************
  * 10. Special Statements & Attributes                                        *
