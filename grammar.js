@@ -33,13 +33,14 @@ function forBinding($) {
   );
 }
 
-// Write-side attribute lists (`::[…]`, `:Type:[…]`) share the same bracketed
-// tuple shape as `tuple_sq`. Reusing tuple_sq here keeps the grammar small —
-// the read side (`.[…]`) cannot, because it must accept reserved keywords
-// like `comptime` as identifiers, which the expression-based tuple item
-// path does not allow.
+// Write-side attribute lists (`::[…]`, `:Type:[…]`). Modeled with a
+// dedicated `attribute_sq` rule rather than reusing `tuple_sq` so that
+// reserved keywords (`comptime`, ...) can appear as plain attribute names.
+// `tuple_sq` admits `var_or_let_or_reg`-prefixed items, which keeps
+// `comptime` in lookahead and makes the lexer pick the keyword token even
+// when the parser would otherwise accept it as an identifier.
 function attributeSuffix($) {
-  return seq(':', $.tuple_sq);
+  return seq(':', $.attribute_sq);
 }
 
 // Overparse: `::[...]` and `:Type:[...]` parse anywhere `type_cast` is
@@ -229,7 +230,7 @@ module.exports = grammar({
       , field('elif', repseq('elif', $._if_branch))
       , field('else', optseq('else', $.scope_statement))
     ))
-    , _attr_prefix: $ => seq('::', $.tuple_sq)
+    , _attr_prefix: $ => seq('::', $.attribute_sq)
     , _init_clause: $ => seq($.stmt_list, ';')
     , for_statement: $ => seq(
       'for'
@@ -319,6 +320,22 @@ module.exports = grammar({
     , tuple: $ => seq('(', optional($._tuple_list), ')')
 
     , tuple_sq: $ => seq('[', optional($._tuple_list), ']')
+
+    // Write-side attribute bracket (`::[…]`, `:Type:[…]`). Distinct from
+    // `tuple_sq` so the lookahead at `[` does not include
+    // `var_or_let_or_reg`, letting the lexer accept reserved keywords like
+    // `comptime` as bare attribute names.
+    , attribute_sq: $ => seq('[', optional(listseq1(field('item', $._attribute_item))), ']')
+    , _attribute_item: $ => choice(
+      $._expression
+      , $.ref_identifier
+      , $.attribute_assignment
+    )
+    , attribute_assignment: $ => seq(
+      field('lvalue', $.identifier)
+      , '='
+      , field('rvalue', choice($._expression, $.ref_identifier))
+    )
 
     , _tuple_list: $ => prec('_tuple_list', listseq1(field('item', $._tuple_item)))
     // Overparse: tuple-literal fields require a kind keyword

@@ -4,7 +4,7 @@ c.d = 30  // OK     (mut tuple, mut field)
 
 const d = (x=1, const y=2, mut z=3)
 
-mut e:d = ?
+mut e:d = nil
 assert(e.x==1 and e.y==2 and e.z==3)
 e.x = 30  // OK
 e.z = 30  // OK     (outer mut + inner mut)

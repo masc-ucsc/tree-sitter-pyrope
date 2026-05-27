@@ -514,7 +514,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "tuple_sq"
+          "name": "attribute_sq"
         }
       ]
     },
@@ -1220,6 +1220,138 @@
         {
           "type": "STRING",
           "value": "]"
+        }
+      ]
+    },
+    "attribute_sq": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "STRING",
+                    "value": ","
+                  }
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "item",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_attribute_item"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "REPEAT1",
+                        "content": {
+                          "type": "STRING",
+                          "value": ","
+                        }
+                      },
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "FIELD",
+                            "name": "item",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "_attribute_item"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "STRING",
+                    "value": ","
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "_attribute_item": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "ref_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "attribute_assignment"
+        }
+      ]
+    },
+    "attribute_assignment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "lvalue",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "FIELD",
+          "name": "rvalue",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "ref_identifier"
+              }
+            ]
+          }
         }
       ]
     },
@@ -2591,7 +2723,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "tuple_sq"
+                              "name": "attribute_sq"
                             }
                           ]
                         },
@@ -2615,7 +2747,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_sq"
                     }
                   ]
                 }
@@ -3783,7 +3915,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "tuple_sq"
+                              "name": "attribute_sq"
                             }
                           ]
                         },
@@ -3807,7 +3939,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "tuple_sq"
+                      "name": "attribute_sq"
                     }
                   ]
                 }
