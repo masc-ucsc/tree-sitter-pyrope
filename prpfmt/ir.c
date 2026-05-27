@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +56,12 @@ void emit_space(struct PrpfmtState *st) {
     }
     if (type == TOKEN_NEWLINE || type == TOKEN_FORCE_BREAK) {
       return;
+    }
+    if (st->buffer.data[i].text) {
+      size_t len = strlen(st->buffer.data[i].text);
+      if (len > 0 && isspace((unsigned char)st->buffer.data[i].text[len - 1])) {
+        return;
+      }
     }
     if (type == TOKEN_GROUP_START || type == TOKEN_GROUP_END ||
         type == TOKEN_ALIGN_GROUP_START || type == TOKEN_ALIGN_GROUP_END ||
