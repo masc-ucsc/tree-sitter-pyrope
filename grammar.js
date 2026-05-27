@@ -397,7 +397,7 @@ module.exports = grammar({
     , named_lvalue: $ => seq(
       field('name', $.identifier)
       , '='
-      , field('lvalue', $.typed_identifier)
+      , field('lvalue', choice($.typed_identifier, $.dot_expression))
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , var_or_let_or_reg: $ => seq(

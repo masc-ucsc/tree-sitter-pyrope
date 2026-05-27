@@ -1660,8 +1660,17 @@
           "type": "FIELD",
           "name": "lvalue",
           "content": {
-            "type": "SYMBOL",
-            "name": "typed_identifier"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "typed_identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "dot_expression"
+              }
+            ]
           }
         }
       ]

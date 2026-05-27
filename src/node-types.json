@@ -2959,6 +2959,10 @@
         "required": true,
         "types": [
           {
+            "type": "dot_expression",
+            "named": true
+          },
+          {
             "type": "typed_identifier",
             "named": true
           }
