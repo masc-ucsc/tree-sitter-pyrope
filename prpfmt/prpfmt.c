@@ -27,25 +27,30 @@ static bool has_trailing_comment(TSNode node) {
 
 static bool is_block_style_tuple(TSNode node) {
   uint32_t child_count = ts_node_child_count(node);
-  TSNode prev = {0};
-  for (uint32_t i = 0; i < child_count; i++) {
+  if (child_count < 2) return false;
+
+  TSNode open_paren = ts_node_child(node, 0);
+
+  for (uint32_t i = 1; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
+    // 1. Check for Leading Comma (comma at start of its own line)
     if (symbol == anon_sym_COMMA) {
       TSNode prev_sib = ts_node_prev_sibling(child);
       if (!ts_node_is_null(prev_sib) &&
-          ts_node_end_point(prev_sib).row < ts_node_start_point(child).row) {
+          ts_node_start_point(child).row > ts_node_end_point(prev_sib).row) {
         return true;
       }
     }
 
-    if (!ts_node_is_null(prev)) {
-      if (ts_node_start_point(child).row > ts_node_end_point(prev).row) {
+    // 2. Check if the first item starts on a different line than '('
+    // This indicates the user intended a vertical block.
+    if (i == 1) {
+      if (ts_node_start_point(child).row > ts_node_start_point(open_paren).row) {
         return true;
       }
     }
-    prev = child;
   }
   return false;
 }

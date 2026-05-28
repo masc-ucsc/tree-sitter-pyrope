@@ -8,8 +8,10 @@
 
 static void ensure_capacity(struct PrpfmtState *st) {
   if (st->buffer.size >= st->buffer.capacity) {
-    st->buffer.capacity = st->buffer.capacity == 0 ? 1024 : st->buffer.capacity * 2;
-    st->buffer.data = realloc(st->buffer.data, st->buffer.capacity * sizeof(Token));
+    st->buffer.capacity =
+        st->buffer.capacity == 0 ? 1024 : st->buffer.capacity * 2;
+    st->buffer.data =
+        realloc(st->buffer.data, st->buffer.capacity * sizeof(Token));
   }
 }
 
@@ -121,7 +123,8 @@ void emit_indent_dec(struct PrpfmtState *st) {
   st->buffer.size++;
 }
 
-void emit_group_start(struct PrpfmtState *st, bool force_explode, bool propagates) {
+void emit_group_start(struct PrpfmtState *st, bool force_explode,
+                      bool propagates) {
   ensure_capacity(st);
   init_token(&st->buffer.data[st->buffer.size], TOKEN_GROUP_START, NULL);
   st->buffer.data[st->buffer.size].exploded = force_explode;
@@ -149,13 +152,15 @@ void emit_align_group_end(struct PrpfmtState *st) {
 
 void emit_align_operator(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
-  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_OPERATOR, strdup(text));
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_OPERATOR,
+             strdup(text));
   st->buffer.size++;
 }
 
 void emit_align_relational(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
-  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_RELATIONAL, strdup(text));
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_RELATIONAL,
+             strdup(text));
   st->buffer.size++;
 }
 
@@ -167,7 +172,8 @@ void emit_align_math(struct PrpfmtState *st, const char *text) {
 
 void emit_align_comment(struct PrpfmtState *st, const char *text) {
   ensure_capacity(st);
-  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_COMMENT, strdup(text));
+  init_token(&st->buffer.data[st->buffer.size], TOKEN_ALIGN_COMMENT,
+             strdup(text));
   st->buffer.size++;
 }
 
