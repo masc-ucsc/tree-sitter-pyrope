@@ -1,7 +1,2 @@
-const b = "foo"
-const c = 1
-const test1     = enum(a=c,b)    // OK
-const something = (b)            // OK
-cassert(something == "foo")
-cassert(test1.a != test1.b)
-cassert(test1.a==1 and test1.b==2)
+mut (a, b) = (2, 3)      // a=2, b=3 (positional — RHS has no names)
+mut (b, a) = (2, 3)      // a=3, b=2 (still positional)

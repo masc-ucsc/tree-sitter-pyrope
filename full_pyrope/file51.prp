@@ -1,7 +1,6 @@
-const a = "field"
-const c = (foo=4)
-const my_other_enum = enum(...a,b=3,...c)
-cassert(my_other_enum.field != my_other_enum.b)
-cassert(my_other_enum.b   == 3)
-cassert(my_other_enum.foo == 4)
-cassert(my_other_enum.foo != my_other_enum.b)
+const c = 4
+cassert(c does u3) // type check on 'c' is a separate statement
+const (x, b) = (true, c)           // assign x=true, b=4
+
+cassert(x == true)
+cassert(b == 4)
