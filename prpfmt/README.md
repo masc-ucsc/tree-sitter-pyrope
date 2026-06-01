@@ -34,19 +34,21 @@ To build the formatter, navigate to the `prpfmt` directory and run:
 ```bash
 make
 ```
-This will create the `prpfmt` executable in the `project-root` directory.
+This will create the `prpfmt` executable in the `prpfmt` directory.
 
 #### Run
-You can run the formatter from the `project-root` directory:
+You can run the formatter from the `prpfmt` directory:
 ```bash
-./prpfmt <input_file> [-o <output_file>] [-i <indent_size>]
-./prpfmt [-h | --help]
+./prpfmt <input_file> [options]
 ```
 
 **Options:**
-- `-o <output_file>`: Specify an output file. If not provided, the formatted code will be printed to stdout.
-- `-i, --indent <n>`: Specify the indentation size (default: 4).
-- `-h, --help`: Display the help message.
+- `-o <file>`        : Specify an output file (default: stdout).
+- `-i, --indent <n>` : Specify indentation size (default: 4).
+- `-w, --width <n>`  : Specify maximum line width (default: 80).
+- `-v, --verify`     : Verify that the formatted output is still valid Pyrope.
+- `-b, --bench`      : Run in benchmark mode and print timing statistics.
+- `-h, --help`       : Display the help message.
 
 ## Grammar Updates
 If the Pyrope grammar (`grammar.js`) is updated, the following steps must be taken to synchronize the formatter:
@@ -59,10 +61,22 @@ If the Pyrope grammar (`grammar.js`) is updated, the following steps must be tak
 3. **Handle Structural Changes**: If grammar rules were renamed or their structure changed (e.g., tiered binary expressions), update the corresponding `print_` functions in `prpfmt.c`.
 4. **Rebuild**: Run `make` in the `prpfmt` directory to recompile the tool with the updated parser and symbol definitions.
 
-## Known Issues/Future Work
-- Vertical alignment
-- Multi-line statements with proper indentation/formatting
-- Handling comments within certain statements (ex: comments in a tuple)
+## Future Development & Improvement Points
+
+### 1. Comma Harmonization (Tuples)
+Currently, the formatter is "reactive" to comma placement: it preserves a leading comma only if the user manually placed it on a new line.
+- Implement a harmonization pass. If the first comma in a list is leading, force all subsequent commas in that list to the leading position to ensure style consistency.
+
+### 2. Prevent Aggressive Inlining / Modify Solver
+Currently, any scope block with 0 or 1 statement is eligible for inline formatting (e.g., `{ a = 1 }`).
+- Better respect user intent by keeping blocks vertical if they were originally multi-line in the source, even if they contain only a single statement.
+- Modify breakpoint and overflow penalties as necessary
+
+### 3. Configuration Management
+- Add support for a `.prpfmt` (JSON or YAML) configuration file to standardize formatting across projects.
+
+## Testing
+A Python-based verification suite is located in the `tests/` directory. For details, see [tests/README.md](./tests/README.md).
 
 ## References
 
