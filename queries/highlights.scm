@@ -1,189 +1,149 @@
-; highlights.scm
+; highlights.scm — Pyrope (regenerated against the current grammar)
+; Ordering: the generic (identifier) rule is first; more specific rules follow
+; so they override it (Neovim's highlighter lets a later match win).
+
 (identifier) @variable
+
+; Comments
+
+(comment) @comment @spell
+
+; Literals
+
+(integer_literal) @number
+(bool_literal) @boolean
+(string_literal) @string
+(interpolated_string_literal) @string
+(unknown_literal) @constant.builtin
 
 ; Types
 
-(primitive_type) @type.builtin
-
-(expression_type) @type
-
-(function_type) @type
-
-; Parameters 
-(function_call
-  argument: (tuple
-    (tuple_list
-      item: (complex_identifier (identifier) @parameter))))
-
-(simple_function_call
-  argument: (expression_list
-    item: (complex_identifier (identifier) @parameter)))
-
-(function_definition
-  input: (arg_list
-    (arg_item_list (arg_item (complex_identifier (identifier) @parameter)))))
-
-; Attributes
-
-(attributes
-  (tuple_sq (tuple_list
-    item: (complex_identifier (identifier) @function.macro))))
-
-(attributes
-  (tuple (tuple_list
-    item: (complex_identifier (identifier) @function.macro))))
-
-(attributes
-  (tuple_sq (tuple_list
-    item: (ref_identifier (complex_identifier (identifier) @function.macro)))))
-
-(attributes
-  (tuple (tuple_list
-    item: (ref_identifier (complex_identifier (identifier) @function.macro)))))
-
-(dot_expression
-  (tuple_sq (tuple_list
-    item: (complex_identifier (identifier) @function.macro))))
-
-(dot_expression
-  (tuple_sq (tuple_list
-    item: (ref_identifier (complex_identifier (identifier) @function.macro)))))
-; Function calls
-
-(simple_function_call
-  function: (complex_identifier (identifier) @function.call))
-
-(function_call
-  function: (complex_identifier (identifier) @function.call))
-
-(function_inline
-  fun_name: (identifier) @function.call)
-
-; Function definitions 
-
-(function_definition_statement
-  lvalue: (complex_identifier) @function)
-
-(assignment_or_declaration_statement
-  lvalue: (complex_identifier) @function
-  rvalue: (lambda))
-
-(simple_assignment
-  lvalue: (identifier) @function
-  rvalue: (lambda))
-
-; Fields
-
-(dot_expression
-  (identifier) @field)
-
-; Operators
+[
+  (uint_type)
+  (sint_type)
+  (bool_type)
+  (string_type)
+] @type.builtin
 
 [
-  "&"
-  "^"
-  "|"
-  "~&"
-  "~^"
-  "~|"
-  "<"
-  "<="
-  ">"
-  ">="
-  "=="
-  "!="
-  "!"
-  "~"
-  "-"
-  "..."
-  "?"
-  "..="
-  "..<"
-  "..+"
-  ">>"
-  "<<"
-  "!&"
-  "!^"
-  "!|"
-  "*"
-  "/"
-  "%"
-  "+"
-  "-"
-  "|>" 
-  "++"
-  "not"
-  "step"
-  "implies"
-  "!implies"
-  "and_then"
-  "or_else"
-  "in"
-  "!in"
-  (assignment_operator)
-  (match_operator)
-] @operator 
+  "int"
+  "uint"
+  "unsigned"
+  "integer"
+] @type.builtin
 
-(expression_item
-  operator: _ @operator)
+[
+  (expression_type)
+  (array_type)
+  (dot_expression_type)
+  (function_call_type)
+] @type
+
+; A bare identifier in type position is a (user) type name
+(expression_type (identifier) @type)
+
+; Operators (symbolic)
+
+[
+  (op_add) (op_sub) (op_mul) (op_div) (op_mod)
+  (op_shl) (op_sra)
+  (op_bit_and) (op_bit_or) (op_bit_xor) (op_bit_not)
+  (op_bit_nand) (op_bit_nor) (op_bit_xnor)
+  (op_eq) (op_ne) (op_lt) (op_le) (op_gt) (op_ge)
+  (op_unary_minus) (op_tuple_concat) (op_spread) (op_step)
+  (op_range_inclusive) (op_range_exclusive) (op_range_count)
+  (op_log_not)
+  (reduction_and) (reduction_or) (reduction_xor) (reduction_popcount)
+  (assignment_operator)
+  (open_all)
+] @operator
+
+; Bare comparison/bitwise tokens also appear directly in match cases
+[
+  "!=" "==" "<" "<=" ">" ">="
+  "&" "^" "|" "~&" "~^" "~|"
+  ".."
+] @operator
+
+; Operators that read as words
+[
+  (op_log_and) (op_log_or)
+  (op_is) (op_in) (op_has) (op_does)
+  (op_case) (op_equals) (op_implies)
+] @keyword.operator
+
+[
+  "and" "or"
+  "is" "in" "has" "does"
+  "case" "equals"
+] @keyword.operator
 
 ; Keywords
 
 [
-  "in"
-  "enum"
-  "var"
-  "let"
+  "if" "elif" "else" "match"
+  (when_kw) (unless_kw)
+] @keyword.conditional
+
+[
+  "for" "while" "loop"
+] @keyword.repeat
+
+"return" @keyword.return
+
+[
+  "import" "as"
+] @keyword.import
+
+[
+  (comb_lambda) (mod_lambda) (pipe_lambda)
+] @keyword.function
+
+[
+  (const_decl) (mut_decl) (reg_decl) (stage_decl)
+  (comptime_modifier)
 ] @keyword
 
-(test_statement "test" @keyword)
-
-(fun_tok) @keyword.function
-(proc_tok) @keyword.function
-
 [
-  "if"
-  "elif"
-  "else"
-  "match"
-  "while"
-  "for"
-] @conditional
+  "break" "continue"
+  "unique" "ref" "wrap" "sat" "pipe"
+  "spawn" "stage" "impl" "enum" "type" "test"
+] @keyword
 
-[
- "ref"
- "reg" 
-] @type.qualifier
+; Function definitions
 
-["(" ")" "[" "]"] @punctuation.bracket
-(scope_statement "{" @punctuation.bracket)
-(scope_statement "}" @punctuation.bracket)
+(lambda name: (identifier) @function)
+(assignment lvalue: (identifier) @function rvalue: (lambda))
+(assignment
+  lvalue: (typed_identifier identifier: (identifier) @function)
+  rvalue: (lambda))
 
-["," "." ":"] @punctuation.delimiter
+; Function calls
 
-(pipestage_scope_statement "#>" @punctuation.special)
+(function_call_expression function: (identifier) @function.call)
+(function_call_type function: (identifier) @function.call)
 
-; Distinguish strings from numbers and booleans
-(constant) @number
+; Parameters
 
-((constant) @boolean
-  (#any-of? @boolean "true" "false"))
+(arg_list (typed_identifier identifier: (identifier) @variable.parameter))
 
-((identifier) @boolean
-  (#any-of? @boolean "true" "false"))
+; Member access (the trailing field of a dot expression)
 
-((constant) @string 
-  (#contains? @string "'" "\""))
+(dot_expression (identifier) @variable.member .)
 
-; Builtin Functions
+; Pyrope attributes (e.g. foo.[bits])
+
+(attribute_list name: (identifier) @attribute)
+
+; Builtins / verification
 
 ((identifier) @function.builtin
-  (#any-of? @function.builtin "puts" "print"))
+  (#any-of? @function.builtin
+    "puts" "print" "format"
+    "assert" "cassert" "cputs" "verify" "optimize"))
 
-; Verification 
+; Punctuation
 
-((identifier) @debug
-  (#any-of? @debug "assert" "cassert" "optimize" "verify" "test"))
-
-; Comments
-(comment) @comment @spell
+["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+["," ";" ":" "::" "->" "."] @punctuation.delimiter
+["@" "#"] @punctuation.special

@@ -1,15 +1,17 @@
-[
-  (function_definition)
-  (type_declaration)
-  (enum_declaration)
-  (expression_list)
-  (tuple_list)
-] @indent
+; indents.scm — Pyrope (modern nvim-treesitter indent captures)
 
+; Indent the body of blocks, tuples, argument lists and parens.
 [
-  "("
-  ")"
-  "{"
-  "}"
-] @branch
+  (scope_statement)
+  (tuple)
+  (tuple_sq)
+  (paren_group)
+  (arg_list)
+  (match_expression)
+  (enum_definition)
+] @indent.begin
 
+; Dedent the line that closes a block / group.
+["}" ")" "]"] @indent.branch
+
+(comment) @indent.ignore
