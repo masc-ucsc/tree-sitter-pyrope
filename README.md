@@ -59,20 +59,34 @@ parser from this repo, maps `*.prp` files to the `pyrope` filetype, and adds
 `pyrope` to `ensure_installed`:
 
 ```lua
+local function register_pyrope()
+  require("nvim-treesitter.parsers").pyrope = {
+    install_info = {
+      url = "https://github.com/masc-ucsc/tree-sitter-pyrope",
+      branch = "main",
+      queries = "queries",
+    },
+  }
+end
+
 return {
   {
     "nvim-treesitter/nvim-treesitter",
     init = function()
       vim.filetype.add({ extension = { prp = "pyrope" } })
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "TSUpdate", -- re-register before every install/update
+        callback = register_pyrope,
+      })
+      -- Pyrope uses C-style comments; needed for `gc`/`gcc` commenting.
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "pyrope",
+        callback = function()
+          vim.bo.commentstring = "// %s"
+        end,
+      })
     end,
     opts = function(_, opts)
-      require("nvim-treesitter.parsers").pyrope = {
-        install_info = {
-          url = "https://github.com/masc-ucsc/tree-sitter-pyrope",
-          branch = "main",
-          queries = "queries",
-        },
-      }
       opts.ensure_installed = opts.ensure_installed or {}
       vim.list_extend(opts.ensure_installed, { "pyrope" })
     end,
@@ -82,24 +96,38 @@ return {
 
 Restart Neovim (or `:Lazy reload nvim-treesitter`), then run `:TSInstall pyrope`.
 
+> The parser is registered on the `User TSUpdate` event, not once at startup.
+> nvim-treesitter reloads its parser table from disk before every install/update
+> (wiping runtime registrations) and re-fires this event so out-of-tree parsers
+> can re-register. Registering only at startup yields
+> `skipping unsupported language: pyrope`.
+
 ### Plain nvim-treesitter (no LazyVim)
 
 Add the following to your `init.lua`, then run `:TSInstall pyrope`:
 
 ```lua
-require("nvim-treesitter.parsers").pyrope = {
-  install_info = {
-    url = "https://github.com/masc-ucsc/tree-sitter-pyrope",
-    branch = "main",
-    queries = "queries",
-  },
-}
+vim.api.nvim_create_autocmd("User", {
+  pattern = "TSUpdate", -- re-register before every install/update
+  callback = function()
+    require("nvim-treesitter.parsers").pyrope = {
+      install_info = {
+        url = "https://github.com/masc-ucsc/tree-sitter-pyrope",
+        branch = "main",
+        queries = "queries",
+      },
+    }
+  end,
+})
 
 vim.filetype.add({ extension = { prp = "pyrope" } })
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "pyrope",
-  callback = function() vim.treesitter.start() end,
+  callback = function()
+    vim.treesitter.start()
+    vim.bo.commentstring = "// %s" -- Pyrope uses C-style comments
+  end,
 })
 ```
 
