@@ -9,6 +9,7 @@
       "file-types": [
         "prp"
       ],
+      "highlights": "queries/highlights.scm",
       "injection-regex": "^pyrope$",
       "class-name": "TreeSitterPyrope"
     }

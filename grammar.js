@@ -443,6 +443,7 @@ module.exports = grammar({
     , enum_assignment: $ => seq(
       'enum'
       , field('name', $.identifier)
+      , field('type', optional($.type_cast))
       , choice(
         seq('=', field('values', $.tuple)),
         field('body', $.arg_list)

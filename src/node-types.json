@@ -1421,6 +1421,16 @@
           }
         ]
       },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_cast",
+            "named": true
+          }
+        ]
+      },
       "values": {
         "multiple": false,
         "required": false,

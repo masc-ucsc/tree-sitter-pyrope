@@ -1,6 +1,15 @@
-mut (a,b) = (2,3)
-cassert(a==2 and b==3)
+for a in (1,2,3) {
+  x = a
+}
+y = match z {
+  in (1,2) { 4 }
+  else { 5 }
+}
+y2 = match mut one=1 ; one ++ z {  // same as: y2 = match (1,z) {
+  == (1,2) { 4 }
+  else     { 0 }
+}
 
-mut c = 1..=2      // OK
-mut (c,d) = (1,2)  // OK
-cassert(c == 1 and d == 2)
+comb addb(a, b:u32) -> (a:u32) {
+  a = a + b
+}

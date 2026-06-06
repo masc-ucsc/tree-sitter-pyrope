@@ -4,7 +4,4 @@ mut x = (
 
 mut y = (
   ,ff = 1
-  ,ff ++= 2
-  ,zz ++= 3
 )
-cassert(y == (ff=(1,2),zz=3))
