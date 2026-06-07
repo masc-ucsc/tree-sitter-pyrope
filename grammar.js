@@ -49,6 +49,7 @@ function typedOrAttributed($) {
   return choice(
     seq(
       field('type', $._type)
+      , optional($._timing_sequence)   // `out:u32@[2]` — cycle check on a typed declaration
       , field('attribute', optional(attributeSuffix($)))
     )
     , field('attribute', attributeSuffix($))
@@ -80,6 +81,8 @@ module.exports = grammar({
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
     , [$.timed_identifier, $.typed_identifier]
+    , [$.timed_identifier, $.expression_type]
+    , [$.var_or_let_or_reg, $.fluid_lambda]
     , [$.assignment, $._restricted_expression]
     , [$.lvalue_item, $._restricted_expression]
     , [$.assignment, $.lvalue_item, $._restricted_expression]
@@ -292,6 +295,7 @@ module.exports = grammar({
                 alias('comb', $.comb_lambda)
                 , alias('mod', $.mod_lambda)
                 , $.pipe_lambda
+                , $.fluid_lambda
               ))
               , $.function_definition_decl
             )
@@ -401,13 +405,25 @@ module.exports = grammar({
     )
     , lvalue_list: $ => listseq1(field('item', $.lvalue_item))
     , var_or_let_or_reg: $ => seq(
-      field('comptime', optional(alias('comptime', $.comptime_modifier)))
-      , field('storage', choice(
-        alias('const', $.const_decl)
-        , alias('mut', $.mut_decl)
-        , alias('reg', $.reg_decl)
-        , $.stage_decl
-      ))
+      // `pub reg mem:[1024]u8 = nil`, `pub const mytup = (…)` — visible
+      // outside this file.
+      field('pub', optional(alias('pub', $.pub_modifier)))
+      , field('comptime', optional(alias('comptime', $.comptime_modifier)))
+      , choice(
+        // `fluid x = …`, `fluid mut x:T` — fluid handshake declaration,
+        // optionally combined with a storage kind.
+        seq(
+          field('fluid', alias('fluid', $.fluid_decl))
+          , field('storage', optional($._storage_kind))
+        )
+        , field('storage', $._storage_kind)
+      )
+    )
+    , _storage_kind: $ => choice(
+      alias('const', $.const_decl)
+      , alias('mut', $.mut_decl)
+      , alias('reg', $.reg_decl)
+      , $.stage_decl
     )
     // `stage` annotation on the LHS of a pipelined assignment inside a
     // `mod`. Picks how many pipeline stages the RHS `pipe` call inserts.
@@ -709,10 +725,13 @@ module.exports = grammar({
       , $.tuple_sq
     ))
     , lambda: $ => seq(
-      field('func_type', choice(
+      // `pub comb f() …` — visible outside this file.
+      field('pub', optional(alias('pub', $.pub_modifier)))
+      , field('func_type', choice(
         alias('comb', $.comb_lambda)
         , alias('mod', $.mod_lambda)
         , $.pipe_lambda
+        , $.fluid_lambda
       ))
       , field('name', $.identifier)
       , $.function_definition_decl
@@ -720,6 +739,9 @@ module.exports = grammar({
     )
     // `pipe[N]` / `pipe[A..=B]` — a single depth expression or range slot.
     , pipe_lambda: $ => prec.right(seq('pipe', field('depth', optional($.select))))
+    // `fluid` / `fluid[N]` / `fluid[lat=1..=70, ordered=true]` — like `pipe`
+    // but the bracket admits a named-attribute list, not just a depth.
+    , fluid_lambda: $ => prec.right(seq('fluid', field('config', optional($.attribute_sq))))
     // Operators
     , assignment_operator: $ => choice(
       alias('=', $.assign)

@@ -1040,6 +1040,10 @@
                               {
                                 "type": "SYMBOL",
                                 "name": "pipe_lambda"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "fluid_lambda"
                               }
                             ]
                           }
@@ -1740,6 +1744,27 @@
       "members": [
         {
           "type": "FIELD",
+          "name": "pub",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "pub"
+                },
+                "named": true,
+                "value": "pub_modifier"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
           "name": "comptime",
           "content": {
             "type": "CHOICE",
@@ -1760,44 +1785,87 @@
           }
         },
         {
-          "type": "FIELD",
-          "name": "storage",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "const"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "fluid",
+                  "content": {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "STRING",
+                      "value": "fluid"
+                    },
+                    "named": true,
+                    "value": "fluid_decl"
+                  }
                 },
-                "named": true,
-                "value": "const_decl"
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "mut"
-                },
-                "named": true,
-                "value": "mut_decl"
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "reg"
-                },
-                "named": true,
-                "value": "reg_decl"
-              },
-              {
+                {
+                  "type": "FIELD",
+                  "name": "storage",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_storage_kind"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "FIELD",
+              "name": "storage",
+              "content": {
                 "type": "SYMBOL",
-                "name": "stage_decl"
+                "name": "_storage_kind"
               }
-            ]
-          }
+            }
+          ]
+        }
+      ]
+    },
+    "_storage_kind": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "const"
+          },
+          "named": true,
+          "value": "const_decl"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "mut"
+          },
+          "named": true,
+          "value": "mut_decl"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "reg"
+          },
+          "named": true,
+          "value": "reg_decl"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "stage_decl"
         }
       ]
     },
@@ -2734,6 +2802,18 @@
                     }
                   },
                   {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_timing_sequence"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
+                  {
                     "type": "FIELD",
                     "name": "attribute",
                     "content": {
@@ -3592,6 +3672,27 @@
       "members": [
         {
           "type": "FIELD",
+          "name": "pub",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "pub"
+                },
+                "named": true,
+                "value": "pub_modifier"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
           "name": "func_type",
           "content": {
             "type": "CHOICE",
@@ -3617,6 +3718,10 @@
               {
                 "type": "SYMBOL",
                 "name": "pipe_lambda"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "fluid_lambda"
               }
             ]
           }
@@ -3670,6 +3775,35 @@
                 {
                   "type": "SYMBOL",
                   "name": "select"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "fluid_lambda": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "fluid"
+          },
+          {
+            "type": "FIELD",
+            "name": "config",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_sq"
                 },
                 {
                   "type": "BLANK"
@@ -3924,6 +4058,18 @@
                       "type": "SYMBOL",
                       "name": "_type"
                     }
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_timing_sequence"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   },
                   {
                     "type": "FIELD",
@@ -4762,6 +4908,14 @@
     [
       "timed_identifier",
       "typed_identifier"
+    ],
+    [
+      "timed_identifier",
+      "expression_type"
+    ],
+    [
+      "var_or_let_or_reg",
+      "fluid_lambda"
     ],
     [
       "assignment",

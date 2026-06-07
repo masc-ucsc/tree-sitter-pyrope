@@ -1681,6 +1681,22 @@
     }
   },
   {
+    "type": "fluid_lambda",
+    "named": true,
+    "fields": {
+      "config": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute_sq",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "for_statement",
     "named": true,
     "fields": {
@@ -2395,6 +2411,10 @@
             "named": true
           },
           {
+            "type": "fluid_lambda",
+            "named": true
+          },
+          {
             "type": "mod_lambda",
             "named": true
           },
@@ -2410,6 +2430,16 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "pub": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "pub_modifier",
             "named": true
           }
         ]
@@ -4477,7 +4507,7 @@
         ]
       },
       "timing": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -4599,7 +4629,7 @@
         ]
       },
       "timing": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -4706,6 +4736,10 @@
         "types": [
           {
             "type": "comb_lambda",
+            "named": true
+          },
+          {
+            "type": "fluid_lambda",
             "named": true
           },
           {
@@ -4947,9 +4981,29 @@
           }
         ]
       },
+      "fluid": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "fluid_decl",
+            "named": true
+          }
+        ]
+      },
+      "pub": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "pub_modifier",
+            "named": true
+          }
+        ]
+      },
       "storage": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "const_decl",
@@ -5405,6 +5459,14 @@
     "named": false
   },
   {
+    "type": "fluid",
+    "named": false
+  },
+  {
+    "type": "fluid_decl",
+    "named": true
+  },
+  {
     "type": "for",
     "named": false
   },
@@ -5619,6 +5681,10 @@
   {
     "type": "pipe",
     "named": false
+  },
+  {
+    "type": "pub_modifier",
+    "named": true
   },
   {
     "type": "reduction_and",
