@@ -1,12 +1,10 @@
-mut array = (0,1,2)       // size 3, not 4
-mut index = 2
-if runtime {
-  index = 4
-}
-// Index can be 2 or 4
+mut bund1 = (0,1,2,3,4) // ordered and can be used as an array
 
+mut array1 = [0,1,2,3,4]  // [] force array, so all the entries have same type
 
-mut res2 = 0sb?           // Possible code to be compatible with Verilog
-if index<3 {
-  res = array[index]      // OK
-}
+mut bund2 = (bund1,bund1,((10,20),30))
+cassert(bund2[0][1] == 1)
+cassert(bund2[1][1] == 1)
+cassert(bund2[2][0] == (10,20))
+cassert(bund2[2][0][1] == 20)
+cassert(bund2[2][1] == 30)

@@ -1,2 +1,7 @@
-mut (a, b) = (2, 3)      // a=2, b=3 (positional — RHS has no names)
-mut (b, a) = (2, 3)      // a=3, b=2 (still positional)
+comb dox(a) -> (b, c) { b = a + 1; c = a + 2 }
+comb deep(a) -> (payload, code) { payload = (inner = (value = a + 1)); code = a + 10 }
+
+(b, c) = dox(a=3)        // local `b` ← dox.b, local `c` ← dox.c
+(c, b) = dox(a=3)        // same: order doesn't matter
+(x=dox.b, y=dox.c) = dox(a=3)  // rename: dox.b → x, dox.c → y
+(v=deep.payload.inner.value) = deep(a=3) // nested field selection

@@ -1,11 +1,10 @@
-mut b = 100
-mut a = (b:u8, b, b:u8 = nil, const c=4) // a[0] and a[1] are unnamed, a[2]==a.b
-a.b = 200
-assert(a == (100, 100, 200, 4))
+mut c = (x=1, const b=2, mut d=3)
+c.x = 3   // OK     (mut tuple, default-mut field)
+c.d = 30  // OK     (mut tuple, mut field)
 
-mut f = (b=3, const e=5)
-f.b = 4                 // OK
+const d = (x=1, const y=2, mut z=3)
 
-const x = (1,2)
-mut y = (1, const 3)    // 2nd field is positional and immutable
-y[0] = 100              // OK
+mut e:d = nil
+assert(e.x==1 and e.y==2 and e.z==3)
+e.x = 30  // OK
+e.z = 30  // OK     (outer mut + inner mut)

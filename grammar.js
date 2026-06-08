@@ -104,6 +104,10 @@ module.exports = grammar({
     , [$._tuple_item, $.paren_group]
     , [$.named_lvalue, $._complex_identifier, $.typed_identifier]
     , [$._tuple_item, $.array_length]
+    // `enum X : uint(...)` — the `(...)` is ambiguous between the integer
+    // type's constraint list and the enum body's arg_list; GLR resolves it.
+    , [$.uint_type]
+    , [$.sint_type]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -835,15 +839,23 @@ module.exports = grammar({
       , $.bool_type
       , $.string_type
     )
-    , uint_type: $ => choice(
-      'uint'
-      , 'unsigned'
-      , token(/u\d+/)
+    , uint_type: $ => seq(
+      choice(
+        'uint'
+        , 'unsigned'
+        , token(/u\d+/)
+      )
+      // Optional bitwidth/range constraint list, e.g. `uint(max=300)`.
+      , optional(field('constraint', $.tuple))
     )
-    , sint_type: $ => choice(
-      'int'
-      , 'integer'
-      , token(/[si]\d+/)
+    , sint_type: $ => seq(
+      choice(
+        'int'
+        , 'integer'
+        , token(/[si]\d+/)
+      )
+      // Optional bitwidth/range constraint list, e.g. `int(min=0, max=1000)`.
+      , optional(field('constraint', $.tuple))
     )
     , bool_type: $ => 'bool'
     , string_type: $ => 'string'

@@ -1,8 +1,1 @@
-const x = (first=(second=3))
-
-cassert(x.first.second == 3)
-cassert(x.first        == 3)
-cassert(x              == 3)
-cassert(x[0].second    == 3)
-cassert(x.first[0]     == 3)
-cassert(x[0]           == 3)
+assert(((1,a=2,c=3) ++ (a=20,33,c=30,4)) == (1,a=(2,20),c=(3,30),33,4))

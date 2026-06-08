@@ -1,6 +1,8 @@
-const x = (f1=(f1a=1,f1b=3), f2=4)
+const x = (first=(second=3))
 
-const (y,z) = x
-cassert(y == (1,3) and z == 4)
-cassert(y.f1a == 1 and y.f1b == 3)
-cassert(y == (f1a=1,f1b=3))
+cassert(x.first.second == 3)
+cassert(x.first        == 3)
+cassert(x              == 3)
+cassert(x[0].second    == 3)
+cassert(x.first[0]     == 3)
+cassert(x[0]           == 3)

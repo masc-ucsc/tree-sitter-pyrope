@@ -1,5 +1,7 @@
+mut x = (
+  ,ff = 1
+)
+
 mut y = (
   ,ff = 1
-  ,zz = 3
 )
-y.ff ++= 2   // OK: 'y' is mut, so the field can be concatenated afterwards

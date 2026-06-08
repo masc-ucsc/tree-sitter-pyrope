@@ -3723,7 +3723,18 @@
   {
     "type": "sint_type",
     "named": true,
-    "fields": {}
+    "fields": {
+      "constraint": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tuple",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "spawn_statement",
@@ -4867,7 +4878,18 @@
   {
     "type": "uint_type",
     "named": true,
-    "fields": {}
+    "fields": {
+      "constraint": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tuple",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "unary_expression",
