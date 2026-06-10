@@ -348,7 +348,8 @@ module.exports = grammar({
     , _tuple_list: $ => prec('_tuple_list', listseq1(field('item', $._tuple_item)))
     // Overparse: tuple-literal fields require a kind keyword
     // (`mut`/`const`/`reg`/`comb`/...); bare `a = 1` parses here because the
-    // same node also models named call arguments. See grammar_overparse.md #3.
+    // same node also models named call arguments and typed construction fields.
+    // See grammar_overparse.md #3.
     , _tuple_item: $ => choice(
       $.ref_identifier
       , $._expression
@@ -865,7 +866,8 @@ module.exports = grammar({
       choice(
         // \p{L}  : Letter
         // \p[Nd} : Decimal Digit Number
-        /[\p{L}_][\p{L}\p{Nd}_$]*/
+        /[\p{L}][\p{L}\p{Nd}_$]*/
+        , /_[\p{L}_$][\p{L}\p{Nd}_$]*/
         // To support all Verilog identifiers. Example:
         //   `foo is . strange!\nidentifier` = 4
         , seq(

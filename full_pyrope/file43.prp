@@ -1,4 +1,4 @@
-const x = (first=(second=3))
+const x = (const first=(const second=3))
 
 cassert(x.first.second == 3)
 cassert(x.first        == 3)

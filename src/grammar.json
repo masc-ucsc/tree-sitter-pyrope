@@ -4458,7 +4458,11 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "[\\p{L}_][\\p{L}\\p{Nd}_$]*"
+            "value": "[\\p{L}][\\p{L}\\p{Nd}_$]*"
+          },
+          {
+            "type": "PATTERN",
+            "value": "_[\\p{L}_$][\\p{L}\\p{Nd}_$]*"
           },
           {
             "type": "SEQ",

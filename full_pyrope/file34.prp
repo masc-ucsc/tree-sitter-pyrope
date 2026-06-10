@@ -1,5 +1,8 @@
-type Person = (name:string, age:u32)
-mut a = (one:Person, two:Person)
+type Person = (const name:string = "", mut age:u32 = 0)
+mut a = (
+  ,mut one:Person = (name="one", age=0)
+  ,mut two:Person = (name="two", age=0)
+)
 
 a[0].age = 10
 a[1].age = 20

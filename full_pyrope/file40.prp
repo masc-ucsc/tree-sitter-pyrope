@@ -1,9 +1,9 @@
 mut b = 100
-mut a = (b:u8, b, b:u8 = nil, const c=4) // a[0] and a[1] are unnamed, a[2]==a.b
+mut a = (b:u8, b, mut b:u8 = nil, const c=4) // a[0] and a[1] are unnamed, a[2]==a.b
 a.b = 200
-assert(a == (100, 100, 200, 4))
+assert(a == (100, 100, const b=200, const c=4))
 
-mut f = (b=3, const e=5)
+mut f = (mut b=3, const e=5)
 f.b = 4                 // OK
 
 const x = (1,2)

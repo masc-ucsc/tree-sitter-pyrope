@@ -1,5 +1,5 @@
 comb dox(a) -> (b, c) { b = a + 1; c = a + 2 }
-comb deep(a) -> (payload, code) { payload = (inner = (value = a + 1)); code = a + 10 }
+comb deep(a) -> (payload, code) { payload = (const inner = (const value = a + 1)); code = a + 10 }
 
 (b, c) = dox(a=3)        // local `b` ← dox.b, local `c` ← dox.c
 (c, b) = dox(a=3)        // same: order doesn't matter

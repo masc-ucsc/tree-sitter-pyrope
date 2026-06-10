@@ -2,9 +2,9 @@ mut tup = nil
 
 assert(cond.[comptime]) // Tuples are compile time, it would fail otherwise
 if cond == true {
-  tup = (a=1,b=2)
+  tup = (const a=1, const b=2)
 }else{
-  tup = (a=1,b:u4=3,c=3)
+  tup = (const a=1, const b:u4=3, const c=3)
 }
 
 cassert(tup.a == 1)
