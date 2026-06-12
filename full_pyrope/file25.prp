@@ -1,8 +1,0 @@
-    mut r1 = fcall1()
-    r1  = fcall2() unless r1
-
-    mut r2 = fcall1()
-    r2  = fcall2() when r2
-
-    mut r3 = fcall1()
-    r3 += fcall2()

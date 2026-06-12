@@ -1,4 +1,0 @@
-const a = 1
-const msg = "Hello a is {a}"
-puts(msg)
-cassert(msg == "Hello a is 1")

@@ -1,7 +1,0 @@
-comb dox(a) -> (b, c) { b = a + 1; c = a + 2 }
-comb deep(a) -> (payload, code) { payload = (const inner = (const value = a + 1)); code = a + 10 }
-
-(b, c) = dox(a=3)        // local `b` ← dox.b, local `c` ← dox.c
-(c, b) = dox(a=3)        // same: order doesn't matter
-(x=dox.b, y=dox.c) = dox(a=3)  // rename: dox.b → x, dox.c → y
-(v=deep.payload.inner.value) = deep(a=3) // nested field selection

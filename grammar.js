@@ -56,10 +56,10 @@ function typedOrAttributed($) {
   );
 }
 
-function tupleCall($, precedence) {
+function tupleCall($, precedence, argRule) {
   return prec(precedence, seq(
     field('function', $._complex_identifier)
-    , field('argument', $.tuple)
+    , field('argument', argRule)
   ));
 }
 
@@ -77,30 +77,25 @@ module.exports = grammar({
   , externals: $ => [$._automatic_semicolon]
   , conflicts: $ => [
     [$._complex_identifier, $.typed_identifier]
+    , [$._complex_identifier, $.typed_identifier, $.typed_field]
+    , [$.typed_identifier, $.typed_field]
+    // `x:Foo(…)` — the call parens are ambiguous between a type-position
+    // call (tuple) and an expression call (arg_tuple); GLR resolves it.
+    , [$.tuple, $.arg_tuple]
+    , [$.arg_assignment, $._complex_identifier, $.typed_identifier]
+    , [$.arg_assignment, $._complex_identifier]
+    , [$._arg_item, $._tuple_item]
     , [$._complex_identifier, $.expression_type]
     , [$._tuple_item, $._restricted_expression]
     , [$.lambda]
     , [$.timed_identifier, $.typed_identifier]
     , [$.timed_identifier, $.expression_type]
     , [$.var_or_let_or_reg, $.fluid_lambda]
-    , [$.assignment, $._restricted_expression]
     , [$.lvalue_item, $._restricted_expression]
-    , [$.assignment, $.lvalue_item, $._restricted_expression]
     , [$.lvalue_item, $.typed_identifier_list]
-    , [$._binary_times, $._pri2_operand]
-    , [$._binary_other, $._pri3_operand]
-    , [$._binary_compare, $._pri4_operand]
-    , [$._binary_times]
-    , [$._binary_other]
-    , [$._binary_compare]
-    , [$._binary_logical]
-    , [$._expression, $._binary_logical]
-    , [$._expression, $.array_length]
     , [$.tuple_sq, $.array_length]
     , [$.assignment, $._suffix_head]
     , [$.assignment, $.lvalue_item, $._suffix_head]
-    , [$.lvalue_item, $._suffix_head]
-    , [$.paren_group, $.tuple]
     , [$._tuple_item, $.paren_group]
     , [$.named_lvalue, $._complex_identifier, $.typed_identifier]
     , [$._tuple_item, $.array_length]
@@ -216,11 +211,10 @@ module.exports = grammar({
     )
     , break_statement: $ => seq('break', $._semicolon)
     , continue_statement: $ => seq('continue', $._semicolon)
-    , return_statement: $ => seq(
-      'return'
-      , field('argument', optional($._expression))
-      , $._semicolon
-    )
+    // `return` is a terminator only — it never carries a value
+    // (06-functions.md "Output tuple" rule 3). Assign outputs first,
+    // then `return`.
+    , return_statement: $ => seq('return', $._semicolon)
     , stmt_list: $ => prec.left('_tuple_list', seq(
       field('item', $._tuple_item)
       , repeat(seq(repeat1(';'), field('item', $._tuple_item)))
@@ -323,9 +317,29 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , function_call_expression: $ => tupleCall($, 'function_call_expression')
+    , function_call_expression: $ => tupleCall($, 'function_call_expression', $.arg_tuple)
     // Tuple
     , tuple: $ => seq('(', optional($._tuple_list), ')')
+
+    // Call-site argument tuple. Arguments are plain bindings — positional
+    // `expr`, named `name = expr` (dotted names allowed, expanding nested
+    // fields), `ref x`, or spread `...expr`. Unlike data-tuple literals,
+    // items can NOT be declarations: no kind keywords, no `name:type`, no
+    // `::[attr]`, no compound assignment operators. The same restriction
+    // applies semantically to the RHS tuple of a typed lvalue
+    // (`mut x:T = (…)`), which the grammar still parses as a data tuple
+    // (see grammar_overparse.md #3).
+    , arg_tuple: $ => seq('(', optional(prec('_tuple_list', listseq1(field('item', $._arg_item)))), ')')
+    , _arg_item: $ => choice(
+      $.ref_identifier
+      , $._expression
+      , $.arg_assignment
+    )
+    , arg_assignment: $ => seq(
+      field('lvalue', choice($.identifier, $.dot_expression))
+      , '='
+      , field('rvalue', choice($._expression, $.ref_identifier))
+    )
 
     , tuple_sq: $ => seq('[', optional($._tuple_list), ']')
 
@@ -354,6 +368,12 @@ module.exports = grammar({
       $.ref_identifier
       , $._expression
       , $.assignment
+      // Bare `name:type` field. Only meaningful inside tuple TYPES — inline
+      // annotations (`ar:(x:u3, y:s4)`), enum bodies (`enum(str:string)`),
+      // and type-shape operands of `does`/`equals`/`case`. In a data-tuple
+      // literal a named field needs a kind keyword and a value; the semantic
+      // pass rejects bare typed fields there.
+      , $.typed_field
       , seq(
         field('decl', $.var_or_let_or_reg)
         , field('lvalue', $.typed_identifier)
@@ -527,6 +547,12 @@ module.exports = grammar({
       , optional($._timing_sequence)
       , field('type', optional($.type_cast))
     ))
+    // Like typed_identifier but the type is mandatory: a bare `name:type`
+    // tuple-type field (see _tuple_item).
+    , typed_field: $ => seq(
+      field('identifier', $.identifier)
+      , field('type', $.type_cast)
+    )
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
 
     // Expressions. Built from the tiered binary-expression operand chain:
@@ -567,12 +593,15 @@ module.exports = grammar({
         '.', $.attribute_list
       ))))
     ))
-    // Overparse: `:Type` is only legal at declaration sites; the grammar
-    // permits it on any expression. See grammar_overparse.md #2.
-    , type_specification: $ => prec('type_spec', seq(
+    // `expr::[attr=…]` — write-side attribute bracket applied in expression
+    // position, e.g. RTL-instantiation port reads like
+    // `ram.port[0][addr]::[rdport=0]`. This is what remains of the removed
+    // expression-level typecheck (`expr:type` is no longer Pyrope; types
+    // appear only at declaration sites and inside tuple types).
+    , attribute_set: $ => prec('type_spec', seq(
       field('argument', $._suffix_head)
       , ':'
-      , typedOrAttributed($)
+      , field('attribute', attributeSuffix($))
     ))
     , unary_expression: $ => prec.left('unary', seq(
       field('operator', choice(
@@ -670,7 +699,7 @@ module.exports = grammar({
     )
     // Operand tiers: each level adds its own expression_item kind.
     , _pri1_operand: $ => prec('expression', choice(
-      $.type_specification
+      $.attribute_set
       , $.unary_expression
       , $.if_expression
       , $.match_expression
@@ -689,12 +718,12 @@ module.exports = grammar({
       $._pri3_operand
       , alias($._binary_compare, $.expression_item)
     ))
+    // Dot tails are identifiers only: positional entries are selected with
+    // `[N]`, never `.N` (named fields are unordered, so a numeric position
+    // has no meaning for them).
     , dot_expression: $ => dottedChain(
       $._suffix_head
-      , choice(
-        $.identifier
-        , $.constant
-      )
+      , $.identifier
       , 'dot'
       , 'dot_sub'
     )
@@ -812,7 +841,9 @@ module.exports = grammar({
       , 'dot_type_sub'
       , prec.right
     )
-    , function_call_type: $ => tupleCall($, 'function_call_type')
+    // Type-position calls (`enum(str:string)`, generic instantiation) keep
+    // the general tuple: their items are type fields, not call bindings.
+    , function_call_type: $ => tupleCall($, 'function_call_type', $.tuple)
     // Array length is one expression per dimension, or empty `[]` to defer
     // sizing to the initializer. Multi-dim is chained (`[8][8]u16`, not
     // `[8,8]u16`), so each length slot is either empty or a single
@@ -936,16 +967,6 @@ module.exports = grammar({
       /\/\/.*/
       , seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     ))
-    , _semicolon: $ => seq(
-      field('gate', optional($.when_unless_cond))
-      , choice($._automatic_semicolon, ';')
-    )
-    , when_unless_cond: $ => seq(
-      field('kind', choice(
-        alias('when', $.when_kw)
-        , alias('unless', $.unless_kw)
-      ))
-      , field('condition', $._expression)
-    )
+    , _semicolon: $ => choice($._automatic_semicolon, ';')
   }
 });

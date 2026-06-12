@@ -1,5 +1,0 @@
-mut a:string = "127"
-mut b:int = a        // same as mut b = int(a)
-mut c:string = b     // same as mut c = string(b)
-cassert(a == c)
-cassert(b == 0x7F)

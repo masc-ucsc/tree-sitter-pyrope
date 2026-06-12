@@ -1,3 +1,0 @@
-assert(something.[comptime])
-comptime const A_xxx = something      // comptime
-assert(A_xxx.[comptime]) // also comptime

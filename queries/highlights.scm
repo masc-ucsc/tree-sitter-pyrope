@@ -82,7 +82,6 @@
 
 [
   "if" "elif" "else" "match"
-  (when_kw) (unless_kw)
 ] @keyword.conditional
 
 [

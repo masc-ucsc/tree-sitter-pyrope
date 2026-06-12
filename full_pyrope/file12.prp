@@ -1,2 +1,0 @@
-cassert (0sb? | 1) == 1    // OK: unknown OR 1 = 1
-cassert (0sb? + 1) == 0sb?? // unknown propagation

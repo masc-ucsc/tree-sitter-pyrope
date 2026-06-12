@@ -1,6 +1,0 @@
-    mut result = 0
-    if some_opcode {
-      result = do_division(a,b)
-    }else{
-      result = do_multiplication(a,b)
-    }

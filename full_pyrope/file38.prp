@@ -1,3 +1,0 @@
-const compact  = (const a=(const b=1, const c=2), 7, 3, const d=3)
-const expanded = (const a.b=1, const a.c=2, const d=3, 7, 3)
-cassert(compact == expanded)

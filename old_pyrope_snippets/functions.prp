@@ -1,6 +1,0 @@
-
-let f1 = fun(xx:A) -> (yy:Foo) {}
-let f2 = proc(xx:A) -> (yy) {}
-
-var x1:fun(x:A) -> (y:[3]B) = _  // y is array type of 3 elements of B
-

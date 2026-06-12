@@ -1,4 +1,0 @@
-    // Do not use non-blocking
-    counter = counter + 1  // blocking assignment
-    tmp     = counter + 2  // blocking assignment
-    assert(tmp == (counter+1)) // this never fails

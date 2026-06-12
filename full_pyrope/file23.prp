@@ -1,3 +1,0 @@
-mut a = {mut d=3 ; d+1} + 100 // OK
-cassert(a == (3+1+100))
-cassert(a == {3+1+100}) // same, expression block evaluates to 104

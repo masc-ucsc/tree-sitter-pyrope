@@ -1,8 +1,0 @@
-    mut result = 0
-    mut result1 = do_division(a,b)
-    mut result2 = do_multiplication(a,b)
-    if some_opcode {
-      result = result1
-    }else{
-      result = result2
-    }

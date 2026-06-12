@@ -1,9 +1,0 @@
-mut val = 4
-mut x = (
-  ,const field1=1            // field1 with implicit type and 1 value
-  ,const field2:string = nil // field2 with explicit type and invalid default value
-  ,const field3:int = 3      // field3 with explicit type and 3 value
-  ,val                 // unnamed field with value `val` (4)
-)
-cassert(x.field1 == 1 and x.field3 == 3)
-cassert(x[3] == 4)

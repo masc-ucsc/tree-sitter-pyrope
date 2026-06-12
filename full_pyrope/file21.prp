@@ -1,5 +1,0 @@
-// src/file1.prp
-puts(priority=2, " world")
-
-// src/file2.prp
-print(priority=1, "hello")
