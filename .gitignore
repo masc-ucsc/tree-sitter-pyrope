@@ -1,49 +1,24 @@
-# Rust artifacts
-target/
-
-full_pyrope
-
-# Node artifacts
+# tree-sitter / node
+node_modules/
 build/
 prebuilds/
-node_modules/
-
-# Swift artifacts
-.build/
-
-# Go artifacts
-_obj/
-
-# Python artifacts
-.venv/
-dist/
-*.egg-info
-*.whl
-
-# C artifacts
-*.a
-*.so
-*.so.*
-*.dylib
-*.dll
-*.pc
-*.exp
-*.lib
-
-# Zig artifacts
-.zig-cache/
-zig-cache/
-zig-out/
-
-# Example dirs
-/examples/*/
-
-# Grammar volatiles
 *.wasm
-*.obj
-*.o
 
-# Archives
-*.tar.gz
-*.tgz
-*.zip
+# Generated test corpus (rebuild: make corpus)
+/full_pyrope/
+
+# prpfmt build artifacts
+prpfmt/prpfmt
+*.o
+*.a
+
+# prpparse (bazel)
+/bazel-*
+MODULE.bazel.lock
+
+# Python (prpfmt test scripts)
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

@@ -1,45 +1,47 @@
 # tree-sitter-pyrope
 
-A tree-sitter grammar and parser for pyrope
+A [tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar and parser
+for [Pyrope](https://github.com/masc-ucsc/livehd), plus the tooling built on top
+of it.
 
-This repo is a tree-sitter Pyrope grammar. 
+## What's in here
 
-## Usage:
+| Path | What it is |
+|------|------------|
+| `grammar.js`, `src/` | The tree-sitter grammar and the generated parser. This is the package. |
+| `queries/` | Editor queries — `highlights.scm`, `indents.scm`, `folds.scm`. |
+| `editors/` | Editor integration (currently a Neovim / nvim-treesitter plugin). |
+| `prpfmt/` | A Pyrope code formatter (C) that walks the tree-sitter tree. See [`prpfmt/README.md`](prpfmt/README.md). |
+| `prpparse/` | Design for a future recursive-descent parser for LiveHD (faster than tree-sitter, not for editors). See [`prpparse/plan.md`](prpparse/plan.md). |
+| `scripts/` | `extract.rb` (build the test corpus from docs) and `test.sh` (parse it). |
+| `full_pyrope/` | Auto-generated test corpus (git-ignored — rebuild with `make corpus`). |
 
-You will need to install tree-sitter-cli in order to use parser.
+## Build & test
 
-Yarn usage:
-```
-yarnpkg install
-yarnpkg run generate
-```
+The repo uses a single `Makefile` as the entry point. It needs `tree-sitter-cli`,
+installed locally via npm:
 
-npm usage:
-```
-npm install
-npm run generate
-```
-
-Example of how to run the command line tree-sitter parser:
-```
-./node_modules/tree-sitter-cli/tree-sitter parse -q -t ./benchtest/large1.prp
-./node_modules/tree-sitter-cli/tree-sitter parse -t ./snippets/delegate.prp
-```
-
-Arguments
-- -t outputs elapsed time
-- -q doesnt printout constructed tree
-- -D debug mode printsout constructed tree
-
-
-To test some examples:
-```
-./test.sh
+```bash
+npm install            # one-time: installs node_modules/tree-sitter-cli
 ```
 
-To run some benchmark:
-```
-./bench.sh
+| Command | Does |
+|---------|------|
+| `make` / `make generate` | Regenerate `src/parser.c` from `grammar.js`. |
+| `make test` / `make test-grammar` | Parse all `full_pyrope/*.prp` — the canonical regression (must stay green). |
+| `make test-all` | Also run prpfmt + prpparse (prpfmt is WIP, so this may be red). |
+| `make corpus` | Rebuild `full_pyrope/` from the Pyrope docs in `../docs`. |
+| `make prpfmt` / `make test-prpfmt` | Build the formatter / verify it over the corpus. |
+| `make clean` | Clean build artifacts. |
+
+### Parsing a single file (debugging the grammar)
+
+```bash
+# Print the parse tree (-t adds timing):
+./node_modules/tree-sitter-cli/tree-sitter parse -t ./full_pyrope/file1.prp
+
+# Just check it parses (no tree), the way scripts/test.sh does:
+./node_modules/tree-sitter-cli/tree-sitter parse -q ./full_pyrope/file1.prp
 ```
 
 ## Syntax highlighting (Neovim)
@@ -155,15 +157,17 @@ install_info = {
 ```
 
 Query edits are picked up live (symlinked). After changing `grammar.js`, run
-`npm run generate` and then `:TSInstall! pyrope` to rebuild the parser.
+`make generate` and then `:TSInstall! pyrope` to rebuild the parser.
 
-## `prpfmt`
-A vertical alignment tool for pyrope is in progress.
-It will align pyrope code based on the tree-sitter nodes.
+## prpfmt
 
-### Compile
-Clone the tree-sitter repository. 
-Run make in the tree-sitter directory to generate a static library called `lib-treesitter.a`.
+`prpfmt` is a Pyrope code formatter (think `clang-format`): it parses with the
+tree-sitter grammar and re-emits standardized, vertically-aligned Pyrope. Build
+it with `make prpfmt`; details and options are in [`prpfmt/README.md`](prpfmt/README.md).
 
-Compile prpfmt.c using `clang -I tree-sitter/lib/include prpfmt.c tree-sitter-pyrope/src/parser.c tree-sitter-pyrope/src/scanner.c tree-sitter/libtree-sitter.a`. 
-Since the program uses the tree-sitter C API, its path must be included in the compile process.
+## prpparse
+
+`prpparse` is the design for a fast, recursive-descent Pyrope parser intended for
+LiveHD (not editors), using this grammar as a differential oracle. It is still
+at the planning stage — see [`prpparse/plan.md`](prpparse/plan.md) and
+[`prpparse/todo.md`](prpparse/todo.md).

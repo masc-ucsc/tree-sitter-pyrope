@@ -1,97 +1,64 @@
-ifeq ($(OS),Windows_NT)
-$(error Windows is not supported)
-endif
+# tree-sitter-pyrope — unified build & test entry point.
+#
+# Subsystems (each can be built/tested on its own; `make test` runs them all):
+#   grammar   tree-sitter grammar (grammar.js -> src/parser.c) + editor queries
+#   prpfmt    Pyrope formatter (C, links the generated parser) -> prpfmt/
+#   prpparse  recursive-descent parser for LiveHD (bazel; design only so far)
+#
+# Quick start:
+#   make            # regenerate the parser from grammar.js
+#   make test       # the canonical grammar regression (must stay green)
+#   make test-all   # every subsystem (prpfmt is WIP -> may be red)
+#   make corpus     # rebuild the full_pyrope/ test corpus from ../docs
 
-LANGUAGE_NAME := tree-sitter-pyrope
-HOMEPAGE_URL := https://github.com/masc-ucsc/tree-sitter-pyrope
-VERSION := 0.9.2
+TS      := ./node_modules/tree-sitter-cli/tree-sitter
+DOCS    ?= ../docs/docs/pyrope
+CORPUS  := full_pyrope
 
-# repository
-SRC_DIR := src
+.PHONY: all generate test test-all test-grammar test-prpfmt test-prpparse \
+        corpus prpfmt clean
 
-TS ?= tree-sitter
+all: generate
 
-# install directory layout
-PREFIX ?= /usr/local
-DATADIR ?= $(PREFIX)/share
-INCLUDEDIR ?= $(PREFIX)/include
-LIBDIR ?= $(PREFIX)/lib
-PCLIBDIR ?= $(LIBDIR)/pkgconfig
+## ---------------------------------------------------------------- grammar ---
+# Regenerate src/parser.c (and friends) from grammar.js.
+generate:
+	npm run generate
 
-# source/object files
-PARSER := $(SRC_DIR)/parser.c
-EXTRAS := $(filter-out $(PARSER),$(wildcard $(SRC_DIR)/*.c))
-OBJS := $(patsubst %.c,%.o,$(PARSER) $(EXTRAS))
+# Canonical regression check: parse every corpus file. Prints nothing and
+# exits 0 when all of full_pyrope/*.prp parse cleanly.
+test-grammar: generate
+	@scripts/test.sh
 
-# flags
-ARFLAGS ?= rcs
-override CFLAGS += -I$(SRC_DIR) -std=c11 -fPIC
+# Rebuild the full_pyrope/ corpus from the (non-deprecated) Pyrope docs.
+# The leading rm clears stale snippets when the doc set shrinks.
+corpus:
+	rm -rf ./$(CORPUS)
+	./scripts/extract.rb -d ./$(CORPUS)/ $(DOCS)/0*.md $(DOCS)/1*.md
 
-# ABI versioning
-SONAME_MAJOR = $(shell sed -n 's/\#define LANGUAGE_VERSION //p' $(PARSER))
-SONAME_MINOR = $(word 1,$(subst ., ,$(VERSION)))
+## ----------------------------------------------------------------- prpfmt ---
+prpfmt:
+	$(MAKE) -C prpfmt
 
-# OS-specific bits
-ifeq ($(shell uname),Darwin)
-	SOEXT = dylib
-	SOEXTVER_MAJOR = $(SONAME_MAJOR).$(SOEXT)
-	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).$(SOEXT)
-	LINKSHARED = -dynamiclib -Wl,-install_name,$(LIBDIR)/lib$(LANGUAGE_NAME).$(SOEXTVER),-rpath,@executable_path/../Frameworks
-else
-	SOEXT = so
-	SOEXTVER_MAJOR = $(SOEXT).$(SONAME_MAJOR)
-	SOEXTVER = $(SOEXT).$(SONAME_MAJOR).$(SONAME_MINOR)
-	LINKSHARED = -shared -Wl,-soname,lib$(LANGUAGE_NAME).$(SOEXTVER)
-endif
-ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
-	PCLIBDIR := $(PREFIX)/libdata/pkgconfig
-endif
+# Run prpfmt -v over the whole corpus (errors / AST validity / idempotency).
+test-prpfmt: prpfmt
+	python3 prpfmt/tests/verify_all.py $(CORPUS)
 
-all: lib$(LANGUAGE_NAME).a lib$(LANGUAGE_NAME).$(SOEXT) $(LANGUAGE_NAME).pc
+## --------------------------------------------------------------- prpparse ---
+test-prpparse:
+	@if [ -f prpparse/BUILD ] || [ -f prpparse/BUILD.bazel ]; then \
+	  bazel test //prpparse/... ; \
+	else \
+	  echo "prpparse: no build yet (design in prpparse/plan.md) — skipping"; \
+	fi
 
-lib$(LANGUAGE_NAME).a: $(OBJS)
-	$(AR) $(ARFLAGS) $@ $^
+## --------------------------------------------------------------- aggregate --
+# `test` is the gate that must stay green: the grammar regression.
+test: test-grammar
 
-lib$(LANGUAGE_NAME).$(SOEXT): $(OBJS)
-	$(CC) $(LDFLAGS) $(LINKSHARED) $^ $(LDLIBS) -o $@
-ifneq ($(STRIP),)
-	$(STRIP) $@
-endif
-
-$(LANGUAGE_NAME).pc: bindings/c/$(LANGUAGE_NAME).pc.in
-	sed -e 's|@PROJECT_VERSION@|$(VERSION)|' \
-		-e 's|@CMAKE_INSTALL_LIBDIR@|$(LIBDIR:$(PREFIX)/%=%)|' \
-		-e 's|@CMAKE_INSTALL_INCLUDEDIR@|$(INCLUDEDIR:$(PREFIX)/%=%)|' \
-		-e 's|@PROJECT_DESCRIPTION@|$(DESCRIPTION)|' \
-		-e 's|@PROJECT_HOMEPAGE_URL@|$(HOMEPAGE_URL)|' \
-		-e 's|@CMAKE_INSTALL_PREFIX@|$(PREFIX)|' $< > $@
-
-$(PARSER): $(SRC_DIR)/grammar.json
-	$(TS) generate $^
-
-install: all
-	install -d '$(DESTDIR)$(DATADIR)'/tree-sitter/queries/pyrope '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter '$(DESTDIR)$(PCLIBDIR)' '$(DESTDIR)$(LIBDIR)'
-	install -m644 bindings/c/tree_sitter/$(LANGUAGE_NAME).h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/$(LANGUAGE_NAME).h
-	install -m644 $(LANGUAGE_NAME).pc '$(DESTDIR)$(PCLIBDIR)'/$(LANGUAGE_NAME).pc
-	install -m644 lib$(LANGUAGE_NAME).a '$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).a
-	install -m755 lib$(LANGUAGE_NAME).$(SOEXT) '$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXTVER)
-	ln -sf lib$(LANGUAGE_NAME).$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXTVER_MAJOR)
-	ln -sf lib$(LANGUAGE_NAME).$(SOEXTVER_MAJOR) '$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXT)
-	install -m644 queries/*.scm '$(DESTDIR)$(DATADIR)'/tree-sitter/queries/pyrope
-
-uninstall:
-	$(RM) '$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).a \
-		'$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXTVER) \
-		'$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXTVER_MAJOR) \
-		'$(DESTDIR)$(LIBDIR)'/lib$(LANGUAGE_NAME).$(SOEXT) \
-		'$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/$(LANGUAGE_NAME).h \
-		'$(DESTDIR)$(PCLIBDIR)'/$(LANGUAGE_NAME).pc
-	$(RM) -r '$(DESTDIR)$(DATADIR)'/tree-sitter/queries/pyrope
+# `test-all` also runs the WIP subsystems. test-prpfmt is expected to fail on
+# the corpus files the formatter does not handle yet (prpfmt is in progress).
+test-all: test-grammar test-prpfmt test-prpparse
 
 clean:
-	$(RM) $(OBJS) $(LANGUAGE_NAME).pc lib$(LANGUAGE_NAME).a lib$(LANGUAGE_NAME).$(SOEXT)
-
-test:
-	$(TS) test
-
-.PHONY: all install uninstall clean test
+	$(MAKE) -C prpfmt clean
