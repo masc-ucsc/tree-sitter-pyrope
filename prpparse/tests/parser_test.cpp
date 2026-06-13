@@ -16,8 +16,10 @@ static std::string sexp(const std::string& s) {
 }
 static bool parses(const std::string& s) {
   Source_buffer buf("t.prp", s);
-  Parser        p(buf);
   try {
+    // The lexer runs in the Parser constructor, so lexical errors (e.g. an
+    // unterminated comment) throw here — keep it inside the try.
+    Parser p(buf);
     p.parse();
     return true;
   } catch (const Parse_error&) {
@@ -96,3 +98,48 @@ TEST(Parser, BitSelectAndAttributes) {
 TEST(Parser, RejectsTrailingOperator) { EXPECT_FALSE(parses("a = b +\n")); }
 TEST(Parser, RejectsTwoStatementsOnOneLine) { EXPECT_FALSE(parses("a b c\n")); }
 TEST(Parser, RejectsUnclosedParen) { EXPECT_FALSE(parses("a = (1, 2\n")); }
+TEST(Parser, RejectsAssignmentNoTerminator) { EXPECT_FALSE(parses("a = 1 b = 2\n")); }
+
+// Declaration-assignment with a complex lvalue (bit-select / dot / index).
+TEST(Parser, ComplexDeclLvalue) {
+  EXPECT_TRUE(parses("mut trans:u2 = nil\nmut trans#[0] = 1\n"));
+  EXPECT_TRUE(parses("mut a.b = 1\n"));
+}
+
+// A (pub-prefixed) lambda used as an expression operand.
+TEST(Parser, LambdaAsOperand) {
+  EXPECT_TRUE(parses("reg internal:u8 = pub comb m(a) -> (r) { r = a }\n"));
+}
+
+// Reserved words used as identifiers where the keyword construct is not valid
+// (matches tree-sitter's contextual keyword handling).
+TEST(Parser, KeywordAsIdentifier) {
+  EXPECT_TRUE(parses("mut if = 3\n"));
+  EXPECT_TRUE(parses("wrap if.total = r + a\n"));
+}
+
+// Multi-line block comments: newlines INSIDE a /* */ do not terminate a
+// statement; only real line breaks do.
+TEST(Parser, MultiLineBlockComment) {
+  EXPECT_TRUE(parses("a = 1 /* multi\n line */\nb = 2\n"));   // real newline after */ -> 2 stmts
+  EXPECT_FALSE(parses("a = 1 /* multi\n line */ b = 2\n"));   // b on same line as */ -> error
+  EXPECT_TRUE(parses("mut x = /* inline */ 5\n"));
+}
+
+// Unterminated /* is a lexical error, localized at the opening /*.
+TEST(Parser, UnterminatedBlockComment) {
+  EXPECT_FALSE(parses("a = 1\n/* never closed\nb = 2\n"));
+}
+
+// A '[' that begins a new line is a new statement, not another select on the
+// previous line's expression.
+TEST(Parser, SelectDoesNotCrossNewline) {
+  EXPECT_TRUE(parses("x = a[1].foo[xx]\n[4].foo[yy] = y\n"));
+}
+
+// `true(...)` / `false(...)` use the word as an identifier (call target).
+TEST(Parser, BoolLiteralAsCallTarget) {
+  EXPECT_TRUE(parses("y = true(a does bool)\n"));
+  // but a plain bool literal is still a bool literal.
+  EXPECT_NE(sexp("x = true\n").find("bool_literal"), std::string::npos);
+}

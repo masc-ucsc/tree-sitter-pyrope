@@ -53,7 +53,7 @@ private:
   };
 
   // ---- cursor ----
-  const Token& cur() const { return toks_[pos_]; }
+  const Token& cur() const { return toks_[pos_ < toks_.size() ? pos_ : toks_.size() - 1]; }
   const Token& peek(size_t k = 1) const {
     size_t i = pos_ + k;
     return i < toks_.size() ? toks_[i] : toks_.back();
@@ -61,7 +61,12 @@ private:
   bool at(Token_kind k) const { return cur().kind == k; }
   bool at_kw(Keyword k) const { return cur().is_kw(k); }
   bool eof() const { return cur().kind == Token_kind::eof; }
-  const Token& advance() { return toks_[pos_++]; }
+  // Returns the current token and advances, never moving past the eof sentinel.
+  const Token& advance() {
+    const Token& t = cur();
+    if (pos_ + 1 < toks_.size()) ++pos_;
+    return t;
+  }
   bool accept(Token_kind k) {
     if (at(k)) {
       ++pos_;
@@ -83,6 +88,12 @@ private:
     a->end_byte   = prev_end();
   }
   [[noreturn]] void error(const char* code, const std::string& message) const;
+  // Like error() but attaches a secondary note pointing at an opening bracket
+  // (`[open_start, open_end)`), so unclosed-bracket diagnostics show where the
+  // bracket was opened. The primary span stays at the current token.
+  [[noreturn]] void error_unclosed(const char* code, const std::string& message, const char* note,
+                                    uint32_t open_start, uint32_t open_end) const;
+  Span              span_bytes(uint32_t start_byte, uint32_t end_byte) const;
   void              expect_semicolon();
 
   // ---- arena helpers ----
@@ -92,6 +103,11 @@ private:
     Ast*         a = arena_.make(k, t.start_byte, t.end_byte);
     advance();
     return a;
+  }
+  // Like leaf(identifier) but errors (at the current token) if it is not one.
+  Ast* ident_leaf(const char* code, const std::string& what) {
+    if (!at(Token_kind::ident)) error(code, what);
+    return leaf(Kind::identifier);
   }
 
   // ---- statements ----
@@ -122,6 +138,8 @@ private:
   Ast* parse_times();
   Ast* parse_unary();
   Ast* parse_postfix();
+  Ast* parse_postfix_from(Ast* e);     // suffix chain starting from a parsed operand
+  Ast* consume_binary_tail(Ast* lhs);  // continue a binary expression from a parsed operand
   Ast* parse_atom();
   Ast* parse_paren();
   Ast* parse_tuple_sq();
@@ -159,6 +177,11 @@ private:
   bool at_assignment_operator() const;
   bool at_constant() const;
   bool is_primitive_type_word(const Token& t) const;
+  // True when the current if/unique/match token actually starts that construct
+  // (a condition follows). When false, the word is used as a plain identifier,
+  // which tree-sitter permits where the keyword token is not grammatically valid
+  // (e.g. `wrap if.total = x`, `match.field`).
+  bool kw_is_construct_start() const;
 };
 
 }  // namespace prpparse

@@ -1,0 +1,37 @@
+# This file is distributed under the BSD 3-Clause License. See LICENSE for details.
+#
+# prpparse — a fast recursive-descent Pyrope parser producing an hhds tree.
+# Lives at the tree-sitter-pyrope repo root so the in-tree generated parser
+# (src/parser.c) and node-types.json stay reachable as the differential oracle.
+module(
+    name = "prpparse",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "rules_cc", version = "0.2.19")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
+
+# HHDS — stores the parsed tree (Tree/Forest/Source_locator/attrs::srcid).
+# Pinned by git_override for CI; the local_path_override below is the active
+# form for local development (mirrors ../livehd2/MODULE.bazel style).
+bazel_dep(name = "hhds", version = "0.2.0")
+# git_override(
+#     module_name = "hhds",
+#     remote = "https://github.com/masc-ucsc/hhds.git",
+#     commit = "1a3b9f930699fd592143d6a3186b7cd6a72d7073",
+# )
+local_path_override(module_name = "hhds", path = "../hhds")
+
+# iassert — transitive dependency of hhds. hhds's own archive_override for it is
+# root-only (ignored when hhds is a dependency), so the root module must resolve
+# iassert itself. Use the local sibling checkout.
+bazel_dep(name = "iassert", version = "0.1.1")
+# archive_override(
+#     module_name = "iassert",
+#     integrity = "sha256-sMOp2bzYfLhVMYfFoliGIXKHAi3bZpTVTSD+2oXjMp8=",
+#     strip_prefix = "iassert-0460fbd8405a96b3615be425df9066eba835fcf0",
+#     urls = ["https://github.com/masc-ucsc/iassert/archive/0460fbd8405a96b3615be425df9066eba835fcf0.zip"],
+# )
+local_path_override(module_name = "iassert", path = "../iassert")

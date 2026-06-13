@@ -62,6 +62,17 @@ Kind logical_op(const Token& t) {
     default:                  return Kind::invalid;
   }
 }
+// Any binary operator across all tiers (used to continue an expression from an
+// already-parsed operand, e.g. a lambda that turns out to be a binary operand).
+Kind binary_op_any(const Token& t) {
+  Kind k;
+  if ((k = times_op(t)) != Kind::invalid) return k;
+  if ((k = other_op(t)) != Kind::invalid) return k;
+  if (t.is_kw(Keyword::kw_step)) return Kind::op_step;
+  if ((k = compare_op(t)) != Kind::invalid) return k;
+  if ((k = logical_op(t)) != Kind::invalid) return k;
+  return Kind::invalid;
+}
 Kind assign_kind(Token_kind k) {
   switch (k) {
     case Token_kind::assign:         return Kind::assign;
@@ -80,6 +91,28 @@ Kind assign_kind(Token_kind k) {
   }
 }
 
+// Tokens that can begin an expression (so a construct keyword like `if` is
+// genuinely starting its condition rather than being used as an identifier).
+bool is_expr_start(const Token& t) {
+  switch (t.kind) {
+    case Token_kind::integer:
+    case Token_kind::string:
+    case Token_kind::istring:
+    case Token_kind::question:
+    case Token_kind::lparen:
+    case Token_kind::lbracket:
+    case Token_kind::lbrace:
+    case Token_kind::bang:
+    case Token_kind::tilde:
+    case Token_kind::minus:
+    case Token_kind::ellipsis:
+    case Token_kind::ident:  // identifier, or a keyword-led operand (not/if/...)
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool all_digits(std::string_view s, size_t from) {
   if (from >= s.size()) return false;
   for (size_t i = from; i < s.size(); ++i)
@@ -94,22 +127,46 @@ Parser::Parser(const Source_buffer& buf) : buf_(buf), tree_(buf) {
   toks_ = lex.tokenize();
 }
 
+Span Parser::span_bytes(uint32_t start_byte, uint32_t end_byte) const {
+  Span s;
+  s.file       = buf_.path();
+  s.start_byte = start_byte;
+  s.end_byte   = end_byte;
+  s.start_line = buf_.line_of(start_byte);
+  s.start_col  = buf_.col_of(start_byte);
+  s.end_line   = s.start_line;
+  s.end_col    = s.start_col + (end_byte - start_byte);
+  s.valid      = true;
+  return s;
+}
+
 void Parser::error(const char* code, const std::string& message) const {
   const Token& t = cur();
-  Diag d;
+  Diag         d;
   d.code     = code;
   d.category = std::string(kCategorySyntax);
   d.message  = message;
-  Span s;
-  s.file       = buf_.path();
-  s.start_byte = t.start_byte;
-  s.end_byte   = t.end_byte;
-  s.start_line = buf_.line_of(t.start_byte);
-  s.start_col  = buf_.col_of(t.start_byte);
-  s.end_line   = s.start_line;
-  s.end_col    = s.start_col + (t.end_byte - t.start_byte);
-  s.valid      = true;
-  d.span       = s;
+  d.span     = span_bytes(t.start_byte, t.end_byte);
+  throw Parse_error(std::move(d));
+}
+
+void Parser::error_unclosed(const char* code, const std::string& message, const char* note,
+                            uint32_t open_start, uint32_t open_end) const {
+  Diag d;
+  d.code     = code;
+  d.category = std::string(kCategorySyntax);
+  if (eof()) {
+    // The bracket is never closed before end of input: blame the opener (this
+    // matches tree-sitter, which roots the ERROR node at the opening bracket).
+    d.message = message + " before end of input";
+    d.span    = span_bytes(open_start, open_end);
+  } else {
+    // An unexpected token appeared where the closer was expected: blame it, and
+    // point back at the opener with a note.
+    d.message = message;
+    d.span    = span_bytes(cur().start_byte, cur().end_byte);
+    d.notes.push_back(Note{note, span_bytes(open_start, open_end)});
+  }
   throw Parse_error(std::move(d));
 }
 
@@ -150,6 +207,10 @@ bool Parser::is_lambda_kind(const Token& t) const {
          t.kw == Keyword::kw_fluid;
 }
 bool Parser::at_assignment_operator() const { return assign_kind(cur().kind) != Kind::invalid; }
+bool Parser::kw_is_construct_start() const {
+  if (at_kw(Keyword::kw_unique)) return peek(1).is_kw(Keyword::kw_if);
+  return is_expr_start(peek(1));  // if / match: a condition must follow
+}
 bool Parser::at_constant() const {
   switch (cur().kind) {
     case Token_kind::integer:
@@ -265,7 +326,17 @@ Ast* Parser::parse_statement() {
     }
   }
 
-  if (looks_like_lambda()) return parse_lambda();
+  if (looks_like_lambda()) {
+    // Usually a lambda declaration statement (no terminator needed). But a
+    // lambda can also be an expression operand (`comb f(){} . foo`,
+    // `comb f(){} * x` — overparse). If a suffix/binary operator follows, treat
+    // it as an expression statement instead.
+    Ast* lam = parse_lambda();
+    Ast* e   = consume_binary_tail(parse_postfix_from(lam));
+    if (e == lam) return lam;  // standalone lambda declaration statement
+    expect_semicolon();
+    return e;
+  }
 
   return parse_decl_or_assign_or_expr();
 }
@@ -279,7 +350,10 @@ Ast* Parser::parse_scope() {
     sc->add(parse_statement());
     while (at(Token_kind::semicolon)) advance();
   }
-  expect(Token_kind::rbrace, "unclosed-scope", "expected '}' to close the block");
+  if (!at(Token_kind::rbrace))
+    error_unclosed("unclosed-scope", "expected '}' to close the block", "'{' opened here", start,
+                   start + 1);
+  advance();  // '}'
   finish(sc, start);
   return sc;
 }
@@ -585,7 +659,9 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       for (Ast* it : items) list->add(it, Field::f_item);
       finish(list, list->start_byte);
       if (at_assignment_operator()) {
-        return finish_assignment(start, overflow, decl, list, nullptr);
+        Ast* a = finish_assignment(start, overflow, decl, list, nullptr);
+        expect_semicolon();
+        return a;
       }
       Ast* d = node(Kind::declaration_statement, start);
       d->add(decl, Field::f_decl);
@@ -595,13 +671,32 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       finish(d, start);
       return d;
     }
-    Ast* lv = parse_typed_identifier();
+    // The lvalue may be a complex location (`x#[i]`, `a.b`, `arr[i]`) when this
+    // is an assignment, or a (typed) identifier when it is a declaration.
+    Ast* lv = parse_postfix();
+    Ast* tc = nullptr;
+    if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
+      tc = parse_type_cast();
+    // Wrap a bare identifier lvalue as a typed_identifier (mirrors the grammar).
+    Ast* ti = lv;
+    if (lv->kind == Kind::identifier) {
+      ti        = node(Kind::typed_identifier, lv->start_byte);
+      lv->field = Field::f_identifier;
+      ti->add(lv);
+      if (tc) {
+        ti->add(tc, Field::f_type);
+        tc = nullptr;
+      }
+      finish(ti, lv->start_byte);
+    }
     if (at_assignment_operator()) {
-      return finish_assignment(start, overflow, decl, lv, nullptr);
+      Ast* a = finish_assignment(start, overflow, decl, ti, tc);
+      expect_semicolon();
+      return a;
     }
     Ast* d = node(Kind::declaration_statement, start);
     d->add(decl, Field::f_decl);
-    d->add(lv, Field::f_lvalue);
+    d->add(ti, Field::f_lvalue);
     expect_semicolon();
     finish(d, start);
     return d;
@@ -615,7 +710,9 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
     type_cast = parse_type_cast();
   }
   if (at_assignment_operator()) {
-    return finish_assignment(start, overflow, nullptr, e, type_cast);
+    Ast* a = finish_assignment(start, overflow, nullptr, e, type_cast);
+    expect_semicolon();
+    return a;
   }
   if (has_overflow || type_cast)
     error("expected-assignment", "expected an assignment operator");
@@ -697,7 +794,10 @@ Ast* Parser::parse_arg_list() {
     if (!accept(Token_kind::comma)) break;
     while (at(Token_kind::comma)) advance();
   }
-  expect(Token_kind::rparen, "unclosed-paren", "expected ')' to close argument list");
+  if (!at(Token_kind::rparen))
+    error_unclosed("unclosed-paren", "expected ')' to close argument list", "'(' opened here", start,
+                   start + 1);
+  advance();  // ')'
   finish(al, start);
   return al;
 }
@@ -776,15 +876,35 @@ Ast* Parser::parse_unary() {
     finish(un, start);
     return un;
   }
-  if (t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) return parse_if_expression();
-  if (t.is_kw(Keyword::kw_match)) return parse_match_expression();
+  if ((t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) && kw_is_construct_start())
+    return parse_if_expression();
+  if (t.is_kw(Keyword::kw_match) && kw_is_construct_start()) return parse_match_expression();
   if (t.kind == Token_kind::lbrace) return parse_scope();
   return parse_postfix();
 }
 
-Ast* Parser::parse_postfix() {
-  uint32_t start = cur().start_byte;
-  Ast*     e = parse_atom();
+Ast* Parser::parse_postfix() { return parse_postfix_from(parse_atom()); }
+
+Ast* Parser::consume_binary_tail(Ast* lhs) {
+  if (term_stop() || binary_op_any(cur()) == Kind::invalid) return lhs;
+  Ast* nd    = node(Kind::expression_item, lhs->start_byte);
+  lhs->field = Field::f_operand;
+  nd->add(lhs);
+  Kind opk;
+  while (!term_stop() && (opk = binary_op_any(cur())) != Kind::invalid) {
+    Ast* op = arena_.make(opk, cur().start_byte, cur().end_byte);
+    advance();
+    nd->add(op, Field::f_operator);
+    Ast* rhs   = parse_unary();
+    rhs->field = Field::f_operand;
+    nd->add(rhs);
+  }
+  finish(nd, lhs->start_byte);
+  return nd;
+}
+
+Ast* Parser::parse_postfix_from(Ast* e) {
+  uint32_t start = e->start_byte;
   for (;;) {
     if (term_stop()) break;
     Kind ek = e->kind;
@@ -825,7 +945,7 @@ Ast* Parser::parse_postfix() {
       de->add(e);
       while (at(Token_kind::dot) && peek(1).kind != Token_kind::lbracket) {
         advance();  // '.'
-        de->add(leaf(Kind::identifier));
+        de->add(ident_leaf("expected-field", "expected a field name after '.'"));
       }
       finish(de, start);
       e = de;
@@ -835,7 +955,11 @@ Ast* Parser::parse_postfix() {
       Ast* ms  = node(Kind::member_selection, start);
       e->field = Field::f_argument;
       ms->add(e);
-      while (at(Token_kind::lbracket)) ms->add(parse_select(), Field::f_select);
+      // Consecutive selects, but '[' is not a continuation token: a '[' that
+      // begins a new line (terminator before it) starts a new statement.
+      do {
+        ms->add(parse_select(), Field::f_select);
+      } while (at(Token_kind::lbracket) && !term_stop());
       finish(ms, start);
       e = ms;
       continue;
@@ -908,10 +1032,15 @@ Ast* Parser::parse_atom() {
   const Token& t = cur();
   if (t.kind == Token_kind::lparen) return parse_paren();
   if (t.kind == Token_kind::lbracket) return parse_tuple_sq();
-  if (at_constant()) return parse_constant();
-  if (t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) return parse_if_expression();
-  if (t.is_kw(Keyword::kw_match)) return parse_match_expression();
-  if (is_lambda_kind(t) && looks_like_lambda()) return parse_lambda();
+  // `true(...)` / `false(...)`: a bool literal is not callable, so here the word
+  // is used as an identifier (call target) — tree-sitter's soft-keyword rule.
+  bool bool_as_call = (t.is_kw(Keyword::kw_true) || t.is_kw(Keyword::kw_false)) &&
+                      peek(1).kind == Token_kind::lparen;
+  if (at_constant() && !bool_as_call) return parse_constant();
+  if ((t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) && kw_is_construct_start())
+    return parse_if_expression();
+  if (t.is_kw(Keyword::kw_match) && kw_is_construct_start()) return parse_match_expression();
+  if ((is_lambda_kind(t) || t.is_kw(Keyword::kw_pub)) && looks_like_lambda()) return parse_lambda();
   if (t.kind == Token_kind::ident) {
     Ast* id = leaf(Kind::identifier);
     if (at(Token_kind::at)) {  // timed_identifier: ident @[...]
@@ -979,7 +1108,10 @@ Ast* Parser::parse_paren() {
     if (at(Token_kind::rparen)) break;
     tup->add(parse_tuple_item(), Field::f_item);
   }
-  expect(Token_kind::rparen, "unclosed-paren", "expected ')' to close the tuple");
+  if (!at(Token_kind::rparen))
+    error_unclosed("unclosed-paren", "expected ')' to close the tuple", "'(' opened here", start,
+                   start + 1);
+  advance();  // ')'
   finish(tup, start);
   return tup;
 }
@@ -995,7 +1127,10 @@ Ast* Parser::parse_tuple_sq() {
     if (!accept(Token_kind::comma)) break;
     while (at(Token_kind::comma)) advance();
   }
-  expect(Token_kind::rbracket, "unclosed-bracket", "expected ']' to close the array");
+  if (!at(Token_kind::rbracket))
+    error_unclosed("unclosed-bracket", "expected ']' to close the array", "'[' opened here", start,
+                   start + 1);
+  advance();  // ']'
   finish(sq, start);
   return sq;
 }
@@ -1005,7 +1140,7 @@ Ast* Parser::parse_tuple_item(bool* plain) {
   uint32_t start = cur().start_byte;
 
   if (at_kw(Keyword::kw_ref)) return parse_ref_identifier();
-  if (is_lambda_kind(cur()) && looks_like_lambda()) return parse_lambda();
+  if ((is_lambda_kind(cur()) || at_kw(Keyword::kw_pub)) && looks_like_lambda()) return parse_lambda();
 
   if (is_decl_keyword(cur())) {
     Ast* decl = parse_var_or_let_or_reg();
@@ -1101,7 +1236,10 @@ Ast* Parser::parse_arg_tuple() {
     if (!accept(Token_kind::comma)) break;
     while (at(Token_kind::comma)) advance();
   }
-  expect(Token_kind::rparen, "unclosed-paren", "expected ')' to close arguments");
+  if (!at(Token_kind::rparen))
+    error_unclosed("unclosed-paren", "expected ')' to close arguments", "'(' opened here", start,
+                   start + 1);
+  advance();  // ')'
   finish(at_, start);
   return at_;
 }
@@ -1270,13 +1408,16 @@ Ast* Parser::parse_type() {
     uint32_t start = cur().start_byte;
     Ast*     at_   = node(Kind::array_type, start);
     at_->add(parse_select(), Field::f_length);  // reuse [..]; length allows empty -> handled below
-    // base (optional)
-    if (at(Token_kind::lbracket)) at_->add(parse_type(), Field::f_base);
-    else if (is_primitive_type_word(cur())) at_->add(parse_primitive_type(), Field::f_base);
-    else if (is_lambda_kind(cur()) && looks_like_lambda()) at_->add(parse_lambda(), Field::f_base);
-    else if (cur().kind == Token_kind::ident || at(Token_kind::lparen) || at_constant() ||
-             at_kw(Keyword::kw_if) || at_kw(Keyword::kw_match))
-      at_->add(parse_type(), Field::f_base);
+    // base (optional) — must not cross a statement terminator (a new line after
+    // `[]` begins the next statement, it is not the array's base type).
+    if (!term_stop()) {
+      if (at(Token_kind::lbracket)) at_->add(parse_type(), Field::f_base);
+      else if (is_primitive_type_word(cur())) at_->add(parse_primitive_type(), Field::f_base);
+      else if (is_lambda_kind(cur()) && looks_like_lambda()) at_->add(parse_lambda(), Field::f_base);
+      else if (cur().kind == Token_kind::ident || at(Token_kind::lparen) || at_constant() ||
+               at_kw(Keyword::kw_if) || at_kw(Keyword::kw_match))
+        at_->add(parse_type(), Field::f_base);
+    }
     finish(at_, start);
     return at_;
   }

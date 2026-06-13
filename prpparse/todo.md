@@ -28,11 +28,16 @@ the (good but slow) tree-sitter parser.
       moot for the current corpus (all files < 2 KB).
 - [x] **Good error generation** via `prpparse::Diag` (code / category / message /
       span / hint / notes), shape-compatible with `../livehd/core/diag.hpp`.
-      **Fail-fast**: first syntax error throws `Parse_error`. (Message-quality
-      tuning + the negative golden suite remain for the fuzzing phase.)
+      **Fail-fast**: first syntax error throws `Parse_error`. Unclosed brackets
+      carry a "opened here" note.
 - [x] Parses **everything `./test.sh` passes** — all 428 `full_pyrope/*.prp`.
 - [x] First milestone: all `full_pyrope/*.prp` parse into HHDS trees, fail-fast
-      on the first error. (Fuzzing-based diagnostic-span scoring is deferred.)
+      on the first error.
+- [x] **Fuzzing** (`make fuzz-prpparse`, `tests/fuzz.py`): mutate valid corpus
+      files, tree-sitter as the syntax oracle. Hard gate: 0 false positives
+      (never reject valid syntax). Reports syntax-error capture (~98%) and
+      error-span localization (median 1 B, 83% within 8 B). Capturing *every*
+      syntax error is not required — inou/prp catches the rest from the parse tree.
 
 ## Nice to have (not required)
 

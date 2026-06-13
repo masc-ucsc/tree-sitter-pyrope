@@ -452,11 +452,12 @@ bool Lexer::gap_terminates(uint32_t gap_start, const Token& cur) const {
       s += 2;
       while (s < cend && b[s] != '\n') ++s;
     } else if (c == '/' && s + 1 < cend && b[s + 1] == '*') {
+      // Block comment: skipped like whitespace, but newlines INSIDE it do NOT
+      // count as a statement terminator — only real line breaks in whitespace
+      // do (matches tree-sitter: `a /* x\n y */ b` keeps a and b on one logical
+      // line, so it is NOT terminated).
       s += 2;
-      while (s + 1 < cend && !(b[s] == '*' && b[s + 1] == '/')) {
-        if (b[s] == '\n') saw_newline = true;
-        ++s;
-      }
+      while (s + 1 < cend && !(b[s] == '*' && b[s + 1] == '/')) ++s;
       s += 2;
     } else {
       ++s;  // whitespace

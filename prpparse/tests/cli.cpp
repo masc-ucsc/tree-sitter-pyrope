@@ -53,6 +53,22 @@ int lex_only(const std::string& path) {
   }
 }
 
+// Machine-readable line for the fuzz harness:
+//   <path>\tok\t-1\tok                 (parsed)
+//   <path>\terr\t<start_byte>\t<code>  (syntax error)
+int fuzz_file(const std::string& path) {
+  Source_buffer buf = Source_buffer::from_file(path);
+  try {
+    Parser parser(buf);
+    (void)parser.parse();
+    std::printf("%s\tok\t-1\tok\n", path.c_str());
+    return 0;
+  } catch (const Parse_error& e) {
+    std::printf("%s\terr\t%u\t%s\n", path.c_str(), e.diag.span.start_byte, e.diag.code.c_str());
+    return 1;
+  }
+}
+
 int parse_file(const std::string& path, bool sexp) {
   Source_buffer buf = Source_buffer::from_file(path);
   try {
@@ -63,9 +79,33 @@ int parse_file(const std::string& path, bool sexp) {
     }
     return 0;
   } catch (const Parse_error& e) {
-    std::fprintf(stderr, "%s: %s\n", path.c_str(), e.rendered.c_str());
+    // e.rendered already begins with "<file>:<line>:<col>: error[...]: ...".
+    std::fprintf(stderr, "%s\n", e.rendered.c_str());
     return 1;
   }
+}
+
+void usage() {
+  std::printf(
+      "prpparse_cli — parse Pyrope (.prp) source files.\n"
+      "\n"
+      "Usage: prpparse_cli [MODE] FILE...\n"
+      "\n"
+      "By default each FILE is parsed and only syntax errors are reported (as\n"
+      "clang-style diagnostics on stderr); nothing is printed for a clean parse.\n"
+      "Exit status is non-zero if any file fails to parse.\n"
+      "\n"
+      "Modes:\n"
+      "  (default)   parse; report diagnostics only (no tree)\n"
+      "  --sexp      parse and print the s-expression tree\n"
+      "  --tokens    dump the token stream\n"
+      "  --lex       lex only; report lexical errors\n"
+      "  --fuzz      one machine-readable line per file (for tests/fuzz.py)\n"
+      "  -h, --help  show this help\n"
+      "\n"
+      "Examples:\n"
+      "  prpparse_cli a.prp b.prp        # parse, report any errors\n"
+      "  prpparse_cli --sexp a.prp       # show the parse tree\n");
 }
 
 }  // namespace
@@ -75,7 +115,10 @@ int main(int argc, char** argv) {
   std::string_view         mode = "parse";
   for (int i = 1; i < argc; ++i) {
     std::string_view a = argv[i];
-    if (a == "--tokens")
+    if (a == "--help" || a == "-h") {
+      usage();
+      return 0;
+    } else if (a == "--tokens")
       mode = "tokens";
     else if (a == "--lex")
       mode = "lex";
@@ -83,8 +126,18 @@ int main(int argc, char** argv) {
       mode = "sexp";
     else if (a == "--parse")
       mode = "parse";
-    else
+    else if (a == "--fuzz")
+      mode = "fuzz";
+    else if (!a.empty() && a[0] == '-') {
+      std::fprintf(stderr, "prpparse_cli: unknown option '%s' (try --help)\n", argv[i]);
+      return 2;
+    } else
       files.emplace_back(a);
+  }
+
+  if (files.empty()) {
+    usage();
+    return 0;
   }
 
   int rc = 0;
@@ -94,9 +147,11 @@ int main(int argc, char** argv) {
       r = dump_tokens(f);
     else if (mode == "lex")
       r = lex_only(f);
+    else if (mode == "fuzz")
+      r = fuzz_file(f);  // always prints a line; never aborts the batch
     else
       r = parse_file(f, mode == "sexp");
-    if (r != 0) rc = r;
+    if (mode != "fuzz" && r != 0) rc = r;
   }
   return rc;
 }

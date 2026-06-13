@@ -16,7 +16,7 @@ DOCS    ?= ../docs/docs/pyrope
 CORPUS  := full_pyrope
 
 .PHONY: all generate test test-all test-grammar test-prpfmt test-prpparse \
-        corpus prpfmt clean
+        fuzz-prpparse corpus prpfmt clean
 
 all: generate
 
@@ -54,6 +54,13 @@ test-prpparse:
 	else \
 	  echo "prpparse: no build yet (design in prpparse/plan.md) — skipping"; \
 	fi
+
+# Syntax-error fuzzer: mutate corpus files, use tree-sitter as the syntax oracle.
+# Hard gate (non-zero exit): prpparse must never reject tree-sitter-valid syntax.
+# Also reports syntax-error capture rate + error-span localization quality.
+fuzz-prpparse:
+	bazel build //prpparse:prpparse_cli
+	python3 prpparse/tests/fuzz.py
 
 ## --------------------------------------------------------------- aggregate --
 # `test` is the gate that must stay green: the grammar + formatter regressions.

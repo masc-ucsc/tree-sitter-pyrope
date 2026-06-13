@@ -112,3 +112,19 @@ TEST(Lexer, BacktickIdentifier) {
   EXPECT_EQ(t[0].kind, Token_kind::ident);
   EXPECT_TRUE(t[0].text == "`weird name`");
 }
+
+TEST(Lexer, BlockCommentInternalNewlineIsNotTerminator) {
+  // `a = 1 /* x\n y */ b` : the newline is inside the comment, b on the same
+  // physical line as */, so there is NO statement terminator before b.
+  Lexed lx("a = 1 /* x\n y */ b = 2\n");
+  auto& t = lx.t;
+  for (auto& x : t)
+    if (x.text == "b") EXPECT_FALSE(x.terminator_before);
+}
+
+TEST(Lexer, RealNewlineAfterBlockCommentIsTerminator) {
+  Lexed lx("a = 1 /* x\n y */\nb = 2\n");  // real newline after */ -> terminator
+  auto& t = lx.t;
+  for (auto& x : t)
+    if (x.text == "b") EXPECT_TRUE(x.terminator_before);
+}
