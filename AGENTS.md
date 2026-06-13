@@ -13,9 +13,12 @@ Read this before changing the grammar or the surrounding subsystems.
   nvim-treesitter `install_info` reference them by repo-relative path.
 - **prpfmt** — `prpfmt/`, a C formatter that links the generated parser
   directly. Self-contained; see `prpfmt/README.md`.
-- **prpparse** — `prpparse/`, design-only so far: a future recursive-descent
-  parser for LiveHD that uses this grammar as a differential oracle. See
-  `prpparse/plan.md`.
+- **prpparse** — `prpparse/`, a hand-written recursive-descent Pyrope parser
+  (bazel/C++23) producing an `hhds` tree, built to replace tree-sitter as the
+  LiveHD front-end. Uses this grammar as a differential oracle (accepts exactly
+  what `grammar.js` accepts; parses all 428 corpus files). Lexer + tree schema +
+  parser are implemented (Phases 0–3); splitting/perf/LiveHD-integration are
+  deferred. See `prpparse/README.md` and `prpparse/plan.md`.
 
 ## Build & test (all via the root Makefile)
 
@@ -23,7 +26,7 @@ Read this before changing the grammar or the surrounding subsystems.
 npm install          # one-time: installs node_modules/tree-sitter-cli
 make generate        # grammar.js -> src/parser.c
 make test            # canonical check: grammar + prpfmt (test-grammar + test-prpfmt)
-make test-all        # also prpparse (design-only -> skipped until it builds)
+make test-all        # also prpparse (bazel unit tests + corpus accept-parity)
 make corpus          # rebuild full_pyrope/ from ../docs (see below)
 ```
 

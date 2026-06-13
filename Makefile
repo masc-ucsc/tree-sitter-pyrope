@@ -50,7 +50,7 @@ test-prpfmt: prpfmt
 ## --------------------------------------------------------------- prpparse ---
 test-prpparse:
 	@if [ -f prpparse/BUILD ] || [ -f prpparse/BUILD.bazel ]; then \
-	  bazel test //prpparse/... ; \
+	  bazel test //prpparse/... && scripts/test_prpparse.sh ; \
 	else \
 	  echo "prpparse: no build yet (design in prpparse/plan.md) — skipping"; \
 	fi

@@ -1,0 +1,82 @@
+// X-macro keyword table. Include after defining PRP_KEYWORD(name).
+//
+// Every word is lexed as a `Token_kind::ident`; if its spelling matches one of
+// these, the token also carries the matching `Keyword` id. The parser decides
+// contextually whether the word is a keyword or a plain identifier (soft
+// keywords: e.g. `comptime` as an attribute name, type names as fields).
+//
+// `name` is also a valid C++ identifier-paste target; entries that collide with
+// C++ keywords (if/else/for/while/int/bool/true/false/not/and/or) are safe
+// because the enumerator is `kw_##name`.
+
+#ifndef PRP_KEYWORD
+#error "define PRP_KEYWORD(name) before including prp_keywords.def"
+#endif
+
+// Statement / structural keywords
+PRP_KEYWORD(import)
+PRP_KEYWORD(as)
+PRP_KEYWORD(break)
+PRP_KEYWORD(continue)
+PRP_KEYWORD(return)
+PRP_KEYWORD(if)
+PRP_KEYWORD(elif)
+PRP_KEYWORD(else)
+PRP_KEYWORD(unique)
+PRP_KEYWORD(for)
+PRP_KEYWORD(in)
+PRP_KEYWORD(while)
+PRP_KEYWORD(loop)
+PRP_KEYWORD(match)
+PRP_KEYWORD(test)
+PRP_KEYWORD(type)
+PRP_KEYWORD(impl)
+PRP_KEYWORD(enum)
+PRP_KEYWORD(spawn)
+PRP_KEYWORD(ref)
+
+// Declaration modifiers / storage kinds
+PRP_KEYWORD(pub)
+PRP_KEYWORD(comptime)
+PRP_KEYWORD(fluid)
+PRP_KEYWORD(const)
+PRP_KEYWORD(mut)
+PRP_KEYWORD(reg)
+PRP_KEYWORD(stage)
+PRP_KEYWORD(wrap)
+PRP_KEYWORD(sat)
+
+// Lambda kinds
+PRP_KEYWORD(comb)
+PRP_KEYWORD(mod)
+PRP_KEYWORD(pipe)
+
+// Primitive type names
+PRP_KEYWORD(uint)
+PRP_KEYWORD(unsigned)
+PRP_KEYWORD(int)
+PRP_KEYWORD(integer)
+PRP_KEYWORD(bool)
+PRP_KEYWORD(string)
+
+// Bit-selection extensions
+PRP_KEYWORD(sext)
+PRP_KEYWORD(zext)
+
+// Operator words
+PRP_KEYWORD(not)
+PRP_KEYWORD(and)
+PRP_KEYWORD(or)
+PRP_KEYWORD(implies)
+PRP_KEYWORD(has)
+PRP_KEYWORD(is)
+PRP_KEYWORD(case)
+PRP_KEYWORD(does)
+PRP_KEYWORD(equals)
+PRP_KEYWORD(step)
+
+// Boolean literals
+PRP_KEYWORD(true)
+PRP_KEYWORD(false)
+
+#undef PRP_KEYWORD

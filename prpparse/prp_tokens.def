@@ -1,0 +1,83 @@
+// X-macro token table. Include after defining PRP_TOKEN(name, spelling).
+//
+//   `name`     : the Token_kind enumerator (also used in code).
+//   `spelling` : a string literal. For operators/punctuation it is the exact
+//                lexeme (also the longest-match key); for markers/literals it
+//                is a human placeholder used by --tokens and diagnostics.
+//
+// Operators are listed longest-first so a lexer can fold this table into a
+// longest-match matcher. The footer #undefs PRP_TOKEN so the file can be
+// re-included with a different macro.
+
+#ifndef PRP_TOKEN
+#error "define PRP_TOKEN(name, spelling) before including prp_tokens.def"
+#endif
+
+// Markers
+PRP_TOKEN(invalid, "<invalid>")
+PRP_TOKEN(eof,     "<eof>")
+
+// Literals & identifier (keyword id is attached to `ident` separately)
+PRP_TOKEN(integer, "<int>")
+PRP_TOKEN(string,  "<str>")
+PRP_TOKEN(istring, "<istr>")
+PRP_TOKEN(ident,   "<ident>")
+
+// 3-char operators
+PRP_TOKEN(range_incl,     "..=")
+PRP_TOKEN(range_excl,     "..<")
+PRP_TOKEN(range_count,    "..+")
+PRP_TOKEN(ellipsis,       "...")
+PRP_TOKEN(assign_shl,     "<<=")
+PRP_TOKEN(assign_sra,     ">>=")
+// keyword-prefixed compound assigns (formed in the identifier path)
+PRP_TOKEN(assign_log_or,  "or=")
+PRP_TOKEN(assign_log_and, "and=")
+
+// 2-char operators
+PRP_TOKEN(coloncolon, "::")
+PRP_TOKEN(dotdot,     "..")
+PRP_TOKEN(arrow,      "->")
+PRP_TOKEN(shl,        "<<")
+PRP_TOKEN(shr,        ">>")
+PRP_TOKEN(eq,         "==")
+PRP_TOKEN(ne,         "!=")
+PRP_TOKEN(le,         "<=")
+PRP_TOKEN(ge,         ">=")
+PRP_TOKEN(assign_add, "+=")
+PRP_TOKEN(assign_sub, "-=")
+PRP_TOKEN(assign_mul, "*=")
+PRP_TOKEN(assign_div, "/=")
+PRP_TOKEN(assign_or,  "|=")
+PRP_TOKEN(assign_and, "&=")
+PRP_TOKEN(assign_xor, "^=")
+
+// 1-char punctuation / operators
+PRP_TOKEN(lparen,    "(")
+PRP_TOKEN(rparen,    ")")
+PRP_TOKEN(lbrace,    "{")
+PRP_TOKEN(rbrace,    "}")
+PRP_TOKEN(lbracket,  "[")
+PRP_TOKEN(rbracket,  "]")
+PRP_TOKEN(comma,     ",")
+PRP_TOKEN(semicolon, ";")
+PRP_TOKEN(colon,     ":")
+PRP_TOKEN(dot,       ".")
+PRP_TOKEN(at,        "@")
+PRP_TOKEN(hash,      "#")
+PRP_TOKEN(question,  "?")
+PRP_TOKEN(assign,    "=")
+PRP_TOKEN(plus,      "+")
+PRP_TOKEN(minus,     "-")
+PRP_TOKEN(star,      "*")
+PRP_TOKEN(slash,     "/")
+PRP_TOKEN(percent,   "%")
+PRP_TOKEN(lt,        "<")
+PRP_TOKEN(gt,        ">")
+PRP_TOKEN(amp,       "&")
+PRP_TOKEN(caret,     "^")
+PRP_TOKEN(pipe,      "|")
+PRP_TOKEN(tilde,     "~")
+PRP_TOKEN(bang,      "!")
+
+#undef PRP_TOKEN
