@@ -1137,29 +1137,79 @@
       }
     },
     "function_call_expression": {
-      "type": "PREC",
-      "value": "function_call_expression",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC",
+          "value": "function_call_expression",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "function",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_complex_identifier"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "argument",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "arg_tuple"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_DYNAMIC",
+          "value": 1,
+          "content": {
+            "type": "PREC",
+            "value": "generic_call",
             "content": {
-              "type": "SYMBOL",
-              "name": "_complex_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "argument",
-            "content": {
-              "type": "SYMBOL",
-              "name": "arg_tuple"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "function",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_complex_identifier"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "<"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "generic",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "generic_type_list"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": ">"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "argument",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "arg_tuple"
+                  }
+                }
+              ]
             }
           }
-        ]
-      }
+        }
+      ]
     },
     "tuple": {
       "type": "SEQ",
@@ -2685,6 +2735,66 @@
                     "content": {
                       "type": "SYMBOL",
                       "name": "typed_identifier"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "STRING",
+            "value": ","
+          }
+        }
+      ]
+    },
+    "generic_type_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "STRING",
+            "value": ","
+          }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "item",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_type"
+              }
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "STRING",
+                  "value": ","
+                }
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "item",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_type"
                     }
                   }
                 ]
@@ -5057,6 +5167,10 @@
     ],
     [
       "sint_type"
+    ],
+    [
+      "function_call_expression",
+      "_restricted_expression"
     ]
   ],
   "precedences": [
@@ -5176,6 +5290,12 @@
       {
         "type": "STRING",
         "value": "type_cast"
+      }
+    ],
+    [
+      {
+        "type": "STRING",
+        "value": "generic_call"
       }
     ]
   ],

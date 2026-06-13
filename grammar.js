@@ -63,6 +63,25 @@ function tupleCall($, precedence, argRule) {
   ));
 }
 
+// Call-site explicit generic binding in EXPRESSION position
+// (`f<int,string>(args)`). `ident < … > (…)` is ambiguous with a chained
+// comparison, and static precedence can resolve it neither way (committing
+// to the call breaks plain `a < b`; committing to compare makes the generic
+// form unreachable). So this variant carries its own incomparable
+// precedence level ('generic_call') to force a GLR fork, and dynamic
+// precedence picks the call parse when both survive. That never steals a
+// legal program: `f < T > (x)` as a comparison is mixed-direction, which
+// Pyrope already rejects semantically (grammar_overparse.md #6).
+function genericTupleCall($, argRule) {
+  return prec.dynamic(1, prec('generic_call', seq(
+    field('function', $._complex_identifier)
+    , '<'
+    , field('generic', $.generic_type_list)
+    , '>'
+    , field('argument', argRule)
+  )));
+}
+
 function dottedChain(item, tail, precedence, subprecedence, associativity = prec.left) {
   return associativity(precedence, seq(
     field('item', item)
@@ -103,6 +122,10 @@ module.exports = grammar({
     // type's constraint list and the enum body's arg_list; GLR resolves it.
     , [$.uint_type]
     , [$.sint_type]
+    // `f<int>(x)` vs comparison `f < int …` — GLR forks; dynamic precedence
+    // on the generic call wins when both parses survive (see
+    // genericTupleCall).
+    , [$.function_call_expression, $._restricted_expression]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -146,6 +169,13 @@ module.exports = grammar({
     , [
       'type_spec'
       , 'type_cast'
+    ]
+    // Deliberately related to nothing: the explicit-generic call
+    // (`f<int>(…)`) must stay statically unresolved against the comparison
+    // chain so the GLR fork + dynamic precedence can decide (see
+    // genericTupleCall).
+    , [
+      'generic_call'
     ]
   ]
 
@@ -317,7 +347,10 @@ module.exports = grammar({
     ))
 
     // Function Call
-    , function_call_expression: $ => tupleCall($, 'function_call_expression', $.arg_tuple)
+    , function_call_expression: $ => choice(
+      tupleCall($, 'function_call_expression', $.arg_tuple)
+      , genericTupleCall($, $.arg_tuple)
+    )
     // Tuple
     , tuple: $ => seq('(', optional($._tuple_list), ')')
 
@@ -554,6 +587,10 @@ module.exports = grammar({
       , field('type', $.type_cast)
     )
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
+    // Call-site generic binding list (`f<int,string>(…)`): one type per
+    // generic name, in declaration order. Types, not typed_identifiers —
+    // there is nothing to name at the call site.
+    , generic_type_list: $ => listseq1(field('item', $._type))
 
     // Expressions. Built from the tiered binary-expression operand chain:
     // _pri4_operand covers everything tighter than tier-5, _binary_logical

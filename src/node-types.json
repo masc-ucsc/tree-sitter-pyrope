@@ -2095,6 +2095,16 @@
             "named": true
           }
         ]
+      },
+      "generic": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "generic_type_list",
+            "named": true
+          }
+        ]
       }
     }
   },
@@ -2214,6 +2224,60 @@
         "types": [
           {
             "type": "type_cast",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "generic_type_list",
+    "named": true,
+    "fields": {
+      "item": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "@",
+            "named": false
+          },
+          {
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "bool_type",
+            "named": true
+          },
+          {
+            "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "sint_type",
+            "named": true
+          },
+          {
+            "type": "string_type",
+            "named": true
+          },
+          {
+            "type": "timing_slot",
+            "named": true
+          },
+          {
+            "type": "uint_type",
+            "named": true
+          }
+        ]
+      },
+      "timing": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "timing_slot",
             "named": true
           }
         ]
