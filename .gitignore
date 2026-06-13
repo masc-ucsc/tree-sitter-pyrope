@@ -9,6 +9,7 @@ prebuilds/
 
 # prpfmt build artifacts
 prpfmt/prpfmt
+prpfmt/ts_symbols.h
 *.o
 *.a
 

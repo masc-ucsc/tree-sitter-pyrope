@@ -69,7 +69,6 @@ def run_verification_test(target_dir, prpfmt_bin, debug_mode=False):
             
             if result.returncode == 0:
                 passed_count += 1
-                print(f"[PASS] {filename}")
             else:
                 stderr = result.stderr
                 failed_paths.append(file_path)

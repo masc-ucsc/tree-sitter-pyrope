@@ -1125,11 +1125,22 @@
           "named": true
         },
         {
-          "type": "op_step",
-          "named": true
-        },
-        {
           "type": "op_sub",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "binary_step_op",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "op_step",
           "named": true
         }
       ]
@@ -1745,6 +1756,10 @@
           },
           {
             "type": "binary_other_op",
+            "named": true
+          },
+          {
+            "type": "binary_step_op",
             "named": true
           },
           {

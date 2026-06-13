@@ -7,8 +7,8 @@
 #
 # Quick start:
 #   make            # regenerate the parser from grammar.js
-#   make test       # the canonical grammar regression (must stay green)
-#   make test-all   # every subsystem (prpfmt is WIP -> may be red)
+#   make test       # canonical regression: grammar + prpfmt (must stay green)
+#   make test-all   # also runs prpparse (design-only -> skipped until it builds)
 #   make corpus     # rebuild the full_pyrope/ test corpus from ../docs
 
 TS      := ./node_modules/tree-sitter-cli/tree-sitter
@@ -37,7 +37,10 @@ corpus:
 	./scripts/extract.rb -d ./$(CORPUS)/ $(DOCS)/0*.md $(DOCS)/1*.md
 
 ## ----------------------------------------------------------------- prpfmt ---
-prpfmt:
+# Depend on the root `generate` so a parallel `make test` regenerates the parser
+# exactly once (shared prerequisite) instead of racing with test-grammar's own
+# generate; the prpfmt sub-make then sees parser.c up-to-date and skips its copy.
+prpfmt: generate
 	$(MAKE) -C prpfmt
 
 # Run prpfmt -v over the whole corpus (errors / AST validity / idempotency).
@@ -53,12 +56,11 @@ test-prpparse:
 	fi
 
 ## --------------------------------------------------------------- aggregate --
-# `test` is the gate that must stay green: the grammar regression.
-test: test-grammar
+# `test` is the gate that must stay green: the grammar + formatter regressions.
+test: test-grammar test-prpfmt
 
-# `test-all` also runs the WIP subsystems. test-prpfmt is expected to fail on
-# the corpus files the formatter does not handle yet (prpfmt is in progress).
-test-all: test-grammar test-prpfmt test-prpparse
+# `test-all` additionally runs prpparse (design-only -> skipped until it builds).
+test-all: test test-prpparse
 
 clean:
 	$(MAKE) -C prpfmt clean

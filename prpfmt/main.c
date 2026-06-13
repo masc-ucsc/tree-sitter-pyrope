@@ -47,8 +47,9 @@ char *file_to_string(char *infile) {
     exit(1);
   }
 
-  // Read file content into buffer
-  if (fread(buffer, l_size, 1, fp) != 1) {
+  // Read file content into buffer. fread returns 0 for a zero-length file,
+  // which is not an error: an empty source is a valid (empty) program.
+  if (l_size > 0 && fread(buffer, l_size, 1, fp) != 1) {
     fclose(fp);
     free(buffer);
     fprintf(stderr, "File read failed");

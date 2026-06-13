@@ -22,14 +22,15 @@ Read this before changing the grammar or the surrounding subsystems.
 ```bash
 npm install          # one-time: installs node_modules/tree-sitter-cli
 make generate        # grammar.js -> src/parser.c
-make test            # parse all full_pyrope/*.prp  <-- canonical check (== test-grammar)
-make test-all        # also prpfmt + prpparse (prpfmt is WIP, may be red)
+make test            # canonical check: grammar + prpfmt (test-grammar + test-prpfmt)
+make test-all        # also prpparse (design-only -> skipped until it builds)
 make corpus          # rebuild full_pyrope/ from ../docs (see below)
 ```
 
-`make test-grammar` is the authoritative regression check: it runs
-`scripts/test.sh`, which parses every `full_pyrope/*.prp` and exits 0 only when
-they all parse cleanly.
+`make test` is the authoritative regression check (must stay green). It runs
+`test-grammar` (`scripts/test.sh`, which parses every `full_pyrope/*.prp`) and
+`test-prpfmt` (reformats every corpus file and re-parses the output). Run
+`make test-grammar` alone for just the parse check.
 
 Debug a single file:
 

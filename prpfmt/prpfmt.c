@@ -1918,6 +1918,10 @@ void print_lambda(TSNode node, PrpfmtState *st) {
         print_pipe_lambda(child, st);
         emit_space(st);
         break;
+      case sym_fluid_lambda:
+        print_fluid_lambda(child, st);
+        emit_space(st);
+        break;
       case sym_identifier:
         print_identifier(child, st);
         break;
@@ -1949,6 +1953,20 @@ void print_pipe_lambda(TSNode node, PrpfmtState *st) {
 
     if (symbol == sym_select) {
       print_select(child, st);
+    } else {
+      emit_node_text(child, st);
+    }
+  }
+}
+
+// `fluid` (optionally with a `[...]` config, e.g. fluid[lat=1..=70]) -- the
+// func_type of a fluid lambda. Keep `fluid` glued to its config bracket.
+void print_fluid_lambda(TSNode node, PrpfmtState *st) {
+  uint32_t child_count = ts_node_child_count(node);
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    if (ts_node_grammar_symbol(child) == sym_attribute_sq) {
+      print_attribute_sq(child, st);
     } else {
       emit_node_text(child, st);
     }
@@ -2132,6 +2150,7 @@ void print_function_call_expression(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_tuple:
+      case sym_arg_tuple:  // call arguments parse as arg_tuple, same `( items )` shape
         if (st->in_assert) {
           print_assertion_args(child, st);
         } else {
@@ -2178,6 +2197,9 @@ void print__expression(TSNode node, PrpfmtState *st, bool is_inline) {
       break;
     case sym__binary_other:
       print__binary_other(node, st);
+      break;
+    case sym__binary_step:
+      print__binary_step(node, st);
       break;
     case sym__binary_compare:
       print__binary_compare(node, st);
@@ -2336,6 +2358,45 @@ void print__binary_other(TSNode node, PrpfmtState *st) {
 
     switch (symbol) {
       case sym_binary_other_op:
+        {
+          char *op_text = get_node_text(child, st->source_code);
+          emit_break_point(st, 50);
+          emit_align_math(st, op_text); // Use MATH channel
+          emit_space(st);
+          if (op_text) {
+            free(op_text);
+          }
+        }
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        emit_group_start(st, false, false); // FIREWALL
+        if (ts_node_is_named(child)) {
+          print__expression(child, st, true);
+        } else {
+          emit_node_text(child, st);
+        }
+        emit_group_end(st);
+        break;
+    }
+  }
+  emit_group_end(st);
+}
+
+// `(a..=b) step c` -- its own tier (looser than the range ops), same layout
+// as _binary_other but with the `step` word operator.
+void print__binary_step(TSNode node, PrpfmtState *st) {
+  emit_group_start(st, false, true); // Symmetrical unit
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case sym_binary_step_op:
         {
           char *op_text = get_node_text(child, st->source_code);
           emit_break_point(st, 50);

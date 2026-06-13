@@ -3143,6 +3143,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "_binary_step"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_binary_compare"
         },
         {
@@ -3357,21 +3361,12 @@
           },
           "named": true,
           "value": "op_range_count"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "step"
-          },
-          "named": true,
-          "value": "op_step"
         }
       ]
     },
-    "_binary_compare": {
+    "_binary_step": {
       "type": "PREC_LEFT",
-      "value": "binary_compare",
+      "value": "binary_step",
       "content": {
         "type": "SEQ",
         "members": [
@@ -3393,7 +3388,7 @@
                   "name": "operator",
                   "content": {
                     "type": "SYMBOL",
-                    "name": "binary_compare_op"
+                    "name": "binary_step_op"
                   }
                 },
                 {
@@ -3402,6 +3397,56 @@
                   "content": {
                     "type": "SYMBOL",
                     "name": "_pri3_operand"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "binary_step_op": {
+      "type": "ALIAS",
+      "content": {
+        "type": "STRING",
+        "value": "step"
+      },
+      "named": true,
+      "value": "op_step"
+    },
+    "_binary_compare": {
+      "type": "PREC_LEFT",
+      "value": "binary_compare",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "operand",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_pri_step_operand"
+            }
+          },
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "operator",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "binary_compare_op"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "operand",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_pri_step_operand"
                   }
                 }
               ]
@@ -3673,7 +3718,7 @@
         ]
       }
     },
-    "_pri4_operand": {
+    "_pri_step_operand": {
       "type": "PREC",
       "value": "expression",
       "content": {
@@ -3682,6 +3727,28 @@
           {
             "type": "SYMBOL",
             "name": "_pri3_operand"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_binary_step"
+            },
+            "named": true,
+            "value": "expression_item"
+          }
+        ]
+      }
+    },
+    "_pri4_operand": {
+      "type": "PREC",
+      "value": "expression",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_pri_step_operand"
           },
           {
             "type": "ALIAS",
@@ -4690,10 +4757,6 @@
         {
           "type": "SYMBOL",
           "name": "_binary_number"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_typed_number"
         }
       ]
     },
@@ -4707,12 +4770,12 @@
             "value": 2,
             "content": {
               "type": "PATTERN",
-              "value": "-(0|[1-9][0-9]*)"
+              "value": "-(0|[1-9][0-9_]*)"
             }
           },
           {
             "type": "PATTERN",
-            "value": "0|[1-9][0-9]*"
+            "value": "0|[1-9][0-9_]*"
           }
         ]
       }
@@ -4727,12 +4790,12 @@
             "value": 2,
             "content": {
               "type": "PATTERN",
-              "value": "-(0|[1-9][0-9]*)[KMGT]"
+              "value": "-(0|[1-9][0-9_]*)[KMGT]"
             }
           },
           {
             "type": "PATTERN",
-            "value": "(0|[1-9][0-9]*)[KMGT]"
+            "value": "(0|[1-9][0-9_]*)[KMGT]"
           }
         ]
       }
@@ -4813,26 +4876,6 @@
           {
             "type": "PATTERN",
             "value": "0(s|S|u|U)?(b|B)[0-1\\?][0-1_\\?]*"
-          }
-        ]
-      }
-    },
-    "_typed_number": {
-      "type": "TOKEN",
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "PREC",
-            "value": 2,
-            "content": {
-              "type": "PATTERN",
-              "value": "-(0|[1-9][0-9]*)[sui][0-9]+"
-            }
-          },
-          {
-            "type": "PATTERN",
-            "value": "(0|[1-9][0-9]*)[sui][0-9]+"
           }
         ]
       }
@@ -5181,6 +5224,10 @@
       {
         "type": "STRING",
         "value": "binary_other"
+      },
+      {
+        "type": "STRING",
+        "value": "binary_step"
       },
       {
         "type": "STRING",

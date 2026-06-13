@@ -32,6 +32,11 @@ SRC = prpfmt.c main.c ir.c $(GENERATED_PARSER) ../src/scanner.c
 # Output executable path (placed locally in the prpfmt folder)
 TARGET = prpfmt
 
+# Symbol-id table lifted from the generated parser. prpfmt.h #includes this;
+# regenerating it whenever parser.c changes keeps the formatter's node dispatch
+# in sync with the grammar (tree-sitter renumbers the ids on every grammar edit).
+SYMBOLS_HDR = ts_symbols.h
+
 .PHONY: all clean
 
 all: $(TARGET)
@@ -42,8 +47,11 @@ all: $(TARGET)
 $(GENERATED_PARSER): $(GRAMMAR)
 	cd .. && npm run generate
 
-$(TARGET): $(SRC) prpfmt.h
+$(SYMBOLS_HDR): $(GENERATED_PARSER) gen_symbols.sh
+	sh gen_symbols.sh $(GENERATED_PARSER) $(SYMBOLS_HDR)
+
+$(TARGET): $(SRC) prpfmt.h $(SYMBOLS_HDR)
 	$(CC) $(CFLAGS) $(SRC) $(TS_LIBS) -o $(TARGET)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(SYMBOLS_HDR)

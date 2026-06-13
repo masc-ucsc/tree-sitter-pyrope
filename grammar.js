@@ -148,7 +148,8 @@ module.exports = grammar({
       , 'unary'            // Pyrope priority 1: !, not, ~, -
       , 'type_spec'
       , 'binary_times'     // Pyrope priority 2: *, /, %
-      , 'binary_other'     // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+, step
+      , 'binary_other'     // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+
+      , 'binary_step'      // `step` binds looser than the range ops: (a..=b) step c
       , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals
       , 'binary_logical'   // Pyrope priority 5: and, or, implies
       , 'expression'
@@ -656,6 +657,7 @@ module.exports = grammar({
     , expression_item: $ => choice(
       $._binary_times
       , $._binary_other
+      , $._binary_step
       , $._binary_compare
       , $._binary_logical
     )
@@ -672,7 +674,7 @@ module.exports = grammar({
       , alias('/', $.op_div)
       , alias('%', $.op_mod)
     )
-    // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+, step
+    // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+
     , _binary_other: $ => prec.left('binary_other', seq(
       field('operand', $._pri2_operand)
       , repeat1(seq(
@@ -691,16 +693,30 @@ module.exports = grammar({
       , alias('..=', $.op_range_inclusive)
       , alias('..<', $.op_range_exclusive)
       , alias('..+', $.op_range_count)
-      , alias('step', $.op_step)
     )
+    // `step` binds looser than the range/arith operators, so `a..=b step c`
+    // parses as `(a..=b) step c` — one range-with-stride node, not a flat
+    // mixed-operator chain. Modeled as its own tier between `binary_other`
+    // and `binary_compare`. Per 04-variables.md the step amount must be a
+    // positive integer; `step -1` still parses (unary minus on the operand)
+    // and is rejected by the semantic pass.
+    , _binary_step: $ => prec.left('binary_step', seq(
+      field('operand', $._pri3_operand)
+      , repeat1(seq(
+        field('operator', $.binary_step_op)
+        , field('operand', $._pri3_operand)
+      ))
+    )
+    )
+    , binary_step_op: $ => alias('step', $.op_step)
     // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals
     // Overparse: chained comparisons must all point the same direction;
     // `a <= b > c` parses but is illegal. See grammar_overparse.md #6.
     , _binary_compare: $ => prec.left('binary_compare', seq(
-      field('operand', $._pri3_operand)
+      field('operand', $._pri_step_operand)
       , repeat1(seq(
         field('operator', $.binary_compare_op)
-        , field('operand', $._pri3_operand)
+        , field('operand', $._pri_step_operand)
       ))
     ))
     , binary_compare_op: $ => choice(
@@ -747,8 +763,12 @@ module.exports = grammar({
       $._pri2_operand
       , alias($._binary_other, $.expression_item)
     ))
-    , _pri4_operand: $ => prec('expression', choice(
+    , _pri_step_operand: $ => prec('expression', choice(
       $._pri3_operand
+      , alias($._binary_step, $.expression_item)
+    ))
+    , _pri4_operand: $ => prec('expression', choice(
+      $._pri_step_operand
       , alias($._binary_compare, $.expression_item)
     ))
     // Dot tails are identifiers only: positional entries are selected with
@@ -958,15 +978,17 @@ module.exports = grammar({
       , $._decimal_number
       , $._octal_number
       , $._binary_number
-      , $._typed_number
     )
-    , _simple_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)/), /0|[1-9][0-9]*/))
-    , _scaled_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[KMGT]/), /(0|[1-9][0-9]*)[KMGT]/))
+    // Underscores are digit-group separators with no meaning and are allowed
+    // inside every numeric body (02-basics.md): the bare decimal, the
+    // K/M/G/T magnitude, and all radix prefixes. `1_000` / `1_000K` /
+    // `0xF_a_0` are each a single token.
+    , _simple_number: $ => token(choice(prec(2, /-(0|[1-9][0-9_]*)/), /0|[1-9][0-9_]*/))
+    , _scaled_number: $ => token(choice(prec(2, /-(0|[1-9][0-9_]*)[KMGT]/), /(0|[1-9][0-9_]*)[KMGT]/))
     , _hex_number: $ => token(choice(prec(2, /-0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/), /0(s|S)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/))
     , _decimal_number: $ => token(choice(prec(2, /-0(s|S)?(d|D)?[0-9][0-9_]*/), /0(s|S)?(d|D)?[0-9][0-9_]*/))
     , _octal_number: $ => token(choice(prec(2, /-0(s|S)?(o|O)[0-7][0-7_]*/), /0(s|S)?(o|O)[0-7][0-7_]*/))
     , _binary_number: $ => token(choice(prec(2, /-0(s|S|u|U)?(b|B)[0-1\?][0-1_\?]*/), /0(s|S|u|U)?(b|B)[0-1\?][0-1_\?]*/))
-    , _typed_number: $ => token(choice(prec(2, /-(0|[1-9][0-9]*)[sui][0-9]+/), /(0|[1-9][0-9]*)[sui][0-9]+/))
 
     // Booleans
     , bool_literal: $ => token(choice('true', 'false'))
