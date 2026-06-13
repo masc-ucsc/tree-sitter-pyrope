@@ -148,7 +148,7 @@ module.exports = grammar({
       , 'unary'            // Pyrope priority 1: !, not, ~, -
       , 'type_spec'
       , 'binary_times'     // Pyrope priority 2: *, /, %
-      , 'binary_other'     // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
+      , 'binary_other'     // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+, step
       , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals
       , 'binary_logical'   // Pyrope priority 5: and, or, implies
       , 'expression'
@@ -295,7 +295,7 @@ module.exports = grammar({
       , '{'
       , field('cases', repeat(seq(
         field('condition', seq(optional(choice(
-          'and', 'or', '&', '^', '|', '~&', '~^', '~|',
+          'and', 'or', '&', '^', '|',
           '<', '<=', '>', '>=', '==', '!=', 'has', 'case', 'in',
           'equals', 'does', 'is'
         )), $._expression))
@@ -672,7 +672,7 @@ module.exports = grammar({
       , alias('/', $.op_div)
       , alias('%', $.op_mod)
     )
-    // Pyrope priority 3: +, -, ++, <<, >>, &, |, ^, !&, !|, !^, ..=, ..<, ..+, step
+    // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+, step
     , _binary_other: $ => prec.left('binary_other', seq(
       field('operand', $._pri2_operand)
       , repeat1(seq(
@@ -683,15 +683,11 @@ module.exports = grammar({
     , binary_other_op: $ => choice(
       alias('+', $.op_add)
       , alias('-', $.op_sub)
-      , alias('++', $.op_tuple_concat)
       , alias('<<', $.op_shl)
       , alias('>>', $.op_sra)
       , alias('&', $.op_bit_and)
       , alias('|', $.op_bit_or)
       , alias('^', $.op_bit_xor)
-      , alias('!&', $.op_bit_nand)
-      , alias('!|', $.op_bit_nor)
-      , alias('!^', $.op_bit_xnor)
       , alias('..=', $.op_range_inclusive)
       , alias('..<', $.op_range_exclusive)
       , alias('..+', $.op_range_count)
@@ -825,7 +821,6 @@ module.exports = grammar({
       , alias('^=', $.assign_bit_xor)
       , alias('<<=', $.assign_shl)
       , alias('>>=', $.assign_sra)
-      , alias('++=', $.assign_tuple_concat)
       , alias('or=', $.assign_log_or)
       , alias('and=', $.assign_log_and)
     )

@@ -48,9 +48,8 @@
   (op_add) (op_sub) (op_mul) (op_div) (op_mod)
   (op_shl) (op_sra)
   (op_bit_and) (op_bit_or) (op_bit_xor) (op_bit_not)
-  (op_bit_nand) (op_bit_nor) (op_bit_xnor)
   (op_eq) (op_ne) (op_lt) (op_le) (op_gt) (op_ge)
-  (op_unary_minus) (op_tuple_concat) (op_spread) (op_step)
+  (op_unary_minus) (op_spread) (op_step)
   (op_range_inclusive) (op_range_exclusive) (op_range_count)
   (op_log_not)
   (reduction_and) (reduction_or) (reduction_xor) (reduction_popcount)
@@ -61,7 +60,7 @@
 ; Bare comparison/bitwise tokens also appear directly in match cases
 [
   "!=" "==" "<" "<=" ">" ">="
-  "&" "^" "|" "~&" "~^" "~|"
+  "&" "^" "|"
   ".."
 ] @operator
 

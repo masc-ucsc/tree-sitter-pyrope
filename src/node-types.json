@@ -648,10 +648,6 @@
         {
           "type": "assign_sub",
           "named": true
-        },
-        {
-          "type": "assign_tuple_concat",
-          "named": true
         }
       ]
     }
@@ -1101,19 +1097,7 @@
           "named": true
         },
         {
-          "type": "op_bit_nand",
-          "named": true
-        },
-        {
-          "type": "op_bit_nor",
-          "named": true
-        },
-        {
           "type": "op_bit_or",
-          "named": true
-        },
-        {
-          "type": "op_bit_xnor",
           "named": true
         },
         {
@@ -1146,10 +1130,6 @@
         },
         {
           "type": "op_sub",
-          "named": true
-        },
-        {
-          "type": "op_tuple_concat",
           "named": true
         }
       ]
@@ -2973,18 +2953,6 @@
           {
             "type": "|",
             "named": false
-          },
-          {
-            "type": "~&",
-            "named": false
-          },
-          {
-            "type": "~^",
-            "named": false
-          },
-          {
-            "type": "~|",
-            "named": false
           }
         ]
       },
@@ -3136,18 +3104,6 @@
           },
           {
             "type": "|",
-            "named": false
-          },
-          {
-            "type": "~&",
-            "named": false
-          },
-          {
-            "type": "~^",
-            "named": false
-          },
-          {
-            "type": "~|",
             "named": false
           }
         ]
@@ -5385,10 +5341,6 @@
     "named": true
   },
   {
-    "type": "assign_tuple_concat",
-    "named": true
-  },
-  {
     "type": "bool_literal",
     "named": true
   },
@@ -5518,23 +5470,11 @@
     "named": true
   },
   {
-    "type": "op_bit_nand",
-    "named": true
-  },
-  {
-    "type": "op_bit_nor",
-    "named": true
-  },
-  {
     "type": "op_bit_not",
     "named": true
   },
   {
     "type": "op_bit_or",
-    "named": true
-  },
-  {
-    "type": "op_bit_xnor",
     "named": true
   },
   {
@@ -5647,10 +5587,6 @@
   },
   {
     "type": "op_sub",
-    "named": true
-  },
-  {
-    "type": "op_tuple_concat",
     "named": true
   },
   {
@@ -5775,18 +5711,6 @@
   },
   {
     "type": "}",
-    "named": false
-  },
-  {
-    "type": "~&",
-    "named": false
-  },
-  {
-    "type": "~^",
-    "named": false
-  },
-  {
-    "type": "~|",
     "named": false
   }
 ]

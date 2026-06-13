@@ -802,18 +802,6 @@
                               },
                               {
                                 "type": "STRING",
-                                "value": "~&"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "~^"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "~|"
-                              },
-                              {
-                                "type": "STRING",
                                 "value": "<"
                               },
                               {
@@ -3302,15 +3290,6 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
-            "value": "++"
-          },
-          "named": true,
-          "value": "op_tuple_concat"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
             "value": "<<"
           },
           "named": true,
@@ -3351,33 +3330,6 @@
           },
           "named": true,
           "value": "op_bit_xor"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!&"
-          },
-          "named": true,
-          "value": "op_bit_nand"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!|"
-          },
-          "named": true,
-          "value": "op_bit_nor"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "!^"
-          },
-          "named": true,
-          "value": "op_bit_xnor"
         },
         {
           "type": "ALIAS",
@@ -4106,15 +4058,6 @@
           },
           "named": true,
           "value": "assign_sra"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "++="
-          },
-          "named": true,
-          "value": "assign_tuple_concat"
         },
         {
           "type": "ALIAS",
