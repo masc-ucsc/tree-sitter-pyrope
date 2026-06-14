@@ -55,7 +55,6 @@ Kind compare_op(const Token& t) {
       case Keyword::kw_in:     return Kind::op_in;
       case Keyword::kw_case:   return Kind::op_case;
       case Keyword::kw_does:   return Kind::op_does;
-      case Keyword::kw_is:     return Kind::op_is;
       case Keyword::kw_equals: return Kind::op_equals;
       default: break;
     }
@@ -1382,7 +1381,7 @@ Ast* Parser::parse_match_expression() {
         if (cur().is_kw(Keyword::kw_and) || cur().is_kw(Keyword::kw_or) ||
             cur().is_kw(Keyword::kw_has) || cur().is_kw(Keyword::kw_case) ||
             cur().is_kw(Keyword::kw_in) || cur().is_kw(Keyword::kw_equals) ||
-            cur().is_kw(Keyword::kw_does) || cur().is_kw(Keyword::kw_is))
+            cur().is_kw(Keyword::kw_does))
           advance();
         break;
     }

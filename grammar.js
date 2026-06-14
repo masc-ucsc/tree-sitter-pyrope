@@ -150,7 +150,7 @@ module.exports = grammar({
       , 'binary_times'     // Pyrope priority 2: *, /, %
       , 'binary_other'     // Pyrope priority 3: +, -, <<, >>, &, |, ^, ..=, ..<, ..+
       , 'binary_step'      // `step` binds looser than the range ops: (a..=b) step c
-      , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/is/case/does/equals
+      , 'binary_compare'   // Pyrope priority 4: <, <=, ==, !=, >=, >, has/in/case/does/equals
       , 'binary_logical'   // Pyrope priority 5: and, or, implies
       , 'expression'
     ]
@@ -298,7 +298,7 @@ module.exports = grammar({
         field('condition', seq(optional(choice(
           'and', 'or', '&', '^', '|',
           '<', '<=', '>', '>=', '==', '!=', 'has', 'case', 'in',
-          'equals', 'does', 'is'
+          'equals', 'does'
         )), $._expression))
         , field('code', $.scope_statement)
       )))
@@ -709,7 +709,7 @@ module.exports = grammar({
     )
     )
     , binary_step_op: $ => alias('step', $.op_step)
-    // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/is/case/does/equals
+    // Pyrope priority 4: <, <=, >, >=, ==, !=, has/in/case/does/equals
     // Overparse: chained comparisons must all point the same direction;
     // `a <= b > c` parses but is illegal. See grammar_overparse.md #6.
     , _binary_compare: $ => prec.left('binary_compare', seq(
@@ -730,7 +730,6 @@ module.exports = grammar({
       , alias('in', $.op_in)
       , alias('case', $.op_case)
       , alias('does', $.op_does)
-      , alias('is', $.op_is)
       , alias('equals', $.op_equals)
     )
     // Pyrope priority 5: and, or, implies

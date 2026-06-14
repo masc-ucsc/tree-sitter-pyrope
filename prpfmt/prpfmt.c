@@ -1087,7 +1087,6 @@ void print_match_expression(TSNode node, PrpfmtState *st) {
         print__semicolon(child, st, SPACE_BOTH);
         break;
       case anon_sym_in:
-      case anon_sym_is:
       case anon_sym_has:
       case anon_sym_case:
       case anon_sym_equals:

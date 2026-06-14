@@ -843,10 +843,6 @@
                               {
                                 "type": "STRING",
                                 "value": "does"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "is"
                               }
                             ]
                           },
@@ -3547,15 +3543,6 @@
           },
           "named": true,
           "value": "op_does"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "is"
-          },
-          "named": true,
-          "value": "op_is"
         },
         {
           "type": "ALIAS",

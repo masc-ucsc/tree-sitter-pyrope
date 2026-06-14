@@ -1039,10 +1039,6 @@
           "named": true
         },
         {
-          "type": "op_is",
-          "named": true
-        },
-        {
           "type": "op_le",
           "named": true
         },
@@ -2926,10 +2922,6 @@
             "named": false
           },
           {
-            "type": "is",
-            "named": false
-          },
-          {
             "type": "lambda",
             "named": true
           },
@@ -3075,10 +3067,6 @@
           },
           {
             "type": "in",
-            "named": false
-          },
-          {
-            "type": "is",
             "named": false
           },
           {
@@ -5457,10 +5445,6 @@
     "named": false
   },
   {
-    "type": "is",
-    "named": false
-  },
-  {
     "type": "loop",
     "named": false
   },
@@ -5534,10 +5518,6 @@
   },
   {
     "type": "op_in",
-    "named": true
-  },
-  {
-    "type": "op_is",
     "named": true
   },
   {

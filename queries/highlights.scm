@@ -67,13 +67,13 @@
 ; Operators that read as words
 [
   (op_log_and) (op_log_or)
-  (op_is) (op_in) (op_has) (op_does)
+  (op_in) (op_has) (op_does)
   (op_case) (op_equals) (op_implies)
 ] @keyword.operator
 
 [
   "and" "or"
-  "is" "in" "has" "does"
+  "in" "has" "does"
   "case" "equals"
 ] @keyword.operator
 
