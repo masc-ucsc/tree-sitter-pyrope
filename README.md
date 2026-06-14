@@ -167,7 +167,8 @@ it with `make prpfmt`; details and options are in [`prpfmt/README.md`](prpfmt/RE
 
 ## prpparse
 
-`prpparse` is the design for a fast, recursive-descent Pyrope parser intended for
-LiveHD (not editors), using this grammar as a differential oracle. It is still
-at the planning stage — see [`prpparse/plan.md`](prpparse/plan.md) and
-[`prpparse/todo.md`](prpparse/todo.md).
+`prpparse` is a fast, recursive-descent Pyrope parser intended for LiveHD (not
+editors), using this grammar as a differential oracle. The parser is implemented
+(Phases 0–3: lexer, tree schema, parser; accept-parity on all 428 corpus files)
+and the next step is a streaming statement interface so the LiveHD front-end can
+replace tree-sitter — see [`prpparse/plan.md`](prpparse/plan.md).

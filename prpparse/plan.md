@@ -1,288 +1,214 @@
 # prpparse — implementation plan
 
-A recursive-descent Pyrope parser producing an hhds tree. See `todo.md` for
-the requirement list. This plan is organized as phases; each phase has its own
-test gate so progress is verifiable at every step. tree-sitter stays in this
-repo throughout and serves as the **differential oracle**.
+A hand-written recursive-descent Pyrope parser, built to replace tree-sitter as
+the LiveHD front-end. Goal: **fast AND very good error messages**. It uses the
+in-repo `grammar.js` / generated tree-sitter parser as a **differential oracle**
+(prpparse accepts exactly what grammar.js accepts), which stays in this repo
+throughout.
 
-## Key design decisions (made up front)
+The end consumer is `../livehd/inou/prp/prp2lnast.cpp`, which lowers the parse
+tree into LNAST (LiveHD's IR). The central design realization (see
+"Architecture" below) is that **prp2lnast reads the parse tree in a single
+forward walk**, so the parse tree never needs to exist in full — it can be
+streamed one top-level construct at a time.
 
-1. **Tree shape = CST, not LNAST.** Node kinds mirror the tree-sitter-pyrope
-   grammar node names (`assignment`, `tuple`, `arg_tuple`, `if_expression`,
-   `binary_other_op`, …) where that helps migration. Exact tree-sitter
-   `--sexp` equality is not a hard requirement; close-enough CST shape is
-   acceptable when it keeps `../livehd/inou/prp/prp2lnast.cpp` mechanical to
-   port.
-   A `prp_nodes.def` X-macro file is generated once from `src/node-types.json`
-   (regen script checked in) and hand-maintained afterwards.
+---
 
-2. **Node payload.** hhds nodes carry `Type` (uint16). Proposal: pack
-   `kind` (10 bits, ~150 node kinds) + `field` (6 bits, ~30 tree-sitter field
-   names like `lvalue`, `rvalue`, `condition`, `code`) — the field describes
-   the edge role of this node under its parent, replacing
-   `ts_node_child_by_field_name`. Text is never stored: required nodes'
-   `attrs::srcid` spans recover `std::string_view`s from the attached file
-   buffer. (Decided 2026-06-10: pack field into `Type` — kind 10b + field 6b;
-   a node has exactly one role under its parent in the current grammar.)
+## Current status — built and verified
 
-3. **Fail-fast errors.** First syntax error builds one rich `Diag` record
-   (code/category/message/span/hint/notes, shape-compatible with
-   `livehd::diag::Diagnostic`) and aborts via exception. No error recovery,
-   no multiple-diagnostic mode, and no ERROR nodes in the tree. The standalone
-   CLI renders clang-style text using the lexer's line table.
+Phases 0–3 are done; the parser is complete and regression-green.
 
-4. **Virtual semicolons live in the parser, not the lexer.** The lexer tags
-   each token with a `newline_before` bit; the parser, *only at statement-end
-   positions*, applies the exact `src/scanner.c` rule: terminator at EOF,
-   before `}`, or at a newline unless the next token starts with
-   `, = . > < & ^ | * / + -`, `else`, `elif`, or `!=`. This reproduces the
+- **Builds** under bazel (repo-root `MODULE.bazel`; `bazel test //prpparse/...`).
+  hhds is a `bazel_dep` with `git_override` (pinned) / commented
+  `local_path_override(../hhds)` for co-development.
+- **Lexer prepass** (`lexer.{hpp,cpp}`, X-macro `*.def` token tables): single
+  pass → flat `std::vector<Token>` (string_view only), line-start table, comment
+  spans, and depth-0 split points. Lexer errors go through the same `Diag` path.
+- **Tree schema** (`prp_nodes.def` 141 kinds, `prp_fields.def` 57 fields, from
+  `src/node-types.json`): packed into the hhds node `Type` (uint16 = kind:10 |
+  field:6 — a node has one role under its parent). Text is never stored; spans
+  recover `string_view`s from the buffer.
+- **Recursive-descent parser** (`parser.{hpp,cpp}`): mirrors grammar.js rule
+  names; precedence-climbing expressions with flat same-tier chains; the
+  paren-list classifier (tuple / arg_tuple / paren_group / lvalue); suffix
+  chains; control flow; lambdas / `type` / `impl` / `enum` / `import` / `test` /
+  `spawn`; `parse_type` mode; interpolated-string sub-parsing.
+- **Accept-parity**: all **428** `full_pyrope/*.prp` parse (oracle parity with
+  tree-sitter). `make test` (grammar + prpfmt 428/428) and `make test-all`
+  (+ prpparse unit tests + accept-parity) are green.
+- **Fuzzing** (`make fuzz-prpparse`): mutate valid corpus files, tree-sitter as
+  the syntax oracle — hard gate of 0 false positives (never reject valid
+  syntax); ~98% syntax-error capture, median 1 B span localization. Catching
+  *every* syntax error is not required (inou/prp catches the rest).
+- **Performance** (1M-line / 9M-node `../livehd/yy.prp`): materialize
+  **3.36 s → ~0.14 s** (~24×), end-to-end **4.84 s → ~0.65 s**. Achieved by
+  making srcid lazy (see below). hhds gained two **additive** helpers used off
+  the critical path: `Source_locator::span_minter(path)` (precomputed path hash +
+  interned file id; ids byte-identical to `mint`) and `reserve()`.
+- **CLI** (`tests/cli.cpp`): default parse (diagnostics only), `--sexp`,
+  `--srcmap`, `--tokens`, `--lex`, `--fuzz`, `--time`.
+
+Deferred: large-file splitting / parallelism (Phase S); in-parser semantic
+narrowing diagnostics for the `grammar_overparse.md` cases (default stays
+tree-sitter-parity).
+
+---
+
+## Design decisions (stable)
+
+1. **Tree shape = CST, not LNAST.** Node kinds mirror the grammar node names
+   (`assignment`, `tuple`, `arg_tuple`, `if_expression`, …). Exact tree-sitter
+   `--sexp` equality is not required; close-enough CST shape keeps the
+   prp2lnast port mechanical. `prp_nodes.def` was generated once from
+   `src/node-types.json` (regen via `tools/gen_nodes.py`) and hand-maintained.
+2. **Node payload = `Type` (uint16) only.** kind (10b) + field (6b); the field
+   is the node's edge role under its parent (replaces
+   `ts_node_child_by_field_name`). No text stored.
+3. **Fail-fast errors.** The first syntax error builds one rich `Diag`
+   (code / category / message / span / hint / notes, shape-compatible with
+   `../livehd/core/diag.hpp`) and aborts via `Parse_error`. No recovery, no
+   ERROR/MISSING nodes. Unclosed brackets carry an "opened here" note. The CLI
+   renders clang-style text from the lexer line table.
+   *Consequence used below:* a prpparse tree is always well-formed, so
+   prp2lnast's tree-sitter-era `check_parse_errors()` pre-walk is moot.
+4. **Virtual semicolons in the parser, not the lexer.** The lexer tags each
+   token `newline_before`; the parser, only at statement-end positions, applies
+   the exact `src/scanner.c` rule (terminator at EOF, before `}`, or at a
+   newline unless the next token continues the expression). Reproduces the
    tree-sitter valid_symbols handshake.
-
-5. **Soft keywords.** The lexer classifies every word as `identifier` and
-   attaches a keyword id when the spelling matches a known keyword; the
-   parser decides contextually (so `enum(...)` as a call, `const type = 1`,
-   `.[comptime]` keep working). Hard-reserved list is written down once in
-   `prp_tokens.def`.
-
-6. **Overparse parity.** The parser accepts exactly what grammar.js accepts,
-   including the `grammar_overparse.md` cases — semantic narrowing stays in
-   livehd. This keeps `./test.sh` corpus parity meaningful. (Optional later:
-   `--strict` flag adding narrowing diagnostics.)
-
-   `grammar.js` is treated as mostly fixed and used as the differential
-   oracle, with only targeted bug fixes expected during this project.
-
-7. **Negative literals**: lexer always emits `-` as an operator token; the
-   parser folds the sign into the literal at operand position (matches the
-   grammar's token-level behavior without lexer/parser state coupling).
-
-8. **Interpolated strings**: lexer emits one raw token for the whole string
-   (brace-depth aware, like the grammar); the parser sub-lexes the `{expr}`
-   regions on demand with absolute offsets so spans stay correct.
-
-9. **Initial srcid scope.** The first milestone requires `attrs::srcid` for
-   every variable destination / definitely-modified location. Broader node
-   span coverage is deferred until fuzzing diagnostics and LiveHD integration
-   show which additional spans are valuable.
-
-## First usable milestone
-
-Before performance, splitting, or LiveHD integration, the parser should:
-- parse all `full_pyrope/*.prp` examples into HHDS trees,
-- fail fast on the first syntax error with a useful diagnostic,
-- populate `attrs::srcid` for variable destinations / definitely-modified
-  locations,
-- keep the tree shape close enough to tree-sitter to make `prp2lnast.cpp`
-  migration straightforward, without requiring exact `--sexp` equality.
-
-After that milestone, add a fuzzer based on valid `full_pyrope` inputs:
-mutate syntax, expect a parse failure, and score whether the diagnostic span
-lands close to the injected diff. Use those results to decide which additional
-node spans and diagnostic improvements matter most. Parallel parsing and
-speed work come after this; LiveHD integration follows once the standalone
-parser/fuzzer loop is useful.
+5. **Soft keywords.** The lexer marks every word `identifier` + a keyword id;
+   the parser decides contextually (`enum(...)` call, `const type = 1`,
+   `.[comptime]`). Hard-reserved list in `prp_tokens.def`.
+6. **Overparse parity.** Accept exactly what grammar.js accepts (incl.
+   `grammar_overparse.md`); semantic narrowing stays in livehd. grammar.js is
+   the fixed differential oracle (targeted bug fixes only).
+7. **Negative literals**: lexer always emits `-` as an operator; the parser
+   folds the sign into the literal at operand position.
+8. **Interpolated strings**: lexer emits one brace-depth-aware raw token; the
+   parser sub-lexes `{expr}` regions on demand with absolute offsets.
+9. **Source provenance is lazy.** `srcid = rapidhash(path, start, end)` is a
+   pure function of the span, and diagnostics need a *span*, not a srcid — so
+   nothing mints eagerly. `materialize` records each spanned node's raw byte
+   span in a flat side-table; `Prp_tree::build_srcmap_async()` mints every span
+   into the `Source_locator` on one worker thread meant to overlap the next
+   pass, and `locator()` joins it (or builds synchronously). Parse-only runs pay
+   nothing. (Replaces the original eager per-node mint — ~24× slower.)
 
 ---
 
-## Phase 0 — Scaffold and build plumbing
+## Architecture — stream statements, don't build a whole parse tree
 
-Deliverables:
-- `MODULE.bazel` at the repo root (`module(name = "prpparse")`), with
-  `bazel_dep` + `git_override` for `hhds` (commented `local_path_override`
-  to `../hhds` for local debug, mirroring `../livehd/MODULE.bazel` style),
-  plus `iassert`, `googletest`. `.bazelrc` mirroring hhds (C++20, asan/tsan
-  configs).
-- `prpparse/BUILD` with `prpparse` (cc_library), `prpparse_cli` (cc_binary),
-  `prpparse_test` (cc_test).
-- Smoke test: build an hhds `Tree` + `Forest`, add a few typed nodes, mint a
-  `Source_locator` span, print with `tree_print`.
+**The finding.** In `prp2lnast.cpp`, the parse tree is consumed in exactly one
+place — `walk_statement_block(root)` inside `process_description()`. Everything
+else operates on the **LNAST**, not the parse tree:
 
-Test gate: `bazel test //prpparse/...` green on a hello-tree test.
+```
+walk_statement_block(root);   // the ONLY parse-tree read (single forward walk)
+check_undeclared_writes();    // on the LNAST being built
+check_undefined_reads();      // on the LNAST
+rewrite_decls_to_declare();   // folds declaration clusters in the LNAST
+builder.stabilize_fallback_tmps();  // "2p": on the LNAST
+```
 
-## Phase 1 — Lexer prepass
+and `check_parse_errors()` (the up-front whole-tree error scan) only exists
+because tree-sitter returns a tree full of ERROR/MISSING nodes for bad input —
+prpparse fails fast (decision 3), so it is moot. **Therefore the parse tree only
+needs to exist one top-level construct at a time.** Building the whole tree —
+let alone two (the intermediate `Ast` and the materialized hhds tree) — is
+avoidable.
 
-Deliverables:
-- `prp_tokens.def` (X-macro, lnast_lexer style): punctuation, operators
-  (longest-match: `..=`, `..<`, `..+`, `..`, `::`, `++=`, `<<=`, …),
-  literals (all integer forms, strings, bool, `?`), identifier (incl.
-  backtick form), keyword table (soft), comment handling.
-- `Source_buffer`: loads the file once (mmap or read); owns the bytes for
-  the lifetime of the tree wrapper. Everything downstream is
-  `std::string_view`.
-- `Lexer`: single pass producing a flat `std::vector<Token>` where
-  `Token = {kind:u16, flags:u16 (newline_before, …), offset:u32, len:u32}`.
-  Also produces:
-  - line-start offsets table (for line/col in diagnostics),
-  - comment/trivia span list (kept out of the token stream),
-  - **split-point list**: token indices at depth-0 statement starts,
-    flagged stronger when they begin a lambda/`type` declaration.
-- Lexer-level errors (unterminated string/comment, bad literal) go through
-  the same Diag path.
+**The design.** A *statement-stream seam*: the parser yields one top-level
+construct at a time; the consumer processes it and the chunk is freed (arena
+reset). One parser, two consumers:
 
-Test gate:
-- Token-dump golden tests (`prpparse_cli --tokens`) for ~15 representative
-  corpus files.
-- Lex all 491 `full_pyrope/*.prp` with zero errors; assert every byte is
-  covered by tokens+trivia+whitespace (no silent gaps).
-- Unit tests for line/col mapping and each tricky token (negative numbers
-  vs minus, `::`, ranges, interpolated strings, backtick identifiers).
+- **Oracle / standalone** (`--sexp`, the differential test vs grammar.js,
+  prpfmt): a consumer that appends each construct to the hhds tree — exactly
+  today's `materialize`. The full tree is still available for testing and any
+  tool that wants it.
+- **LiveHD** (`prp2lnast`): `walk_statement_block` pulls the next construct's
+  small `Ast` directly (a thin facade over `Ast` — it already exposes kind /
+  field / children / span / text), emits LNAST, and drops the chunk.
+  **No persistent parse tree at all** — no `materialize`, no global `Ast`.
+  Resident memory = the current construct's `Ast` (tiny) + the growing LNAST
+  (needed regardless). Cross-construct state lives in the LNAST/builder scope
+  stack, not the parse tree.
 
-## Phase 2 — Tree schema and srcid plumbing
+**Why this respects the constraints.**
 
-Deliverables:
-- `prp_nodes.def` generated from `src/node-types.json` (script:
-  `tools/gen_nodes.py`), defining the kind enum + kind→name strings.
-- Field-name enum (from grammar.js field names) and the Type packing
-  (decision 2).
-- `Prp_tree` wrapper owning: `std::shared_ptr<hhds::Forest>`, the root
-  `Tree`, the `Source_buffer`, and a `Source_locator`; helpers:
-  `make_node(kind, field, parent)`, `set_span(pos, start, end)`
-  (mints srcid eagerly for required nodes), `text(pos)` → string_view,
-  `kind(pos)`, `field(pos)`, child iteration by field.
-- hhds side (owned by Jose, not prpparse): switch `Source_locator` hashing
-  to vendored, pinned rapidhash with per-file `path_hash` + fixed-width
-  per-node mint, ideally exposed as `Source_locator::span_minter(path)`
-  (see resolved question 3). Until it lands, prpparse calls the existing
-  `mint()` — the API is the only coupling, ids regenerate transparently.
-- S-expression dump (`prpparse_cli --sexp`) emitting a tree-sitter-inspired
-  output (named nodes + field labels) — this is a migration/debugging aid, not
-  an exact equality contract.
+- The recursive-descent *algorithm* is untouched — the parser already loops over
+  top-level statements; the seam is "yield each one" + reset the arena. The
+  `Ast` stays (it is the parser's natural scratch for the cheap restructuring it
+  does — reinterpreting an expression as an lvalue, etc. — and the small
+  random-access tree the per-construct walk needs).
+- prp2lnast's per-node walk logic and all its LNAST passes are unchanged; only
+  its *driver* changes (pull constructs from the stream instead of iterating a
+  root's children) — and that driver is rewritten for the tree-sitter→prpparse
+  port anyway.
+- Diagnostics do not get worse: spans come from byte offsets as today, the
+  LNAST-side scope checks are unaffected, and fail-fast is preserved (the parser
+  throws mid-stream; prp2lnast's existing try/catch handles it).
 
-Test gate: hand-built mini-trees round-trip through `--sexp` and
-`tree_print`; srcid → `Source_locator::resolve` returns the right
-file/span/line.
-
-## Phase 3 — Parser core (serial, fail-fast)
-
-The RD parser, structured to mirror grammar.js rule names (one function per
-rule where sensible). Sub-milestones, each gated on the subset of the corpus
-it unlocks:
-
-3a. Expressions: precedence climbing over the 5 Pyrope priority tiers with
-    flat same-tier chains; operands (constants, identifiers, dot chains,
-    selects `[i]`, bit selects `#[…]`, attribute reads `.[…]`,
-    `attribute_set ::[…]`, paren group, tuples, `ref`).
-    The **paren-list classifier**: one `parse_paren_list` accepting the
-    union of item shapes (expr, `name = expr`, kind-keyword declaration,
-    `name:type`, spread, lambda), classified at `)` / `=` into
-    tuple / arg_tuple / paren_group / lvalue list.
-3b. Statements: assignment (parse-expression-then-reinterpret-as-lvalue,
-    incl. destructuring and `wrap`/`sat`), declarations, expression
-    statements, virtual-semicolon termination.
-3c. Control flow: `if`/`elif`/`else` (with `init;` clauses), `match` +
-    case operators, `for`/`while`/`loop`, `break`/`continue`/`return`.
-3d. Lambdas (`comb/mod/pipe/fluid`, generics, pipe/fluid bracket slots),
-    `type`, `impl`, `enum`, `import`, `test`, `spawn`.
-3e. Types: `parse_type` mode (expression-shaped types, `typed_field` tuple
-    items, array types, `@[…]` timing), the `enum X:uint(...)` bounded
-    lookahead.
-3f. Interpolated-string sub-parsing.
-
-Diagnostics: every `expect(token)` failure produces a Diag with a stable
-kebab-case code, the span of the offending token, and a context-aware
-message ("expected ')' to close the argument tuple opened here" with a note
-pointing at the opening paren). Error-message quality is a first-class
-deliverable of this phase, reviewed file-by-file in the negative suite.
-
-Test gate (the big one):
-- **Accept parity**: all 491 `full_pyrope/*.prp` parse (CI script mirroring
-  `./test.sh`).
-- **Tree-shape migration check**: `prpparse_cli --sexp` output is compared
-  against `tree-sitter parse` output (normalized) for the full corpus — script
-  `tests/diff_oracle.sh`. Differences are acceptable when documented and when
-  they do not make the future `prp2lnast.cpp` port materially harder.
-- **Reject parity + message quality**: `tests/err/*.prp` negative suite
-  (removed constructs: `a = b:u8`, `when`/`unless`, `f(mut a=1)`,
-  `return X`, `x.0`, unbalanced braces, bad literals …) with golden
-  diagnostics (code + span + message). Each case must also be rejected by
-  tree-sitter (parity) — and prpparse's message must be the better one.
-  Add a fuzzing suite after accept parity: mutate valid `full_pyrope` files,
-  require fail-fast parse failure, and check that the diagnostic span is close
-  to the known injected mutation.
-
-## Phase 4 — Performance pass (still serial)
-
-- Benchmarks (`prpparse_cli --time`, plus a google_benchmark target):
-  parse the whole corpus and large concatenated inputs; compare against
-  `tree-sitter parse` (repo `bench.sh`).
-- Verify the string_view discipline: zero heap allocations per token/node in
-  steady state (count with a test allocator); reserve token/tree vectors
-  from byte-size heuristics.
-- srcid minting cost: measure for the required destination spans first. If
-  broader span coverage becomes useful and minting shows up, evaluate lazy
-  minting (span stored raw, srcid minted on first query) — keep the
-  `Source_locator` requirement intact for required nodes either way.
-- Target: ≥10× tree-sitter throughput on the corpus (tune after first
-  measurements; record numbers in this file).
-
-Test gate: phase-3 parity suites still green + recorded benchmark table.
-
-## Phase 5 — Splitting and 1–8 thread parallelism
-
-- Splitter: when `Source_buffer` > 200KB, choose up to 8 cut points from the
-  lexer split-point list so partitions land ~200–300KB (flexible; fall back
-  to fewer/zero cuts when no good points exist).
-- Each partition parses into its own `Tree` inside the shared hhds `Forest`
-  (one writer thread per tree — hhds's supported concurrency model). The
-  root tree replaces each cut region with a subtree reference; consumers
-  traverse with `pre_order_with_subtrees` and never see the seams.
-- Per-partition `Source_locator`s merge into the root locator at join
-  (`merge()` returns the remap to apply to `attrs::srcid`).
-- Threading: `std::jthread` pool sized min(8, partitions, hw threads).
-- Determinism: identical `--sexp` output for any thread count.
-
-Test gate:
-- Synthetic big inputs (concatenate corpus files to 0.5–4MB) parse split vs
-  serial with byte-identical `--sexp` dumps.
-- A `--force-split=N --split-threshold=K` debug flag exercises splitting on
-  small files so the whole corpus runs through the split path in CI.
-- tsan config run (`bazel test --config tsan //prpparse/...`).
-- Scaling benchmark: 1 vs 4 vs 8 threads on the 4MB input.
-
-## Phase 6 — livehd integration
-
-(Work lands mostly in `../livehd`, planned here for completeness.)
-
-- livehd swaps its `http_archive` on this repo for `bazel_dep(prpparse)` +
-  `git_override` (same pattern as hhds), or updates the archive BUILD to
-  expose `//prpparse`.
-- Port `inou/prp/prp2lnast.cpp`: a thin facade gives it the TSNode-ish API it
-  already uses (`kind`, `child_by_field`, `named_children`, `text`, spans
-  from srcid) over `Prp_tree`. Keep tree-sitter behind a flag during the
-  transition; run both and diff LNAST output on `inou/prp/tests`.
-- Diag bridge: `prpparse::Diag` → `livehd::diag::Sink::emit` (fields map
-  1:1 by construction); spans flow through `Source_locator`/`attrs::srcid`
-  instead of the pre-sourcemap best-effort path.
-- Acceptance: all livehd `inou/prp` tests green with prpparse; perf and
-  error-message comparison recorded; tree-sitter path removed in a follow-up
-  once parity has soaked.
+Net effect on the LiveHD path: drops `materialize` entirely, never builds a
+global parse tree (Ast *or* hhds), bounds resident memory to the largest single
+construct, and makes teardown trivial.
 
 ---
 
-## Open questions — all resolved 2026-06-10
+## Plan going forward
 
-1. ~~Field-role encoding~~ — pack into node `Type` (kind 10 bits +
-   field 6 bits).
-2. ~~Comment/trivia~~ — side list only: lexer records comment spans in a
-   separate vector; the tree never contains comment nodes. A future
-   formatter re-associates by byte position and any additional spans added
-   after fuzzing/LiveHD integration.
-3. ~~srcid minting~~ — **eager for required spans, final, and switch hhds to
-   rapidhash** (https://github.com/Nicoshev/rapidhash). Required srcids are
-   minted during the parse. The hash is the hhds cross-artifact identity
-   convention (persisted in srcmap.txt, append-only; merge dedups by id),
-   so the switch is an hhds-wide change — do it now, while hhds is v0.2.x
-   and no serious srcmaps are deployed. Upstream hhds PR (Phase 2):
-   - Vendor a **pinned** `rapidhash.h` (rapidhash output changed across
-     major versions; ids must never drift with upstream updates) and bump
-     a version line in the srcmap format so loaders detect FNV-era maps.
-   - rapidhash is one-shot, not streaming, so the construction becomes:
-     `path_hash = rapidhash(path)` once per file, then per required span
-     `id = rapidhash({path_hash, start_byte, end_byte}, seed=Anchor_kind)`
-     over a fixed 24-byte buffer (line-only: `{path_hash, line}`;
-     combine: over the parent-id array). One short rapidhash call per
-     node — faster than any FNV variant and path-length independent.
-   - Expose it as `locator.span_minter(path)` returning a handle holding
-     `path_hash`, with `mint(start, end, line)` per required span.
-   Phase 4 verifies the cost profiled away. rapidhash is also the default
-   hash for any prpparse-internal tables that need one.
+### Phase A — streaming seam (in prpparse)
+
+- Make `Ast_arena` **resettable** (per-construct reset/free; reuse storage).
+- Add a top-level **stream seam**: `parse_next()` / `for_each_top_level(consumer)`
+  that parses one top-level construct and hands it to the consumer.
+- Keep the **hhds-tree builder as the default consumer** so the CLI and every
+  current test behave identically (full tree, `--sexp` unchanged).
+- Stabilize the `Ast` facade surface (kind / field / child iteration / span /
+  text) that prp2lnast will bind to.
+
+Test gate: all current tests green (accept-parity 428/428, prpfmt 428/428,
+`--sexp` byte-identical); a streaming-consumer unit test asserting resident
+parse-tree memory stays bounded (one construct) on a large concatenated input.
+
+### Phase B — prp2lnast port onto the stream (in ../livehd, Phase-6 integration)
+
+Land **after** the pending livehd bug-fixes so the full regression is green
+before the front-end is replaced.
+
+- Swap the tree-sitter front-end for prpparse: `walk_statement_block` pulls
+  constructs from the parser stream; the node facade is over `Ast` (not hhds).
+- Keep tree-sitter behind a flag during the transition; run both and diff LNAST
+  on `inou/prp` tests until parity soaks, then remove the tree-sitter path.
+- Diag bridge: `prpparse::Diag` → `livehd::diag::Sink` (fields map 1:1).
+- **inou/slang is unaffected**: it has its own front-end (slang → LNAST) using
+  `livehd::diag` + `Source_locator::mint` exactly as today. No refactor expected
+  (minor one possible, not anticipated).
+- Acceptance: all `inou/prp` tests green with prpparse; perf + error-message
+  comparison recorded; tree-sitter path removed once parity has soaked.
+
+Sequencing: pending livehd bug-fixes → full green regression → swap the
+front-end → soak → delete tree-sitter from the prp path.
+
+### Phase S — large-file splitting / parallelism (deferred)
+
+Streaming reduces the urgency: resident memory is already bounded per construct,
+so splitting is only a *throughput* lever, not a memory one. The lexer already
+records depth-0 split points. If needed later, parse partitions concurrently
+(one hhds writer per tree, per hhds's model) while keeping LNAST emission
+ordered. Moot for the current corpus (all but `yy.prp` are < 2 KB; `yy.prp`
+parses in ~0.65 s serially).
+
+---
+
+## Differential oracle / testing
+
+- **Accept parity**: all `full_pyrope/*.prp` parse (CI mirrors `./test.sh`).
+- **Tree-shape check**: `prpparse_cli --sexp` vs normalized `tree-sitter parse`;
+  documented differences are fine when they don't make the prp2lnast port
+  harder.
+- **Reject parity + message quality**: negative suite (removed constructs,
+  unbalanced braces, bad literals) with golden diagnostics; each case also
+  rejected by tree-sitter, with prpparse's message the better one.
+- **Fuzzing**: mutate valid corpus files; require fail-fast; check the
+  diagnostic span lands near the injected mutation. Hard gate: 0 false
+  positives.

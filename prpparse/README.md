@@ -5,8 +5,8 @@ A fast, hand-written recursive-descent Pyrope parser that produces an
 `../livehd/inou/prp`. tree-sitter-pyrope stays in this repo as the **differential
 oracle**: prpparse accepts exactly what `grammar.js` accepts.
 
-See [`plan.md`](plan.md) for the full design and [`todo.md`](todo.md) for
-requirements. This README covers what is built and how to run it.
+See [`plan.md`](plan.md) for the full design, status, and the streaming
+front-end plan. This README covers what is built and how to run it.
 
 ## Status (Phases 0–3 complete)
 

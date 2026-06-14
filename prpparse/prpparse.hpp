@@ -2,7 +2,7 @@
 #pragma once
 
 // prpparse — a fast recursive-descent Pyrope parser producing an hhds tree.
-// See plan.md / todo.md for the design. This umbrella header re-exports the
+// See plan.md for the design and status. This umbrella header re-exports the
 // public surface as the subsystems land.
 
 namespace prpparse {
