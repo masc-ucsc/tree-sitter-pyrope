@@ -85,6 +85,25 @@ int parse_file(const std::string& path, bool sexp) {
   }
 }
 
+// Parse, then build the Source_locator the way a persisting consumer would:
+// kicked off on a background worker (build_srcmap_async) and joined here via
+// locator(). Reports span and srcmap-entry counts. Used to measure the
+// off-critical-path provenance cost that materialize() no longer pays.
+int srcmap_file(const std::string& path) {
+  Source_buffer buf = Source_buffer::from_file(path);
+  try {
+    Parser    parser(buf);
+    Prp_tree& tree = parser.parse();
+    tree.build_srcmap_async();
+    hhds::Source_locator& loc = tree.locator();  // joins the worker
+    std::printf("%s: spans=%zu srcmap_entries=%zu\n", path.c_str(), tree.span_count(), loc.size());
+    return 0;
+  } catch (const Parse_error& e) {
+    std::fprintf(stderr, "%s\n", e.rendered.c_str());
+    return 1;
+  }
+}
+
 void usage() {
   std::printf(
       "prpparse_cli — parse Pyrope (.prp) source files.\n"
@@ -98,9 +117,11 @@ void usage() {
       "Modes:\n"
       "  (default)   parse; report diagnostics only (no tree)\n"
       "  --sexp      parse and print the s-expression tree\n"
+      "  --srcmap    parse and build the Source_locator (srcid per span)\n"
       "  --tokens    dump the token stream\n"
       "  --lex       lex only; report lexical errors\n"
       "  --fuzz      one machine-readable line per file (for tests/fuzz.py)\n"
+      "  --time      print a per-phase timing breakdown to stderr\n"
       "  -h, --help  show this help\n"
       "\n"
       "Examples:\n"
@@ -113,6 +134,7 @@ void usage() {
 int main(int argc, char** argv) {
   std::vector<std::string> files;
   std::string_view         mode = "parse";
+  bool                     time = false;
   for (int i = 1; i < argc; ++i) {
     std::string_view a = argv[i];
     if (a == "--help" || a == "-h") {
@@ -124,10 +146,14 @@ int main(int argc, char** argv) {
       mode = "lex";
     else if (a == "--sexp")
       mode = "sexp";
+    else if (a == "--srcmap")
+      mode = "srcmap";
     else if (a == "--parse")
       mode = "parse";
     else if (a == "--fuzz")
       mode = "fuzz";
+    else if (a == "--time")
+      time = true;
     else if (!a.empty() && a[0] == '-') {
       std::fprintf(stderr, "prpparse_cli: unknown option '%s' (try --help)\n", argv[i]);
       return 2;
@@ -140,6 +166,8 @@ int main(int argc, char** argv) {
     return 0;
   }
 
+  if (time) Parser::set_phase_timing(true);
+
   int rc = 0;
   for (const std::string& f : files) {
     int r = 0;
@@ -149,6 +177,8 @@ int main(int argc, char** argv) {
       r = lex_only(f);
     else if (mode == "fuzz")
       r = fuzz_file(f);  // always prints a line; never aborts the batch
+    else if (mode == "srcmap")
+      r = srcmap_file(f);
     else
       r = parse_file(f, mode == "sexp");
     if (mode != "fuzz" && r != 0) rc = r;

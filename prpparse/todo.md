@@ -13,9 +13,12 @@ the (good but slow) tree-sitter parser.
 - [x] Uses **`../hhds`** to store the parsed tree — `bazel_dep(name = "hhds")`
       + `git_override` (commented), active `local_path_override(path = "../hhds")`
       for local debug, like `../livehd2/MODULE.bazel`.
-- [x] Populates **`hhds::Source_locator`** info: every spanned node carries
-      `attrs::srcid` minted from (file, start_byte, end_byte, line). (Currently
-      minted for all spanned nodes; can be narrowed to destinations in Phase 4.)
+- [x] Records **source provenance** for every spanned node. `materialize`
+      stores raw byte spans in a flat side-table; `attrs::srcid` is minted
+      lazily from (file, start_byte, end_byte, line) by `build_srcmap_async()`
+      on one worker thread (off the critical path — overlaps the next pass), or
+      synchronously on first `locator()`. Diagnostics use the raw spans, so they
+      never force minting. (Was eager per-node mint — ~25× slower materialize.)
 - [x] **Lexer prepass** that tokenizes the whole buffer first — inspired by
       `../livehd2/lnast/lnast_lexer.cpp` (X-macro `*.def` token tables) but
       buffer-based (not `istream`), flat token vector, records line starts,

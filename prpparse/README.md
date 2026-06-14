@@ -19,8 +19,9 @@ requirements. This README covers what is built and how to run it.
   token (`terminator_before`). Lexes all 428 corpus files cleanly.
 - **Phase 2 — tree schema.** `prp_nodes.def` (141 kinds) + `prp_fields.def` (57
   fields) generated from `src/node-types.json`; packed into hhds `Type`
-  (uint16 = kind:10 | field:6). `Prp_tree` materialises the AST into hhds, mints
-  `attrs::srcid` per spanned node, and renders a tree-sitter-style s-expression.
+  (uint16 = kind:10 | field:6). `Prp_tree` materialises the AST into hhds,
+  records each spanned node's raw byte span (srcid is minted lazily, off the
+  critical path — see below), and renders a tree-sitter-style s-expression.
 - **Phase 3 — parser.** Precedence-climbing expressions with flat same-tier
   chains, the paren-list classifier (tuple / arg_tuple / paren_group / lvalue),
   suffix chains (`.f` / `[i]` / `#[..]` / `.[a]` / `::[..]` / calls / generics),
@@ -91,7 +92,7 @@ prp_nodes.def       GENERATED: 141 node kinds       (tools/gen_nodes.py)
 prp_fields.def      GENERATED: 57 field roles
 node_kind.hpp       Kind/Field enums + hhds Type packing + name tables
 ast.hpp             arena-allocated intermediate Ast (offsets only, no strings)
-prp_tree.{hpp,cpp}  materialise Ast -> hhds, mint srcid, to_sexp
+prp_tree.{hpp,cpp}  materialise Ast -> hhds, record spans, lazy srcid, to_sexp
 parser.{hpp,cpp}    recursive-descent parser (mirrors grammar.js rule names)
 tools/gen_nodes.py  regenerate prp_nodes.def / prp_fields.def from node-types.json
 tests/              gtest units + cli.cpp + corpus scripts

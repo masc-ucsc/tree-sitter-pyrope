@@ -26,6 +26,11 @@ public:
   // Parse to an Ast without materializing (used by tests).
   Ast* parse_ast();
 
+  // When enabled, parse() prints a one-line phase breakdown to stderr
+  // (parse_ast / materialize times + span count). Off by default; the CLI
+  // turns it on for `--time`.
+  static void set_phase_timing(bool on);
+
 private:
   const Source_buffer& buf_;
   std::vector<Token>   toks_;

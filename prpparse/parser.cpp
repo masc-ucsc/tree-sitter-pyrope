@@ -2,7 +2,16 @@
 
 #include "parser.hpp"
 
+#include <chrono>
+#include <cstdio>
+
 namespace prpparse {
+
+namespace {
+bool g_phase_timing = false;
+}
+
+void Parser::set_phase_timing(bool on) { g_phase_timing = on; }
 
 namespace {
 
@@ -278,8 +287,19 @@ bool Parser::looks_like_lambda() {
 Ast* Parser::parse_ast() { return parse_description(); }
 
 Prp_tree& Parser::parse() {
-  Ast* root = parse_description();
-  tree_.materialize(root);
+  if (!g_phase_timing) {
+    Ast* root = parse_description();
+    tree_.materialize(root, arena_.size());
+    return tree_;
+  }
+  const auto t0   = std::chrono::steady_clock::now();
+  Ast*       root = parse_description();
+  const auto t1   = std::chrono::steady_clock::now();
+  tree_.materialize(root, arena_.size());
+  const auto t2 = std::chrono::steady_clock::now();
+  const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+  std::fprintf(stderr, "[phase] parse_ast=%.1fms materialize=%.1fms nodes=%zu spans=%zu\n", ms(t0, t1), ms(t1, t2),
+               arena_.size(), tree_.span_count());
   return tree_;
 }
 

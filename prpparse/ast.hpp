@@ -44,6 +44,10 @@ public:
     return &n;
   }
 
+  // Total nodes allocated so far — an upper bound on spanned nodes, used to
+  // pre-size the materialized tree's span side-table.
+  [[nodiscard]] size_t size() const { return pool_.size(); }
+
 private:
   std::deque<Ast> pool_;
 };
