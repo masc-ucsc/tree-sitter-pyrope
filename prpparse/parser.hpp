@@ -26,10 +26,24 @@ public:
   // Parse to an Ast without materializing (used by tests).
   Ast* parse_ast();
 
+  // Streaming seam (2f-stream): parse and return ONE top-level construct's Ast
+  // (link_parents applied), or nullptr at end of input. The arena is reset
+  // before each construct, so resident parse-tree memory stays bounded to one
+  // construct — the consumer must fully lower the returned Ast before the next
+  // call (the reset invalidates every prior Ast*). The whole-file `parse()` /
+  // `parse_ast()` builders are unchanged (still used by the CLI / --sexp / the
+  // differential oracle, which need a complete tree).
+  Ast* parse_next();
+
   // When enabled, parse() prints a one-line phase breakdown to stderr
   // (parse_ast / materialize times + span count). Off by default; the CLI
   // turns it on for `--time`.
   static void set_phase_timing(bool on);
+
+  // Live node count of the CST arena — an observable for the streaming
+  // memory-bound test (2f-stream): under parse_next() it tracks ONE construct
+  // (reset between constructs); under parse_ast()/parse() it is the whole file.
+  [[nodiscard]] size_t arena_node_count() const { return arena_.size(); }
 
 private:
   const Source_buffer& buf_;

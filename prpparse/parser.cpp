@@ -346,6 +346,22 @@ Ast* Parser::parse_ast() {
   return root;
 }
 
+Ast* Parser::parse_next() {
+  // Skip statement separators between top-level constructs (parse_description
+  // does the same between iterations of its loop).
+  while (at(Token_kind::semicolon)) advance();
+  if (eof()) {
+    return nullptr;
+  }
+  // Recycle the previous construct's nodes before parsing the next one. Every
+  // Ast* returned by an earlier parse_next() is invalidated here — the consumer
+  // must have fully lowered it already.
+  arena_.reset();
+  Ast* s = parse_statement();
+  link_parents(s);  // navigation (parent / next-sibling) is within this construct
+  return s;
+}
+
 Prp_tree& Parser::parse() {
   if (!g_phase_timing) {
     Ast* root = parse_description();
