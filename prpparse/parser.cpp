@@ -798,6 +798,16 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
     }
     Ast* d = node(Kind::declaration_statement, start);
     d->add(decl, Field::f_decl);
+    // A bare declaration ALWAYS wraps its lvalue in a typed_identifier — even an
+    // untyped `mut c` (tree-sitter parity). Only the assignment form above leaves
+    // an untyped identifier lvalue bare. (A typed lvalue is already wrapped.)
+    if (ti->kind == Kind::identifier) {
+      Ast* w    = node(Kind::typed_identifier, ti->start_byte);
+      ti->field = Field::f_identifier;
+      w->add(ti);
+      finish(w, ti->start_byte);
+      ti = w;
+    }
     d->add(ti, Field::f_lvalue);
     expect_semicolon();
     finish(d, start);
