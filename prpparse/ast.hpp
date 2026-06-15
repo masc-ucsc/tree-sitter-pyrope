@@ -69,6 +69,12 @@ public:
   // pre-size the materialized tree's span side-table.
   [[nodiscard]] size_t size() const { return pool_.size(); }
 
+  // Recycle all node storage. Used by the streaming driver (Parser::parse_next)
+  // to bound resident parse-tree memory to ONE top-level construct: the consumer
+  // fully lowers a construct, then the next parse_next() resets before parsing
+  // the following one. Every Ast* handed out before a reset is invalidated by it.
+  void reset() { pool_.clear(); }
+
 private:
   std::deque<Ast> pool_;
 };
