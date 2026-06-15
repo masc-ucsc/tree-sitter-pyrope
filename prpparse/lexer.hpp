@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "diag.hpp"
+#include "prp_diag.hpp"
 #include "source_buffer.hpp"
 #include "token.hpp"
 
@@ -26,6 +26,9 @@ public:
   explicit Lexer(const Source_buffer& buf) : buf_(buf) {}
 
   std::vector<Token> tokenize();
+  // Lex only the byte window [lo, hi) of the buffer (absolute offsets). For
+  // sub-parsing interpolated-string holes.
+  std::vector<Token> tokenize_range(uint32_t lo, uint32_t hi);
 
   [[nodiscard]] const std::vector<Comment_span>& comments() const { return comments_; }
   [[nodiscard]] const std::vector<uint32_t>&      split_points() const { return split_points_; }

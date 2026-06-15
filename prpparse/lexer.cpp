@@ -343,13 +343,19 @@ uint32_t Lexer::lex_istring(uint32_t i) const {
   error("unterminated-string", "unterminated interpolated string", i, n);
 }
 
-std::vector<Token> Lexer::tokenize() {
-  const char* b = buf_.data();
-  uint32_t    n = static_cast<uint32_t>(buf_.size());
-  std::vector<Token> toks;
-  toks.reserve(n / 4 + 8);
+std::vector<Token> Lexer::tokenize() { return tokenize_range(0, static_cast<uint32_t>(buf_.size())); }
 
-  uint32_t i     = 0;
+// Lex the byte window [lo, hi) of the SAME buffer, with absolute offsets. Used
+// to sub-parse an interpolated-string hole (`{expr}`) as an expression: the
+// resulting tokens point into the full source, so the parsed Ast carries
+// absolute spans. The trailing eof sits at `hi`.
+std::vector<Token> Lexer::tokenize_range(uint32_t lo, uint32_t hi) {
+  const char* b = buf_.data();
+  uint32_t    n = hi;
+  std::vector<Token> toks;
+  toks.reserve((hi - lo) / 4 + 8);
+
+  uint32_t i     = lo;
   int      depth = 0;  // brace depth, for split-point heuristic
 
   while (true) {

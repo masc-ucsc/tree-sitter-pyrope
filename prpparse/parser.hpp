@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "ast.hpp"
-#include "diag.hpp"
+#include "prp_diag.hpp"
 #include "lexer.hpp"
 #include "prp_tree.hpp"
 #include "source_buffer.hpp"
@@ -149,10 +149,20 @@ private:
   Ast* parse_paren();
   Ast* parse_tuple_sq();
   Ast* parse_tuple_item(bool* plain = nullptr);
+  // Add one parsed tuple item to `parent`, splicing a decl-keyword no-`=` field
+  // into separate decl: / lvalue:|value: siblings (tree-sitter shape).
+  void add_tuple_child(Ast* parent, Ast* it);
   Ast* parse_lvalue_item();
+  Ast* tuple_to_lvalue_list(Ast* tup);
   Ast* parse_arg_tuple();
   Ast* parse_arg_item();
   Ast* parse_constant();
+  // Interpolated string: build the literal node and sub-parse each `{expr}`
+  // hole into a child expression (absolute spans), matching tree-sitter.
+  Ast* parse_istring();
+  // Lex+parse the byte window [lo, hi) of the buffer as an expression, into the
+  // current arena (absolute spans). Used by parse_istring for the holes.
+  Ast* parse_subexpr(uint32_t lo, uint32_t hi);
   Ast* parse_complex_identifier();
   Ast* parse_if_expression();
   Ast* parse_match_expression();

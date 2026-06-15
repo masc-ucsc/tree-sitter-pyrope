@@ -128,6 +128,63 @@ bool all_digits(std::string_view s, size_t from) {
   return true;
 }
 
+// Precedence-tier wrapper kind for a binary operator kind. tree-sitter wraps
+// each operator token in a tier node (binary_times_op / binary_other_op /
+// binary_step_op / binary_compare_op / binary_logical_op); the LiveHD consumer
+// (prp2lnast) reads the operator's precedence tier from this wrapper, so the
+// materialized tree must reproduce it.
+Kind op_tier(Kind op) {
+  switch (op) {
+    case Kind::op_mul:
+    case Kind::op_div:
+    case Kind::op_mod:
+      return Kind::binary_times_op;
+    case Kind::op_add:
+    case Kind::op_sub:
+    case Kind::op_shl:
+    case Kind::op_sra:
+    case Kind::op_bit_and:
+    case Kind::op_bit_or:
+    case Kind::op_bit_xor:
+    case Kind::op_range_inclusive:
+    case Kind::op_range_exclusive:
+    case Kind::op_range_count:
+      return Kind::binary_other_op;
+    case Kind::op_step:
+      return Kind::binary_step_op;
+    case Kind::op_lt:
+    case Kind::op_le:
+    case Kind::op_gt:
+    case Kind::op_ge:
+    case Kind::op_eq:
+    case Kind::op_ne:
+    case Kind::op_has:
+    case Kind::op_in:
+    case Kind::op_case:
+    case Kind::op_does:
+    case Kind::op_equals:
+      return Kind::binary_compare_op;
+    case Kind::op_log_and:
+    case Kind::op_log_or:
+    case Kind::op_implies:
+      return Kind::binary_logical_op;
+    default:
+      return Kind::invalid;
+  }
+}
+
+// Build the `operator` child for a binary expression: a tier wrapper node
+// (`binary_*_op`) whose single child is the operator-kind leaf (`op_add`, …),
+// both spanning the operator token [s, e). Matches tree-sitter's CST.
+Ast* make_binop(Ast_arena& arena, Kind opk, uint32_t s, uint32_t e) {
+  Ast* inner = arena.make(opk, s, e);
+  Kind tier  = op_tier(opk);
+  if (tier == Kind::invalid) return inner;  // defensive: emit the bare op
+  Ast* w = arena.make(tier, s, e);
+  w->add(inner);
+  return w;
+}
+
 }  // namespace
 
 Parser::Parser(const Source_buffer& buf) : buf_(buf), tree_(buf) {
@@ -283,7 +340,11 @@ bool Parser::looks_like_lambda() {
 // ===========================================================================
 // Entry
 // ===========================================================================
-Ast* Parser::parse_ast() { return parse_description(); }
+Ast* Parser::parse_ast() {
+  Ast* root = parse_description();
+  link_parents(root);  // the node facade navigates parent / next-sibling
+  return root;
+}
 
 Prp_tree& Parser::parse() {
   if (!g_phase_timing) {
@@ -624,9 +685,12 @@ Ast* Parser::finish_assignment(uint32_t start, Ast* overflow, Ast* decl, Ast* lv
   if (decl) a->add(decl, Field::f_decl);
   if (lvalue) a->add(lvalue, Field::f_lvalue);
   if (type_cast) a->add(type_cast, Field::f_type);
-  // assignment operator
-  Kind opk = assign_kind(cur().kind);
-  Ast* op  = arena_.make(opk, cur().start_byte, cur().end_byte);
+  // assignment operator: tree-sitter wraps the aliased assign kind in an
+  // `assignment_operator` node (prp2lnast reads the wrapper's single child).
+  Kind opk      = assign_kind(cur().kind);
+  Ast* op_inner = arena_.make(opk, cur().start_byte, cur().end_byte);
+  Ast* op       = arena_.make(Kind::assignment_operator, cur().start_byte, cur().end_byte);
+  op->add(op_inner);
   advance();
   a->add(op, Field::f_operator);
   // rvalue: expression | enum_definition | ref_identifier
@@ -650,12 +714,15 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
   uint32_t start = cur().start_byte;
 
   // overflow modifier on an assignment: wrap / sat (anonymous tokens in the
-  // grammar; consumed but not stored as a node).
+  // grammar; consumed but not stored as a node). The keyword is left OUTSIDE the
+  // assignment span — prp2lnast recovers it by scanning the raw source gap before
+  // the statement (scan_overflow_in_gap), so `start` is re-anchored past it.
   Ast* overflow     = nullptr;
   bool has_overflow = false;
   if (at_kw(Keyword::kw_wrap) || at_kw(Keyword::kw_sat)) {
     advance();
     has_overflow = true;
+    start        = cur().start_byte;
   }
 
   if (is_decl_keyword(cur())) {
@@ -694,18 +761,34 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
     // is an assignment, or a (typed) identifier when it is a declaration.
     Ast* lv = parse_postfix();
     Ast* tc = nullptr;
-    if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
+    // `const a::[attr] = …` — in declaration lvalue position `::[attr]` is the
+    // attribute form of a type_cast (typed_identifier), NOT an attribute_set
+    // write. parse_postfix greedily took it as an attribute_set; demote it.
+    if (lv->kind == Kind::attribute_set && !lv->kids.empty() &&
+        lv->kids.front()->kind == Kind::identifier) {
+      Ast* id   = lv->kids.front();
+      Ast* attr = nullptr;
+      for (Ast* k : lv->kids) {
+        if (k->field == Field::f_attribute) attr = k;
+      }
+      Ast* tcn = node(Kind::type_cast, id->end_byte);
+      if (attr) tcn->add(attr, Field::f_attribute);
+      finish(tcn, id->end_byte);
+      id->field = Field::none;
+      lv        = id;
+      tc        = tcn;
+    }
+    if (!tc && (at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
       tc = parse_type_cast();
-    // Wrap a bare identifier lvalue as a typed_identifier (mirrors the grammar).
+    // An identifier lvalue carrying a type wraps as a typed_identifier (mirrors
+    // the grammar); an untyped identifier lvalue stays bare (tree-sitter parity).
     Ast* ti = lv;
-    if (lv->kind == Kind::identifier) {
+    if (lv->kind == Kind::identifier && tc) {
       ti        = node(Kind::typed_identifier, lv->start_byte);
       lv->field = Field::f_identifier;
       ti->add(lv);
-      if (tc) {
-        ti->add(tc, Field::f_type);
-        tc = nullptr;
-      }
+      ti->add(tc, Field::f_type);
+      tc = nullptr;
       finish(ti, lv->start_byte);
     }
     if (at_assignment_operator()) {
@@ -725,10 +808,23 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
   Ast* e = parse_expression();
   Ast* type_cast = nullptr;
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) {
-    // `lvalue : Type = ...`
+    // `lvalue : Type = ...` (only legal with wrap/sat — a typed identifier
+    // lvalue folds into a typed_identifier the way the grammar models it).
     type_cast = parse_type_cast();
+    if (e->kind == Kind::identifier && type_cast) {
+      Ast* ti   = node(Kind::typed_identifier, e->start_byte);
+      e->field  = Field::f_identifier;
+      ti->add(e);
+      ti->add(type_cast, Field::f_type);
+      finish(ti, e->start_byte);
+      e         = ti;
+      type_cast = nullptr;
+    }
   }
   if (at_assignment_operator()) {
+    // `(a, x=b.c) = rhs` — the LHS parsed optimistically as a tuple; an '=' now
+    // confirms it is a destructuring lvalue_list.
+    if (e->kind == Kind::tuple) e = tuple_to_lvalue_list(e);
     Ast* a = finish_assignment(start, overflow, nullptr, e, type_cast);
     expect_semicolon();
     return a;
@@ -804,10 +900,17 @@ Ast* Parser::parse_arg_list() {
   Ast* al = node(Kind::arg_list, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rparen) && !eof()) {
-    // [mod] typed_identifier [= default]
-    if (at(Token_kind::ellipsis) || at_kw(Keyword::kw_ref) || at_kw(Keyword::kw_reg)) advance();
-    Ast* ti = parse_typed_identifier();
-    ti->field = Field::f_item;
+    // [mod] typed_identifier [= default]. The `mod` (... / ref / reg) is an
+    // anonymous token in the grammar carrying a `mod` field; emit it as an
+    // anonymous marker node so the consumer can read which params are ref/reg/
+    // vararg (get_text gives the keyword).
+    if (at(Token_kind::ellipsis) || at_kw(Keyword::kw_ref) || at_kw(Keyword::kw_reg)) {
+      Ast* m  = arena_.make(Kind::identifier, cur().start_byte, cur().end_byte);
+      m->named = false;
+      al->add(m, Field::f_mod);
+      advance();
+    }
+    Ast* ti = parse_typed_identifier();  // positional (no `item` field — tree-sitter parity)
     al->add(ti);
     if (accept(Token_kind::assign)) al->add(parse_expression(), Field::f_definition);
     if (!accept(Token_kind::comma)) break;
@@ -836,7 +939,7 @@ Ast* Parser::parse_expression() { return parse_logical(); }
     nd->add(lhs);                                                           \
     Kind opk;                                                               \
     while (!term_stop() && (opk = OPFN(cur())) != Kind::invalid) {          \
-      Ast* op = arena_.make(opk, cur().start_byte, cur().end_byte);         \
+      Ast* op = make_binop(arena_, opk, cur().start_byte, cur().end_byte);  \
       advance();                                                            \
       nd->add(op, Field::f_operator);                                       \
       Ast* rhs   = NEXT();                                                  \
@@ -862,7 +965,7 @@ Ast* Parser::parse_step() {
   lhs->field     = Field::f_operand;
   nd->add(lhs);
   while (!term_stop() && cur().is_kw(Keyword::kw_step)) {
-    Ast* op = arena_.make(Kind::op_step, cur().start_byte, cur().end_byte);
+    Ast* op = make_binop(arena_, Kind::op_step, cur().start_byte, cur().end_byte);
     advance();
     nd->add(op, Field::f_operator);
     Ast* rhs   = parse_other();
@@ -876,6 +979,20 @@ Ast* Parser::parse_step() {
 // tier 1 operand: unary / if / match / scope / restricted-with-suffixes.
 Ast* Parser::parse_unary() {
   const Token& t = cur();
+  // Negative integer literal: fold `-` + integer into a single signed constant
+  // atom, then allow a suffix chain (tree-sitter binds the sign tighter than
+  // postfix here, so `-5.foo` is `(-5).foo` and `-5` in a comptime index/range/
+  // timing slot reads as one `constant`).
+  if (t.kind == Token_kind::minus && peek(1).kind == Token_kind::integer) {
+    uint32_t start = t.start_byte;
+    advance();  // '-'
+    Ast* lit        = leaf(Kind::integer_literal);
+    lit->start_byte = start;  // the literal's span includes the sign
+    Ast* c          = node(Kind::constant, start);
+    c->add(lit);
+    finish(c, start);
+    return parse_postfix_from(c);
+  }
   if (t.kind == Token_kind::bang || t.kind == Token_kind::tilde || t.kind == Token_kind::minus ||
       t.kind == Token_kind::ellipsis || t.is_kw(Keyword::kw_not)) {
     uint32_t start = t.start_byte;
@@ -911,7 +1028,7 @@ Ast* Parser::consume_binary_tail(Ast* lhs) {
   nd->add(lhs);
   Kind opk;
   while (!term_stop() && (opk = binary_op_any(cur())) != Kind::invalid) {
-    Ast* op = arena_.make(opk, cur().start_byte, cur().end_byte);
+    Ast* op = make_binop(arena_, opk, cur().start_byte, cur().end_byte);
     advance();
     nd->add(op, Field::f_operator);
     Ast* rhs   = parse_unary();
@@ -924,6 +1041,11 @@ Ast* Parser::consume_binary_tail(Ast* lhs) {
 
 Ast* Parser::parse_postfix_from(Ast* e) {
   uint32_t start = e->start_byte;
+  // A single-expression `(...)` is only a distinct `paren_group` CST node when it
+  // heads a suffix chain (`(expr).foo`, `(expr)#[..]`); standing alone it is a
+  // single-item `tuple` (tree-sitter parity — the grouping-vs-tuple distinction
+  // there is recovered downstream from a trailing comma in the source).
+  const bool tentative_group = (e->kind == Kind::paren_group);
   for (;;) {
     if (term_stop()) break;
     Kind ek = e->kind;
@@ -1011,6 +1133,12 @@ Ast* Parser::parse_postfix_from(Ast* e) {
     }
     break;
   }
+  // No suffix consumed the tentative paren_group -> it was just a parenthesized
+  // single expression, i.e. a single-item tuple.
+  if (tentative_group && e->kind == Kind::paren_group) {
+    e->kind = Kind::tuple;
+    if (!e->kids.empty()) e->kids.front()->field = Field::f_item;
+  }
   return e;
 }
 
@@ -1078,11 +1206,98 @@ Ast* Parser::parse_atom() {
 }
 
 Ast* Parser::parse_constant() {
-  if (at(Token_kind::integer)) return leaf(Kind::integer_literal);
-  if (at(Token_kind::string)) return leaf(Kind::string_literal);
-  if (at(Token_kind::istring)) return leaf(Kind::interpolated_string_literal);
-  if (at(Token_kind::question)) return leaf(Kind::unknown_literal);
-  return leaf(Kind::bool_literal);  // true / false
+  // tree-sitter wraps every literal in a `constant` node (the grammar's
+  // `constant: choice(integer_literal, bool_literal, …)` rule). Reproduce it so
+  // prp2lnast's `constant`-typed reads line up.
+  uint32_t start = cur().start_byte;
+  Ast*     lit;
+  if (at(Token_kind::integer)) {
+    lit = leaf(Kind::integer_literal);
+  } else if (at(Token_kind::string)) {
+    lit = leaf(Kind::string_literal);
+  } else if (at(Token_kind::istring)) {
+    lit = parse_istring();
+  } else if (at(Token_kind::question)) {
+    lit = leaf(Kind::unknown_literal);
+  } else {
+    lit = leaf(Kind::bool_literal);  // true / false
+  }
+  Ast* c = node(Kind::constant, start);
+  c->add(lit);
+  finish(c, start);
+  return c;
+}
+
+Ast* Parser::parse_istring() {
+  const Token& t         = cur();
+  uint32_t     tok_start = t.start_byte;
+  uint32_t     tok_end   = t.end_byte;
+  Ast*         lit       = node(Kind::interpolated_string_literal, tok_start);
+  const char*  b         = buf_.data();
+  // Body is between the surrounding quotes. Sub-parse every `{expr}` hole into a
+  // child expression (tree-sitter embeds the holes as named children). Literal
+  // braces `{{` / `}}` and backslash escapes are skipped.
+  uint32_t body_start = tok_start + 1;
+  uint32_t body_end   = (tok_end > body_start) ? tok_end - 1 : body_start;
+  uint32_t i          = body_start;
+  while (i < body_end) {
+    char cc = b[i];
+    if (cc == '\\') {
+      i += 2;  // escape: skip the escaped char
+      continue;
+    }
+    if (cc == '{') {
+      if (i + 1 < body_end && b[i + 1] == '{') {
+        i += 2;  // `{{` literal brace
+        continue;
+      }
+      uint32_t es    = i + 1;
+      uint32_t j     = es;
+      int      depth = 0;
+      while (j < body_end) {
+        char cj = b[j];
+        if (cj == '\\') {
+          j += 2;
+          continue;
+        }
+        if (cj == '{') {
+          ++depth;
+        } else if (cj == '}') {
+          if (depth == 0) break;
+          --depth;
+        }
+        ++j;
+      }
+      uint32_t close = j;  // the matching '}' (or body_end if unterminated)
+      Ast*     e     = parse_subexpr(es, close);
+      if (e) lit->add(e);
+      i = (close < body_end) ? close + 1 : body_end;
+      continue;
+    }
+    ++i;
+  }
+  advance();  // consume the interpolated-string token
+  finish(lit, tok_start);
+  return lit;
+}
+
+Ast* Parser::parse_subexpr(uint32_t lo, uint32_t hi) {
+  Lexer              sub(buf_);
+  std::vector<Token> st         = sub.tokenize_range(lo, hi);
+  std::vector<Token> saved_toks = std::move(toks_);
+  size_t             saved_pos  = pos_;
+  int                saved_ebd  = ebd_;
+  toks_                         = std::move(st);
+  pos_                          = 0;
+  ebd_                          = 1;  // inside a hole: no virtual-semicolon termination
+  Ast* e                        = nullptr;
+  if (!eof()) {
+    e = parse_expression();
+  }
+  toks_ = std::move(saved_toks);
+  pos_  = saved_pos;
+  ebd_  = saved_ebd;
+  return e;
 }
 
 Ast* Parser::parse_complex_identifier() { return parse_postfix(); }
@@ -1119,13 +1334,12 @@ Ast* Parser::parse_paren() {
     finish(pg, start);
     return pg;
   }
-  Ast* tup   = node(Kind::tuple, start);
-  first->field = Field::f_item;
-  tup->add(first);
+  Ast* tup = node(Kind::tuple, start);
+  add_tuple_child(tup, first);
   while (accept(Token_kind::comma)) {
     while (at(Token_kind::comma)) advance();
     if (at(Token_kind::rparen)) break;
-    tup->add(parse_tuple_item(), Field::f_item);
+    add_tuple_child(tup, parse_tuple_item());
   }
   if (!at(Token_kind::rparen))
     error_unclosed("unclosed-paren", "expected ')' to close the tuple", "'(' opened here", start,
@@ -1142,7 +1356,7 @@ Ast* Parser::parse_tuple_sq() {
   Ast* sq = node(Kind::tuple_sq, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rbracket) && !eof()) {
-    sq->add(parse_tuple_item(), Field::f_item);
+    add_tuple_child(sq, parse_tuple_item());
     if (!accept(Token_kind::comma)) break;
     while (at(Token_kind::comma)) advance();
   }
@@ -1167,7 +1381,20 @@ Ast* Parser::parse_tuple_item(bool* plain) {
     Ast* tc   = nullptr;
     if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
       tc = parse_type_cast();
-    if (at_assignment_operator()) return finish_assignment(start, nullptr, decl, lv, tc);
+    if (at_assignment_operator()) {
+      // A typed field assignment folds name+type into a typed_identifier lvalue
+      // (tree-sitter parity — the consumer reads the per-field type there).
+      if (lv->kind == Kind::identifier && tc) {
+        Ast* ti   = node(Kind::typed_identifier, lv->start_byte);
+        lv->field = Field::f_identifier;
+        ti->add(lv);
+        ti->add(tc, Field::f_type);
+        finish(ti, lv->start_byte);
+        lv = ti;
+        tc = nullptr;
+      }
+      return finish_assignment(start, nullptr, decl, lv, tc);
+    }
     // no '=' : decl + typed_identifier (named field) | decl + expression (positional)
     if (tc || lv->kind == Kind::identifier) {
       Ast* ti  = node(Kind::typed_identifier, lv->start_byte);
@@ -1187,7 +1414,20 @@ Ast* Parser::parse_tuple_item(bool* plain) {
   Ast* tc = nullptr;
   if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && e->kind == Kind::identifier)
     tc = parse_type_cast();
-  if (at_assignment_operator()) return finish_assignment(start, nullptr, nullptr, e, tc);
+  if (at_assignment_operator()) {
+    // typed field assignment (`a:bool = nil`) folds name+type into a
+    // typed_identifier lvalue (tree-sitter parity).
+    if (e->kind == Kind::identifier && tc) {
+      Ast* ti   = node(Kind::typed_identifier, e->start_byte);
+      e->field  = Field::f_identifier;
+      ti->add(e);
+      ti->add(tc, Field::f_type);
+      finish(ti, e->start_byte);
+      e  = ti;
+      tc = nullptr;
+    }
+    return finish_assignment(start, nullptr, nullptr, e, tc);
+  }
   if (tc) {
     // typed_field: name : type
     Ast* tf  = node(Kind::typed_field, start);
@@ -1202,8 +1442,36 @@ Ast* Parser::parse_tuple_item(bool* plain) {
   return e;
 }
 
+void Parser::add_tuple_child(Ast* parent, Ast* it) {
+  // A decl-keyword tuple field with no '=' (`mut c:u24`, `mut 5`) is parsed as a
+  // var_or_let_or_reg with its typed_identifier / value nested; tree-sitter puts
+  // `decl:` and `lvalue:`/`value:` as TWO separate sibling fields on the tuple.
+  // Splice it apart. Everything else is a single positional `item:` child.
+  if (it->kind == Kind::var_or_let_or_reg) {
+    Ast*              payload = nullptr;
+    Field             pf      = Field::none;
+    std::vector<Ast*> kept;
+    kept.reserve(it->kids.size());
+    for (Ast* k : it->kids) {
+      if (k->field == Field::f_lvalue || k->field == Field::f_value) {
+        payload = k;
+        pf      = k->field;
+      } else {
+        kept.push_back(k);
+      }
+    }
+    it->kids = std::move(kept);
+    parent->add(it, Field::f_decl);
+    if (payload) parent->add(payload, pf);
+    return;
+  }
+  parent->add(it, Field::f_item);
+}
+
 Ast* Parser::parse_lvalue_item() {
   uint32_t start = cur().start_byte;
+  // Every lvalue_list entry is an `lvalue_item` wrapper (tree-sitter shape).
+  Ast* li = node(Kind::lvalue_item, start);
   // named_lvalue: name '=' (typed_identifier | dot_expression)
   if (cur().kind == Token_kind::ident && peek(1).kind == Token_kind::assign) {
     Ast* name = leaf(Kind::identifier);
@@ -1223,7 +1491,9 @@ Ast* Parser::parse_lvalue_item() {
     lv->field = Field::f_lvalue;
     nl->add(lv);
     finish(nl, start);
-    return nl;
+    li->add(nl);
+    finish(li, start);
+    return li;
   }
   Ast* e  = parse_postfix();
   Ast* tc = nullptr;
@@ -1234,14 +1504,81 @@ Ast* Parser::parse_lvalue_item() {
     ti->add(e);
     if (tc) ti->add(tc, Field::f_type);
     finish(ti, e->start_byte);
-    return ti;
+    li->add(ti);
+    finish(li, start);
+    return li;
   }
-  Ast* li  = node(Kind::lvalue_item, start);
+  // Complex lvalue (`a.b`, `arr[i]`): lvalue_item carries the location and type
+  // as direct fields (the grammar's inline `identifier`/`type` seq).
   e->field = Field::f_identifier;
   li->add(e);
   if (tc) li->add(tc, Field::f_type);
   finish(li, start);
   return li;
+}
+
+// Reinterpret a `tuple` parsed at statement start as an `lvalue_list` once a
+// trailing '=' confirms it is a destructuring-assignment LHS (`(a, x=b.c) =
+// rhs`). Each tuple item becomes an `lvalue_item`; a `name = local` item (parsed
+// optimistically as a nested assignment) becomes a `named_lvalue`.
+Ast* Parser::tuple_to_lvalue_list(Ast* tup) {
+  std::vector<Ast*> items;
+  items.reserve(tup->kids.size());
+  for (Ast* it : tup->kids) {
+    uint32_t s  = it->start_byte;
+    Ast*     li = node(Kind::lvalue_item, s);
+    if (it->kind == Kind::assignment) {
+      Ast* name = nullptr;
+      Ast* lv   = nullptr;
+      for (Ast* c : it->kids) {
+        if (c->field == Field::f_lvalue)
+          name = c;
+        else if (c->field == Field::f_rvalue)
+          lv = c;
+      }
+      if (name && name->kind == Kind::typed_identifier && !name->kids.empty())
+        name = name->kids.front();
+      if (lv && lv->kind == Kind::identifier) {
+        Ast* ti   = node(Kind::typed_identifier, lv->start_byte);
+        lv->field = Field::f_identifier;
+        ti->add(lv);
+        finish(ti, lv->start_byte);
+        lv = ti;
+      }
+      Ast* nl = node(Kind::named_lvalue, s);
+      if (name) {
+        name->field = Field::f_name;
+        nl->add(name);
+      }
+      if (lv) {
+        lv->field = Field::f_lvalue;
+        nl->add(lv);
+      }
+      finish(nl, s);
+      li->add(nl);
+    } else if (it->kind == Kind::identifier) {
+      Ast* ti   = node(Kind::typed_identifier, s);
+      it->field = Field::f_identifier;
+      ti->add(it);
+      finish(ti, s);
+      li->add(ti);
+    } else if (it->kind == Kind::typed_field) {
+      it->kind = Kind::typed_identifier;
+      li->add(it);
+    } else if (it->kind == Kind::typed_identifier) {
+      li->add(it);
+    } else {
+      // complex lvalue (dot_expression / member_selection / bit_selection)
+      it->field = Field::f_identifier;
+      li->add(it);
+    }
+    finish(li, s);
+    li->field = Field::f_item;
+    items.push_back(li);
+  }
+  tup->kind = Kind::lvalue_list;
+  tup->kids = std::move(items);
+  return tup;
 }
 
 Ast* Parser::parse_arg_tuple() {
@@ -1286,7 +1623,15 @@ Ast* Parser::parse_arg_item() {
 Ast* Parser::parse_if_expression() {
   uint32_t start = cur().start_byte;
   Ast*     ife = node(Kind::if_expression, start);
-  accept_kw(Keyword::kw_unique);
+  // `unique if` is an anonymous `unique` token in the grammar; emit it as an
+  // anonymous marker (the consumer reads its text to lower a `unique_if` →
+  // Hotmux instead of a priority mux chain).
+  if (at_kw(Keyword::kw_unique)) {
+    Ast* u  = arena_.make(Kind::identifier, cur().start_byte, cur().end_byte);
+    u->named = false;
+    ife->add(u);
+    advance();
+  }
   if (!accept_kw(Keyword::kw_if)) error("expected-if", "expected 'if'");
   // first branch (inline, no wrapper node): init?, condition, code
   {
@@ -1312,6 +1657,9 @@ Ast* Parser::parse_if_expression() {
   }
   while (at_kw(Keyword::kw_elif)) {
     advance();
+    // tree-sitter inlines each elif branch under the SAME field names as the
+    // leading if-arm (init / condition / code), not a distinct `elif` field —
+    // the consumer flattens all branches by those names.
     std::vector<Ast*> items;
     items.push_back(parse_tuple_item());
     while (at(Token_kind::semicolon)) {
@@ -1326,11 +1674,11 @@ Ast* Parser::parse_if_expression() {
       Ast* sl = node(Kind::stmt_list, items.front()->start_byte);
       for (Ast* it : items) sl->add(it, Field::f_item);
       finish(sl, sl->start_byte);
-      ife->add(sl, Field::f_elif);
+      ife->add(sl, Field::f_init);
     }
-    cond->field = Field::f_elif;
+    cond->field = Field::f_condition;
     ife->add(cond);
-    ife->add(parse_scope(), Field::f_elif);
+    ife->add(parse_scope(), Field::f_code);
   }
   if (accept_kw(Keyword::kw_else)) {
     ife->add(parse_scope(), Field::f_else);
@@ -1364,7 +1712,11 @@ Ast* Parser::parse_match_expression() {
   m->add(cond);
   expect(Token_kind::lbrace, "expected-brace", "expected '{' to open match body");
   while (!at(Token_kind::rbrace) && !eof() && !at_kw(Keyword::kw_else)) {
-    // optional leading case operator
+    // Optional leading arm operator (`== 1`, `< 5`, `case (..)`). In the grammar
+    // it is an anonymous token sharing the arm's `condition` field; emit it as an
+    // anonymous marker (get_text gives the operator) so the consumer can apply
+    // the implied comparison.
+    bool is_arm_op = false;
     switch (cur().kind) {
       case Token_kind::amp:
       case Token_kind::caret:
@@ -1375,15 +1727,20 @@ Ast* Parser::parse_match_expression() {
       case Token_kind::ge:
       case Token_kind::eq:
       case Token_kind::ne:
-        advance();
+        is_arm_op = true;
         break;
       default:
-        if (cur().is_kw(Keyword::kw_and) || cur().is_kw(Keyword::kw_or) ||
-            cur().is_kw(Keyword::kw_has) || cur().is_kw(Keyword::kw_case) ||
-            cur().is_kw(Keyword::kw_in) || cur().is_kw(Keyword::kw_equals) ||
-            cur().is_kw(Keyword::kw_does))
-          advance();
+        is_arm_op = cur().is_kw(Keyword::kw_and) || cur().is_kw(Keyword::kw_or) ||
+                    cur().is_kw(Keyword::kw_has) || cur().is_kw(Keyword::kw_case) ||
+                    cur().is_kw(Keyword::kw_in) || cur().is_kw(Keyword::kw_equals) ||
+                    cur().is_kw(Keyword::kw_does);
         break;
+    }
+    if (is_arm_op) {
+      Ast* op  = arena_.make(Kind::identifier, cur().start_byte, cur().end_byte);
+      op->named = false;
+      m->add(op, Field::f_condition);
+      advance();
     }
     m->add(parse_expression(), Field::f_condition);
     m->add(parse_scope(), Field::f_code);
@@ -1448,12 +1805,23 @@ Ast* Parser::parse_type() {
     return ts;
   }
   if (is_primitive_type_word(cur())) return parse_primitive_type();
-  // expression_type: identifier (dotted), constant, tuple, if/match, call
+  // expression_type: identifier (dotted), constant, tuple, if/match, call.
+  // tree-sitter wraps EVERY non-primitive type expression in an `expression_type`
+  // node (grammar rule `expression_type`); the consumer gates tuple-shape / inline
+  // type lowering on that wrapper, so reproduce it for the non-identifier forms
+  // too (the identifier/dotted form is wrapped in its own branch below).
   uint32_t start = cur().start_byte;
-  if (at(Token_kind::lparen)) return parse_paren();  // tuple type
-  if (at_constant()) return parse_constant();
-  if (at_kw(Keyword::kw_if) || at_kw(Keyword::kw_unique)) return parse_if_expression();
-  if (at_kw(Keyword::kw_match)) return parse_match_expression();
+  if (at(Token_kind::lparen) || at_constant() || at_kw(Keyword::kw_if) || at_kw(Keyword::kw_unique) ||
+      at_kw(Keyword::kw_match)) {
+    Ast* et    = node(Kind::expression_type, start);
+    Ast* inner = at(Token_kind::lparen)                                   ? parse_paren()
+                 : at_constant()                                          ? parse_constant()
+                 : (at_kw(Keyword::kw_if) || at_kw(Keyword::kw_unique))   ? parse_if_expression()
+                                                                          : parse_match_expression();
+    et->add(inner);
+    finish(et, start);
+    return et;
+  }
   if (cur().kind == Token_kind::ident) {
     Ast* et = node(Kind::expression_type, start);
     Ast* id = leaf(Kind::identifier);

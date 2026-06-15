@@ -82,8 +82,12 @@ TEST(Parser, ContinuationInsideParens) {
 }
 
 TEST(Parser, ParenGroupVsTuple) {
-  EXPECT_NE(sexp("x = (a)\n").find("paren_group"), std::string::npos);
+  // A bare `(a)` is a single-item tuple (tree-sitter parity); `paren_group` is
+  // emitted only when the parens head a suffix chain (`(a).foo`, `(a)#[..]`).
+  EXPECT_NE(sexp("x = (a)\n").find("(tuple"), std::string::npos);
+  EXPECT_EQ(sexp("x = (a)\n").find("paren_group"), std::string::npos);
   EXPECT_NE(sexp("x = (a, b)\n").find("(tuple"), std::string::npos);
+  EXPECT_NE(sexp("x = (a).foo\n").find("paren_group"), std::string::npos);
 }
 
 TEST(Parser, Destructuring) { EXPECT_TRUE(parses("const (x, b) = (true, c)\n")); }

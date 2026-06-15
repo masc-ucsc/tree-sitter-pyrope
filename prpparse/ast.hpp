@@ -19,6 +19,16 @@ struct Ast {
   Field             field = Field::none;  // role under its parent
   uint32_t          start_byte = 0;
   uint32_t          end_byte   = 0;  // exclusive
+  // tree-sitter distinguishes named nodes (grammar rules) from anonymous tokens
+  // (punctuation / keywords). prpparse omits anonymous tokens by default, but a
+  // few carry a FIELD the LiveHD consumer reads (arg-list `mod` = ref/reg/...,
+  // a match-arm condition operator). Those are emitted as marker nodes flagged
+  // `named = false`, so the node facade can replay tree-sitter's named/all-child
+  // distinction (named_child skips them; child includes them; is_named == false).
+  bool              named = true;
+  // Parent back-pointer (the facade's ts_node_parent / next_named_sibling). Set
+  // by link_parents() after the construct is fully built (handles re-parenting).
+  Ast*              parent = nullptr;
   std::vector<Ast*> kids;
 
   void add(Ast* child) {
@@ -32,6 +42,17 @@ struct Ast {
   }
   [[nodiscard]] bool empty_span() const { return end_byte <= start_byte; }
 };
+
+// Set every node's `parent` from the tree rooted at `root` (depth-first). Called
+// once after a top-level construct is parsed, so re-parenting done during the
+// parse (e.g. tuple -> lvalue_list) is reflected.
+inline void link_parents(Ast* root) {
+  if (!root) return;
+  for (Ast* k : root->kids) {
+    k->parent = root;
+    link_parents(k);
+  }
+}
 
 // Stable-address arena for Ast nodes.
 class Ast_arena {

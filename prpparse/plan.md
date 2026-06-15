@@ -172,8 +172,37 @@ parse-tree memory stays bounded (one construct) on a large concatenated input.
 
 ### Phase B — prp2lnast port onto the stream (in ../livehd, Phase-6 integration)
 
-Land **after** the pending livehd bug-fixes so the full regression is green
-before the front-end is replaced.
+**LANDED 2026-06-14** (all `inou/prp` tests green; full `bazel build //...`
+green). Implemented with a slightly different shape than the streaming seam
+sketched below: rather than porting prp2lnast's walk onto a per-construct `Ast`
+facade, prpparse's full-`Ast` tree is made to **byte-match tree-sitter's CST**,
+and a drop-in tree-sitter C-API facade (`../livehd/inou/prp/prp_ast_facade.hpp`,
+`struct TSNode{const Ast* a; const Source_buffer* buf;}` + reimplemented
+`ts_node_*`) lets the 9000-line `prp2lnast.cpp` walk it **unchanged**. The
+parser swap is `prp2lnast` ctor → `prpparse::Parser::parse_ast()`; the diag
+bridge maps `prpparse::Parse_error.diag` → the livehd sink. Streaming (no global
+tree) is NOT yet wired — `parse_ast()` returns the whole tree; that and the
+`Ast` arena reset stay future perf work (Phase A/S).
+
+Build wiring: `@prpparse` `new_local_repository(path=prpparse/,
+include_prefix=prpparse)` in `../livehd/MODULE.bazel`; prpparse's `diag.hpp`
+renamed `prp_diag.hpp` (it collided with livehd's bare `#include "diag.hpp"` —
+bazel `-iquote`s a dep's source root); hhds bumped to the commit carrying
+`Source_locator::span_minter`/`reserve`. `inou/prp` BUILD dep swapped
+tree-sitter → prpparse; `ts_traverse_test` (a tree-sitter-only debug binary) and
+the now-dead `check_parse_errors`/`find_first_*` ERROR-scan helpers were deleted.
+
+CST shape work needed for byte-parity (all in `parser.cpp`): operator tier
+wrappers, `constant` wrapper, negative-literal folding, `paren_group`→tuple,
+`lvalue_item`/`named_lvalue` + tuple→lvalue_list, interpolated-string hole
+sub-parsing, `expression_type` wrapper on non-identifier types, tuple-item
+`typed_identifier` + sibling-decl splice, elif fields = condition/code/init, and
+anonymous markers (named=false) for `mod`(ref/reg/...), match-arm op, and
+`unique` — the consumer reads those by source text. `wrap`/`sat` overflow stays
+node-less (recovered by prp2lnast's comment/brace-robust source gap-scan).
+`inou/slang` untouched, as expected.
+
+Original sketch (kept for reference — Phase A streaming seam still TODO):
 
 - Swap the tree-sitter front-end for prpparse: `walk_statement_block` pulls
   constructs from the parser stream; the node facade is over `Ast` (not hhds).
