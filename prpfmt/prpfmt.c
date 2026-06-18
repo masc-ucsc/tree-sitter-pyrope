@@ -3860,3 +3860,95 @@ static void ensure_match_arm_started(bool seen_lbrace, bool *arm_started) {
     *arm_started = true;
   }
 }
+
+/******************************************************************************
+ * Embeddable entry point (see prpfmt_api.h)                                  *
+ ******************************************************************************/
+
+#include "prpfmt_api.h"
+
+/* The generated parser's language hook (../src/parser.c). */
+const TSLanguage *tree_sitter_pyrope(void);
+
+int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_width, int verify, char **out_buf,
+                         size_t *out_len) {
+  if (out_buf) {
+    *out_buf = NULL;
+  }
+  if (out_len) {
+    *out_len = 0;
+  }
+  if (!src) {
+    return 1;
+  }
+
+  TSParser *parser = ts_parser_new();
+  if (!parser) {
+    return 1;
+  }
+  if (!ts_parser_set_language(parser, tree_sitter_pyrope())) {
+    ts_parser_delete(parser);
+    return 1;  // grammar/runtime ABI mismatch — treat as an internal error
+  }
+
+  TSTree *tree = ts_parser_parse_string(parser, NULL, src, (uint32_t)len);
+  TSNode  root = ts_tree_root_node(tree);
+  if (ts_node_has_error(root)) {
+    ts_tree_delete(tree);
+    ts_parser_delete(parser);
+    return 2;  // the input did not parse cleanly
+  }
+
+  PrpfmtState state = {
+      .source_code   = src,
+      .outfile       = NULL,
+      .indent_size   = indent_size > 0 ? indent_size : 4,
+      .max_width     = max_width > 0 ? max_width : 80,
+      .in_assert     = false,
+      .allow_inline  = false,
+      .nesting_level = 0,
+      .fmt_on        = true,
+      .inline_exp    = false,
+      .buffer        = {.data = NULL, .size = 0, .capacity = 0},
+  };
+
+  char  *buf = NULL;
+  size_t sz  = 0;
+  FILE  *mem = open_memstream(&buf, &sz);
+  if (!mem) {
+    ts_tree_delete(tree);
+    ts_parser_delete(parser);
+    return 1;
+  }
+  state.outfile = mem;
+
+  print_description(tree, &state);
+  prpfmt_solve(&state);
+  prpfmt_render(&state);
+  prpfmt_free_buffer(&state);
+
+  fflush(mem);
+  fclose(mem);  // open_memstream NUL-terminates buf at sz (terminator not counted)
+
+  int rc = 0;
+  if (verify) {
+    TSTree *vtree = ts_parser_parse_string(parser, NULL, buf, (uint32_t)sz);
+    if (ts_node_has_error(ts_tree_root_node(vtree))) {
+      rc = 3;  // formatted output no longer parses — flag it, still return the buffer
+    }
+    ts_tree_delete(vtree);
+  }
+
+  ts_tree_delete(tree);
+  ts_parser_delete(parser);
+
+  if (out_buf) {
+    *out_buf = buf;
+  } else {
+    free(buf);
+  }
+  if (out_len) {
+    *out_len = sz;
+  }
+  return rc;
+}
