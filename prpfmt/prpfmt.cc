@@ -3698,7 +3698,7 @@ static void ensure_match_arm_started(bool seen_lbrace, bool &arm_started) {
 #include "prpfmt_api.h"
 
 /* The generated parser's language hook (../src/parser.c). */
-const TSLanguage *tree_sitter_pyrope(void);
+extern "C" const TSLanguage *tree_sitter_pyrope(void);
 
 int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_width, int verify, char **out_buf,
                          size_t *out_len) {
@@ -3739,7 +3739,7 @@ int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_w
       .nesting_level = 0,
       .fmt_on        = true,
       .inline_exp    = false,
-      .buffer        = {.data = NULL, .size = 0, .capacity = 0},
+      .buffer        = {},
   };
 
   char  *buf = NULL;
@@ -3752,10 +3752,9 @@ int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_w
   }
   state.outfile = mem;
 
-  print_description(tree, &state);
-  prpfmt_solve(&state);
-  prpfmt_render(&state);
-  prpfmt_free_buffer(&state);
+  print_description(tree, state);
+  prpfmt_solve(state);
+  prpfmt_render(state);
 
   fflush(mem);
   fclose(mem);  // open_memstream NUL-terminates buf at sz (terminator not counted)
