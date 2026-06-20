@@ -157,10 +157,41 @@ std::pair<Token_kind, int> match_operator(const char* b, uint32_t n, uint32_t i)
   }
 }
 
+// A continuation line that begins with a binary WORD-operator (`and`, `or`,
+// `implies`, `has`, `in`, `case`, `does`, `equals`) continues the previous
+// expression, exactly like a line beginning with a symbolic operator (`+`,
+// `|`, `==`) does below. Without this, the word would be mis-lexed as the start
+// of a NEW statement, so a long boolean chain split across lines —
+//   z = (a and b)
+//    or (c and d)
+// — would silently drop every term after the first (the leading `or` became a
+// stray `or(...)` call). The match MUST be the whole word: `order`, `index`,
+// `cases`, `inner` are ordinary identifiers, not `or`/`in`/`case`. `step` is
+// deliberately excluded — it also heads a `test`-block `step [n]` statement.
+bool word_op_continues(const char* b, uint32_t n, uint32_t off) {
+  auto eq = [&](const char* w, uint32_t len) {
+    for (uint32_t k = 0; k < len; ++k)
+      if (off + k >= n || b[off + k] != w[k]) return false;
+    uint32_t end = off + len;  // require a word boundary after the operator
+    return end >= n || !is_ident_cont(b[end]);
+  };
+  switch (off < n ? b[off] : '\0') {
+    case 'a': return eq("and", 3);
+    case 'o': return eq("or", 2);
+    case 'i': return eq("implies", 7) || eq("in", 2);
+    case 'h': return eq("has", 3);
+    case 'c': return eq("case", 4);
+    case 'd': return eq("does", 4);
+    case 'e': return eq("equals", 6);  // `else`/`elif` fall through to scanner_switch
+    default:  return false;
+  }
+}
+
 // scanner.c continuation FSM (lines 87-126), applied to the first byte(s) of
 // the next token after a newline. Returns true => emit terminator.
 bool scanner_switch(const char* b, uint32_t n, uint32_t off) {
   auto at = [&](uint32_t k) -> char { return (off + k < n) ? b[off + k] : '\0'; };
+  if (word_op_continues(b, n, off)) return false;
   switch (at(0)) {
     case ',': case '=': case '.': case '>': case '<': case '&':
     case '^': case '|': case '*': case '/': case '+': case '-':
