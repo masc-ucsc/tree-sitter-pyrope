@@ -302,8 +302,7 @@ module.exports = grammar({
         )), $._expression))
         , field('code', $.scope_statement)
       )))
-      , 'else'
-      , field('else_code', $.scope_statement)
+      , optseq('else', field('else_code', $.scope_statement))
       , '}'
     )
     , test_statement: $ => seq(
@@ -395,7 +394,7 @@ module.exports = grammar({
 
     , _tuple_list: $ => prec('_tuple_list', listseq1(field('item', $._tuple_item)))
     // Overparse: tuple-literal fields require a kind keyword
-    // (`mut`/`const`/`reg`/`comb`/...); bare `a = 1` parses here because the
+    // (`mut`/`const`/`wire`/`reg`/`comb`/...); bare `a = 1` parses here because the
     // same node also models named call arguments and typed construction fields.
     // See grammar_overparse.md #3.
     , _tuple_item: $ => choice(
@@ -414,7 +413,8 @@ module.exports = grammar({
       )
       // Positional tuple field with explicit mutability override:
       // `(1, const 3)` / `(mut 3, 4)`. Per 04-variables.md, only `const` /
-      // `mut` are meaningful here, but the grammar overparses and accepts
+      // `mut` are meaningful here (not `wire`/`reg`), but the grammar
+      // overparses and accepts
       // any var_or_let_or_reg prefix; the semantic pass narrows it.
       , prec(-1, seq(
         field('decl', $.var_or_let_or_reg)
@@ -481,6 +481,7 @@ module.exports = grammar({
     , _storage_kind: $ => choice(
       alias('const', $.const_decl)
       , alias('mut', $.mut_decl)
+      , alias('wire', $.wire_decl)
       , alias('reg', $.reg_decl)
       , $.stage_decl
     )

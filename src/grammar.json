@@ -871,16 +871,29 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "else"
-        },
-        {
-          "type": "FIELD",
-          "name": "else_code",
-          "content": {
-            "type": "SYMBOL",
-            "name": "scope_statement"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "else"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "else_code",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "scope_statement"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "STRING",
@@ -2020,6 +2033,15 @@
           },
           "named": true,
           "value": "mut_decl"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "wire"
+          },
+          "named": true,
+          "value": "wire_decl"
         },
         {
           "type": "ALIAS",

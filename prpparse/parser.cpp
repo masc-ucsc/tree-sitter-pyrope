@@ -260,6 +260,7 @@ bool Parser::is_decl_keyword(const Token& t) const {
     case Keyword::kw_const:
     case Keyword::kw_mut:
     case Keyword::kw_reg:
+    case Keyword::kw_wire:
     case Keyword::kw_stage:
       return true;
     default:
@@ -670,6 +671,7 @@ Ast* Parser::parse_var_or_let_or_reg() {
     if (at_kw(Keyword::kw_const)) v->add(leaf(Kind::const_decl), Field::f_storage);
     else if (at_kw(Keyword::kw_mut)) v->add(leaf(Kind::mut_decl), Field::f_storage);
     else if (at_kw(Keyword::kw_reg)) v->add(leaf(Kind::reg_decl), Field::f_storage);
+    else if (at_kw(Keyword::kw_wire)) v->add(leaf(Kind::wire_decl), Field::f_storage);
     else if (at_kw(Keyword::kw_stage)) {
       Ast* st = node(Kind::stage_decl, cur().start_byte);
       advance();
@@ -683,6 +685,8 @@ Ast* Parser::parse_var_or_let_or_reg() {
     v->add(leaf(Kind::mut_decl), Field::f_storage);
   } else if (at_kw(Keyword::kw_reg)) {
     v->add(leaf(Kind::reg_decl), Field::f_storage);
+  } else if (at_kw(Keyword::kw_wire)) {
+    v->add(leaf(Kind::wire_decl), Field::f_storage);
   } else if (at_kw(Keyword::kw_stage)) {
     Ast* st = node(Kind::stage_decl, cur().start_byte);
     advance();
@@ -1737,6 +1741,7 @@ Ast* Parser::parse_match_expression() {
   cond->field = Field::f_condition;
   m->add(cond);
   expect(Token_kind::lbrace, "expected-brace", "expected '{' to open match body");
+  uint32_t arm_count = 0;
   while (!at(Token_kind::rbrace) && !eof() && !at_kw(Keyword::kw_else)) {
     // Optional leading arm operator (`== 1`, `< 5`, `case (..)`). In the grammar
     // it is an anonymous token sharing the arm's `condition` field; emit it as an
@@ -1770,9 +1775,25 @@ Ast* Parser::parse_match_expression() {
     }
     m->add(parse_expression(), Field::f_condition);
     m->add(parse_scope(), Field::f_code);
+    ++arm_count;
   }
-  if (!accept_kw(Keyword::kw_else)) error("expected-else", "expected 'else' clause in match");
-  m->add(parse_scope(), Field::f_else_code);
+  // A `match` must branch on something: at least one arm is required. A bare
+  // `match x { }` (and the degenerate else-only `match x { else {…} }`) is
+  // meaningless — flag it with a clean syntax error instead of letting an
+  // armless `unique_if` slip downstream into an opaque "undriven result" /
+  // internal error.
+  if (arm_count == 0) {
+    error("empty-match", "match has no arms — add at least one `== value { … }` arm");
+  }
+  // `else` is OPTIONAL. A match whose arms cover the full key space (e.g. a
+  // `u2` selector with `==0 ==1 ==2 ==3`) needs no else. When omitted the
+  // unmatched case is by definition unreachable: in hardware it is a
+  // don't-care (the Hotmux none-of slot keeps the pre-match value), and at
+  // comptime a constant selector that somehow misses every arm leaves the
+  // result undriven — equivalent to an implicit `else { assert(false) }`.
+  if (accept_kw(Keyword::kw_else)) {
+    m->add(parse_scope(), Field::f_else_code);
+  }
   expect(Token_kind::rbrace, "unclosed-scope", "expected '}' to close match");
   finish(m, start);
   return m;
