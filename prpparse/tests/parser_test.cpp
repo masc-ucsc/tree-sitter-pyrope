@@ -60,6 +60,19 @@ TEST(Parser, Match) {
   EXPECT_TRUE(parses("y = match x {\n  == 0 { 1 }\n  == 1 { 2 }\n  else { 3 }\n}\n"));
 }
 
+// `else` is optional: an exhaustive match (e.g. every value of a bounded key)
+// needs no else — the unmatched case is an unreachable don't-care.
+TEST(Parser, MatchNoElse) {
+  EXPECT_TRUE(parses("y = match x {\n  == 0 { 1 }\n  == 1 { 2 }\n  == 2 { 3 }\n  == 3 { 4 }\n}\n"));
+}
+
+// A match must have at least one arm — a bare `match x { }` (or else-only) is
+// a syntax error, not an armless unique_if slipping downstream.
+TEST(Parser, MatchEmptyRejected) {
+  EXPECT_FALSE(parses("y = match x {\n}\n"));
+  EXPECT_FALSE(parses("y = match x {\n  else { 1 }\n}\n"));
+}
+
 TEST(Parser, Lambda) {
   EXPECT_TRUE(parses("comb f(a:u8, b:u8) -> (c:u8) {\n  c = a + b\n}\n"));
 }

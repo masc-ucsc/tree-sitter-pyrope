@@ -143,5 +143,6 @@ PRP_NODE(unary_expression)
 PRP_NODE(unknown_literal)
 PRP_NODE(var_or_let_or_reg)
 PRP_NODE(while_statement)
+PRP_NODE(wire_decl)
 PRP_NODE(zero_extend)
 #undef PRP_NODE

@@ -3113,7 +3113,7 @@
       },
       "else_code": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "scope_statement",
@@ -5060,6 +5060,10 @@
           {
             "type": "stage_decl",
             "named": true
+          },
+          {
+            "type": "wire_decl",
+            "named": true
           }
         ]
       }
@@ -5687,6 +5691,10 @@
   {
     "type": "while",
     "named": false
+  },
+  {
+    "type": "wire_decl",
+    "named": true
   },
   {
     "type": "wrap",
