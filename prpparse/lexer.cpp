@@ -184,11 +184,11 @@ bool scanner_switch(const char* b, uint32_t n, uint32_t off) {
 
 }  // namespace
 
-void Lexer::error(std::string code, std::string message, uint32_t start, uint32_t end) const {
+void Lexer::error(const char* code, const std::string& message, uint32_t start, uint32_t end) const {
   Diag d;
-  d.code     = std::move(code);
+  d.code     = code;
   d.category = std::string(kCategorySyntax);
-  d.message  = std::move(message);
+  d.message  = message;
   d.span     = make_span(start, end);
   throw Parse_error(std::move(d));
 }

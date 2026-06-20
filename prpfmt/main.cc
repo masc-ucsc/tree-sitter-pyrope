@@ -1,10 +1,27 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <memory>
+#include <string>
 #include <tree_sitter/api.h>
 
 #include "prpfmt.h"
+
+// The generated parser exports this with C linkage; declare it as such so the
+// C++ linker resolves the unmangled symbol from parser.o.
+extern "C" const TSLanguage *tree_sitter_pyrope(void);
+
+// RAII deleters so the tree-sitter parser/tree free themselves instead of
+// needing a hand-rolled cleanup() reached from every error path.
+struct TSParserDelete {
+  void operator()(TSParser *p) const noexcept { ts_parser_delete(p); }
+};
+struct TSTreeDelete {
+  void operator()(TSTree *t) const noexcept { ts_tree_delete(t); }
+};
+using ParserPtr = std::unique_ptr<TSParser, TSParserDelete>;
+using TreePtr = std::unique_ptr<TSTree, TSTreeDelete>;
 
 double get_time_ms() {
   struct timespec ts;
@@ -24,11 +41,9 @@ void print_help() {
   printf("  -h, --help        Display this help message.\n");
 }
 
-char *file_to_string(char *infile) {
-  char *buffer;
+// Read the whole file into an owned std::string (RAII; no manual malloc/free).
+std::string file_to_string(const char *infile) {
   FILE *fp = fopen(infile, "r");
-
-  // Attempt to open file
   if (!fp) {
     perror(infile);
     exit(1);
@@ -39,43 +54,20 @@ char *file_to_string(char *infile) {
   long l_size = ftell(fp);
   rewind(fp);
 
-  // Allocate memory for file content
-  buffer = malloc(l_size + 1);
-  if (!buffer) {
-    fclose(fp);
-    fprintf(stderr, "Memory allocation failed");
-    exit(1);
+  // Read file content. fread returns 0 for a zero-length file, which is not an
+  // error: an empty source is a valid (empty) program.
+  std::string buffer;
+  if (l_size > 0) {
+    buffer.resize((size_t)l_size);
+    if (fread(buffer.data(), (size_t)l_size, 1, fp) != 1) {
+      fclose(fp);
+      fprintf(stderr, "File read failed");
+      exit(1);
+    }
   }
 
-  // Read file content into buffer. fread returns 0 for a zero-length file,
-  // which is not an error: an empty source is a valid (empty) program.
-  if (l_size > 0 && fread(buffer, l_size, 1, fp) != 1) {
-    fclose(fp);
-    free(buffer);
-    fprintf(stderr, "File read failed");
-    exit(1);
-  }
-
-  buffer[l_size] = '\0';
   fclose(fp);
-
   return buffer;
-}
-
-void cleanup(char *source_code, TSTree *tree, TSParser *parser, FILE *outfile) {
-  // Free any allocated memory
-  if (source_code) {
-    free(source_code);
-  }
-  if (tree) {
-    ts_tree_delete(tree);
-  }
-  if (parser) {
-    ts_parser_delete(parser);
-  }
-  if (outfile && outfile != stdout) {
-    fclose(outfile);
-  }
 }
 
 int main(int argc, char **argv) {
@@ -91,9 +83,9 @@ int main(int argc, char **argv) {
     print_help();
     return 0;
   }
-  
-  char *infile_path = argv[1];
-  char *outfile_path = NULL;
+
+  const char *infile_path = argv[1];
+  const char *outfile_path = nullptr;
   int indent_size = 4;
   int max_width = 80;
   bool verify_output = false;
@@ -138,7 +130,7 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-  
+
   // Set output file
   FILE *outfile = stdout;
   if (outfile_path) {
@@ -150,60 +142,59 @@ int main(int argc, char **argv) {
   }
 
   // Tree-sitter parser initialization
-  TSLanguage *tree_sitter_pyrope();
-  TSParser *parser = ts_parser_new();
-  if (!ts_parser_set_language(parser, tree_sitter_pyrope())) {
+  ParserPtr parser(ts_parser_new());
+  if (!ts_parser_set_language(parser.get(), tree_sitter_pyrope())) {
     fprintf(stderr, "Error: the language was generated with an "
                     "incompatible version of the tree-sitter CLI.\n");
-    cleanup(NULL, NULL, parser, outfile);
     exit(1);
   }
 
   // Parse the source code
-  char *source_code = file_to_string(infile_path);
-  
+  std::string source_code = file_to_string(infile_path);
+
   double parse_start = 0, parse_end = 0;
   if (run_benchmark) parse_start = get_time_ms();
-  
-  TSTree *tree =
-      ts_parser_parse_string(parser, NULL, source_code, strlen(source_code));
+
+  TreePtr tree(ts_parser_parse_string(parser.get(), nullptr,
+                                      source_code.data(), source_code.size()));
 
   if (run_benchmark) parse_end = get_time_ms();
 
   // Check if tree has any ERROR or MISSING nodes
-  TSNode root = ts_tree_root_node(tree);
+  TSNode root = ts_tree_root_node(tree.get());
 
   if (ts_node_has_error(root)) {
     fprintf(stderr, "Error: the provided code was unable to be parsed.\n"
                     "Run: `tree-sitter parse -c /path/to/file` and look"
                     " for MISSING or ERROR nodes.\n");
-    cleanup(source_code, tree, parser, outfile);
-    exit(2);
+    if (outfile != stdout) fclose(outfile);
+    return 2;  // RAII frees parser/tree/source_code on the way out
   }
-// Initialize state
-PrpfmtState state = {
-  .source_code = source_code,
-  .outfile = outfile,
-  .indent_size = indent_size,
-  .max_width = max_width,
-  .in_assert = false,
-  .allow_inline = false,
-  .nesting_level = 0,
-  .fmt_on = true,
-  .inline_exp = false,
-  .buffer = { .data = NULL, .size = 0, .capacity = 0 }
-};
+
+  // Initialize state
+  PrpfmtState state = {
+    .source_code = source_code,
+    .outfile = outfile,
+    .indent_size = indent_size,
+    .max_width = max_width,
+    .in_assert = false,
+    .allow_inline = false,
+    .nesting_level = 0,
+    .fmt_on = true,
+    .inline_exp = false,
+    .buffer = {},
+  };
 
   double format_start = 0, format_end = 0;
   if (run_benchmark) format_start = get_time_ms();
 
-  print_description(tree, &state);
-  prpfmt_solve(&state);
+  print_description(tree.get(), state);
+  prpfmt_solve(state);
 
   bool parse_error = false;
   if (verify_output) {
     // Render to a memory buffer first to verify the output
-    char *formatted_buf = NULL;
+    char *formatted_buf = nullptr;
     size_t formatted_size = 0;
     FILE *mem_stream = open_memstream(&formatted_buf, &formatted_size);
     if (!mem_stream) {
@@ -213,15 +204,15 @@ PrpfmtState state = {
 
     // Temporary swap outfile to capture render
     state.outfile = mem_stream;
-    prpfmt_render(&state);
+    prpfmt_render(state);
     if (run_benchmark) format_end = get_time_ms();
     fclose(mem_stream);
 
     // Verify the formatted output
-    TSTree *verify_tree = ts_parser_parse_string(parser, NULL, formatted_buf, formatted_size);
-    TSNode verify_root = ts_tree_root_node(verify_tree);
-    parse_error = ts_node_has_error(verify_root);
-    
+    TreePtr verify_tree(ts_parser_parse_string(parser.get(), nullptr,
+                                               formatted_buf, formatted_size));
+    parse_error = ts_node_has_error(ts_tree_root_node(verify_tree.get()));
+
     // Now write to the actual destination
     if (outfile == stdout) {
       printf("%s", formatted_buf);
@@ -237,23 +228,20 @@ PrpfmtState state = {
       fprintf(stderr, "----------------------------------------------------------------\n\n");
     }
 
-    ts_tree_delete(verify_tree);
-    free(formatted_buf);
+    free(formatted_buf);  // open_memstream allocates with malloc; free is required
   } else {
     // Direct rendering to outfile
-    prpfmt_render(&state);
+    prpfmt_render(state);
     if (run_benchmark) format_end = get_time_ms();
   }
-
-  prpfmt_free_buffer(&state);
 
   if (run_benchmark) {
     double parse_time = parse_end - parse_start;
     double format_time = format_end - format_start;
     double total_time = parse_time + format_time;
-    size_t file_bytes = strlen(source_code);
+    size_t file_bytes = source_code.size();
     double mb_per_sec = (file_bytes / 1024.0 / 1024.0) / (total_time / 1000.0);
-    
+
     fprintf(stderr, "\nBenchmark Results:\n");
     fprintf(stderr, "------------------\n");
     fprintf(stderr, "File Size:   %.2f KB\n", file_bytes / 1024.0);
@@ -263,8 +251,7 @@ PrpfmtState state = {
     fprintf(stderr, "Throughput:  %.2f MB/s\n\n", mb_per_sec);
   }
 
-  // Free memory
-  cleanup(source_code, tree, parser, outfile);
+  if (outfile != stdout) fclose(outfile);
 
   return parse_error ? 3 : 0;
 }

@@ -53,7 +53,9 @@ private:
   void compute_terminators(std::vector<Token>& toks) const;
   bool gap_terminates(uint32_t gap_start, const Token& cur) const;
 
-  [[noreturn]] void error(std::string code, std::string message, uint32_t start, uint32_t end) const;
+  // Matches Parser::error's convention: code is always a string literal, message
+  // may be built by the caller. Throws Parse_error (fail-fast).
+  [[noreturn]] void error(const char* code, const std::string& message, uint32_t start, uint32_t end) const;
   Span make_span(uint32_t start, uint32_t end) const;
 };
 

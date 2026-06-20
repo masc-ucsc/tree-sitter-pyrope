@@ -46,15 +46,19 @@ private:
   int  ebd_ = 0;
   bool term_stop() const { return ebd_ == 0 && cur().terminator_before; }
   struct Bracket_guard {
-    Parser* p;
-    explicit Bracket_guard(Parser* pp) : p(pp) { ++p->ebd_; }
-    ~Bracket_guard() { --p->ebd_; }
+    Parser& p;
+    explicit Bracket_guard(Parser& pp) : p(pp) { ++p.ebd_; }
+    ~Bracket_guard() { --p.ebd_; }
+    Bracket_guard(const Bracket_guard&)            = delete;
+    Bracket_guard& operator=(const Bracket_guard&) = delete;
   };
   struct Scope_guard {
-    Parser* p;
+    Parser& p;
     int     saved;
-    explicit Scope_guard(Parser* pp) : p(pp), saved(pp->ebd_) { pp->ebd_ = 0; }
-    ~Scope_guard() { p->ebd_ = saved; }
+    explicit Scope_guard(Parser& pp) : p(pp), saved(pp.ebd_) { pp.ebd_ = 0; }
+    ~Scope_guard() { p.ebd_ = saved; }
+    Scope_guard(const Scope_guard&)            = delete;
+    Scope_guard& operator=(const Scope_guard&) = delete;
   };
 
   // ---- cursor ----
@@ -148,7 +152,8 @@ private:
   Ast* parse_atom();
   Ast* parse_paren();
   Ast* parse_tuple_sq();
-  Ast* parse_tuple_item(bool* plain = nullptr);
+  Ast* parse_tuple_item();             // common form; classification discarded
+  Ast* parse_tuple_item(bool& plain);  // sets `plain` = item was a bare expression
   // Add one parsed tuple item to `parent`, splicing a decl-keyword no-`=` field
   // into separate decl: / lvalue:|value: siblings (tree-sitter shape).
   void add_tuple_child(Ast* parent, Ast* it);

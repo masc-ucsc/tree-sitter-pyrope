@@ -11,8 +11,9 @@ Read this before changing the grammar or the surrounding subsystems.
 - **Editor schemes** — `editors/nvim/pyrope.lua` + `queries/`. Both `queries/`
   and the grammar must stay at the repo root: `tree-sitter.json` and the
   nvim-treesitter `install_info` reference them by repo-relative path.
-- **prpfmt** — `prpfmt/`, a C formatter that links the generated parser
-  directly. Self-contained; see `prpfmt/README.md`.
+- **prpfmt** — `prpfmt/`, a C++20 formatter that links the generated parser
+  directly (`*.cc` built as C++20; `parser.c`/`scanner.c` linked in as C).
+  Self-contained; see `prpfmt/README.md`.
 - **prpparse** — `prpparse/`, a hand-written recursive-descent Pyrope parser
   (bazel/C++23) producing an `hhds` tree, built to replace tree-sitter as the
   LiveHD front-end. Uses this grammar as a differential oracle (accepts exactly

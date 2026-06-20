@@ -2,7 +2,7 @@
 #
 # Subsystems (each can be built/tested on its own; `make test` runs them all):
 #   grammar   tree-sitter grammar (grammar.js -> src/parser.c) + editor queries
-#   prpfmt    Pyrope formatter (C, links the generated parser) -> prpfmt/
+#   prpfmt    Pyrope formatter (C++20, links the generated parser) -> prpfmt/
 #   prpparse  recursive-descent parser for LiveHD (bazel; design only so far)
 #
 # Quick start:

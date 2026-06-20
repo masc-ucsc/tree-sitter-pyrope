@@ -424,7 +424,7 @@ Ast* Parser::parse_statement() {
 Ast* Parser::parse_scope() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lbrace, "expected-brace", "expected '{'");
-  Scope_guard _sg(this);
+  Scope_guard _sg(*this);
   Ast* sc = node(Kind::scope_statement, start);
   while (!at(Token_kind::rbrace) && !eof()) {
     sc->add(parse_statement());
@@ -733,7 +733,7 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       Ast*              list = node(Kind::lvalue_list, cur().start_byte);
       std::vector<Ast*> items;
       {
-        Bracket_guard _bg(this);
+        Bracket_guard _bg(*this);
         while (at(Token_kind::comma)) advance();
         while (!at(Token_kind::rparen) && !eof()) {
           items.push_back(parse_lvalue_item());
@@ -906,7 +906,7 @@ Ast* Parser::parse_function_definition_decl() {
 Ast* Parser::parse_arg_list() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lparen, "expected-paren", "expected '(' to open argument list");
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* al = node(Kind::arg_list, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rparen) && !eof()) {
@@ -1155,7 +1155,7 @@ Ast* Parser::parse_postfix_from(Ast* e) {
 Ast* Parser::try_generic_call(Ast* fn) {
   size_t save = pos_;
   advance();  // '<'
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   // generic_type_list: type (',' type)*, then '>' immediately followed by '('
   Ast* list = node(Kind::generic_type_list, cur().start_byte);
   bool ok    = true;
@@ -1292,22 +1292,30 @@ Ast* Parser::parse_istring() {
 }
 
 Ast* Parser::parse_subexpr(uint32_t lo, uint32_t hi) {
-  Lexer              sub(buf_);
-  std::vector<Token> st         = sub.tokenize_range(lo, hi);
-  std::vector<Token> saved_toks = std::move(toks_);
-  size_t             saved_pos  = pos_;
-  int                saved_ebd  = ebd_;
-  toks_                         = std::move(st);
-  pos_                          = 0;
-  ebd_                          = 1;  // inside a hole: no virtual-semicolon termination
-  Ast* e                        = nullptr;
-  if (!eof()) {
-    e = parse_expression();
-  }
-  toks_ = std::move(saved_toks);
-  pos_  = saved_pos;
-  ebd_  = saved_ebd;
-  return e;
+  // Swap in the hole's token stream for the duration of the sub-parse. The RAII
+  // guard restores toks_/pos_/ebd_ on every exit path, including if
+  // parse_expression() throws a Parse_error (the manual restore below used to be
+  // skipped on throw -- harmless under fail-fast today, but exception-unsafe).
+  struct State_guard {
+    Parser&            p;
+    std::vector<Token> toks;
+    size_t             pos;
+    int                ebd;
+    explicit State_guard(Parser& pp) : p(pp), toks(std::move(pp.toks_)), pos(pp.pos_), ebd(pp.ebd_) {}
+    ~State_guard() {
+      p.toks_ = std::move(toks);
+      p.pos_  = pos;
+      p.ebd_  = ebd;
+    }
+    State_guard(const State_guard&)            = delete;
+    State_guard& operator=(const State_guard&) = delete;
+  } guard(*this);
+
+  Lexer sub(buf_);
+  toks_ = sub.tokenize_range(lo, hi);
+  pos_  = 0;
+  ebd_  = 1;  // inside a hole: no virtual-semicolon termination
+  return eof() ? nullptr : parse_expression();
 }
 
 Ast* Parser::parse_complex_identifier() { return parse_postfix(); }
@@ -1327,7 +1335,7 @@ Ast* Parser::parse_ref_identifier() {
 Ast* Parser::parse_paren() {
   uint32_t start = cur().start_byte;
   advance();  // '('
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   while (at(Token_kind::comma)) advance();
   if (at(Token_kind::rparen)) {
     advance();
@@ -1336,7 +1344,7 @@ Ast* Parser::parse_paren() {
     return tup;
   }
   bool plain = false;
-  Ast* first = parse_tuple_item(&plain);
+  Ast* first = parse_tuple_item(plain);
   if (plain && at(Token_kind::rparen)) {
     advance();
     Ast* pg = node(Kind::paren_group, start);
@@ -1362,7 +1370,7 @@ Ast* Parser::parse_paren() {
 Ast* Parser::parse_tuple_sq() {
   uint32_t start = cur().start_byte;
   advance();  // '['
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* sq = node(Kind::tuple_sq, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rbracket) && !eof()) {
@@ -1378,8 +1386,13 @@ Ast* Parser::parse_tuple_sq() {
   return sq;
 }
 
-Ast* Parser::parse_tuple_item(bool* plain) {
-  if (plain) *plain = false;
+Ast* Parser::parse_tuple_item() {
+  bool plain = false;  // common callers don't need the classification
+  return parse_tuple_item(plain);
+}
+
+Ast* Parser::parse_tuple_item(bool& plain) {
+  plain = false;
   uint32_t start = cur().start_byte;
 
   if (at_kw(Keyword::kw_ref)) return parse_ref_identifier();
@@ -1448,7 +1461,7 @@ Ast* Parser::parse_tuple_item(bool* plain) {
     finish(tf, start);
     return tf;
   }
-  if (plain) *plain = true;
+  plain = true;
   return e;
 }
 
@@ -1594,7 +1607,7 @@ Ast* Parser::tuple_to_lvalue_list(Ast* tup) {
 Ast* Parser::parse_arg_tuple() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lparen, "expected-paren", "expected '(' to open arguments");
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* at_ = node(Kind::arg_tuple, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rparen) && !eof()) {
@@ -1913,7 +1926,7 @@ Ast* Parser::parse_typed_identifier_list() {
 Ast* Parser::parse_attribute_sq() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lbracket, "expected-bracket", "expected '[' to open attributes");
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* sq = node(Kind::attribute_sq, start);
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::rbracket) && !eof()) {
@@ -1956,7 +1969,7 @@ Ast* Parser::parse_attribute_list() {
 Ast* Parser::parse_select() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lbracket, "expected-bracket", "expected '['");
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* sel = node(Kind::select, start);
   if (!at(Token_kind::rbracket)) {
     if (at(Token_kind::dotdot) || at(Token_kind::range_incl) || at(Token_kind::range_excl)) {
@@ -1999,7 +2012,7 @@ Ast* Parser::parse_selection_range_or_index(Kind /*container*/) {
 Ast* Parser::parse_timing_slot() {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lbracket, "expected-bracket", "expected '[' for timing");
-  Bracket_guard _bg(this);
+  Bracket_guard _bg(*this);
   Ast* ts = node(Kind::timing_slot, start);
   if (!at(Token_kind::rbracket)) {
     if (at(Token_kind::dotdot) || at(Token_kind::range_incl) || at(Token_kind::range_excl)) {

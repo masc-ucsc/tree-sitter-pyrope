@@ -1,10 +1,12 @@
 #ifndef PRP_IR_H
 #define PRP_IR_H
 
-#include <stdio.h>
-#include <stdbool.h>
+#include <cstdio>
+#include <string>
+#include <string_view>
+#include <vector>
 
-typedef enum {
+enum TokenType {
   TOKEN_TEXT,               // Literal source text (identifiers, keywords, etc.)
   TOKEN_SPACE,              // A mandatory space
   TOKEN_NEWLINE,            // A mandatory blank line
@@ -24,58 +26,59 @@ typedef enum {
   TOKEN_ANCHOR,             // Sets a vertical anchor for hanging indent without aligning
   TOKEN_ANCHOR_OFF,         // Explicitly disables the current anchor
   TOKEN_FORCE_BREAK         // Forces a newline
-} TokenType;
+};
 
-typedef struct {
-  TokenType type;
-  char *text;
-  bool exploded;           // For Groups: should this group wrap?
-  bool propagates;         // For Groups: should explosion propagate to children?
-  int target_col;          // For Alignment: which column should we jump to?
-  int penalty;             // For Break Points: cost of breaking here
-  int pre_flat_length;     // Metric: flat length of group
-  int pre_explode_cost;    // Metric: total penalty of exploded children
-  int pre_force_counter;   // Metric: tracks mandatory breaks inside
-  int pre_group_end;       // Metric: index of matching group end
-} Token;
+// A single IR token. `text` is empty for tokens that carry no literal text
+// (spaces, breaks, group/indent markers); std::string owns its storage so the
+// buffer is freed automatically with the vector. Defaults match the values the
+// old hand-rolled init_token() stamped on every token.
+struct Token {
+  TokenType type{};
+  std::string text;          // Literal text (empty == none)
+  bool exploded = false;     // For Groups: should this group wrap?
+  bool propagates = true;    // For Groups: should explosion propagate to children?
+  int target_col = 0;        // For Alignment: which column should we jump to?
+  int penalty = 0;           // For Break Points: cost of breaking here
+  int pre_flat_length = 0;   // Metric: flat length of group
+  int pre_explode_cost = 0;  // Metric: total penalty of exploded children
+  int pre_force_counter = 0; // Metric: tracks mandatory breaks inside
+  int pre_group_end = -1;    // Metric: index of matching group end
+};
 
-typedef struct {
-  Token *data;             // Array of IR tokens
-  int size;                // Current number of tokens in the buffer
-  int capacity;            // Total allocated capacity
-} TokenBuffer;
+// The IR buffer is just a growable vector of tokens; std::vector subsumes the
+// old {data, size, capacity} triple and its manual realloc/free.
+using TokenBuffer = std::vector<Token>;
 
 struct PrpfmtState;
 
 /******************************************************************************
  * 1. Token IR Emitters                                                       *
  ******************************************************************************/
-void emit_token(struct PrpfmtState *st, const char *text);
-void emit_space(struct PrpfmtState *st);
-void emit_blank_line(struct PrpfmtState *st);
-void emit_break_point(struct PrpfmtState *st, int penalty);
-void emit_soft_break(struct PrpfmtState *st, int penalty);
-void emit_soft_space(struct PrpfmtState *st);
-void emit_indent_inc(struct PrpfmtState *st);
-void emit_indent_dec(struct PrpfmtState *st);
-void emit_group_start(struct PrpfmtState *st, bool force_explode, bool propagates);
-void emit_group_end(struct PrpfmtState *st);
-void emit_align_group_start(struct PrpfmtState *st);
-void emit_align_group_end(struct PrpfmtState *st);
-void emit_align_operator(struct PrpfmtState *st, const char *text);
-void emit_align_relational(struct PrpfmtState *st, const char *text);
-void emit_align_math(struct PrpfmtState *st, const char *text);
-void emit_align_comment(struct PrpfmtState *st, const char *text);
-void emit_anchor(struct PrpfmtState *st);
-void emit_anchor_off(struct PrpfmtState *st);
-void emit_line_break(struct PrpfmtState *st);
-void emit_force_break(struct PrpfmtState *st);
+void emit_token(PrpfmtState &st, std::string_view text);
+void emit_space(PrpfmtState &st);
+void emit_blank_line(PrpfmtState &st);
+void emit_break_point(PrpfmtState &st, int penalty);
+void emit_soft_break(PrpfmtState &st, int penalty);
+void emit_soft_space(PrpfmtState &st);
+void emit_indent_inc(PrpfmtState &st);
+void emit_indent_dec(PrpfmtState &st);
+void emit_group_start(PrpfmtState &st, bool force_explode, bool propagates);
+void emit_group_end(PrpfmtState &st);
+void emit_align_group_start(PrpfmtState &st);
+void emit_align_group_end(PrpfmtState &st);
+void emit_align_operator(PrpfmtState &st, std::string_view text);
+void emit_align_relational(PrpfmtState &st, std::string_view text);
+void emit_align_math(PrpfmtState &st, std::string_view text);
+void emit_align_comment(PrpfmtState &st, std::string_view text);
+void emit_anchor(PrpfmtState &st);
+void emit_anchor_off(PrpfmtState &st);
+void emit_line_break(PrpfmtState &st);
+void emit_force_break(PrpfmtState &st);
 
 /******************************************************************************
  * 2. Layout Rendering                                                        *
  ******************************************************************************/
-void prpfmt_solve(struct PrpfmtState *st);
-void prpfmt_render(struct PrpfmtState *st);
-void prpfmt_free_buffer(struct PrpfmtState *st);
+void prpfmt_solve(PrpfmtState &st);
+void prpfmt_render(PrpfmtState &st);
 
 #endif // PRP_IR_H
