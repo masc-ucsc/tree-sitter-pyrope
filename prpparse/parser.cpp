@@ -294,18 +294,19 @@ bool Parser::is_primitive_type_word(const Token& t) const {
   switch (t.kw) {
     case Keyword::kw_uint:
     case Keyword::kw_unsigned:
-    case Keyword::kw_int:
-    case Keyword::kw_integer:
+    case Keyword::kw_signed:
+    case Keyword::kw_int:      // removed — recognized so parse_primitive_type can
+    case Keyword::kw_integer:  // emit a tailored "use signed/unsigned" error
     case Keyword::kw_bool:
     case Keyword::kw_string:
       return true;
     default:
       break;
   }
-  // u<N> / s<N> / i<N>
+  // u<N> / s<N>  (the legacy i<N> signed spelling was renamed to s<N>)
   std::string_view s = t.text;
   if (s.size() >= 2 && s[0] == 'u' && all_digits(s, 1)) return true;
-  if (s.size() >= 2 && (s[0] == 's' || s[0] == 'i') && all_digits(s, 1)) return true;
+  if (s.size() >= 2 && s[0] == 's' && all_digits(s, 1)) return true;
   return false;
 }
 
@@ -1921,8 +1922,19 @@ Ast* Parser::parse_primitive_type() {
     finish(s, start);
     return s;
   }
-  if (t.is_kw(Keyword::kw_uint) || t.is_kw(Keyword::kw_unsigned) ||
-      (t.text.size() >= 2 && t.text[0] == 'u'))
+  // `int`/`integer`/`uint` were removed as type names. Reject with a tailored
+  // fix-it (they are still keywords only so this message can fire). `signed`/
+  // `unsigned` are the unbounded replacements; `uN`/`sN` the sized ones.
+  if (t.is_kw(Keyword::kw_int) || t.is_kw(Keyword::kw_integer) || t.is_kw(Keyword::kw_uint)) {
+    Diag d;
+    d.code     = "removed-int-type";
+    d.category = std::string(kCategorySyntax);
+    d.message  = "the `" + std::string(t.text) + "` type was removed";
+    d.hint     = "use `signed`/`unsigned` (which reinterpret a value's sign) or a sized `uN`/`sN` type";
+    d.span     = span_bytes(t.start_byte, t.end_byte);
+    throw Parse_error(std::move(d));
+  }
+  if (t.is_kw(Keyword::kw_unsigned) || (t.text.size() >= 2 && t.text[0] == 'u'))
     k = Kind::uint_type;
   else
     k = Kind::sint_type;

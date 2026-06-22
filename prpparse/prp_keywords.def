@@ -52,9 +52,12 @@ PRP_KEYWORD(comb)
 PRP_KEYWORD(mod)
 PRP_KEYWORD(pipe)
 
-// Primitive type names
+// Primitive type names. 'int'/'integer'/'uint' are REMOVED but still recognized
+// (as keywords) so the parser can emit a tailored "use signed/unsigned" error
+// instead of a confusing "undefined name" one.
 PRP_KEYWORD(uint)
 PRP_KEYWORD(unsigned)
+PRP_KEYWORD(signed)
 PRP_KEYWORD(int)
 PRP_KEYWORD(integer)
 PRP_KEYWORD(bool)
