@@ -1080,9 +1080,15 @@ Ast* Parser::parse_postfix_from(Ast* e) {
   for (;;) {
     if (term_stop()) break;
     Kind ek = e->kind;
+    // `attribute_set` is callable so a call-site attribute binds to the callee
+    // before the arg list: `alu::[name=pipeB_ex_mem](args)` parses as
+    // function_call_expression(f_function=attribute_set(alu,[..]), f_argument=args).
+    // (`alu(args)::[attr]` still parses the other way — the call matches first
+    // when the args precede the `::[`.)
     bool callable = ek == Kind::identifier || ek == Kind::dot_expression ||
                     ek == Kind::member_selection || ek == Kind::bit_selection ||
-                    ek == Kind::attribute_read || ek == Kind::timed_identifier;
+                    ek == Kind::attribute_read || ek == Kind::timed_identifier ||
+                    ek == Kind::attribute_set;
     if (at(Token_kind::lparen) && callable) {
       Ast* call = node(Kind::function_call_expression, start);
       e->field  = Field::f_function;
