@@ -57,11 +57,12 @@
   (open_all)
 ] @operator
 
-; Bare comparison/bitwise tokens also appear directly in match cases
+; Bare comparison/bitwise/range tokens also appear directly in match cases,
+; range selectors (`a[..=5]`) and arg-list spread (`f(...xs)`)
 [
   "!=" "==" "<" "<=" ">" ">="
   "&" "^" "|"
-  ".."
+  ".." "..=" "..<" "..."
 ] @operator
 
 ; Operators that read as words
@@ -69,6 +70,7 @@
   (op_log_and) (op_log_or)
   (op_in) (op_has) (op_does)
   (op_case) (op_equals) (op_implies)
+  (sign_extend) (zero_extend)
 ] @keyword.operator
 
 [
@@ -94,17 +96,21 @@
 ] @keyword.import
 
 [
-  (comb_lambda) (mod_lambda) (pipe_lambda)
+  (comb_lambda) (mod_lambda) (pipe_lambda) (fluid_lambda)
 ] @keyword.function
 
+; Declaration kinds and modifiers — `wire`/`mut`/`const`/`reg`/`stage`/`fluid`
+; storage, plus the `comptime`/`pub` modifiers. Each is an aliased node, so the
+; bare keyword token only highlights through these captures.
 [
-  (const_decl) (mut_decl) (reg_decl) (stage_decl)
-  (comptime_modifier)
+  (const_decl) (mut_decl) (wire_decl) (reg_decl) (stage_decl)
+  (fluid_decl)
+  (comptime_modifier) (pub_modifier)
 ] @keyword
 
 [
   "break" "continue"
-  "unique" "ref" "wrap" "sat" "pipe"
+  "unique" "ref" "reg" "wrap" "sat" "pipe"
   "spawn" "stage" "impl" "enum" "type" "test"
 ] @keyword
 
@@ -132,6 +138,12 @@
 ; Pyrope attributes (e.g. foo.[bits])
 
 (attribute_list name: (identifier) @attribute)
+
+; Write-side attribute names (`::[name=val]`, `:Type:[name=val]`)
+(attribute_assignment lvalue: (identifier) @attribute)
+
+; Named call arguments / instance bindings (`f(name=val)`, `name = foo`)
+(arg_assignment lvalue: (identifier) @variable.parameter)
 
 ; Builtins / verification
 
