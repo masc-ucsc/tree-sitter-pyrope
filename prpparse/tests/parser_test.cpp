@@ -54,6 +54,24 @@ TEST(Parser, PrecedenceTiers) {
   EXPECT_NE(s.find("op_mul"), std::string::npos);
 }
 
+TEST(Parser, TupleConcatOp) {
+  // `a ++ b` is the tuple-concat operator, an `op_tuple_concat` in the
+  // `binary_other` tier (so `a ++ b ++ c` is one flat chain, like `&`/`|`).
+  auto s = sexp("x = a ++ b\n");
+  EXPECT_NE(s.find("op_tuple_concat"), std::string::npos);
+  EXPECT_NE(s.find("binary_other_op"), std::string::npos);
+  EXPECT_EQ(count(sexp("x = a ++ b ++ c\n"), "op_tuple_concat"), 2u);
+  EXPECT_EQ(count(sexp("x = a ++ b ++ c\n"), "expression_item"), 1u);
+  // `++` must not be mis-lexed as two `+` tokens.
+  EXPECT_EQ(count(sexp("x = a ++ b\n"), "op_add"), 0u);
+}
+
+TEST(Parser, TupleConcatAssign) {
+  // `++=` compound assign lowers to an `assign_tuple_concat` operator.
+  auto s = sexp("acc ++= b\n");
+  EXPECT_NE(s.find("assign_tuple_concat"), std::string::npos);
+}
+
 TEST(Parser, IfElse) { EXPECT_TRUE(parses("if a == b {\n  c = 1\n} else {\n  c = 2\n}\n")); }
 
 TEST(Parser, Match) {

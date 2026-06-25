@@ -648,6 +648,10 @@
         {
           "type": "assign_sub",
           "named": true
+        },
+        {
+          "type": "assign_tuple_concat",
+          "named": true
         }
       ]
     }
@@ -1122,6 +1126,10 @@
         },
         {
           "type": "op_sub",
+          "named": true
+        },
+        {
+          "type": "op_tuple_concat",
           "named": true
         }
       ]
@@ -5348,6 +5356,10 @@
     "named": true
   },
   {
+    "type": "assign_tuple_concat",
+    "named": true
+  },
+  {
     "type": "bool_literal",
     "named": true
   },
@@ -5586,6 +5598,10 @@
   },
   {
     "type": "op_sub",
+    "named": true
+  },
+  {
+    "type": "op_tuple_concat",
     "named": true
   },
   {

@@ -28,6 +28,7 @@ Kind other_op(const Token& t) {
   switch (t.kind) {
     case Token_kind::plus:        return Kind::op_add;
     case Token_kind::minus:       return Kind::op_sub;
+    case Token_kind::concat:      return Kind::op_tuple_concat;
     case Token_kind::shl:         return Kind::op_shl;
     case Token_kind::shr:         return Kind::op_sra;
     case Token_kind::amp:         return Kind::op_bit_and;
@@ -93,6 +94,7 @@ Kind assign_kind(Token_kind k) {
     case Token_kind::assign_xor:     return Kind::assign_bit_xor;
     case Token_kind::assign_shl:     return Kind::assign_shl;
     case Token_kind::assign_sra:     return Kind::assign_sra;
+    case Token_kind::assign_concat:  return Kind::assign_tuple_concat;
     case Token_kind::assign_log_or:  return Kind::assign_log_or;
     case Token_kind::assign_log_and: return Kind::assign_log_and;
     default:                         return Kind::invalid;
@@ -141,6 +143,7 @@ Kind op_tier(Kind op) {
       return Kind::binary_times_op;
     case Kind::op_add:
     case Kind::op_sub:
+    case Kind::op_tuple_concat:
     case Kind::op_shl:
     case Kind::op_sra:
     case Kind::op_bit_and:

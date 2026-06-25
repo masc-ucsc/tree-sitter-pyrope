@@ -3312,6 +3312,15 @@
           "type": "ALIAS",
           "content": {
             "type": "STRING",
+            "value": "++"
+          },
+          "named": true,
+          "value": "op_tuple_concat"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
             "value": "<<"
           },
           "named": true,
@@ -4062,6 +4071,15 @@
           },
           "named": true,
           "value": "assign_add"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "++="
+          },
+          "named": true,
+          "value": "assign_tuple_concat"
         },
         {
           "type": "ALIAS",

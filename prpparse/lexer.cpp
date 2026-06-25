@@ -108,6 +108,7 @@ std::pair<Token_kind, int> match_operator(const char* b, uint32_t n, uint32_t i)
   if (c0 == '.' && c1 == '.' && c2 == '.') return {K::ellipsis, 3};
   if (c0 == '<' && c1 == '<' && c2 == '=') return {K::assign_shl, 3};
   if (c0 == '>' && c1 == '>' && c2 == '=') return {K::assign_sra, 3};
+  if (c0 == '+' && c1 == '+' && c2 == '=') return {K::assign_concat, 3};
   // 2-char
   if (c0 == ':' && c1 == ':') return {K::coloncolon, 2};
   if (c0 == '.' && c1 == '.') return {K::dotdot, 2};
@@ -118,6 +119,7 @@ std::pair<Token_kind, int> match_operator(const char* b, uint32_t n, uint32_t i)
   if (c0 == '!' && c1 == '=') return {K::ne, 2};
   if (c0 == '<' && c1 == '=') return {K::le, 2};
   if (c0 == '>' && c1 == '=') return {K::ge, 2};
+  if (c0 == '+' && c1 == '+') return {K::concat, 2};
   if (c0 == '+' && c1 == '=') return {K::assign_add, 2};
   if (c0 == '-' && c1 == '=') return {K::assign_sub, 2};
   if (c0 == '*' && c1 == '=') return {K::assign_mul, 2};

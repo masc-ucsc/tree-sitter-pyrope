@@ -686,6 +686,7 @@ module.exports = grammar({
     , binary_other_op: $ => choice(
       alias('+', $.op_add)
       , alias('-', $.op_sub)
+      , alias('++', $.op_tuple_concat)
       , alias('<<', $.op_shl)
       , alias('>>', $.op_sra)
       , alias('&', $.op_bit_and)
@@ -833,6 +834,7 @@ module.exports = grammar({
     , assignment_operator: $ => choice(
       alias('=', $.assign)
       , alias('+=', $.assign_add)
+      , alias('++=', $.assign_tuple_concat)
       , alias('-=', $.assign_sub)
       , alias('*=', $.assign_mul)
       , alias('/=', $.assign_div)
