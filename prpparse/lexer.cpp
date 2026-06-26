@@ -264,18 +264,24 @@ void Lexer::skip_trivia(uint32_t& i) {
       continue;
     }
     if (c == '/' && i + 1 < n && b[i + 1] == '*') {
-      uint32_t cs = i;
+      // Block comments NEST: track depth so `/* a /* b */ c */` is ONE comment
+      // (the inner `*/` closes the inner `/*`, not the outer). A commented-out
+      // region therefore stays fully commented even if it contains a comment.
+      uint32_t cs    = i;
       i += 2;
-      bool closed = false;
-      while (i < n) {
-        if (b[i] == '*' && i + 1 < n && b[i + 1] == '/') {
+      int      depth = 1;
+      while (i < n && depth > 0) {
+        if (b[i] == '/' && i + 1 < n && b[i + 1] == '*') {
+          depth += 1;
           i += 2;
-          closed = true;
-          break;
+        } else if (b[i] == '*' && i + 1 < n && b[i + 1] == '/') {
+          depth -= 1;
+          i += 2;
+        } else {
+          ++i;
         }
-        ++i;
       }
-      if (!closed) error("unterminated-comment", "unterminated block comment", cs, n);
+      if (depth > 0) error("unterminated-comment", "unterminated block comment", cs, n);
       comments_.push_back({cs, i, buf_.line_of(cs)});
       continue;
     }
@@ -343,9 +349,20 @@ uint32_t Lexer::lex_istring_hole(uint32_t i) const {
       j += 2;
       while (j < n && b[j] != '\n') ++j;
     } else if (c == '/' && j + 1 < n && b[j + 1] == '*') {
+      // Block comments NEST (match skip_trivia): count depth to the OUTER close.
       j += 2;
-      while (j < n && !(b[j] == '*' && j + 1 < n && b[j + 1] == '/')) ++j;
-      if (j < n) j += 2;
+      int cdepth = 1;
+      while (j + 1 < n && cdepth > 0) {
+        if (b[j] == '/' && b[j + 1] == '*') {
+          cdepth += 1;
+          j += 2;
+        } else if (b[j] == '*' && b[j + 1] == '/') {
+          cdepth -= 1;
+          j += 2;
+        } else {
+          ++j;
+        }
+      }
     } else {
       ++j;
     }
@@ -494,10 +511,21 @@ bool Lexer::gap_terminates(uint32_t gap_start, const Token& cur) const {
       // Block comment: skipped like whitespace, but newlines INSIDE it do NOT
       // count as a statement terminator — only real line breaks in whitespace
       // do (matches tree-sitter: `a /* x\n y */ b` keeps a and b on one logical
-      // line, so it is NOT terminated).
+      // line, so it is NOT terminated). Block comments NEST (match skip_trivia),
+      // so count depth to find the matching OUTER close.
       s += 2;
-      while (s + 1 < cend && !(b[s] == '*' && b[s + 1] == '/')) ++s;
-      s += 2;
+      int gdepth = 1;
+      while (s + 1 < cend && gdepth > 0) {
+        if (b[s] == '/' && b[s + 1] == '*') {
+          gdepth += 1;
+          s += 2;
+        } else if (b[s] == '*' && b[s + 1] == '/') {
+          gdepth -= 1;
+          s += 2;
+        } else {
+          ++s;
+        }
+      }
     } else {
       ++s;  // whitespace
     }

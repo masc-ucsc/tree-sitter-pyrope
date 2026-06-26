@@ -128,3 +128,23 @@ TEST(Lexer, RealNewlineAfterBlockCommentIsTerminator) {
   for (auto& x : t)
     if (x.text == "b") EXPECT_TRUE(x.terminator_before);
 }
+
+TEST(Lexer, BlockCommentsNest) {
+  // Block comments NEST: `/* a /* b */ c */` is ONE comment. The inner `*/`
+  // closes the inner `/*`, so `x` (after the inner close, still inside the outer
+  // comment) is NOT a token; only `y` after the OUTER close is.
+  Lexed lx("/* a /* b */ x = 1 */ y\n");
+  auto& t = lx.t;
+  ASSERT_GE(t.size(), 2u);
+  EXPECT_EQ(t[0].kind, Token_kind::ident);
+  EXPECT_TRUE(t[0].text == "y");
+  EXPECT_EQ(t[1].kind, Token_kind::eof);
+}
+
+TEST(Lexer, DeeplyNestedBlockComment) {
+  Lexed lx("/* 1 /* 2 /* 3 */ 2 */ 1 */ z\n");  // 3-deep; only `z` survives
+  auto& t = lx.t;
+  ASSERT_GE(t.size(), 2u);
+  EXPECT_TRUE(t[0].text == "z");
+  EXPECT_EQ(t[1].kind, Token_kind::eof);
+}
