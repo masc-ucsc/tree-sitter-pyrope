@@ -344,6 +344,9 @@ bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_in
     case sym_test_statement:
       print_test_statement(node, st);
       break;
+    case sym_tick_statement:
+      print_tick_statement(node, st);
+      break;
     case sym_type_statement:
       print_type_statement(node, st);
       break;
@@ -1027,14 +1030,6 @@ void print_match_expression(TSNode node, PrpfmtState &st) {
         break;
       case sym_stmt_list:
         print_stmt_list(child, st);
-        break;
-      case sym_expression_list:
-        if (header_open) {
-          emit_group_end(st);
-          header_open = false;
-        }
-        ensure_match_arm_started(seen_lbrace, arm_started);
-        print_expression_list(child, st);
         break;
       case sym_scope_statement:
         emit_space(st);
@@ -2506,9 +2501,9 @@ void print_type_cast(TSNode node, PrpfmtState &st) {
   }
 }
 
-void print_expression_list(TSNode node, PrpfmtState &st) {
-  emit_group_start(st, false, false);
-  emit_indent_inc(st);
+// Dotted test selector (`counter.foo.bar`): identifiers joined by `.` with no
+// surrounding spaces. The `.` separators are anonymous tokens, emitted verbatim.
+void print_test_name(TSNode node, PrpfmtState &st) {
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2516,24 +2511,19 @@ void print_expression_list(TSNode node, PrpfmtState &st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch (symbol) {
+      case sym_identifier:
+        print_identifier(child, st);
+        break;
       case sym_comment:
         print_comment(child, st, false);
         break;
-      case anon_sym_COMMA:
-        emit_token(st, ",");
-        emit_break_point(st, 10);
-        break;
       default:
-        if (ts_node_is_named(child)) {
-          print__expression(child, st, true);
-        } else {
-          emit_node_text(child, st);
+        if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);  // the '.' separators
         }
         break;
     }
   }
-  emit_indent_dec(st);
-  emit_group_end(st);
 }
 
 void print_member_selection(TSNode node, PrpfmtState &st) {
@@ -3500,6 +3490,10 @@ void print_impl_statement(TSNode node, PrpfmtState &st) {
   }
 }
 
+// `test name.path [(params)] { ... }`. The dotted name and the optional
+// parameter `arg_list` (a lambda-style input list, no return) bind tightly:
+// `test counter.foo(max_cycles:u32 = 10000) {`. The body is spaced off like
+// any other block.
 void print_test_statement(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, false);
   uint32_t child_count = ts_node_child_count(node);
@@ -3511,10 +3505,13 @@ void print_test_statement(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case anon_sym_test:
         emit_token(st, "test");
-        break;
-      case sym_expression_list:
         emit_space(st);
-        print_expression_list(child, st);
+        break;
+      case sym_test_name:
+        print_test_name(child, st);
+        break;
+      case sym_arg_list:
+        print_arg_list(child, st);  // (params) attached to the name, no space
         break;
       case sym_scope_statement:
         emit_anchor_off(st); // Kill condition anchor before block
@@ -3526,6 +3523,41 @@ void print_test_statement(TSNode node, PrpfmtState &st) {
         break;
       default:
         if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);
+        }
+        break;
+    }
+  }
+  emit_group_end(st);
+}
+
+// `tick [N] { ... }` — cycle-driven test loop (mirrors loop_statement). The
+// optional count is an expression child (field `value`); the body is `code`.
+void print_tick_statement(TSNode node, PrpfmtState &st) {
+  emit_group_start(st, false, false);
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_tick:
+        emit_token(st, "tick");
+        break;
+      case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
+        emit_space(st);
+        print_scope_statement(child, st, false);
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (ts_node_is_named(child)) {
+          emit_space(st);
+          print__expression(child, st, true);  // the optional cycle count
+        } else {
           emit_node_text(child, st);
         }
         break;

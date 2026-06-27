@@ -413,6 +413,8 @@ Ast* Parser::parse_statement() {
       case Keyword::kw_while: return parse_while();
       case Keyword::kw_for:   return parse_for();
       case Keyword::kw_loop:  return parse_loop();
+      case Keyword::kw_tick:  return parse_tick_statement();
+      case Keyword::kw_step:  return parse_step_statement();
       case Keyword::kw_test:  return parse_test();
       case Keyword::kw_type:  return parse_type_statement();
       case Keyword::kw_impl:  return parse_impl();
@@ -573,19 +575,65 @@ Ast* Parser::parse_loop() {
   return l;
 }
 
+// `tick [N] { stmts }` — a non-unrolling, cycle-driven loop usable only inside a
+// `test`. The optional count expression bounds the number of simulation cycles
+// (a watchdog); with no count it runs until a `break`/end-of-test. The count is
+// stored under f_value and the body under f_code (mirrors loop_statement).
+Ast* Parser::parse_tick_statement() {
+  uint32_t start = cur().start_byte;
+  advance();  // tick
+  Ast* t = node(Kind::tick_statement, start);
+  if (!at(Token_kind::lbrace)) {
+    Ast* count   = parse_expression();
+    count->field = Field::f_value;
+    t->add(count);
+  }
+  t->add(parse_scope(), Field::f_code);
+  finish(t, start);
+  return t;
+}
+
+// `step [N]` — advance the simulation N cycles (default 1) inside a `test`. The
+// optional count expression is stored under f_value.
+Ast* Parser::parse_step_statement() {
+  uint32_t start = cur().start_byte;
+  advance();  // step
+  Ast* s = node(Kind::step_statement, start);
+  const bool terminator = at(Token_kind::semicolon) || at(Token_kind::rbrace) ||
+                          eof() || cur().terminator_before;
+  if (!terminator) {
+    Ast* count   = parse_expression();
+    count->field = Field::f_value;
+    s->add(count);
+  }
+  expect_semicolon();
+  finish(s, start);
+  return s;
+}
+
+// `test name.path [(params)] { ... }`. Resembles a `comb name(...)` lambda but
+// has no `-> (...)` return and names the test with a dotted selector path
+// (`counter.foo`) so groups/leaves are addressable from the command line. The
+// optional `(...)` is the same typed-with-defaults `arg_list` a lambda uses for
+// its inputs (runtime test parameters). The selector goes under f_name, the
+// parameters under f_input, and the body under f_code.
 Ast* Parser::parse_test() {
   uint32_t start = cur().start_byte;
   advance();  // test
   Ast* tnode = node(Kind::test_statement, start);
-  Ast* args  = node(Kind::expression_list, cur().start_byte);
-  args->add(parse_expression(), Field::f_item);
-  while (at(Token_kind::comma)) {
-    advance();
-    if (at(Token_kind::lbrace)) break;
-    args->add(parse_expression(), Field::f_item);
+  // Dotted selector name: identifier ('.' identifier)*
+  uint32_t name_start = cur().start_byte;
+  Ast*     name       = node(Kind::test_name, name_start);
+  name->add(ident_leaf("expected-test-name", "expected a test name after 'test'"));
+  while (accept(Token_kind::dot)) {
+    name->add(ident_leaf("expected-test-name", "expected an identifier after '.' in test name"));
   }
-  finish(args, args->start_byte);
-  tnode->add(args, Field::f_args);
+  finish(name, name_start);
+  tnode->add(name, Field::f_name);
+  // Optional runtime parameter list (typed, with defaults; no return).
+  if (at(Token_kind::lparen)) {
+    tnode->add(parse_arg_list(), Field::f_input);
+  }
   tnode->add(parse_scope(), Field::f_code);
   finish(tnode, start);
   return tnode;

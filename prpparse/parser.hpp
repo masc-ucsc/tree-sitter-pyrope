@@ -142,6 +142,8 @@ private:
   Ast* parse_while();
   Ast* parse_for();
   Ast* parse_loop();
+  Ast* parse_tick_statement();
+  Ast* parse_step_statement();
   Ast* parse_test();
   Ast* parse_type_statement();
   Ast* parse_impl();

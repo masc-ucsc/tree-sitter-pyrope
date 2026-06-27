@@ -33,6 +33,7 @@ PRP_KEYWORD(type)
 PRP_KEYWORD(impl)
 PRP_KEYWORD(enum)
 PRP_KEYWORD(spawn)
+PRP_KEYWORD(tick)
 PRP_KEYWORD(ref)
 
 // Declaration modifiers / storage kinds

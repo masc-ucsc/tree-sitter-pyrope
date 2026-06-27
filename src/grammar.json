@@ -134,6 +134,14 @@
           },
           {
             "type": "SYMBOL",
+            "name": "tick_statement"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "step_statement"
+          },
+          {
+            "type": "SYMBOL",
             "name": "type_statement"
           },
           {
@@ -910,10 +918,26 @@
         },
         {
           "type": "FIELD",
-          "name": "args",
+          "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "expression_list"
+            "name": "test_name"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "input",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "arg_list"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         },
         {
@@ -925,6 +949,105 @@
           }
         }
       ]
+    },
+    "test_name": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "."
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "tick_statement": {
+      "type": "PREC",
+      "value": "statement",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "tick"
+          },
+          {
+            "type": "FIELD",
+            "name": "value",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "code",
+            "content": {
+              "type": "SYMBOL",
+              "name": "scope_statement"
+            }
+          }
+        ]
+      }
+    },
+    "step_statement": {
+      "type": "PREC",
+      "value": "statement",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "step"
+          },
+          {
+            "type": "FIELD",
+            "name": "value",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_semicolon"
+          }
+        ]
+      }
     },
     "type_statement": {
       "type": "SEQ",

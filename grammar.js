@@ -205,6 +205,8 @@ module.exports = grammar({
       , seq($._expression, $._semicolon)
       // Verification Only
       , $.test_statement
+      , $.tick_statement
+      , $.step_statement
       , $.type_statement
       , $.impl_statement
     )
@@ -305,11 +307,45 @@ module.exports = grammar({
       , optseq('else', field('else_code', $.scope_statement))
       , '}'
     )
+    // A `test` resembles a `comb name(...)` lambda but (1) has no `-> (...)`
+    // return and (2) names the test with a dotted selector path (`counter.foo`)
+    // so groups and leaves are addressable from the command line. The optional
+    // `(...)` carries runtime test parameters (typed, with defaults) — the same
+    // `arg_list` a lambda uses for its inputs. `test counter.foo { }` (no
+    // params) and `test counter.foo(max_cycles:u32 = 10000) { }` both parse.
     , test_statement: $ => seq(
       'test'
-      , field('args', $.expression_list)
+      , field('name', $.test_name)
+      , field('input', optional($.arg_list))
       , field('code', $.scope_statement)
     )
+    // Dotted selector path for a test name: `identifier ('.' identifier)*`.
+    // Kept distinct from `dot_expression` so the trailing `(...)` is the test's
+    // parameter list, never folded into a function call on the name.
+    , test_name: $ => prec.left(seq(
+      $.identifier
+      , repeat(seq('.', $.identifier))
+    ))
+    // Cycle-driven test loop: `tick N { ... }` runs N cycles (one clock per
+    // iteration, the DUT is called inside the body); the bare `tick { ... }`
+    // (no count) is the unbounded thread-loop form. The optional count lives in
+    // the `value` field, the body in `code` — matching the prpparse node the
+    // simulation backend (inou/prp/prp_sim.cpp) consumes.
+    , tick_statement: $ => prec('statement', seq(
+      'tick'
+      , field('value', optional($._expression))
+      , field('code', $.scope_statement)
+    ))
+    // Cycle advance inside a `test`: `step [N]` advances N cycles (default 1) --
+    // `step`, `step 5`, and `step(1000)` all parse. Unlike `tick` it has no body
+    // (a leaf statement terminated like any expression statement); the optional
+    // count lives in the `value` field. Statement-leading `step` is this; `step`
+    // as a range stride (`a..=b step c`) stays the `binary_step` operator below.
+    , step_statement: $ => prec('statement', seq(
+      'step'
+      , field('value', optional($._expression))
+      , $._semicolon
+    ))
     , type_statement: $ => seq(
       'type'
       , field('name', $.identifier)
