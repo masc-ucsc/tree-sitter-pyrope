@@ -575,18 +575,47 @@ Ast* Parser::parse_loop() {
   return l;
 }
 
-// `tick [N] { stmts }` — a non-unrolling, cycle-driven loop usable only inside a
-// `test`. The optional count expression bounds the number of simulation cycles
-// (a watchdog); with no count it runs until a `break`/end-of-test. The count is
-// stored under f_value and the body under f_code (mirrors loop_statement).
+// `tick [N] [clocks=(...)] [resets=(...)] { stmts }` — a non-unrolling,
+// cycle-driven loop usable only inside a `test`. The optional count expression
+// bounds the number of simulation cycles (a watchdog); with no count it runs
+// until a `break`/end-of-test. The optional `clocks=(name=ratio, ...)` /
+// `resets=(name=ticks, ...)` clauses (order-independent) configure the VCD
+// clock/reset waveforms (consumed by the simulation backend, inou/prp/prp_sim).
+// Count -> f_value, clocks tuple -> f_clocks, resets tuple -> f_resets, body ->
+// f_code (mirrors loop_statement). `clocks`/`resets` are not keywords, so a
+// leading clause is what tells us there is no count expression.
 Ast* Parser::parse_tick_statement() {
   uint32_t start = cur().start_byte;
   advance();  // tick
   Ast* t = node(Kind::tick_statement, start);
-  if (!at(Token_kind::lbrace)) {
+  // A clause is `clocks`/`resets` IMMEDIATELY followed by '=' -- the `= ` lookahead
+  // keeps a count expression that merely starts with the word `clocks`/`resets`
+  // (e.g. a test-local named `clocks`) from being mistaken for a clause.
+  auto at_tick_clause = [&]() {
+    return at(Token_kind::ident) && (cur().text == "clocks" || cur().text == "resets") &&
+           peek(1).kind == Token_kind::assign;
+  };
+  if (!at(Token_kind::lbrace) && !at_tick_clause()) {
     Ast* count   = parse_expression();
     count->field = Field::f_value;
     t->add(count);
+  }
+  bool seen_clocks = false, seen_resets = false;
+  while (at_tick_clause()) {
+    const bool  is_clocks = cur().text == "clocks";
+    const char* kw        = is_clocks ? "clocks" : "resets";
+    bool&       seen      = is_clocks ? seen_clocks : seen_resets;
+    if (seen) {
+      error("duplicate-clause", std::string("duplicate '") + kw + "' clause in tick");
+    }
+    seen = true;
+    advance();  // clocks / resets
+    expect(Token_kind::assign, "expected-eq", std::string("expected '=' after '") + kw + "' in tick");
+    if (!at(Token_kind::lparen))
+      error("expected-paren", std::string("expected '(' to open the ") + kw + " list");
+    Ast* tup   = parse_paren();
+    tup->field = is_clocks ? Field::f_clocks : Field::f_resets;
+    t->add(tup);
   }
   t->add(parse_scope(), Field::f_code);
   finish(t, start);

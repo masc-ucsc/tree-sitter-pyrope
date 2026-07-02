@@ -330,10 +330,17 @@ module.exports = grammar({
     // iteration, the DUT is called inside the body); the bare `tick { ... }`
     // (no count) is the unbounded thread-loop form. The optional count lives in
     // the `value` field, the body in `code` — matching the prpparse node the
-    // simulation backend (inou/prp/prp_sim.cpp) consumes.
+    // simulation backend (inou/prp/prp_sim.cpp) consumes. The optional
+    // `clocks=(name=ratio, ...)` / `resets=(name=ticks, ...)` clauses configure
+    // the VCD clock/reset waveforms (`clocks`/`resets` are plain words, not
+    // keywords). NOTE: prpparse (parser.cpp parse_tick_statement) is the parser
+    // actually built; this grammar.js is reference/formatter-only and is not
+    // regenerated for this change.
     , tick_statement: $ => prec('statement', seq(
       'tick'
       , field('value', optional($._expression))
+      , field('clocks', optional(seq('clocks', '=', $.tuple)))
+      , field('resets', optional(seq('resets', '=', $.tuple)))
       , field('code', $.scope_statement)
     ))
     // Cycle advance inside a `test`: `step [N]` advances N cycles (default 1) --
