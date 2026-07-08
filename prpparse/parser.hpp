@@ -194,8 +194,8 @@ private:
   Ast* parse_type_cast();
   Ast* parse_type();
   Ast* parse_primitive_type();
-  Ast* parse_typed_identifier();
-  Ast* parse_typed_identifier_list();
+  Ast* parse_typed_identifier(bool allow_default = false);
+  Ast* parse_typed_identifier_list(bool allow_default = false);
   Ast* parse_arg_list();
   Ast* parse_function_definition_decl();
   Ast* parse_attribute_sq();

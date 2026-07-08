@@ -356,7 +356,7 @@ module.exports = grammar({
     , type_statement: $ => seq(
       'type'
       , field('name', $.identifier)
-      , field('generic', optseq('<', $.typed_identifier_list, '>'))
+      , field('generic', optseq('<', alias($.generic_identifier_list, $.typed_identifier_list), '>'))
       , choice(
         field('definition', $.tuple),  // trait definition: type Name ( ... )
         seq('=',
@@ -546,7 +546,7 @@ module.exports = grammar({
     // here as plain identifiers.
     , attribute_list: $ => seq('[', field('name', $.identifier), ']')
     , function_definition_decl: $ => seq(
-      field('generic', optseq('<', $.typed_identifier_list, '>'))
+      field('generic', optseq('<', alias($.generic_identifier_list, $.typed_identifier_list), '>'))
       , field('pipe_config', optional($._attr_prefix))
       , field('input', $.arg_list)
       , field('output', optseq('->', choice(
@@ -632,10 +632,35 @@ module.exports = grammar({
       , field('type', $.type_cast)
     )
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
+    // Generic-parameter DECLARATION list (`<T, K=1>`). A typed_identifier
+    // that may carry a `= default`. The default is a generic ARGUMENT — a
+    // type, a constant, or a lambda name — so it is parsed with the type
+    // grammar, not the expression grammar: a full expression would swallow
+    // the closing `>` as a greater-than operator. Aliased to
+    // typed_identifier so consumers see one node kind with an optional
+    // `definition` field (matches prpparse).
+    , generic_identifier: $ => prec.left('typed_identifier', seq(
+      field('identifier', $.identifier)
+      , optional($._timing_sequence)
+      , field('type', optional($.type_cast))
+      , field('definition', optseq('=', $._type))
+    ))
+    , generic_identifier_list: $ => listseq1(field('item', alias($.generic_identifier, $.typed_identifier)))
     // Call-site generic binding list (`f<int,string>(…)`): one type per
     // generic name, in declaration order. Types, not typed_identifiers —
-    // there is nothing to name at the call site.
-    , generic_type_list: $ => listseq1(field('item', $._type))
+    // but a binding may be NAMED (`f<T=u8, K=10>(…)`), following the same
+    // naming rules as call arguments; aliased to arg_assignment so the
+    // named-argument machinery applies (matches prpparse). The rvalue is a
+    // type, not an expression, for the same closing-`>` reason as above.
+    , generic_type_list: $ => listseq1(field('item', choice(
+      $._type
+      , alias($.generic_assignment, $.arg_assignment)
+    )))
+    , generic_assignment: $ => seq(
+      field('lvalue', $.identifier)
+      , '='
+      , field('rvalue', $._type)
+    )
 
     // Expressions. Built from the tiered binary-expression operand chain:
     // _pri4_operand covers everything tighter than tier-5, _binary_logical
@@ -921,6 +946,24 @@ module.exports = grammar({
       , $.array_type
       , $.expression_type
       , $._timing_sequence
+      , $.lambda_type
+    ))
+    // Body-less lambda SIGNATURE in type position — the typed interface of a
+    // `cpp()` binding or any lambda-valued field:
+    //   type GcdModel = ( call_method1: comb(a:u8, b:u3) -> (foo:u8, bar:u33) )
+    // (07-typesystem.md "The typed interface is the source of truth"). The
+    // `type X = comb(...)` statement form keeps its own func_type branch in
+    // type_statement (same shape as prpparse); this rule covers the nested
+    // type positions — hence prec(-1), so the statement branch wins the
+    // overlap.
+    , lambda_type: $ => prec(-1, seq(
+      field('func_type', choice(
+        alias('comb', $.comb_lambda)
+        , alias('mod', $.mod_lambda)
+        , $.pipe_lambda
+        , $.fluid_lambda
+      ))
+      , $.function_definition_decl
     ))
     , expression_type: $ => prec('expression_type', choice(
       $.identifier

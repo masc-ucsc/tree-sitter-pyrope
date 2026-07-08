@@ -675,7 +675,7 @@ Ast* Parser::parse_type_statement() {
   ts->add(leaf(Kind::identifier), Field::f_name);
   if (at(Token_kind::lt)) {
     advance();
-    ts->add(parse_typed_identifier_list(), Field::f_generic);
+    ts->add(parse_typed_identifier_list(/*allow_default=*/true), Field::f_generic);
     expect(Token_kind::gt, "expected-gt", "expected '>' to close generics");
   }
   if (at(Token_kind::lparen)) {
@@ -983,7 +983,7 @@ Ast* Parser::parse_function_definition_decl() {
   Ast*     fdd = node(Kind::function_definition_decl, start);
   if (at(Token_kind::lt)) {
     advance();
-    fdd->add(parse_typed_identifier_list(), Field::f_generic);
+    fdd->add(parse_typed_identifier_list(/*allow_default=*/true), Field::f_generic);
     expect(Token_kind::gt, "expected-gt", "expected '>' to close generics");
   }
   if (at(Token_kind::coloncolon)) {  // pipe_config ::[...]
@@ -1268,12 +1268,33 @@ Ast* Parser::try_generic_call(Ast* fn) {
   bool ok    = true;
   while (at(Token_kind::comma)) advance();
   while (!at(Token_kind::gt) && !eof()) {
-    Ast* ty = parse_type();
-    if (!ty) {
-      ok = false;
-      break;
+    // A NAMED generic bind (`f<T=u8>`, todo 3g C): `identifier '=' type`,
+    // following the same naming rules as call arguments. Reuse arg_assignment
+    // (lvalue=name, rvalue=type) so prp2lnast's named-arg machinery applies; a
+    // bare positional `type` stays an item as before.
+    if (at(Token_kind::ident) && peek(1).kind == Token_kind::assign) {
+      uint32_t nstart = cur().start_byte;
+      Ast*     aa     = node(Kind::arg_assignment, nstart);
+      Ast*     nm     = leaf(Kind::identifier);
+      nm->field       = Field::f_lvalue;
+      aa->add(nm);
+      accept(Token_kind::assign);  // '='
+      Ast* ty = parse_type();
+      if (!ty) {
+        ok = false;
+        break;
+      }
+      aa->add(ty, Field::f_rvalue);
+      finish(aa, nstart);
+      list->add(aa, Field::f_item);
+    } else {
+      Ast* ty = parse_type();
+      if (!ty) {
+        ok = false;
+        break;
+      }
+      list->add(ty, Field::f_item);
     }
-    list->add(ty, Field::f_item);
     if (!accept(Token_kind::comma)) break;
     while (at(Token_kind::comma)) advance();
   }
@@ -1951,6 +1972,36 @@ Ast* Parser::parse_type() {
     ts->start_byte = start;
     return ts;
   }
+  if (is_lambda_kind(cur())) {
+    // lambda_type: a body-less lambda SIGNATURE in type position —
+    // `call_method1: comb(a:u8, b:u3) -> (foo:u8, bar:u33)` — the typed
+    // interface of a cpp() binding or any lambda-valued field
+    // (07-typesystem.md "The typed interface is the source of truth").
+    // The `type X = comb(...)` statement form keeps its own func_type
+    // branch in parse_type_statement (matches tree-sitter's shape).
+    uint32_t start = cur().start_byte;
+    Ast*     lt = node(Kind::lambda_type, start);
+    if (at_kw(Keyword::kw_comb)) {
+      lt->add(leaf(Kind::comb_lambda), Field::f_func_type);
+    } else if (at_kw(Keyword::kw_mod)) {
+      lt->add(leaf(Kind::mod_lambda), Field::f_func_type);
+    } else if (at_kw(Keyword::kw_pipe)) {
+      Ast* pl = node(Kind::pipe_lambda, cur().start_byte);
+      advance();
+      if (at(Token_kind::lbracket)) pl->add(parse_select(), Field::f_depth);
+      finish(pl, pl->start_byte);
+      lt->add(pl, Field::f_func_type);
+    } else {  // fluid
+      Ast* fl = node(Kind::fluid_lambda, cur().start_byte);
+      advance();
+      if (at(Token_kind::lbracket)) fl->add(parse_attribute_sq(), Field::f_config);
+      finish(fl, fl->start_byte);
+      lt->add(fl, Field::f_func_type);
+    }
+    lt->add(parse_function_definition_decl());
+    finish(lt, start);
+    return lt;
+  }
   if (is_primitive_type_word(cur())) return parse_primitive_type();
   // expression_type: identifier (dotted), constant, tuple, if/match, call.
   // tree-sitter wraps EVERY non-primitive type expression in an `expression_type`
@@ -2031,7 +2082,7 @@ Ast* Parser::parse_primitive_type() {
   return pt;
 }
 
-Ast* Parser::parse_typed_identifier() {
+Ast* Parser::parse_typed_identifier(bool allow_default) {
   uint32_t start = cur().start_byte;
   Ast*     ti = node(Kind::typed_identifier, start);
   ti->add(leaf(Kind::identifier), Field::f_identifier);
@@ -2040,19 +2091,30 @@ Ast* Parser::parse_typed_identifier() {
     ti->add(parse_timing_slot(), Field::f_timing);
   }
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) ti->add(parse_type_cast(), Field::f_type);
+  // A generic-parameter DECLARATION default (`<T, N=1>`, todo 3g B): the
+  // default type/constant/lambda follows `=`. Only inside a generic list
+  // (allow_default); an `arg_list` parameter default is handled by
+  // parse_arg_list itself. Parse it as a generic ARGUMENT (parse_type — the
+  // same grammar as a `<…>` bind: a type, a constant like `1`, or a lambda
+  // name) NOT a full expression: a full expression would swallow the closing
+  // `>` as a greater-than operator (the C++ `>>` template ambiguity).
+  if (allow_default && at(Token_kind::assign)) {
+    advance();  // '='
+    ti->add(parse_type(), Field::f_definition);
+  }
   finish(ti, start);
   return ti;
 }
 
-Ast* Parser::parse_typed_identifier_list() {
+Ast* Parser::parse_typed_identifier_list(bool allow_default) {
   uint32_t start = cur().start_byte;
   Ast*     list = node(Kind::typed_identifier_list, start);
   while (at(Token_kind::comma)) advance();
-  list->add(parse_typed_identifier(), Field::f_item);
+  list->add(parse_typed_identifier(allow_default), Field::f_item);
   while (accept(Token_kind::comma)) {
     while (at(Token_kind::comma)) advance();
     if (at(Token_kind::rparen) || at(Token_kind::gt) || at(Token_kind::rbracket)) break;
-    list->add(parse_typed_identifier(), Field::f_item);
+    list->add(parse_typed_identifier(allow_default), Field::f_item);
   }
   finish(list, start);
   return list;

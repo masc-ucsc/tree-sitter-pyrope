@@ -866,6 +866,7 @@ void print__tuple_item(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
       print_ref_identifier(node, st);
       break;
     case sym_typed_identifier:
+    case sym_typed_field:  // bare `name:type` tuple-TYPE field — same shape
       print_typed_identifier(node, st);
       break;
     case sym_assignment:
@@ -1906,6 +1907,7 @@ void print_function_definition_decl(TSNode node, PrpfmtState &st) {
         emit_token(st, ">");
         break;
       case sym_typed_identifier_list:
+      case sym_generic_identifier_list:  // `<T, K=1>` (aliased to typed_identifier_list)
         print_typed_identifier_list(child, st);
         break;
       case anon_sym_COLON_COLON:
@@ -2763,6 +2765,9 @@ void print__type(TSNode node, PrpfmtState &st) {
     case sym_expression_type:
       print_expression_type(node, st);
       break;
+    case sym_lambda_type:
+      print_lambda_type(node, st);
+      break;
     case sym_timed_identifier:
       print_timed_identifier(node, st);
       break;
@@ -2776,6 +2781,43 @@ void print__type(TSNode node, PrpfmtState &st) {
         }
       }
       break;
+  }
+}
+
+// Body-less lambda SIGNATURE in type position:
+// `call_method1: comb(a:u8, b:u3) -> (foo:u8, bar:u33)`. The func_type
+// keyword joins its arg list directly (no space), unlike the
+// `type X = comb (…)` statement form.
+void print_lambda_type(TSNode node, PrpfmtState &st) {
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_comb:
+      case anon_sym_mod:
+        emit_node_text(child, st);
+        break;
+      case sym_pipe_lambda:
+        print_pipe_lambda(child, st);
+        break;
+      case sym_fluid_lambda:
+        print_fluid_lambda(child, st);
+        break;
+      case sym_function_definition_decl:
+        print_function_definition_decl(child, st);
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);
+        }
+        break;
+    }
   }
 }
 
@@ -2986,6 +3028,7 @@ void print_type_statement(TSNode node, PrpfmtState &st) {
         emit_token(st, ">");
         break;
       case sym_typed_identifier_list:
+      case sym_generic_identifier_list:  // `type Name<T, K=1>` generic params
         print_typed_identifier_list(child, st);
         break;
       case anon_sym_EQ:
@@ -3054,6 +3097,20 @@ void print_typed_identifier(TSNode node, PrpfmtState &st) {
       case sym_type_cast:
         print_type_cast(child, st);
         break;
+      // Generic-parameter default (`<T, K=1>`): the `=` plus a type-grammar
+      // node (never a full expression — see grammar.js generic_identifier).
+      case anon_sym_EQ:
+        emit_token(st, "=");
+        break;
+      case sym_uint_type:
+      case sym_sint_type:
+      case sym_bool_type:
+      case sym_string_type:
+      case sym_array_type:
+      case sym_expression_type:
+      case sym_lambda_type:
+        print__type(child, st);
+        break;
       case sym_comment:
         print_comment(child, st, false);
         break;
@@ -3077,6 +3134,7 @@ void print_typed_identifier_list(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case sym_typed_identifier:
+      case sym_generic_identifier:  // `T`, `K=1` (aliased to typed_identifier)
         print_typed_identifier(child, st);
         break;
       case anon_sym_COMMA:

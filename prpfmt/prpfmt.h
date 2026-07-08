@@ -125,6 +125,7 @@ void print_selection_range(TSNode node, PrpfmtState &st);
  * 7. Types & Identifiers                                                     *
  ******************************************************************************/
 void print__type(TSNode node, PrpfmtState &st);
+void print_lambda_type(TSNode node, PrpfmtState &st);
 void print_expression_type(TSNode node, PrpfmtState &st);
 void print_dot_expression_type(TSNode node, PrpfmtState &st);
 void print_function_call_type(TSNode node, PrpfmtState &st);

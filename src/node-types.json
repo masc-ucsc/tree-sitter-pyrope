@@ -18,9 +18,17 @@
         ]
       },
       "rvalue": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "@",
+            "named": false
+          },
+          {
+            "type": "array_type",
+            "named": true
+          },
           {
             "type": "attribute_read",
             "named": true
@@ -34,6 +42,10 @@
             "named": true
           },
           {
+            "type": "bool_type",
+            "named": true
+          },
+          {
             "type": "constant",
             "named": true
           },
@@ -43,6 +55,10 @@
           },
           {
             "type": "expression_item",
+            "named": true
+          },
+          {
+            "type": "expression_type",
             "named": true
           },
           {
@@ -62,6 +78,10 @@
             "named": true
           },
           {
+            "type": "lambda_type",
+            "named": true
+          },
+          {
             "type": "match_expression",
             "named": true
           },
@@ -78,7 +98,19 @@
             "named": true
           },
           {
+            "type": "sint_type",
+            "named": true
+          },
+          {
+            "type": "string_type",
+            "named": true
+          },
+          {
             "type": "timed_identifier",
+            "named": true
+          },
+          {
+            "type": "timing_slot",
             "named": true
           },
           {
@@ -90,7 +122,21 @@
             "named": true
           },
           {
+            "type": "uint_type",
+            "named": true
+          },
+          {
             "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "timing": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "timing_slot",
             "named": true
           }
         ]
@@ -2170,6 +2216,10 @@
             "named": false
           },
           {
+            "type": "arg_assignment",
+            "named": true
+          },
+          {
             "type": "array_type",
             "named": true
           },
@@ -2179,6 +2229,10 @@
           },
           {
             "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "lambda_type",
             "named": true
           },
           {
@@ -2625,6 +2679,44 @@
         "types": [
           {
             "type": "pub_modifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "function_definition_decl",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "lambda_type",
+    "named": true,
+    "fields": {
+      "func_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "comb_lambda",
+            "named": true
+          },
+          {
+            "type": "fluid_lambda",
+            "named": true
+          },
+          {
+            "type": "mod_lambda",
+            "named": true
+          },
+          {
+            "type": "pipe_lambda",
             "named": true
           }
         ]
@@ -4172,12 +4264,48 @@
     "type": "tick_statement",
     "named": true,
     "fields": {
+      "clocks": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "clocks",
+            "named": false
+          },
+          {
+            "type": "tuple",
+            "named": true
+          }
+        ]
+      },
       "code": {
         "multiple": false,
         "required": true,
         "types": [
           {
             "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "resets": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "resets",
+            "named": false
+          },
+          {
+            "type": "tuple",
             "named": true
           }
         ]
@@ -4811,6 +4939,10 @@
             "named": true
           },
           {
+            "type": "lambda_type",
+            "named": true
+          },
+          {
             "type": "sint_type",
             "named": true
           },
@@ -4852,6 +4984,10 @@
           },
           {
             "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "lambda_type",
             "named": true
           },
           {
@@ -4984,6 +5120,52 @@
     "type": "typed_identifier",
     "named": true,
     "fields": {
+      "definition": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "=",
+            "named": false
+          },
+          {
+            "type": "@",
+            "named": false
+          },
+          {
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "bool_type",
+            "named": true
+          },
+          {
+            "type": "expression_type",
+            "named": true
+          },
+          {
+            "type": "lambda_type",
+            "named": true
+          },
+          {
+            "type": "sint_type",
+            "named": true
+          },
+          {
+            "type": "string_type",
+            "named": true
+          },
+          {
+            "type": "timing_slot",
+            "named": true
+          },
+          {
+            "type": "uint_type",
+            "named": true
+          }
+        ]
+      },
       "identifier": {
         "multiple": false,
         "required": true,
@@ -4995,7 +5177,7 @@
         ]
       },
       "timing": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -5507,6 +5689,10 @@
     "named": false
   },
   {
+    "type": "clocks",
+    "named": false
+  },
+  {
     "type": "comb_lambda",
     "named": true
   },
@@ -5782,6 +5968,10 @@
   {
     "type": "reg_decl",
     "named": true
+  },
+  {
+    "type": "resets",
+    "named": false
   },
   {
     "type": "return",
