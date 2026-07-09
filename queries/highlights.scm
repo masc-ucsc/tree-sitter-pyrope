@@ -111,7 +111,7 @@
 [
   "break" "continue"
   "unique" "ref" "reg" "wrap" "sat" "pipe"
-  "spawn" "stage" "impl" "enum" "type" "test"
+  "spawn" "stage" "impl" "enum" "type" "test" "formal"
 ] @keyword
 
 ; Function definitions

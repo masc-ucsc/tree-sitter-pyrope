@@ -78,6 +78,7 @@ PRP_KEYWORD(case)
 PRP_KEYWORD(does)
 PRP_KEYWORD(equals)
 PRP_KEYWORD(step)
+PRP_KEYWORD(formal)  // 2f-verify: `formal name.dotted { ... }` block
 
 // Boolean literals
 PRP_KEYWORD(true)

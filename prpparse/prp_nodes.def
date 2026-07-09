@@ -150,4 +150,8 @@ PRP_NODE(var_or_let_or_reg)
 PRP_NODE(while_statement)
 PRP_NODE(wire_decl)
 PRP_NODE(zero_extend)
+// 2f-verify formal blocks — appended (not alphabetical) so existing packed
+// Kind values stay stable for any consumer that persisted them.
+PRP_NODE(formal_statement)
+PRP_NODE(formal_name)
 #undef PRP_NODE

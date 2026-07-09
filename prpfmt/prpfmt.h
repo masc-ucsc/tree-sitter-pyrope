@@ -178,6 +178,7 @@ void print_comment_newline(TSNode node, PrpfmtState &st, bool is_prechecked);
 void print_import_statement(TSNode node, PrpfmtState &st);
 void print_impl_statement(TSNode node, PrpfmtState &st);
 void print_test_statement(TSNode node, PrpfmtState &st);
+void print_formal_statement(TSNode node, PrpfmtState &st);
 void print_attribute_list(TSNode node, PrpfmtState &st);
 void print__semicolon(TSNode node, PrpfmtState &st, SpacingConfig spacing);
 void print_timing_slot(TSNode node, PrpfmtState &st);

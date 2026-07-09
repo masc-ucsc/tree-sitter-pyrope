@@ -205,6 +205,7 @@ module.exports = grammar({
       , seq($._expression, $._semicolon)
       // Verification Only
       , $.test_statement
+      , $.formal_statement
       , $.tick_statement
       , $.step_statement
       , $.type_statement
@@ -326,6 +327,18 @@ module.exports = grammar({
       $.identifier
       , repeat(seq('.', $.identifier))
     ))
+    // A `formal` block (05-assert.md "Formal blocks") is a declarative
+    // verification overlay: `formal name.path { stmts+ }`. Named by the same
+    // dotted selector path as a `test` (the name is the enable/filter handle
+    // for `lhd formal verify --formal <glob>`), but it takes no parameter
+    // list — a formal block has no runtime arguments. The body is ordinary
+    // statement syntax; only the formal tool consumes it (the design compile
+    // skips it). Mirrors prpparse parse_formal (parser.cpp).
+    , formal_statement: $ => seq(
+      'formal'
+      , field('name', alias($.test_name, $.formal_name))
+      , field('code', $.scope_statement)
+    )
     // Cycle-driven test loop: `tick N { ... }` runs N cycles (one clock per
     // iteration, the DUT is called inside the body); the bare `tick { ... }`
     // (no count) is the unbounded thread-loop form. The optional count lives in

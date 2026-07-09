@@ -134,6 +134,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "formal_statement"
+          },
+          {
+            "type": "SYMBOL",
             "name": "tick_statement"
           },
           {
@@ -978,6 +982,36 @@
           }
         ]
       }
+    },
+    "formal_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "formal"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "test_name"
+            },
+            "named": true,
+            "value": "formal_name"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "code",
+          "content": {
+            "type": "SYMBOL",
+            "name": "scope_statement"
+          }
+        }
+      ]
     },
     "tick_statement": {
       "type": "PREC",

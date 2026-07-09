@@ -1492,6 +1492,10 @@
           "named": true
         },
         {
+          "type": "formal_statement",
+          "named": true
+        },
+        {
           "type": "function_call_expression",
           "named": true
         },
@@ -2023,6 +2027,47 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "formal_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "formal_statement",
+    "named": true,
+    "fields": {
+      "code": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "scope_statement",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "formal_name",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -3465,6 +3510,10 @@
         },
         {
           "type": "for_statement",
+          "named": true
+        },
+        {
+          "type": "formal_statement",
           "named": true
         },
         {
@@ -5743,6 +5792,10 @@
   },
   {
     "type": "for",
+    "named": false
+  },
+  {
+    "type": "formal",
     "named": false
   },
   {

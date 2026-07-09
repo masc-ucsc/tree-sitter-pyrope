@@ -145,6 +145,7 @@ private:
   Ast* parse_tick_statement();
   Ast* parse_step_statement();
   Ast* parse_test();
+  Ast* parse_formal();
   Ast* parse_type_statement();
   Ast* parse_impl();
   Ast* parse_spawn();

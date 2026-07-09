@@ -416,6 +416,7 @@ Ast* Parser::parse_statement() {
       case Keyword::kw_tick:  return parse_tick_statement();
       case Keyword::kw_step:  return parse_step_statement();
       case Keyword::kw_test:  return parse_test();
+      case Keyword::kw_formal: return parse_formal();
       case Keyword::kw_type:  return parse_type_statement();
       case Keyword::kw_impl:  return parse_impl();
       case Keyword::kw_spawn: return parse_spawn();
@@ -666,6 +667,31 @@ Ast* Parser::parse_test() {
   tnode->add(parse_scope(), Field::f_code);
   finish(tnode, start);
   return tnode;
+}
+
+// `formal name.path { ... }` (2f-verify). A declarative verification block:
+// the body is ordinary statement syntax (test-block style — import roots,
+// instance aliases, assert/assume/assert_always calls), but every claim holds
+// at EVERY cycle; it never lowers to hardware (the design compile skips it —
+// only the formal driver consumes it). The dotted selector name is the
+// enable/disable + filter handle (`lhd formal verify --formal 'name.*'`),
+// exactly like a test's. No parameter list: a formal block takes no runtime
+// arguments.
+Ast* Parser::parse_formal() {
+  uint32_t start = cur().start_byte;
+  advance();  // formal
+  Ast* fnode = node(Kind::formal_statement, start);
+  uint32_t name_start = cur().start_byte;
+  Ast*     name       = node(Kind::formal_name, name_start);
+  name->add(ident_leaf("expected-formal-name", "expected a formal-block name after 'formal'"));
+  while (accept(Token_kind::dot)) {
+    name->add(ident_leaf("expected-formal-name", "expected an identifier after '.' in formal-block name"));
+  }
+  finish(name, name_start);
+  fnode->add(name, Field::f_name);
+  fnode->add(parse_scope(), Field::f_code);
+  finish(fnode, start);
+  return fnode;
 }
 
 Ast* Parser::parse_type_statement() {

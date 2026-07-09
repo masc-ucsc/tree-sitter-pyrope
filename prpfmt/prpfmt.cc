@@ -344,6 +344,9 @@ bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_in
     case sym_test_statement:
       print_test_statement(node, st);
       break;
+    case sym_formal_statement:
+      print_formal_statement(node, st);
+      break;
     case sym_tick_statement:
       print_tick_statement(node, st);
       break;
@@ -3570,6 +3573,43 @@ void print_test_statement(TSNode node, PrpfmtState &st) {
         break;
       case sym_arg_list:
         print_arg_list(child, st);  // (params) attached to the name, no space
+        break;
+      case sym_scope_statement:
+        emit_anchor_off(st); // Kill condition anchor before block
+        emit_space(st);
+        print_scope_statement(child, st, false);
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (!ts_node_is_named(child)) {
+          emit_node_text(child, st);
+        }
+        break;
+    }
+  }
+  emit_group_end(st);
+}
+
+// `formal name.path { ... }` — a test-shaped declarative verification block,
+// but with no parameter list. The name is `formal_name` in the tree, an alias
+// of `test_name`, so its grammar symbol is still sym_test_name here.
+void print_formal_statement(TSNode node, PrpfmtState &st) {
+  emit_group_start(st, false, false);
+  uint32_t child_count = ts_node_child_count(node);
+
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+
+    switch (symbol) {
+      case anon_sym_formal:
+        emit_token(st, "formal");
+        emit_space(st);
+        break;
+      case sym_test_name:
+        print_test_name(child, st);
         break;
       case sym_scope_statement:
         emit_anchor_off(st); // Kill condition anchor before block
