@@ -214,6 +214,7 @@ module.exports = grammar({
     )
     , scope_statement: $ => seq(
       '{'
+      , field('attributes', optional($._attr_prefix))
       , repseq($._statement)
       , '}'
     )

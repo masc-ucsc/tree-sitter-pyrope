@@ -163,6 +163,22 @@
           "value": "{"
         },
         {
+          "type": "FIELD",
+          "name": "attributes",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_attr_prefix"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
           "type": "REPEAT",
           "content": {
             "type": "SEQ",

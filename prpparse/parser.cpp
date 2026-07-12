@@ -450,6 +450,10 @@ Ast* Parser::parse_scope() {
   expect(Token_kind::lbrace, "expected-brace", "expected '{'");
   Scope_guard _sg(*this);
   Ast* sc = node(Kind::scope_statement, start);
+  if (at(Token_kind::coloncolon)) {  // scope attributes: { ::[abc="...", color=N] stmts }
+    advance();
+    sc->add(parse_attribute_sq(), Field::f_attributes);
+  }
   while (!at(Token_kind::rbrace) && !eof()) {
     sc->add(parse_statement());
     while (at(Token_kind::semicolon)) advance();

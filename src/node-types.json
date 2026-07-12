@@ -3449,6 +3449,20 @@
     "type": "scope_statement",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "attribute_sq",
+            "named": true
+          }
+        ]
+      },
       "overflow": {
         "multiple": true,
         "required": false,

@@ -392,6 +392,11 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
+    // Scope attribute prefix ('::' attribute_sq right after '{'): glue it to
+    // the opening brace with no separator (`{::[...]`), then let the normal
+    // transition logic break before the first statement.
+    bool is_attr_prefix = (symbol == anon_sym_COLON_COLON || symbol == sym_attribute_sq);
+
     // Alignment logic for statements within scope
     bool current_alignable = is_alignable(child, st);
     bool next_alignable = false;
@@ -415,7 +420,7 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
     }
 
     // Vertical transitions from previous node
-    if (i > 0) {
+    if (i > 0 && !is_attr_prefix) {
       TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
 
       // Skip mandatory break if we are about to print a trailing comment
@@ -448,6 +453,17 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
       case anon_sym_RBRACE:
         emit_indent_dec(st);
         emit_token(st, "}");
+        break;
+      case anon_sym_COLON_COLON:
+        emit_token(st, "::");
+        break;
+      case sym_attribute_sq:
+        // Isolate in a non-propagating group so the exploded scope block does
+        // not force a short attribute list onto its own lines; it wraps only
+        // when it genuinely overflows the line width.
+        emit_group_start(st, false, false);
+        print_attribute_sq(child, st);
+        emit_group_end(st);
         break;
       case sym_comment:
         print_comment(child, st, false);
