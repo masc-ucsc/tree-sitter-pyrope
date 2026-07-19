@@ -418,6 +418,12 @@ Ast* Parser::parse_statement() {
       case Keyword::kw_test:  return parse_test();
       case Keyword::kw_formal: return parse_formal();
       case Keyword::kw_type:  return parse_type_statement();
+      case Keyword::kw_pub:
+        // `pub type X = …` — an exportable type alias (same pub_modifier field
+        // shape as lambdas/data declares). Any other `pub …` keeps the existing
+        // lambda / declaration paths below.
+        if (peek(1).is_kw(Keyword::kw_type)) return parse_type_statement();
+        break;
       case Keyword::kw_impl:  return parse_impl();
       case Keyword::kw_spawn: return parse_spawn();
       case Keyword::kw_enum: {
@@ -700,8 +706,11 @@ Ast* Parser::parse_formal() {
 
 Ast* Parser::parse_type_statement() {
   uint32_t start = cur().start_byte;
-  advance();  // type
   Ast* ts = node(Kind::type_statement, start);
+  if (at_kw(Keyword::kw_pub)) {
+    ts->add(leaf(Kind::pub_modifier), Field::f_pub);  // `pub type X = …` (exportable)
+  }
+  advance();  // type
   ts->add(leaf(Kind::identifier), Field::f_name);
   if (at(Token_kind::lt)) {
     advance();
