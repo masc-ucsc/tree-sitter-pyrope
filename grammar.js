@@ -368,7 +368,10 @@ module.exports = grammar({
       , $._semicolon
     ))
     , type_statement: $ => seq(
-      'type'
+      // `pub type X = …` — exportable type alias, matching the visibility
+      // field shape used by declarations and lambdas.
+      field('pub', optional(alias('pub', $.pub_modifier)))
+      , 'type'
       , field('name', $.identifier)
       , field('generic', optseq('<', alias($.generic_identifier_list, $.typed_identifier_list), '>'))
       , choice(

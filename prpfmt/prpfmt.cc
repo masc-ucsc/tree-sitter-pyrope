@@ -3033,6 +3033,10 @@ void print_type_statement(TSNode node, PrpfmtState &st) {
     const char *fn = ts_node_field_name_for_child(node, i);
 
     switch (symbol) {
+      case anon_sym_pub:
+        emit_token(st, "pub");
+        emit_space(st);
+        break;
       case anon_sym_type:
         emit_token(st, "type");
         emit_space(st);

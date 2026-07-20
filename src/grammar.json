@@ -1161,6 +1161,27 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "FIELD",
+          "name": "pub",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "pub"
+                },
+                "named": true,
+                "value": "pub_modifier"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        },
+        {
           "type": "STRING",
           "value": "type"
         },
