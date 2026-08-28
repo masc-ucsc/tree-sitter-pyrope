@@ -26,6 +26,20 @@ static bool parses(const std::string& s) {
     return false;
   }
 }
+// The Diag of the first syntax error, or a Diag with an empty code when the
+// input parses. Lets a test assert on the MESSAGE, not just accept/reject.
+static Diag diag_of(const std::string& s) {
+  Source_buffer buf("t.prp", s);
+  try {
+    Parser p(buf);
+    p.parse();
+  } catch (const Parse_error& e) {
+    return e.diag;
+  }
+  Diag none;
+  none.code.clear();
+  return none;
+}
 static size_t count(const std::string& hay, const std::string& needle) {
   size_t n = 0, p = 0;
   while ((p = hay.find(needle, p)) != std::string::npos) {
@@ -146,11 +160,96 @@ TEST(Parser, LambdaAsOperand) {
   EXPECT_TRUE(parses("reg internal:u8 = pub comb m(a) -> (r) { r = a }\n"));
 }
 
-// Reserved words used as identifiers where the keyword construct is not valid
-// (matches tree-sitter's contextual keyword handling).
+// A reserved word is a NAME only in its backticked form. Bare, it is rejected at
+// every site that BINDS a name -- a declaration or a parameter -- because a bare
+// binding used to mint a name nothing else could refer to. Everywhere the grammar
+// deliberately tolerates keyword spellings (tuple FIELD names, attribute names,
+// named call arguments) is untouched: `mut mem = (const type = 1, ...)` is the
+// documented __memory config API and must keep parsing.
 TEST(Parser, KeywordAsIdentifier) {
-  EXPECT_TRUE(parses("mut if = 3\n"));
-  EXPECT_TRUE(parses("wrap if.total = r + a\n"));
+  // bound names: bare rejected, backticked accepted
+  EXPECT_FALSE(parses("mut if = 3\n"));
+  EXPECT_TRUE(parses("mut `if` = 3\n"));
+  EXPECT_FALSE(parses("comb f() { reg reg:u8 = 0 }\n"));
+  EXPECT_TRUE(parses("comb f() { reg `reg`:u8 = 0 }\n"));
+  EXPECT_FALSE(parses("const as = 0sb1010\n"));
+  EXPECT_TRUE(parses("const `as` = 0sb1010\n"));
+  // parameters bind names too (a Verilog port named `in`)
+  EXPECT_FALSE(parses("pub mod f(in:u8) -> (o:u8@[0]) { o = 1 }\n"));
+  EXPECT_TRUE(parses("pub mod f(`in`:u8) -> (o:u8@[0]) { o = `in` }\n"));
+  // ...and the message points at the escape
+  Diag d = diag_of("comb f() { reg reg:u8 = 0 }\n");
+  EXPECT_EQ(d.code, "reserved-word-as-name");
+  EXPECT_NE(d.message.find("cannot be a variable name"), std::string::npos) << d.message;
+  EXPECT_NE(d.hint.find("`reg`"), std::string::npos) << d.hint;
+
+  // more bindings: induction variable, generic parameter, single named output
+  EXPECT_FALSE(parses("mut y = (1,2)\nfor if in y { mut z = 1 }\n"));
+  EXPECT_TRUE(parses("mut y = (1,2)\nfor `if` in y { mut z = 1 }\n"));
+  EXPECT_FALSE(parses("comb f<if>(a:u8) -> (o:u8) { o = a }\n"));
+  EXPECT_FALSE(parses("comb f(a:u8) -> in:u8 { `in` = a }\n"));
+
+  // NOT a binding: keyword spellings the grammar tolerates stay legal.
+  // enum VARIANTS are field names -- and `enum E ( .. )` shares parse_arg_list
+  // with parameter lists, so it must opt out explicitly or `enum E (in, out)`
+  // would reject while the identical `enum E = (in, out)` (parse_paren) accepts.
+  EXPECT_TRUE(parses("const Op = enum(and, or, not)\n"));
+  EXPECT_TRUE(parses("enum E ( in, out )\n"));
+  EXPECT_TRUE(parses("enum E = (in, out)\n"));
+  // a lambda NAME is not a variable: `mod pipe(..)`, `comb tick(..)` are idiomatic
+  EXPECT_TRUE(parses("pub mod pipe(a:u8) -> (o:u8@[0]) { o = a }\n"));
+  EXPECT_TRUE(parses("comb tick(a:u8) -> (o:u8) { o = a }\n"));
+  EXPECT_TRUE(parses("mut a = (const reg=1)\nmut x = a.reg\n"));  // field selector
+  EXPECT_TRUE(parses("mut m = (\n  const type = 1,\n  const size = 16,\n)\n"));  // __memory config
+  EXPECT_TRUE(parses("mut x = 1\nmut y = x.[comptime]\n"));                    // attribute read
+  EXPECT_TRUE(parses("mut y = f(type=1)\n"));                                   // named call arg
+  EXPECT_TRUE(parses("wrap if.total = r + a\n"));                               // assignment, not a binding
+  EXPECT_TRUE(parses("comb f() { stage[2] y = 1 }\n"));                         // real pipelining decl
+}
+
+// A reserved word standing where a NAME is required is a syntax error -- Pyrope
+// spells such an identifier with backticks, and any sequence may sit between
+// them. The diagnostic has to SAY that, because the caret never points there:
+// `stage[0] = a` reports on the `=`, which reads as a broken expression. Verilog
+// imports hit this constantly (bedrock's br_delay_valid names its shift register
+// `stage`, so `stage[0] = in` is the natural translation).
+TEST(Parser, ReservedWordAsNameExplainsTheBacktickEscape) {
+  struct Case {
+    const char* src;
+    const char* word;
+    const char* code;
+  };
+  const Case cases[] = {
+      {"stage[0] = a\n", "stage", "reserved-word-as-name"},   // the pipelining slot ate `[0]`
+      {"reg[0] = a\n", "reg", "reserved-word-as-name"},       // used to declare a name literally called `[0]`
+      {"pub reg[0] = a\n", "reg", "reserved-word-as-name"},   // blame the storage word, not `pub`
+      {"mut:u8 = 3\n", "mut", "reserved-word-as-name"},
+      {"o = ref[1]\n", "ref", "reserved-word-as-name"},       // rvalue position
+      {"tick = 3\n", "tick", "expected-expression"},          // construct keeps its own message
+      {"test[0] = a\n", "test", "expected-test-name"},
+  };
+  for (const auto& c : cases) {
+    Diag d = diag_of(c.src);
+    EXPECT_EQ(d.code, c.code) << c.src;
+    // The help line must show the escaped spelling to copy.
+    EXPECT_NE(d.hint.find(std::string("`") + c.word + "`"), std::string::npos)
+        << c.src << " hint=" << d.hint;
+  }
+  // Escaping it is the documented fix, so the escaped forms must parse.
+  EXPECT_TRUE(parses("`stage`[0] = a\n"));
+  EXPECT_TRUE(parses("`reg`[0] = a\n"));
+  EXPECT_TRUE(parses("o = `ref`[1]\n"));
+}
+
+// The escape hint belongs to the statement that OPENS with the word. A keyword
+// construct that really is one must not collect it, and neither may a failure in
+// an assignment's rvalue -- `stage[2] y = <broken>` is a real pipelining
+// declaration whose problem is the right-hand side, not the word `stage`.
+TEST(Parser, ReservedWordHintDoesNotLeak) {
+  EXPECT_TRUE(parses("comb f() { stage[2] y = 1 }\n"));  // the real declaration still parses
+  EXPECT_TRUE(diag_of("comb f() {\n stage[2] y = (\n}\n").hint.empty());
+  EXPECT_TRUE(diag_of("comb f() {\n mut x = (\n}\n").hint.empty());
+  EXPECT_TRUE(diag_of("comb f() {\n if a {\n b = \n}\n}\n").hint.empty());
 }
 
 // Multi-line block comments: newlines INSIDE a /* */ do not terminate a

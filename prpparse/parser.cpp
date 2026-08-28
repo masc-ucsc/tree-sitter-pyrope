@@ -208,6 +208,68 @@ Span Parser::span_bytes(uint32_t start_byte, uint32_t end_byte) const {
   return s;
 }
 
+bool Parser::starts_ident_use(const Token& t) const {
+  if (assign_kind(t.kind) != Kind::invalid) return true;
+  switch (t.kind) {
+    case Token_kind::lbracket:    // `stage[0]`, `reg[3]`
+    case Token_kind::dot:         // `in.bits`
+    case Token_kind::hash:        // `type#[0]`
+    case Token_kind::at:          // `step@[1]`
+    case Token_kind::colon:       // `mut:u8`
+    case Token_kind::coloncolon:  // `wire::[attr]`
+      return true;
+    default:
+      return false;
+  }
+}
+
+// The backtick escape IS how Pyrope spells an identifier that collides with a
+// keyword ("Using the backtick, Pyrope can use any string as an identifier,
+// even reserved keywords" -- docs/pyrope/02-basics.md), and any sequence may sit
+// between the backticks. Say so on the error, because the caret alone never
+// points there: `stage[0] = a` (a Verilog shift register named `stage` -- see
+// bedrock's br_delay_valid) reports "expected an expression" ON THE `=`.
+void Parser::set_kw_hint(Diag& d, const Token& kw) const {
+  d.hint = std::string("wrap it in backticks (`") + std::string(kw.text)
+           + "`) to use it as an identifier -- that is how Pyrope spells a name whose text "
+             "collides with a keyword";
+  d.notes.push_back(Note{std::string("'") + std::string(kw.text) + "' is reserved",
+                         span_bytes(kw.start_byte, kw.end_byte)});
+}
+
+void Parser::add_kw_as_ident_hint(Diag& d) const {
+  if (kw_as_ident_ == kNoKw || kw_as_ident_ >= toks_.size()) return;
+  set_kw_hint(d, toks_[kw_as_ident_]);
+}
+
+// A NAME being bound -- a declaration, a parameter -- must be a plain identifier.
+// A reserved word is legal there only in its BACKTICKED form, and the lexer makes
+// the test exact: a backticked word is an ident token with `kw == Keyword::none`.
+// Verilog imports make this routine. A design with a signal named `in` or `reg`
+// becomes `` `in` `` / `` `reg` `` in Pyrope (and `in` is not even a Verilog
+// reserved word, so it comes back out of cgen as a bare `in`), which is exactly
+// why someone hand-writing the Pyrope reaches for the unquoted spelling. Bound
+// bare it used to declare a name nothing else in the file could refer to.
+void Parser::require_plain_name(const char* role) const {
+  const Token& t = cur();
+  if (t.kind != Token_kind::ident || t.kw == Keyword::none) return;  // plain, or backticked
+  error_reserved_name(t, "reserved-word-as-name",
+                      "'" + std::string(t.text) + "' is a reserved word, so it cannot be "
+                          + role);
+}
+
+void Parser::error_reserved_name(const Token& kw, const char* code,
+                                 const std::string& message) const {
+  const Token& t = cur();
+  Diag         d;
+  d.code     = code;
+  d.category = std::string(kCategorySyntax);
+  d.message  = message;
+  d.span     = span_bytes(t.start_byte, t.end_byte);
+  set_kw_hint(d, kw);
+  throw Parse_error(std::move(d));
+}
+
 void Parser::error(const char* code, const std::string& message) const {
   const Token& t = cur();
   Diag         d;
@@ -215,6 +277,7 @@ void Parser::error(const char* code, const std::string& message) const {
   d.category = std::string(kCategorySyntax);
   d.message  = message;
   d.span     = span_bytes(t.start_byte, t.end_byte);
+  add_kw_as_ident_hint(d);
   throw Parse_error(std::move(d));
 }
 
@@ -235,6 +298,7 @@ void Parser::error_unclosed(const char* code, const std::string& message, const 
     d.span    = span_bytes(cur().start_byte, cur().end_byte);
     d.notes.push_back(Note{note, span_bytes(open_start, open_end)});
   }
+  add_kw_as_ident_hint(d);
   throw Parse_error(std::move(d));
 }
 
@@ -402,6 +466,13 @@ Ast* Parser::parse_description() {
 Ast* Parser::parse_statement() {
   const Token& t = cur();
 
+  // Arm the reserved-word-as-identifier hint for this statement (restored on the
+  // way out, so a nested statement's keyword never leaks to the enclosing one).
+  Kw_as_ident_guard _kg(
+      *this, (t.kind == Token_kind::ident && t.kw != Keyword::none && starts_ident_use(peek(1)))
+                 ? pos_
+                 : kNoKw);
+
   if (t.kind == Token_kind::lbrace) return parse_scope();
 
   if (t.kind == Token_kind::ident) {
@@ -554,12 +625,12 @@ Ast* Parser::parse_for() {
   // forBinding: '(' typed_identifier_list ')' | typed_identifier
   if (at(Token_kind::lparen)) {
     advance();
-    Ast* til = parse_typed_identifier_list();
+    Ast* til = parse_typed_identifier_list(/*allow_default=*/false, "an induction variable");
     expect(Token_kind::rparen, "unclosed-paren", "expected ')' in for binding");
     til->field = Field::f_index;
     f->add(til);
   } else {
-    f->add(parse_typed_identifier(), Field::f_index);
+    f->add(parse_typed_identifier(/*allow_default=*/false, "an induction variable"), Field::f_index);
   }
   if (!accept_kw(Keyword::kw_in)) error("expected-in", "expected 'in' in for loop");
   if (at_kw(Keyword::kw_ref)) {
@@ -714,7 +785,7 @@ Ast* Parser::parse_type_statement() {
   ts->add(leaf(Kind::identifier), Field::f_name);
   if (at(Token_kind::lt)) {
     advance();
-    ts->add(parse_typed_identifier_list(/*allow_default=*/true), Field::f_generic);
+    ts->add(parse_typed_identifier_list(/*allow_default=*/true, "a generic parameter"), Field::f_generic);
     expect(Token_kind::gt, "expected-gt", "expected '>' to close generics");
   }
   if (at(Token_kind::lparen)) {
@@ -772,7 +843,7 @@ Ast* Parser::parse_enum_assignment() {
   if (accept(Token_kind::assign)) {
     en->add(parse_paren(), Field::f_values);
   } else {
-    en->add(parse_arg_list(), Field::f_body);
+    en->add(parse_arg_list(/*bind_role=*/nullptr), Field::f_body);  // enum VARIANT names
   }
   finish(en, start);
   return en;
@@ -832,13 +903,16 @@ Ast* Parser::finish_assignment(uint32_t start, Ast* overflow, Ast* decl, Ast* lv
   Ast* op       = arena_.make(Kind::assignment_operator, cur().start_byte, cur().end_byte);
   op->add(op_inner);
   advance();
+  // Past the operator the statement head is settled: a failure in the RVALUE is
+  // not "you meant an identifier", so drop the backtick hint.
+  kw_as_ident_ = kNoKw;
   a->add(op, Field::f_operator);
   // rvalue: expression | enum_definition | ref_identifier
   if (at_kw(Keyword::kw_enum)) {
     uint32_t es = cur().start_byte;
     advance();
     Ast* ed = node(Kind::enum_definition, es);
-    ed->add(parse_arg_list(), Field::f_input);
+    ed->add(parse_arg_list(/*bind_role=*/nullptr), Field::f_input);  // enum VARIANT names
     finish(ed, es);
     a->add(ed, Field::f_rvalue);
   } else if (at_kw(Keyword::kw_ref)) {
@@ -866,7 +940,8 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
   }
 
   if (is_decl_keyword(cur())) {
-    Ast* decl = parse_var_or_let_or_reg();
+    const size_t decl_kw_tok = pos_;
+    Ast*         decl        = parse_var_or_let_or_reg();
     if (at(Token_kind::lparen)) {
       // '(' list ')' then '=' (assignment lvalue_list) or ';' (declaration list)
       advance();
@@ -897,6 +972,26 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       finish(d, start);
       return d;
     }
+    // A declaration names something (`mut x`, `reg q:u8`, `stage[2] y = f()`), so
+    // if what follows the storage kind cannot start a name, the word was meant as
+    // an identifier. Blaming that directly beats where the old parse gave up:
+    // `stage[0] = a` swallowed `[0]` as the pipelining slot and died on the `=`
+    // with "expected an expression", and `reg[0] = a` parsed clean through as a
+    // declaration of a variable literally named `[0]`. error() adds the escape.
+    if (starts_ident_use(cur())) {
+      // Blame the LAST storage word consumed (`pub reg[0] = a` -> `reg`, not
+      // `pub`); a `stage[N]` slot leaves a `]` there, so fall back to the first.
+      const bool   last_is_kw = pos_ > 0 && toks_[pos_ - 1].is_ident() && toks_[pos_ - 1].kw != Keyword::none;
+      const Token& kw         = toks_[last_is_kw ? pos_ - 1 : decl_kw_tok];
+      error_reserved_name(kw, "reserved-word-as-name",
+                          "'" + std::string(kw.text)
+                              + "' is a declaration keyword, so a name must follow it");
+    }
+    // The name being declared. NOTE this is the STATEMENT-level declaration only:
+    // a tuple-literal field keeps its own path (parse_tuple_item), so the memory
+    // config `mut mem = (const type = 1, const size = 16, ...)` -- a documented
+    // API whose field IS spelled `type` -- is untouched.
+    require_plain_name("a variable name");
     // The lvalue may be a complex location (`x#[i]`, `a.b`, `arr[i]`) when this
     // is an assignment, or a (typed) identifier when it is a declaration.
     Ast* lv = parse_postfix();
@@ -1022,7 +1117,7 @@ Ast* Parser::parse_function_definition_decl() {
   Ast*     fdd = node(Kind::function_definition_decl, start);
   if (at(Token_kind::lt)) {
     advance();
-    fdd->add(parse_typed_identifier_list(/*allow_default=*/true), Field::f_generic);
+    fdd->add(parse_typed_identifier_list(/*allow_default=*/true, "a generic parameter"), Field::f_generic);
     expect(Token_kind::gt, "expected-gt", "expected '>' to close generics");
   }
   if (at(Token_kind::coloncolon)) {  // pipe_config ::[...]
@@ -1036,14 +1131,14 @@ Ast* Parser::parse_function_definition_decl() {
     } else if (at(Token_kind::colon) || at(Token_kind::coloncolon)) {
       fdd->add(parse_type_cast(), Field::f_output);
     } else {
-      fdd->add(parse_typed_identifier(), Field::f_output);
+      fdd->add(parse_typed_identifier(/*allow_default=*/false, "an output name"), Field::f_output);
     }
   }
   finish(fdd, start);
   return fdd;
 }
 
-Ast* Parser::parse_arg_list() {
+Ast* Parser::parse_arg_list(const char* bind_role) {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lparen, "expected-paren", "expected '(' to open argument list");
   Bracket_guard _bg(*this);
@@ -1060,7 +1155,8 @@ Ast* Parser::parse_arg_list() {
       al->add(m, Field::f_mod);
       advance();
     }
-    Ast* ti = parse_typed_identifier();  // positional (no `item` field — tree-sitter parity)
+    // ports bind names too, in and out: `mod f(`in`:u8) -> (`reg`:u8)`
+    Ast* ti = parse_typed_identifier(/*allow_default=*/false, bind_role);
     al->add(ti);
     if (accept(Token_kind::assign)) al->add(parse_expression(), Field::f_definition);
     if (!accept(Token_kind::comma)) break;
@@ -1488,8 +1584,18 @@ Ast* Parser::parse_subexpr(uint32_t lo, uint32_t hi) {
 Ast* Parser::parse_complex_identifier() { return parse_postfix(); }
 
 Ast* Parser::parse_ref_identifier() {
-  uint32_t start = cur().start_byte;
+  uint32_t     start = cur().start_byte;
+  const Token  kw    = cur();
   advance();  // ref
+  // `ref` names the value being referenced, and every _complex_identifier the
+  // grammar allows there starts with a word. When none does, `ref` was meant as
+  // an identifier: `o = ref[1]` (a Verilog signal named `ref`) used to parse as
+  // a reference to something called `[1]` and die far away in name resolution
+  // with "read of undefined variable '[1]'".
+  if (!at(Token_kind::ident)) {
+    error_reserved_name(kw, "reserved-word-as-name",
+                        "'ref' names the value being referenced, so a name must follow it");
+  }
   Ast* r = node(Kind::ref_identifier, start);
   r->add(parse_postfix());
   finish(r, start);
@@ -2121,8 +2227,14 @@ Ast* Parser::parse_primitive_type() {
   return pt;
 }
 
-Ast* Parser::parse_typed_identifier(bool allow_default) {
+Ast* Parser::parse_typed_identifier(bool allow_default, const char* bind_role) {
   uint32_t start = cur().start_byte;
+  // Every caller BINDS a name: a loop induction variable, a generic parameter, a
+  // lambda's single named output, an arg_list parameter. The sites where the
+  // grammar deliberately tolerates keyword spellings -- tuple FIELD names,
+  // attribute names, named call arguments, `.field` selectors, enum VARIANTS --
+  // never route through here, so one check covers them all without over-reaching.
+  if (bind_role) require_plain_name(bind_role);
   Ast*     ti = node(Kind::typed_identifier, start);
   ti->add(leaf(Kind::identifier), Field::f_identifier);
   if (at(Token_kind::at)) {
@@ -2145,15 +2257,15 @@ Ast* Parser::parse_typed_identifier(bool allow_default) {
   return ti;
 }
 
-Ast* Parser::parse_typed_identifier_list(bool allow_default) {
+Ast* Parser::parse_typed_identifier_list(bool allow_default, const char* bind_role) {
   uint32_t start = cur().start_byte;
   Ast*     list = node(Kind::typed_identifier_list, start);
   while (at(Token_kind::comma)) advance();
-  list->add(parse_typed_identifier(allow_default), Field::f_item);
+  list->add(parse_typed_identifier(allow_default, bind_role), Field::f_item);
   while (accept(Token_kind::comma)) {
     while (at(Token_kind::comma)) advance();
     if (at(Token_kind::rparen) || at(Token_kind::gt) || at(Token_kind::rbracket)) break;
-    list->add(parse_typed_identifier(allow_default), Field::f_item);
+    list->add(parse_typed_identifier(allow_default, bind_role), Field::f_item);
   }
   finish(list, start);
   return list;

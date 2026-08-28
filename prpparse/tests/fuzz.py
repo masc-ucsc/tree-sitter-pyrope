@@ -36,6 +36,34 @@ TS = os.path.join(ROOT, "node_modules", "tree-sitter-cli", "tree-sitter")
 CORPUS = os.path.join(ROOT, "full_pyrope")
 TMP = "/tmp/prpparse_fuzz"
 
+# Error codes where prpparse is DELIBERATELY stricter than the tree-sitter
+# grammar, so a rejection here is NOT a false positive.
+#
+# grammar.js declares `word: $ => $.identifier` (keyword extraction), which makes
+# a keyword lex as a plain identifier anywhere the keyword token is not valid --
+# so tree-sitter happily accepts `mut if = 3` and `mod f(in:u8)`. Pyrope's rule
+# is that a name whose text collides with a keyword must be backticked
+# (`` `if` ``, `` `in` ``), and prpparse enforces that at the sites that BIND a
+# name.
+#
+# tree-sitter CAN reserve words (the `reserved` word-set feature, 0.25+; the
+# pinned CLI is 0.26.9), and it was prototyped: regeneration is cheap and prpfmt
+# is unaffected. It is not used because it cannot express THIS rule. `reserved`
+# is scoped to lexer/parse state, while the rule is per-syntactic-site:
+#     mut string = 3               must REJECT
+#     x = string(a)                must ACCEPT   (cast call)
+#     mut import = 3               must REJECT
+#     const M = import("lib.math") must ACCEPT
+# A global set holding `string`/`import` kills the call forms, so the prototype
+# had to shrink from 52 words to the 33 that happen not to collide -- a
+# lexer-overlap accident, not the policy -- and even then it over-rejected two
+# DOCUMENTED idioms: the `__memory` config field `const type = 1`
+# (docs 08-memories.md) and the lambda name in `,mod tick(ref self, ...)`
+# (docs 04-variables.md). It would also still leave 22 keywords divergent, so
+# this exemption would be needed anyway. Recorded here instead; counted and
+# printed, just not a gate failure.
+STRICTER_THAN_TS = {"reserved-word-as-name"}
+
 # Approximate tokenizer — only needs plausible edit boundaries, not fidelity.
 TOKEN_RE = re.compile(
     r'"(?:\\.|[^"\\])*"'          # double-quoted string
@@ -225,6 +253,7 @@ def main():
     dists = []
     same_line = 0
     near8 = 0
+    stricter = []       # prpparse rejected ON PURPOSE where tree-sitter overparses
     vs_ts = []          # signed (pp_line - ts_line); <=0 means as good as / better than ts
     worse_vs_ts = []    # cases where prpparse localizes worse than tree-sitter
     for mf in mutfiles:
@@ -254,7 +283,10 @@ def main():
         elif ts_rej and not pp_rej:
             missed_ex.append((mf, strat, orig, off))
         elif (not ts_rej) and pp_rej:
-            false_pos.append((mf, strat, pp_code, off, pp_byte))
+            if pp_code in STRICTER_THAN_TS:
+                stricter.append((mf, strat, pp_code, off, pp_byte))
+            else:
+                false_pos.append((mf, strat, pp_code, off, pp_byte))
         else:
             benign += 1
     missed = len(missed_ex)
@@ -271,6 +303,7 @@ def main():
     print(f"  benign (mutation kept valid syntax):   {benign}")
     print(f"  caught (both reject):                  {caught}")
     print(f"  missed (ts rejects, prpparse accepts): {missed}")
+    print(f"  stricter on purpose (see STRICTER_THAN_TS): {len(stricter)}")
     print(f"  false positive (prpparse over-reject): {len(false_pos)}")
     print("-" * 56)
     print(f"syntax-error capture rate: {caught}/{syntax_errs} = {capture * 100:.1f}%")
@@ -293,6 +326,12 @@ def main():
         print(f"  as good or better (<= ts line): {le}/{len(vs_ts)} = {le * 100 // len(vs_ts)}%")
         print(f"  WORSE than ts by >1 line:       {len(worse_vs_ts)}")
     print("=" * 56)
+
+    if stricter:
+        print(f"INTENTIONALLY STRICTER than tree-sitter ({len(stricter)}, not failures):")
+        for mf, strat, code, off, pb in stricter[:10]:
+            print(f"  {os.path.basename(mf)} strat={strat} code={code} edit@{off} err@{pb}")
+        print("  -> see STRICTER_THAN_TS in this file.")
 
     if false_pos:
         print("FALSE POSITIVES (prpparse rejected tree-sitter-valid syntax):")

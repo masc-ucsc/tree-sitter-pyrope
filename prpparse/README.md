@@ -126,6 +126,43 @@ occur in real code (the corpus is 100% parity) and would be rejected downstream
 anyway, so they are left as-is. The fuzzer's default seed has zero false
 positives; adversarial multi-seed sweeps surface this residual.
 
+### Deliberately stricter than the grammar
+
+One divergence is **on purpose**, not an artifact: a name whose text collides with
+a reserved word must be backticked. `mut \`if\` = 3` and `mod f(\`in\`:u8)` are
+names; bare `mut if = 3` / `mod f(in:u8)` are errors (`reserved-word-as-name`).
+
+tree-sitter accepts the bare forms because grammar.js sets `word: $ => $.identifier`
+(keyword extraction), so a keyword lexes as a plain identifier wherever the keyword
+token is not valid.
+
+tree-sitter *can* reserve words (the `reserved` word-set feature, 0.25+; the CLI is
+pinned at 0.26.9), and that was prototyped — regeneration is cheap, `LANGUAGE_VERSION`
+does not move, and prpfmt's generated `ts_symbols.h` comes out byte-identical. It is
+still not the right tool, because **`reserved` is scoped to lexer/parse state while
+this rule is per-syntactic-site**:
+
+| | must |
+|---|---|
+| `mut string = 3` | REJECT |
+| `x = string(a)` | ACCEPT (cast call) |
+| `mut import = 3` | REJECT |
+| `const M = import("lib.math")` | ACCEPT |
+
+A global set holding `string`/`import` kills the call forms, so a prototype had to
+shrink from 52 words to the 33 that happen not to collide — a lexer-overlap accident,
+not the policy — and even then it over-rejected two documented idioms: the `__memory`
+config field `const type = 1` and the lambda name in `,mod tick(ref self, …)`. It would
+also leave 22 keywords divergent, so the exemption below would be needed regardless.
+
+The rule therefore lives here, and the fuzzer buckets these separately via
+`STRICTER_THAN_TS` rather than counting them as false positives.
+
+The check fires only where a name is BOUND -- a declaration or a parameter. Sites
+where the grammar deliberately tolerates keyword spellings are untouched: tuple
+FIELD names (the `__memory` config is literally `const type = 1, const size = 16`),
+attribute names (`x.[comptime]`, `::[abc=1]`), and named call arguments.
+
 ## Deferred (post-milestone)
 
 Performance pass (Phase 4), large-file splitting + threads (Phase 5 — moot for the

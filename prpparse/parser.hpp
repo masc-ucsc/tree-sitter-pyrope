@@ -15,8 +15,11 @@
 namespace prpparse {
 
 // Recursive-descent Pyrope parser. Mirrors grammar.js rule structure; accepts
-// what grammar.js accepts (overparse parity). Fail-fast: the first syntax error
-// throws Parse_error. parse() returns the materialized hhds Prp_tree.
+// what grammar.js accepts (overparse parity), with ONE deliberate exception --
+// a bare reserved word where a name is BOUND (`mut if = 3`, `mod f(in:u8)`) is
+// rejected, because Pyrope spells such a name with backticks (`` `if` ``). See
+// README.md "Deliberately stricter than the grammar". Fail-fast: the first
+// syntax error throws Parse_error. parse() returns the materialized hhds Prp_tree.
 class Parser {
 public:
   explicit Parser(const Source_buffer& buf);
@@ -74,6 +77,44 @@ private:
     Scope_guard(const Scope_guard&)            = delete;
     Scope_guard& operator=(const Scope_guard&) = delete;
   };
+
+  // Index into toks_ of a statement-opening reserved word that is being used
+  // the way a plain identifier would be (`stage[0] = a`, `tick = 3`,
+  // `in.bits = 1`); kNoKw when the current statement does not open that way.
+  // Pyrope's keywords are soft only where the grammar names them, so such a
+  // statement IS a syntax error -- but the caret lands wherever the keyword
+  // construct gave up (on the `=` of `stage[0] = a`), which reads as "your
+  // expression is broken" when the real answer is "that name needs backticks".
+  // Verilog imports hit this constantly, so error() turns the remembered token
+  // into the escape hint. Set by parse_statement, cleared once an assignment
+  // operator is consumed (errors in the RVALUE are not about the keyword).
+  static constexpr size_t kNoKw = static_cast<size_t>(-1);
+  size_t                  kw_as_ident_ = kNoKw;
+  struct Kw_as_ident_guard {
+    Parser& p;
+    size_t  saved;
+    Kw_as_ident_guard(Parser& pp, size_t v) : p(pp), saved(pp.kw_as_ident_) { pp.kw_as_ident_ = v; }
+    ~Kw_as_ident_guard() { p.kw_as_ident_ = saved; }
+    Kw_as_ident_guard(const Kw_as_ident_guard&)            = delete;
+    Kw_as_ident_guard& operator=(const Kw_as_ident_guard&) = delete;
+  };
+  // Does `t` continue a word the way a plain identifier would (assignment,
+  // index, field/bit select, timing read, type annotation)? `if x {`,
+  // `for i in ..`, `test foo {` never do, which keeps the hint off the
+  // constructs that really are keywords.
+  bool starts_ident_use(const Token& t) const;
+  // Attach the backtick escape for reserved word `kw` to `d`.
+  void set_kw_hint(Diag& d, const Token& kw) const;
+  // Same, for the statement-opening word remembered in kw_as_ident_ (if armed).
+  void add_kw_as_ident_hint(Diag& d) const;
+  // error(), but with the escape pinned to `kw` instead of to the statement --
+  // for a reserved word standing where a name was required somewhere other than
+  // the statement's first token (`pub reg[0] = a`, `o = ref[1]`).
+  [[noreturn]] void error_reserved_name(const Token& kw, const char* code,
+                                        const std::string& message) const;
+  // Enforce that the current token is a plain name, not a bare reserved word.
+  // `role` completes "'reg' is a reserved word, so it cannot be <role>".
+  void require_plain_name(const char* role) const;
 
   // ---- cursor ----
   const Token& cur() const { return toks_[pos_ < toks_.size() ? pos_ : toks_.size() - 1]; }
@@ -195,9 +236,13 @@ private:
   Ast* parse_type_cast();
   Ast* parse_type();
   Ast* parse_primitive_type();
-  Ast* parse_typed_identifier(bool allow_default = false);
-  Ast* parse_typed_identifier_list(bool allow_default = false);
-  Ast* parse_arg_list();
+  Ast* parse_typed_identifier(bool allow_default = false, const char* bind_role = "a name");
+  Ast* parse_typed_identifier_list(bool allow_default = false, const char* bind_role = "a name");
+  // `bind_role` completes "'reg' is a reserved word, so it cannot be <role>".
+  // nullptr = this list does NOT bind names -- an `enum` body/definition, whose
+  // items are VARIANT names. (The same enum spelled `enum E = (in, out)` goes
+  // through parse_paren and has always accepted keyword spellings there.)
+  Ast* parse_arg_list(const char* bind_role = "a parameter name");
   Ast* parse_function_definition_decl();
   Ast* parse_attribute_sq();
   Ast* parse_attribute_list();
