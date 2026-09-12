@@ -21,8 +21,8 @@ enum SpacingConfig {
 struct PrpfmtState {
   std::string_view source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
-  int indent_size;         // Spaces per level (default: 4)
-  int max_width;           // Maximum line width (default: 80)
+  int indent_size;         // Spaces per level (default: 2)
+  int max_width;           // Maximum line width (default: 132)
   bool in_assert;          // True if currently printing an assertion (for alignment)
   bool allow_inline;       // Contextual permission for blocks to stay on one line
   int nesting_level;       // Current block depth (0 = top level)
@@ -58,6 +58,8 @@ void print_attribute_sq(TSNode node, PrpfmtState &st);
 void print_attribute_assignment(TSNode node, PrpfmtState &st);
 void print__tuple_list(TSNode node, PrpfmtState &st, SpacingConfig spacing);
 void print__tuple_item(TSNode node, PrpfmtState &st, SpacingConfig spacing);
+void print_arg_assignment(TSNode node, PrpfmtState &st, SpacingConfig spacing);
+void print_step_statement(TSNode node, PrpfmtState &st);
 
 /******************************************************************************
  * 3. Control Flow                                                            *

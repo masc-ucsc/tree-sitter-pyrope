@@ -1,9 +1,11 @@
+#include <charconv>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <tree_sitter/api.h>
 
 #include "prpfmt.h"
@@ -30,15 +32,16 @@ double get_time_ms() {
 }
 
 void print_help() {
-  printf("Usage: ./prpfmt <input_file> [-o <output_file>] [-i <indent_size>] [-w <max_width>] [-v] [-b]\n");
-  printf("       ./prpfmt [-h | --help]\n\n");
+  printf("Usage: prpfmt [options] <input_file> [options]\n\n");
   printf("Options:\n");
-  printf("  -o <output_file>  Specify an output file. If not provided, output to stdout.\n");
-  printf("  -i, --indent <n>  Specify the indentation size (default: 4).\n");
-  printf("  -w, --width <n>   Specify the maximum line width (default: 80).\n");
-  printf("  -v, --verify      Verify that the formatted output is still parseable.\n");
-  printf("  -b, --bench       Run in benchmark mode and print timing statistics.\n");
-  printf("  -h, --help        Display this help message.\n");
+  printf("  -i, --inplace     Rewrite the input file in place.\n");
+  printf("  -o, --output FILE Write to FILE instead of stdout.\n");
+  printf("      --indent N   Spaces per indent level (default: 2).\n");
+  printf("      --width N    Maximum line width (default: 132).\n");
+  printf("  -v, --verify     Verify that the formatted output is still parseable.\n");
+  printf("  -b, --bench      Print timing statistics.\n");
+  printf("  -h, --help       Display this help message.\n");
+  printf("      --           Treat following arguments as file names.\n");
 }
 
 // Read the whole file into an owned std::string (RAII; no manual malloc/free).
@@ -71,75 +74,69 @@ std::string file_to_string(const char *infile) {
 }
 
 int main(int argc, char **argv) {
-  // Check if input file provided
-  if (argc < 2) {
-    fprintf(stderr, "Error: Input file path is required.\n");
-    print_help();
-    exit(1);
-  }
-
-  // Parse for -h option
-  if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-    print_help();
-    return 0;
-  }
-
-  const char *infile_path = argv[1];
+  const char *infile_path = nullptr;
   const char *outfile_path = nullptr;
-  int indent_size = 4;
-  int max_width = 80;
+  int indent_size = 2;
+  int max_width = 132;
   bool verify_output = false;
   bool run_benchmark = false;
+  bool inplace = false;
+  bool positional_only = false;
+  const auto error = [](const std::string &message) {
+    fprintf(stderr, "Error: %s\n", message.c_str());
+    return 1;
+  };
 
-  // Parse for -o, -i, -w options
-  for (int i = 2; i < argc; i++) {
-    if (strcmp(argv[i], "-o") == 0) {
-      if (i + 1 < argc) {
-        outfile_path = argv[i + 1];
-        i++;
-      } else {
-        fprintf(stderr, "Error: -o requires an output file path.\n");
-        print_help();
-        exit(1);
-      }
-    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--indent") == 0) {
-      if (i + 1 < argc) {
-        indent_size = atoi(argv[i + 1]);
-        i++;
-      } else {
-        fprintf(stderr, "Error: -i/--indent requires an integer value.\n");
-        print_help();
-        exit(1);
-      }
-    } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--width") == 0) {
-      if (i + 1 < argc) {
-        max_width = atoi(argv[i + 1]);
-        i++;
-      } else {
-        fprintf(stderr, "Error: -w/--width requires an integer value.\n");
-        print_help();
-        exit(1);
-      }
-    } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verify") == 0) {
-      verify_output = true;
-    } else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bench") == 0) {
-      run_benchmark = true;
-    } else {
-      fprintf(stderr, "Error: Invalid argument '%s'.\n", argv[i]);
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+    if (!positional_only && arg == "--") {
+      positional_only = true;
+    } else if (!positional_only && (arg == "-h" || arg == "--help")) {
       print_help();
-      exit(1);
+      return 0;
+    } else if (!positional_only && (arg == "-i" || arg == "--inplace")) {
+      inplace = true;
+    } else if (!positional_only && (arg == "-v" || arg == "--verify")) {
+      verify_output = true;
+    } else if (!positional_only && (arg == "-b" || arg == "--bench")) {
+      run_benchmark = true;
+    } else if (!positional_only &&
+               (arg == "-o" || arg == "--output" || arg == "--indent" || arg == "--width" ||
+                arg.starts_with("--output=") || arg.starts_with("--indent=") || arg.starts_with("--width="))) {
+      const auto eq = arg.find('=');
+      const auto option = arg.substr(0, eq);
+      const char *value = nullptr;
+      if (eq != std::string_view::npos) {
+        value = argv[i] + eq + 1;
+      } else if (i + 1 < argc) {
+        value = argv[++i];
+      } else {
+        return error(std::string(option) + " requires a value");
+      }
+      if (option == "-o" || option == "--output") {
+        if (*value == '\0') return error("output path must not be empty");
+        outfile_path = value;
+      } else {
+        const std::string_view text(value);
+        int number = 0;
+        const auto result = std::from_chars(text.data(), text.data() + text.size(), number);
+        if (result.ec != std::errc{} || result.ptr != text.data() + text.size() || number <= 0) {
+          return error(std::string(option) + " expects a positive integer");
+        }
+        (option == "--indent" ? indent_size : max_width) = number;
+      }
+    } else if (!positional_only && arg.starts_with('-')) {
+      return error("unknown option '" + std::string(arg) + "'");
+    } else if (infile_path) {
+      return error("expected one input file");
+    } else {
+      infile_path = argv[i];
     }
   }
-
-  // Set output file
+  if (!infile_path) return error("input file path is required");
+  if (inplace && outfile_path) return error("-i and -o are mutually exclusive");
+  if (inplace) outfile_path = infile_path;
   FILE *outfile = stdout;
-  if (outfile_path) {
-    outfile = fopen(outfile_path, "w");
-    if (!outfile) {
-      perror("Error opening output file");
-      exit(1);
-    }
-  }
 
   // Tree-sitter parser initialization
   ParserPtr parser(ts_parser_new());
@@ -192,8 +189,8 @@ int main(int argc, char **argv) {
   prpfmt_solve(state);
 
   bool parse_error = false;
-  if (verify_output) {
-    // Render to a memory buffer first to verify the output
+  {
+    // Render completely before opening an output path, especially for -i.
     char *formatted_buf = nullptr;
     size_t formatted_size = 0;
     FILE *mem_stream = open_memstream(&formatted_buf, &formatted_size);
@@ -208,31 +205,47 @@ int main(int argc, char **argv) {
     if (run_benchmark) format_end = get_time_ms();
     fclose(mem_stream);
 
-    // Verify the formatted output
-    TreePtr verify_tree(ts_parser_parse_string(parser.get(), nullptr,
-                                               formatted_buf, formatted_size));
-    parse_error = ts_node_has_error(ts_tree_root_node(verify_tree.get()));
-
-    // Now write to the actual destination
-    if (outfile == stdout) {
-      printf("%s", formatted_buf);
-    } else {
-      fwrite(formatted_buf, 1, formatted_size, outfile);
+    // In-place edits always verify before touching the source file.
+    if (verify_output || inplace) {
+      TreePtr verify_tree(ts_parser_parse_string(parser.get(), nullptr,
+                                                 formatted_buf, formatted_size));
+      parse_error = ts_node_has_error(ts_tree_root_node(verify_tree.get()));
+    }
+    // A failed verify must never clobber a FILE destination (-o/-i): that is the
+    // whole point of verifying before writing. stdout is different -- it destroys
+    // nothing, and the broken text is exactly what the user (and
+    // prpfmt/tests/prpfmt_debug.py, which reads stdout from `prpfmt <f> -v`
+    // regardless of exit code) needs in order to see the bug.
+    if (!parse_error || !outfile_path) {
+      if (outfile_path) {
+        outfile = fopen(outfile_path, "w");
+        if (!outfile) {
+          perror(outfile_path);
+          free(formatted_buf);
+          return 1;
+        }
+      }
+      if (fwrite(formatted_buf, 1, formatted_size, outfile) != formatted_size) {
+        perror("writing formatted output");
+        free(formatted_buf);
+        if (outfile != stdout) fclose(outfile);
+        return 1;
+      }
     }
 
     if (parse_error) {
       fprintf(stderr, "\n----------------------------------------------------------------\n");
       fprintf(stderr, "WARNING: Formatted output contains PARSE ERRORS!\n");
       fprintf(stderr, "This suggests an unsafe break or a bug in the formatter logic.\n");
-      fprintf(stderr, "Please check the output carefully.\n");
+      if (outfile_path) {
+        fprintf(stderr, "%s was left UNCHANGED; re-run without -o/-i to inspect the broken output.\n", outfile_path);
+      } else {
+        fprintf(stderr, "Please check the output carefully.\n");
+      }
       fprintf(stderr, "----------------------------------------------------------------\n\n");
     }
 
     free(formatted_buf);  // open_memstream allocates with malloc; free is required
-  } else {
-    // Direct rendering to outfile
-    prpfmt_render(state);
-    if (run_benchmark) format_end = get_time_ms();
   }
 
   if (run_benchmark) {
@@ -251,7 +264,10 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Throughput:  %.2f MB/s\n\n", mb_per_sec);
   }
 
-  if (outfile != stdout) fclose(outfile);
+  if (outfile != stdout && fclose(outfile) != 0) {
+    perror("closing formatted output");
+    return 1;
+  }
 
   return parse_error ? 3 : 0;
 }

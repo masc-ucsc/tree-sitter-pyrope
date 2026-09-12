@@ -45,6 +45,7 @@ prpfmt: generate
 
 # Run prpfmt -v over the whole corpus (errors / AST validity / idempotency).
 test-prpfmt: prpfmt
+	python3 prpfmt/tests/cli_test.py
 	python3 prpfmt/tests/verify_all.py $(CORPUS)
 
 ## --------------------------------------------------------------- prpparse ---

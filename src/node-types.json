@@ -2093,6 +2093,10 @@
             "named": true
           },
           {
+            "type": "attribute_set",
+            "named": true
+          },
+          {
             "type": "bit_selection",
             "named": true
           },

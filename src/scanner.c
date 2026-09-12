@@ -19,6 +19,37 @@ void tree_sitter_pyrope_external_scanner_deserialize(void *p, const char *b,
 
 static void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 
+// A BINARY WORD OPERATOR at the start of a continuation line, e.g.
+//
+//   const r = false
+//          or true
+//
+// The symbol operators are already handled by the switch in scan(); the
+// word-spelled ones were not, so the newline terminated the statement and the
+// continuation parsed as a fresh one -- `false` alone, silently dropping every
+// later term. livehd's comptime/lead_word_op_cont.prp pins exactly that with a
+// cassert per operator, and equiv/lead_or_chain.prp is the `and` spelling.
+//
+// Matching is WHOLE-WORD: `ordinal_step(...)` starts with "or" but is an
+// identifier, so the word only counts when the next character cannot continue an
+// identifier. `case` is deliberately EXCLUDED -- it doubles as the match-case
+// clause keyword, where suppressing a terminator would change how the enclosing
+// match parses; every operator below can only ever continue an expression.
+//
+// The caller has already dispatched on the first character, so `first_consumed`
+// says whether it is still in lookahead (a TSLexer cannot rewind, so `else`/
+// `elif` vs `equals` has to share its leading 'e').
+static bool scan_word_tail(TSLexer *lexer, const char *tail) {
+  for (const char *c = tail; *c != '\0'; ++c) {
+    if (lexer->lookahead != (int32_t)*c) {
+      return false;
+    }
+    advance(lexer);
+  }
+  // Whole-word only: a trailing identifier character means this was a name.
+  return !(iswalnum(lexer->lookahead) || lexer->lookahead == '_' || lexer->lookahead == '`');
+}
+
 static bool scan_whitespace_and_comments(TSLexer *lexer) {
   for (;;) {
     while (iswspace(lexer->lookahead)) {
@@ -99,8 +130,34 @@ bool tree_sitter_pyrope_external_scanner_scan(void *payload, TSLexer *lexer,
   case '-':
     return false;
 
-  case 'e': { // else or elif
+  // Binary word operators continuing the previous line: and, or, implies, in,
+  // does, equals, has. Returning false SUPPRESSES the automatic semicolon.
+  case 'a':
     advance(lexer);
+    return !scan_word_tail(lexer, "nd");  // and
+  case 'o':
+    advance(lexer);
+    return !scan_word_tail(lexer, "r");  // or
+  case 'i':
+    advance(lexer);
+    if (lexer->lookahead == 'n') {
+      advance(lexer);
+      return !scan_word_tail(lexer, "");  // in
+    }
+    return !scan_word_tail(lexer, "mplies");  // implies
+  case 'd':
+    advance(lexer);
+    return !scan_word_tail(lexer, "oes");  // does
+  case 'h':
+    advance(lexer);
+    return !scan_word_tail(lexer, "as");  // has
+
+  case 'e': {  // else / elif (existing), or the `equals` binary operator
+    advance(lexer);
+    if (lexer->lookahead == 'q') {
+      advance(lexer);
+      return !scan_word_tail(lexer, "uals");  // equals
+    }
     if (lexer->lookahead != 'l')
       return true;
     advance(lexer);

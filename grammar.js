@@ -56,6 +56,11 @@ function typedOrAttributed($) {
   );
 }
 
+// `f(args)` and `f::[name=u_inst](args)`. The attribute block between the callee
+// and the argument tuple is how a call names its instance (`::[name=…]`), and it
+// is the dominant shape in the sim/loop/hierarchy fixtures. Without it the parser
+// consumed `f::[name=u]` and then wanted a binary operator before `(`, reporting
+// MISSING op_mul -- 19 of the corpus's 22 valid-but-unparseable files.
 function tupleCall($, precedence, argRule) {
   return prec(precedence, seq(
     field('function', $._complex_identifier)
@@ -126,6 +131,11 @@ module.exports = grammar({
     // on the generic call wins when both parses survive (see
     // genericTupleCall).
     , [$.function_call_expression, $._restricted_expression]
+    // `f::[name=u](args)` (a call naming its instance, whose callee is an
+    // attribute_set) vs a tuple item declaring `name:type`. Inside an argument
+    // tuple both start with `_complex_identifier` then `:`, and only what follows
+    // the attribute bracket tells them apart, so GLR has to carry both.
+    , [$.lvalue_item, $._suffix_head]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -410,6 +420,18 @@ module.exports = grammar({
     , function_call_expression: $ => choice(
       tupleCall($, 'function_call_expression', $.arg_tuple)
       , genericTupleCall($, $.arg_tuple)
+      // `f::[name=u_inst](args)` — a call that names its instance. The callee is
+      // an ordinary `attribute_set`, so this reuses that rule's EXISTING `:` + `:`
+      // tokenization instead of introducing the single `'::'` token into
+      // expression position (which would change how the lexer splits
+      // `a::[note = 1]` and break attribute_set itself). This shape is the
+      // dominant one in the sim/loop/hierarchy fixtures: without it the parser
+      // consumed `f::[name=u]` and then wanted a binary operator before `(`,
+      // reporting MISSING op_mul on 19 corpus files.
+      , prec('function_call_expression', seq(
+        field('function', $.attribute_set)
+        , field('argument', $.arg_tuple)
+      ))
     )
     // Tuple
     , tuple: $ => seq('(', optional($._tuple_list), ')')
@@ -1055,7 +1077,11 @@ module.exports = grammar({
         // \p{L}  : Letter
         // \p[Nd} : Decimal Digit Number
         /[\p{L}][\p{L}\p{Nd}_$]*/
-        , /_[\p{L}_$][\p{L}\p{Nd}_$]*/
+        // `_` may be followed by a DIGIT: `_0`/`_1` are the field names Pyrope
+        // gives an anonymous tuple, so `g:(_0:u1, _1:u1)` and `a._0` are ordinary
+        // emitted code (inou/prp/tests/pyrope/sub_instance_field_underscore.prp).
+        // A lone `_` still needs a second character, so it stays a non-identifier.
+        , /_[\p{L}\p{Nd}_$][\p{L}\p{Nd}_$]*/
         // To support all Verilog identifiers. Example:
         //   `foo is . strange!\nidentifier` = 4
         , seq(

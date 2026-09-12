@@ -55,16 +55,19 @@ C++20 compiler (clang++ or g++).
 #### Run
 You can run the formatter from the `prpfmt` directory:
 ```bash
-./prpfmt <input_file> [options]
+./prpfmt [options] <input_file> [options]
 ```
 
 **Options:**
-- `-o <file>`        : Specify an output file (default: stdout).
-- `-i, --indent <n>` : Specify indentation size (default: 4).
-- `-w, --width <n>`  : Specify maximum line width (default: 80).
+- `-i, --inplace`   : Rewrite the input file in place (verified before writing).
+- `-o, --output <file>`        : Specify an output file (default: stdout).
+- `--indent <n>` : Specify indentation size (default: 2).
+- `--width <n>`  : Specify maximum line width (default: 132).
 - `-v, --verify`     : Verify that the formatted output is still valid Pyrope.
 - `-b, --bench`      : Run in benchmark mode and print timing statistics.
 - `-h, --help`       : Display the help message.
+
+Options can precede or follow the file. Long value options also accept `--indent=2` and `--width=132`. Use `--` before a filename beginning with `-`. `-i` and `-o` are mutually exclusive; numeric values must be positive integers.
 
 ## Grammar Updates
 If the Pyrope grammar (`grammar.js`) is updated, the following steps must be taken to synchronize the formatter:

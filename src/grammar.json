@@ -1462,6 +1462,31 @@
               ]
             }
           }
+        },
+        {
+          "type": "PREC",
+          "value": "function_call_expression",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "function",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "attribute_set"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "argument",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "arg_tuple"
+                }
+              }
+            ]
+          }
         }
       ]
     },
@@ -5206,7 +5231,7 @@
           },
           {
             "type": "PATTERN",
-            "value": "_[\\p{L}_$][\\p{L}\\p{Nd}_$]*"
+            "value": "_[\\p{L}\\p{Nd}_$][\\p{L}\\p{Nd}_$]*"
           },
           {
             "type": "SEQ",
@@ -5691,6 +5716,10 @@
     [
       "function_call_expression",
       "_restricted_expression"
+    ],
+    [
+      "lvalue_item",
+      "_suffix_head"
     ]
   ],
   "precedences": [

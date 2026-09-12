@@ -29,8 +29,9 @@ extern "C" {
  *   1  an internal allocation failure — *out_buf == NULL.
  *
  * `indent_size` (spaces per level) and `max_width` (wrap column) mirror the
- * CLI -i/--indent and -w/--width knobs. Passing 0 or a negative value keeps
- * prpfmt's built-in defaults (4 and 80).
+ * CLI --indent and --width knobs. (There are no short spellings: `-w` is not an
+ * option, and `-i` is --inplace, which REWRITES the input file.) Passing 0 or a
+ * negative value keeps prpfmt's built-in defaults (2 and 132).
  */
 int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_width, int verify, char **out_buf,
                          size_t *out_len);

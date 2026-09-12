@@ -146,6 +146,14 @@ bool has_recursive_line_comment(TSNode node, const PrpfmtState &st) {
 }
 
 // Check if a scope block can be inlined (<= 1 statement and no line comments)
+// KNOWN, PRE-EXISTING: the inline decision is not a fixpoint for a lambda body.
+// `pipe f(...) -> (...) { c = a*b }` inlines on one pass and expands on the next
+// (full_pyrope/file11, file178, file301, file324, file385 flip in one direction or
+// the other, then converge). Nothing is lost -- the token stream is identical and
+// a third pass is stable -- but `prpfmt file` twice is not byte-stable, so it is a
+// formatter defect, not a data one. Making it a fixpoint means choosing one policy
+// (always inline a fitting single-statement body, or never inline) and restyling
+// every affected file, so it is left as a deliberate follow-up.
 static bool is_inline_eligible(TSNode node, const PrpfmtState &st) {
   if (has_recursive_line_comment(node, st)) {
     return false;
@@ -322,6 +330,9 @@ bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_in
       break;
     case sym_spawn_statement:
       print_spawn_statement(node, st);
+      break;
+    case sym_step_statement:
+      print_step_statement(node, st);
       break;
     case sym_for_statement:
       print_for_statement(node, st);
@@ -872,6 +883,28 @@ void print__tuple_list(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
   }
 }
 
+// `name = value` / `name = ref value` inside a call's argument tuple. The rvalue
+// is routed back through print__tuple_item so a `ref x` rvalue reaches
+// print_ref_identifier (which is what keeps the space after `ref`).
+void print_arg_assignment(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
+  uint32_t child_count = ts_node_child_count(node);
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode   child  = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    switch (symbol) {
+      case anon_sym_EQ:
+        emit_token(st, "=");
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        print__tuple_item(child, st, spacing);
+        break;
+    }
+  }
+}
+
 // Dispatch tuple contents to proper handlers
 void print__tuple_item(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
   TSSymbol symbol = ts_node_grammar_symbol(node);
@@ -883,6 +916,13 @@ void print__tuple_item(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
       break;
     case sym_ref_identifier:
       print_ref_identifier(node, st);
+      break;
+    // `f(reset_pin = ref reset)` — a named call argument. Without this case the
+    // whole item went to print__expression, which has no ref_identifier arm, so
+    // `ref reset` was emitted as the glued `refreset`: a different identifier,
+    // silently, at exit 0.
+    case sym_arg_assignment:
+      print_arg_assignment(node, st, spacing);
       break;
     case sym_typed_identifier:
     case sym_typed_field:  // bare `name:type` tuple-TYPE field — same shape
@@ -1734,6 +1774,16 @@ void print_enum_assignment(TSNode node, PrpfmtState &st) {
       case sym_identifier:
         print_identifier(child, st);
         break;
+      // `enum V6:signed = (a, b, c)` — the grammar has
+      // `field('type', optional($.type_cast))`, but with no case here the NAMED
+      // node fell through the unnamed-only default arm and the annotation was
+      // dropped at exit 0. That is a semantic loss: per the Pyrope rule an
+      // integer-typed enum switches OFF one-hot numbering, so `enum V6:signed`
+      // and `enum V6` encode their variants differently (the same aliased-node
+      // trap as `pub`/`wire` in print_lambda / print_var_or_let_or_reg).
+      case sym_type_cast:
+        print_type_cast(child, st);
+        break;
       case anon_sym_EQ:
         emit_space(st);
         emit_token(st, "=");
@@ -1791,6 +1841,35 @@ void print_assignment_operator(TSNode node, PrpfmtState &st, SpacingConfig spaci
   emit_operator(node, st, spacing);
 }
 
+// `step`, `step 5`, `step(1000)`. With no printer at all the generic fallback
+// emitted the children back to back, so `step 3` became the single identifier
+// `step3` -- silently, at exit 0.
+void print_step_statement(TSNode node, PrpfmtState &st) {
+  emit_group_start(st, false, false);
+  uint32_t child_count = ts_node_child_count(node);
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode   child  = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    switch (symbol) {
+      case anon_sym_step:
+        emit_token(st, "step");
+        break;
+      case sym_comment:
+        print_comment(child, st, false);
+        break;
+      default:
+        if (ts_node_is_named(child)) {
+          emit_space(st);  // `step 5` — the count is a separate token
+          print__expression(child, st, true);
+        } else {
+          emit_node_text(child, st);
+        }
+        break;
+    }
+  }
+  emit_group_end(st);
+}
+
 void print_spawn_statement(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, false);
   uint32_t child_count = ts_node_child_count(node);
@@ -1846,6 +1925,16 @@ void print_lambda(TSNode node, PrpfmtState &st) {
     TSSymbol symbol = ts_node_grammar_symbol(child);
 
     switch (symbol) {
+      // `pub` is grammar-ALIASED (`alias('pub', $.pub_modifier)`), which makes the
+      // node NAMED -- so the `default:` arm below, which only re-emits unnamed
+      // nodes, dropped it silently and exit 0. That rewrote `pub comb f` as
+      // `comb f`, i.e. it changed the module's visibility: with `-i` it is silent
+      // source corruption. Every one of the 325 `pub`-declaring files in livehd's
+      // Pyrope corpus lost its `pub` this way.
+      case anon_sym_pub:
+        emit_token(st, "pub");
+        emit_space(st);
+        break;
       case anon_sym_comb:
       case anon_sym_mod:
         emit_node_text(child, st);
@@ -2095,6 +2184,9 @@ void print_function_call_expression(TSNode node, PrpfmtState &st) {
       case sym_comment:
         print_comment(child, st, false);
         break;
+      // NOTE: an attributed callee (`f::[name=u](args)`, whose `function` child is
+      // an attribute_set) needs no case here -- the `function`-field branch below
+      // renders it, which also leaves the attribute's inner text untouched.
       default:
         if (fn && strcmp(fn, "function") == 0) {
           print__complex_identifier(child, st);
@@ -3296,6 +3388,24 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState &st) {
         emit_token(st, "reg");
         emit_space(st);
         break;
+      // Same aliased-and-therefore-named trap as `pub` in print_lambda: `wire` is
+      // `alias('wire', $.wire_decl)`, so it fell through `default:` and vanished.
+      case anon_sym_wire:
+        emit_token(st, "wire");
+        emit_space(st);
+        break;
+      // ... and `fluid` is `alias('fluid', $.fluid_decl)`. Dropping it turned a
+      // fluid HANDSHAKE declaration (`fluid mut req:Req`) into a plain one, which
+      // is a different interface, at exit 0.
+      case anon_sym_fluid:
+      case alias_sym_fluid_decl:
+        emit_token(st, "fluid");
+        emit_space(st);
+        break;
+      case anon_sym_pub:
+        emit_token(st, "pub");
+        emit_space(st);
+        break;
       case sym_stage_decl:
         print_stage_decl(child, st);
         emit_space(st);
@@ -3441,6 +3551,20 @@ void print_comment(TSNode node, PrpfmtState &st, bool is_prechecked) {
     print_comment_inline(node, st, is_prechecked);
   } else {
     print_comment_inline(node, st, is_prechecked);
+  }
+
+  // INVARIANT: nothing may follow a `//` line comment on the same output line --
+  // it would be COMMENTED OUT. Only print_comment_trailing enforced that, and
+  // only for its own case, so a comment that reached the newline/inline paths with
+  // a following sibling silently swallowed it. That is invisible to `--verify`
+  // (the result still parses, just with fewer statements) and it needed two
+  // passes to appear: pass 1 moved a trailing comment onto its own line, pass 2
+  // then glued the next item back onto it. With `-i` that DELETES code.
+  // A `/* … */` block comment is exempt -- code legitimately follows it inline.
+  // emit_force_break() is itself a no-op when a break was just emitted, so the
+  // trailing path's own break is not doubled.
+  if (!ts_node_is_null(next) && skip_leading_whitespace(get_node_text(node, st.source_code)).starts_with("//")) {
+    emit_force_break(st);
   }
 }
 
@@ -3882,8 +4006,8 @@ int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_w
   PrpfmtState state = {
       .source_code   = src,
       .outfile       = NULL,
-      .indent_size   = indent_size > 0 ? indent_size : 4,
-      .max_width     = max_width > 0 ? max_width : 80,
+      .indent_size   = indent_size > 0 ? indent_size : 2,
+      .max_width     = max_width > 0 ? max_width : 132,
       .in_assert     = false,
       .allow_inline  = false,
       .nesting_level = 0,

@@ -3,6 +3,7 @@
 This directory contains Python scripts for verifying, debugging, and benchmarking the formatter.
 
 ## Core Verification
+- `cli_test.py`: Checks option ordering, defaults, numeric validation, in-place editing, and preservation on parse errors.
 - `verify_all.py`: Runs the formatter on a directory and checks for errors, AST validity, and idempotency.
 - `prpfmt_debug.py`: Provides a side-by-side diff between original and formatted source code. Includes a `--stats` mode for batch content verification.
 

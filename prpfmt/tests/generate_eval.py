@@ -17,7 +17,7 @@ def get_valid_files():
     return valid
 
 def format_snippet(path):
-    res = subprocess.run(["../../prpfmt", path, "-i", "2"], capture_output=True, text=True)
+    res = subprocess.run(["../../prpfmt", path, "--indent", "2"], capture_output=True, text=True)
     return res.stdout
 
 def main():
