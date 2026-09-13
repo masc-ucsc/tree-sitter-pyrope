@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <string>
@@ -954,9 +955,12 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
     st.allow_inline = false;
   }
 
-  emit_group_start(st, false, true);
+  // Decide wrapping for the whole chain, independently of its enclosing
+  // statement. Branch headers and short bodies may still stay on one line.
+  emit_group_start(st, false, false);
   uint32_t child_count = ts_node_child_count(node);
   bool header_open = false;
+  bool continuation_indent = false;
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -981,7 +985,11 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
           header_open = false;
         }
         emit_anchor_off(st);
-        emit_space(st);
+        if (is_inline && !continuation_indent) {
+          emit_indent_inc(st);
+          continuation_indent = true;
+        }
+        emit_break_point(st, 0);
         emit_token(st, "elif");
         emit_space(st);
         emit_anchor(st);
@@ -994,7 +1002,11 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
           header_open = false;
         }
         emit_anchor_off(st);
-        emit_space(st);
+        if (is_inline && !continuation_indent) {
+          emit_indent_inc(st);
+          continuation_indent = true;
+        }
+        emit_break_point(st, 0);
         emit_token(st, "else");
         break;
       case sym_stmt_list:
@@ -1036,6 +1048,9 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
     emit_group_end(st);
   }
 
+  if (continuation_indent) {
+    emit_indent_dec(st);
+  }
   emit_anchor_off(st);
   emit_group_end(st);
   st.allow_inline = old_allow;
@@ -1522,6 +1537,169 @@ void print_continue_statement(TSNode node, PrpfmtState &st) {
  ******************************************************************************/
 
 // Format an assignment statement, managing lvalues, alignment operators, and rvalues
+// A repeated operand can be laid out as fixed syntax plus right-aligned fields.
+// Use the normal printers to normalize the operand first; never pad source text
+// directly, since its whitespace may already contain an earlier layout.
+struct Aligned_part {
+  std::string text;
+  bool field = false;
+};
+
+static bool aligned_operand_parts(TSNode node, const PrpfmtState &st, std::vector<Aligned_part> &parts) {
+  PrpfmtState probe{};
+  probe.source_code = st.source_code;
+  probe.indent_size = st.indent_size;
+  probe.max_width = st.max_width;
+  probe.fmt_on = true;
+  print__expression(node, probe, true);
+
+  std::vector<std::string> tokens;
+  for (const auto &token : probe.buffer) {
+    switch (token.type) {
+      case TOKEN_TEXT:
+      case TOKEN_ALIGN_OPERATOR:
+      case TOKEN_ALIGN_RELATIONAL:
+      case TOKEN_ALIGN_MATH:
+        if (token.text.find('\n') != std::string::npos || token.text == "{" || token.text == "}") {
+          return false;
+        }
+        tokens.push_back(token.text);
+        break;
+      case TOKEN_SPACE:
+      case TOKEN_BREAK_POINT:
+        tokens.emplace_back(" ");
+        break;
+      case TOKEN_NEWLINE:
+      case TOKEN_FORCE_BREAK:
+      case TOKEN_ALIGN_COMMENT:
+        return false;
+      case TOKEN_GROUP_START:
+        if (token.exploded) {
+          return false;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  auto fixed = [&](const std::string &text) {
+    if (parts.empty() || parts.back().field) {
+      parts.push_back({text, false});
+    } else {
+      parts.back().text += text;
+    }
+  };
+  bool has_selector = false;
+  for (size_t i = 0; i < tokens.size(); ++i) {
+    if (tokens[i] == "[") {
+      fixed(tokens[i]);
+      std::string field;
+      int depth = 1;
+      while (++i < tokens.size()) {
+        if (tokens[i] == "[") {
+          ++depth;
+        } else if (tokens[i] == "]" && --depth == 0) {
+          break;
+        }
+        field += tokens[i];
+      }
+      if (depth != 0 || field.empty()) {
+        return false;
+      }
+      parts.push_back({field, true});
+      fixed("]");
+      has_selector = true;
+    } else if (!tokens[i].empty() && std::isdigit(static_cast<unsigned char>(tokens[i][0]))) {
+      parts.push_back({tokens[i], true});
+    } else {
+      fixed(tokens[i]);
+    }
+  }
+  return has_selector;
+}
+
+// Align a homogeneous assignment RHS only when its operands share the same
+// syntax. Unrelated expressions, comments and blocks use ordinary wrapping.
+static bool print_aligned_assignment_rhs(TSNode node, PrpfmtState &st) {
+  TSSymbol symbol = ts_node_grammar_symbol(node);
+  unwrap_hidden(node, symbol);
+  if (symbol != sym__binary_other || has_recursive_line_comment(node, st)) {
+    return false;
+  }
+
+  std::string op;
+  std::vector<TSNode> operands;
+  for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+    TSNode child = ts_node_child(node, i);
+    if (ts_node_grammar_symbol(child) == sym_binary_other_op) {
+      auto text = get_node_text(child, st.source_code);
+      if (text.size() != 1 || std::string_view("|&^+-").find(text) == std::string_view::npos || (!op.empty() && op != text)) {
+        return false;
+      }
+      op = text;
+    } else {
+      const char *field = ts_node_field_name_for_child(node, i);
+      if (!field || std::strcmp(field, "operand") != 0) {
+        return false;
+      }
+      operands.push_back(child);
+    }
+  }
+  if (operands.size() < 3 || op.empty()) {
+    return false;
+  }
+  std::vector<std::vector<Aligned_part>> rows;
+  for (TSNode operand : operands) {
+    rows.emplace_back();
+    if (!aligned_operand_parts(operand, st, rows.back())) {
+      return false;
+    }
+  }
+
+  std::vector<size_t> widths(rows[0].size(), 0);
+  for (const auto &row : rows) {
+    if (row.size() != widths.size()) {
+      return false;
+    }
+    for (size_t i = 0; i < row.size(); ++i) {
+      if (row[i].field != rows[0][i].field || (!row[i].field && row[i].text != rows[0][i].text)) {
+        return false;
+      }
+      widths[i] = std::max(widths[i], row[i].text.size());
+    }
+  }
+  for (const auto &row : rows) {
+    for (size_t i = 0; i < row.size(); ++i) {
+      // Avoid an isolated huge field stretching every other row.
+      if (row[i].field && widths[i] - row[i].text.size() > 24) {
+        return false;
+      }
+    }
+  }
+
+  // Keep these tokens in one group: padding is present only in the vertical
+  // layout, and the inherited assignment anchor aligns the leading operators.
+  emit_group_start(st, false, false);
+  for (size_t r = 0; r < rows.size(); ++r) {
+    if (r != 0) {
+      emit_break_point(st, 0);
+      emit_token(st, op);
+      emit_space(st);
+    }
+    for (size_t i = 0; i < rows[r].size(); ++i) {
+      if (rows[r][i].field) {
+        for (size_t pad = rows[r][i].text.size(); pad < widths[i]; ++pad) {
+          emit_soft_space(st);
+        }
+      }
+      emit_token(st, rows[r][i].text);
+    }
+  }
+  emit_group_end(st);
+  return true;
+}
+
 void print_assignment(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
@@ -1577,8 +1755,10 @@ void print_assignment(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
         break;
       default:
         if (ts_node_is_named(child)) {
-          // This must be the rvalue expression
-          print__expression(child, st, true);
+          // Repeated operand shapes can share a fully aligned vertical layout.
+          if (spacing != SPACE_BOTH || !print_aligned_assignment_rhs(child, st)) {
+            print__expression(child, st, true);
+          }
         } else {
           emit_node_text(child, st);
         }
@@ -2337,6 +2517,10 @@ void print_expression_item(TSNode node, PrpfmtState &st) {
 
 void print__binary_times(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, true); // Symmetrical unit
+  // Continuations are relative to the surrounding indentation, never the
+  // assignment or condition column inherited from the parent group.
+  emit_anchor_off(st);
+  bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2346,9 +2530,13 @@ void print__binary_times(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case sym_binary_times_op:
         {
+          if (!continuation_indent) {
+            emit_indent_inc(st);
+            continuation_indent = true;
+          }
           std::string_view op_text = get_node_text(child, st.source_code);
           emit_soft_break(st, 100);
-          emit_align_math(st, op_text); // Use MATH channel
+          emit_token(st, op_text);
           emit_soft_space(st);
         }
         break;
@@ -2366,11 +2554,18 @@ void print__binary_times(TSNode node, PrpfmtState &st) {
         break;
     }
   }
+  if (continuation_indent) {
+    emit_indent_dec(st);
+  }
   emit_group_end(st);
 }
 
 void print__binary_other(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, true); // Symmetrical unit
+  // Continuations are relative to the surrounding indentation, never the
+  // assignment or condition column inherited from the parent group.
+  emit_anchor_off(st);
+  bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2380,9 +2575,13 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case sym_binary_other_op:
         {
+          if (!continuation_indent) {
+            emit_indent_inc(st);
+            continuation_indent = true;
+          }
           std::string_view op_text = get_node_text(child, st.source_code);
           emit_break_point(st, 50);
-          emit_align_math(st, op_text); // Use MATH channel
+          emit_token(st, op_text);
           emit_space(st);
         }
         break;
@@ -2400,6 +2599,9 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
         break;
     }
   }
+  if (continuation_indent) {
+    emit_indent_dec(st);
+  }
   emit_group_end(st);
 }
 
@@ -2407,6 +2609,10 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
 // as _binary_other but with the `step` word operator.
 void print__binary_step(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, true); // Symmetrical unit
+  // Continuations are relative to the surrounding indentation, never the
+  // assignment or condition column inherited from the parent group.
+  emit_anchor_off(st);
+  bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2416,9 +2622,15 @@ void print__binary_step(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case sym_binary_step_op:
         {
+          if (!continuation_indent) {
+            emit_indent_inc(st);
+            continuation_indent = true;
+          }
           std::string_view op_text = get_node_text(child, st.source_code);
-          emit_break_point(st, 50);
-          emit_align_math(st, op_text); // Use MATH channel
+          // A leading `step` starts a simulation statement. Keep the range
+          // operator attached to its left operand so re-parsing preserves it.
+          emit_space(st);
+          emit_token(st, op_text);
           emit_space(st);
         }
         break;
@@ -2436,11 +2648,18 @@ void print__binary_step(TSNode node, PrpfmtState &st) {
         break;
     }
   }
+  if (continuation_indent) {
+    emit_indent_dec(st);
+  }
   emit_group_end(st);
 }
 
 void print__binary_compare(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, false);
+  // Continuations are relative to the surrounding indentation, never the
+  // assignment or condition column inherited from the parent group.
+  emit_anchor_off(st);
+  bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2450,6 +2669,10 @@ void print__binary_compare(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case sym_binary_compare_op:
         {
+          if (!continuation_indent) {
+            emit_indent_inc(st);
+            continuation_indent = true;
+          }
           std::string_view op_text = get_node_text(child, st.source_code);
           emit_break_point(st, 30);
           if (st.in_assert && (op_text == "==" || op_text == "!=")) {
@@ -2474,11 +2697,18 @@ void print__binary_compare(TSNode node, PrpfmtState &st) {
         break;
     }
   }
+  if (continuation_indent) {
+    emit_indent_dec(st);
+  }
   emit_group_end(st);
 }
 
 void print__binary_logical(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, true); // Symmetrical unit
+  // Continuations are relative to the surrounding indentation, never the
+  // assignment or condition column inherited from the parent group.
+  emit_anchor_off(st);
+  bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -2488,9 +2718,13 @@ void print__binary_logical(TSNode node, PrpfmtState &st) {
     switch (symbol) {
       case sym_binary_logical_op:
         {
+          if (!continuation_indent) {
+            emit_indent_inc(st);
+            continuation_indent = true;
+          }
           std::string_view op_text = get_node_text(child, st.source_code);
           emit_break_point(st, 20);
-          emit_align_math(st, op_text);
+          emit_token(st, op_text);
           emit_space(st);
         }
         break;
@@ -2507,6 +2741,9 @@ void print__binary_logical(TSNode node, PrpfmtState &st) {
         emit_group_end(st);
         break;
     }
+  }
+  if (continuation_indent) {
+    emit_indent_dec(st);
   }
   emit_group_end(st);
 }
@@ -2559,7 +2796,7 @@ void print_dot_expression(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case anon_sym_DOT:
-        emit_soft_break(st, 200); // High penalty: only break if really needed
+        // Keep the member access intact, even beyond the soft width limit.
         emit_token(st, ".");
         break;
       case sym_identifier:
@@ -2775,7 +3012,7 @@ void print_attribute_read(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case anon_sym_DOT:
-        emit_soft_break(st, 200);
+        // Keep the member access intact, even beyond the soft width limit.
         emit_token(st, ".");
         break;
       case sym_attribute_list:
@@ -2980,7 +3217,7 @@ void print_dot_expression_type(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case anon_sym_DOT:
-        emit_soft_break(st, 200);
+        // Keep the member access intact, even beyond the soft width limit.
         emit_token(st, ".");
         break;
       case sym_expression_type:

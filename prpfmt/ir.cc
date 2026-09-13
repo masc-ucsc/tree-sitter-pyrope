@@ -241,7 +241,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
       if ((t.type == TOKEN_ALIGN_OPERATOR ||
            t.type == TOKEN_ALIGN_RELATIONAL) &&
           !t.text.empty() && ptr_ok) {
-        anc_stack[stack_ptr] = col;
+        anc_stack[stack_ptr] = col - indent * indent_size;
       }
 
       col += (int)t.text.size();
@@ -249,7 +249,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
     case TOKEN_ANCHOR:
       // Set a manual hanging indent anchor
       if (ptr_ok) {
-        anc_stack[stack_ptr] = col;
+        anc_stack[stack_ptr] = col - indent * indent_size;
       }
       break;
     case TOKEN_ANCHOR_OFF:
@@ -720,7 +720,7 @@ void prpfmt_render(PrpfmtState &st) {
             !t.text.empty()) {
           // Record the column position after alignment to serve as a hanging indent anchor
           if (ptr_ok) {
-            anchor_stack[stack_ptr] = col;
+            anchor_stack[stack_ptr] = col - indent * st.indent_size;
           }
         }
         if (!t.text.empty()) {
@@ -732,7 +732,7 @@ void prpfmt_render(PrpfmtState &st) {
       case TOKEN_ANCHOR:
         // Set a manual hanging indent anchor
         if (ptr_ok) {
-          anchor_stack[stack_ptr] = col;
+          anchor_stack[stack_ptr] = col - indent * st.indent_size;
         }
         break;
       case TOKEN_ANCHOR_OFF:

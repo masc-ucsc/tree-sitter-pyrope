@@ -105,6 +105,144 @@ class PreservationTest(unittest.TestCase):
             self.assertEqual(r.returncode, 0, f'exit {r.returncode}: {r.stderr}')
             return r.stdout
 
+    def test_if_chain_wraps_between_branches(self):
+        branches = [
+            'alu_out_0 = unique if instr.beq { alu_eq }',
+            'elif instr.bne { not alu_eq }',
+            'elif instr.bge { not alu_lts }',
+            'elif instr.bgeu { not alu_ltu }',
+            'elif instr.is_slti_blt_slt { alu_lts }',
+            'elif instr.is_sltiu_bltu_sltu { alu_ltu }',
+            'else { 0ub? != 0 }',
+        ]
+        for indent in (2, 4):
+            expected = ('\n' + ' ' * indent).join(branches) + '\n'
+            for source in (' '.join(branches), expected):
+                with self.subTest(indent=indent, source=source):
+                    out = self.fmt(source, '--indent', str(indent), '-v')
+                    self.assertEqual(out, expected)
+                    self.assertEqual(self.fmt(out, '--indent', str(indent), '-v'), out)
+
+    def test_if_chain_width_boundary(self):
+        for prefix in ('', 'unique '):
+            source = f'const x = {prefix}if a {{ 1 }} elif b {{ 2 }} else {{ 3 }}'
+            self.assertEqual(self.fmt(source, '--width', str(len(source)), '-v'), source + '\n')
+            expected = source.replace(' elif', '\n  elif').replace(' else', '\n  else') + '\n'
+            self.assertEqual(self.fmt(source, '--width', str(len(source) - 1), '-v'), expected)
+
+    def test_if_chain_nested_in_scope(self):
+        source = ('comb f() -> () {\n'
+                  '  const x = if first_condition { 1 } elif second_condition { 2 } else { 3 }\n'
+                  '  const y = if a { 1 } else { 2 }\n'
+                  '}\n')
+        expected = source.replace(' elif second', '\n    elif second').replace(' else { 3 }', '\n    else { 3 }')
+        out = self.fmt(source, '--width', '60', '-v')
+        self.assertEqual(out, expected)
+        self.assertEqual(self.fmt(out, '--width', '60', '-v'), out)
+
+    def test_if_chain_with_comment(self):
+        source = ('const x = if a {\n  // keep this value\n  1\n} '
+                  'elif b { 2 } else { 3 }\n')
+        out = self.fmt(source, '-v')
+        self.assertIn('// keep this value\n', out)
+        self.assertIn('\n  elif b { 2 }\n  else { 3 }\n', out)
+        self.assertEqual(self.fmt(out, '-v'), out)
+
+    def test_long_identifiers_are_indivisible(self):
+        sources = (
+            'const x = instr.slli',
+            'const x = instr.very_long_member_name.another_very_long_member_name',
+            'const x = very_long_identifier_without_dots',
+            'const x:package_name.very_long_type_name = nil',
+        )
+        for source in sources:
+            for width in (16, 32, 60):
+                with self.subTest(source=source, width=width):
+                    out = self.fmt(source, '--width', str(width), '-v')
+                    self.assertEqual(out, source + '\n')
+                    self.assertEqual(self.fmt(out, '--width', str(width), '-v'), out)
+
+    def test_long_condition_wraps_at_operators(self):
+        source = ('const x = if instr.first_long_condition or instr.second_long_condition '
+                  'or instr.slli { 1 } else { 2 }')
+        out = self.fmt(source, '--width', '40', '-v')
+        for name in ('instr.first_long_condition', 'instr.second_long_condition', 'instr.slli'):
+            self.assertIn(name, out)
+        self.assertRegex(out, r'\n +or instr\.')
+        self.assertEqual(self.fmt(out, '--width', '40', '-v'), out)
+
+    def test_repeated_operands_align_with_assignment(self):
+        first = 'const compressed_load_offset = (mem_rdata_latched#[5] << 6)'
+        second = '| (mem_rdata_latched#[10 ..= 12] << 3)'
+        third = '| (mem_rdata_latched#[6] << 2)'
+        for indent in (2, 4):
+            for depth in (1, 6):
+                with self.subTest(indent=indent, depth=depth):
+                    prefix = 'comb f() -> () {\n'
+                    prefix += ''.join(' ' * (indent * n) + 'if enable {\n' for n in range(1, depth))
+                    margin = ' ' * (indent * depth)
+                    suffix = margin + 'cputs("done")\n'
+                    suffix += ''.join(' ' * (indent * n) + '}\n' for n in reversed(range(depth)))
+                    source = prefix + margin + ' '.join((first, second, third)) + '\n' + suffix
+                    expected = (prefix + margin + first.replace('#[5]', '#[        5]') + '\n'
+                                + margin + ' ' * first.index('=') + second + '\n'
+                                + margin + ' ' * first.index('=') + third.replace('#[6]', '#[        6]')
+                                + '\n' + suffix)
+                    out = self.fmt(source, '--indent', str(indent), '--width', '100', '-v')
+                    self.assertEqual(out, expected)
+                    self.assertEqual(self.fmt(out, '--indent', str(indent), '--width', '100', '-v'), out)
+
+    def test_binary_operator_families_use_leading_continuations(self):
+        expressions = (
+            ('first_long_operand * second_long_operand * third_long_operand', '*'),
+            ('first_long_operand + second_long_operand + third_long_operand', '+'),
+            ('first_long_operand < second_long_operand < third_long_operand', '<'),
+            ('first_long_operand or second_long_operand or third_long_operand', 'or'),
+        )
+        for expression, op in expressions:
+            for indent in (2, 4):
+                with self.subTest(op=op, indent=indent):
+                    source = f'const result = {expression}\n'
+                    out = self.fmt(source, '--width', '40', '--indent', str(indent), '-v')
+                    lines = out.splitlines()
+                    self.assertGreater(len(lines), 1)
+                    for line in lines[1:]:
+                        self.assertTrue(line.startswith(' ' * indent + op + ' '), repr(line))
+                    self.assertEqual(self.fmt(out, '--width', '40', '--indent', str(indent), '-v'), out)
+
+    def test_range_step_does_not_become_a_statement(self):
+        # A newline before `step` parses as a separate simulation statement.
+        source = 'const result = (0 ..< first_long_operand) step second_long_operand\n'
+        out = self.fmt(source, '--width', '40', '-v')
+        self.assertEqual(out, source)
+        self.assertEqual(self.fmt(out, '--width', '40', '-v'), out)
+
+    def test_repeated_operands_stay_compact_when_they_fit(self):
+        source = ('const x = (data#[5] << 6) | (data#[10 ..= 12] << 3) | (data#[6] << 2)\n')
+        self.assertEqual(self.fmt(source, '--width', '200', '-v'), source)
+        aligned = self.fmt(source, '--width', '60', '-v')
+        self.assertIn('#[        5]', aligned)
+        self.assertEqual(self.fmt(aligned, '--width', '200', '-v'), source)
+
+    def test_different_operands_use_simple_continuation_indent(self):
+        source = ('comb f() -> () {\n'
+                  '  const compressed_load_offset = (mem_rdata_latched#[5] << 6) '
+                  '| (mem_rdata_latched#[10 ..= 12] << 3) | (other_data#[6] << 2)\n'
+                  '  cputs("done")\n}\n')
+        expected = source.replace(' | ', '\n    | ')
+        out = self.fmt(source, '--width', '100', '-v')
+        self.assertEqual(out, expected)
+        self.assertEqual(self.fmt(out, '--width', '100', '-v'), out)
+
+    def test_repeated_operands_align_multiple_fields(self):
+        source = 'const x = (data[1] << 10) | (data[123] << 2) | (data[45] << 3)\n'
+        expected = ('const x = (data[  1] << 10)\n'
+                    '        | (data[123] <<  2)\n'
+                    '        | (data[ 45] <<  3)\n')
+        out = self.fmt(source, '--width', '40', '-v')
+        self.assertEqual(out, expected)
+        self.assertEqual(self.fmt(out, '--width', '40', '-v'), out)
+
     def test_pub_and_wire_survive(self):
         out = self.fmt('pub comb f(a:u4) -> (r:u8) {\n  wire w:u8\n  w = a\n  r = w + 1\n}\n', '-v')
         self.assertRegex(out, r'\bpub\s+comb\s+f\b')   # dropping `pub` changes visibility
