@@ -86,7 +86,6 @@ void print_stage_decl(TSNode node, PrpfmtState &st);
 void print_enum_assignment(TSNode node, PrpfmtState &st);
 void print_enum_definition(TSNode node, PrpfmtState &st);
 void print_assignment_operator(TSNode node, PrpfmtState &st, SpacingConfig spacing);
-void print_spawn_statement(TSNode node, PrpfmtState &st);
 
 /******************************************************************************
  * 5. Functions & Parameters                                                  *

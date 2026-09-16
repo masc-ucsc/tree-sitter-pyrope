@@ -496,7 +496,6 @@ Ast* Parser::parse_statement() {
         if (peek(1).is_kw(Keyword::kw_type)) return parse_type_statement();
         break;
       case Keyword::kw_impl:  return parse_impl();
-      case Keyword::kw_spawn: return parse_spawn();
       case Keyword::kw_enum: {
         Ast* e = parse_enum_assignment();
         expect_semicolon();
@@ -820,18 +819,6 @@ Ast* Parser::parse_impl() {
   expect_semicolon();
   finish(im, start);
   return im;
-}
-
-Ast* Parser::parse_spawn() {
-  uint32_t start = cur().start_byte;
-  advance();  // spawn
-  Ast* sp = node(Kind::spawn_statement, start);
-  sp->add(leaf(Kind::identifier), Field::f_name);
-  expect(Token_kind::assign, "expected-eq", "expected '=' in spawn statement");
-  sp->add(parse_scope());
-  expect_semicolon();
-  finish(sp, start);
-  return sp;
 }
 
 Ast* Parser::parse_enum_assignment() {

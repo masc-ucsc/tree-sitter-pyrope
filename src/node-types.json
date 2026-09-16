@@ -1536,10 +1536,6 @@
           "named": true
         },
         {
-          "type": "spawn_statement",
-          "named": true
-        },
-        {
           "type": "step_statement",
           "named": true
         },
@@ -3575,10 +3571,6 @@
           "named": true
         },
         {
-          "type": "spawn_statement",
-          "named": true
-        },
-        {
           "type": "step_statement",
           "named": true
         },
@@ -3959,32 +3951,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "spawn_statement",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "scope_statement",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -6065,10 +6031,6 @@
   {
     "type": "sign_extend",
     "named": true
-  },
-  {
-    "type": "spawn",
-    "named": false
   },
   {
     "type": "stage",

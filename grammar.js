@@ -210,7 +210,6 @@ module.exports = grammar({
       , $.for_statement
       , $.lambda
       , seq($.enum_assignment, $._semicolon)
-      , $.spawn_statement
       , $.loop_statement
       , seq($._expression, $._semicolon)
       // Verification Only
@@ -606,12 +605,6 @@ module.exports = grammar({
         seq('=', field('values', $.tuple)),
         field('body', $.arg_list)
       )
-    )
-    , spawn_statement: $ => seq(
-      'spawn'
-      , field('name', $.identifier)
-      , seq('=', $.scope_statement)
-      , $._semicolon
     )
     , ref_identifier: $ => seq(
       'ref'

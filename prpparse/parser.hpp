@@ -189,7 +189,6 @@ private:
   Ast* parse_formal();
   Ast* parse_type_statement();
   Ast* parse_impl();
-  Ast* parse_spawn();
   Ast* parse_enum_assignment();
   Ast* parse_lambda();
   Ast* parse_decl_or_assign_or_expr();

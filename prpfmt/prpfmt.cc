@@ -329,9 +329,6 @@ bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_in
     case sym_enum_assignment:
       print_enum_assignment(node, st);
       break;
-    case sym_spawn_statement:
-      print_spawn_statement(node, st);
-      break;
     case sym_step_statement:
       print_step_statement(node, st);
       break;
@@ -2042,47 +2039,6 @@ void print_step_statement(TSNode node, PrpfmtState &st) {
           emit_space(st);  // `step 5` — the count is a separate token
           print__expression(child, st, true);
         } else {
-          emit_node_text(child, st);
-        }
-        break;
-    }
-  }
-  emit_group_end(st);
-}
-
-void print_spawn_statement(TSNode node, PrpfmtState &st) {
-  emit_group_start(st, false, false);
-  uint32_t child_count = ts_node_child_count(node);
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    switch (symbol) {
-      case anon_sym_spawn:
-        emit_token(st, "spawn");
-        emit_space(st);
-        break;
-      case sym_identifier:
-        print_identifier(child, st);
-        break;
-      case anon_sym_EQ:
-        emit_space(st);
-        emit_token(st, "=");
-        emit_space(st);
-        break;
-      case sym_scope_statement:
-        print_scope_statement(child, st, is_inline_eligible(child, st));
-        break;
-      case anon_sym_SEMI:
-      case sym__automatic_semicolon:
-        print__semicolon(child, st, SPACE_NONE);
-        break;
-      case sym_comment:
-        print_comment(child, st, false);
-        break;
-      default:
-        if (!ts_node_is_named(child)) {
           emit_node_text(child, st);
         }
         break;

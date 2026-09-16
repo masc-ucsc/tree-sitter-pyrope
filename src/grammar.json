@@ -109,10 +109,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "spawn_statement"
-          },
-          {
-            "type": "SYMBOL",
             "name": "loop_statement"
           },
           {
@@ -2568,40 +2564,6 @@
               }
             }
           ]
-        }
-      ]
-    },
-    "spawn_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "spawn"
-        },
-        {
-          "type": "FIELD",
-          "name": "name",
-          "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
-          }
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "="
-            },
-            {
-              "type": "SYMBOL",
-              "name": "scope_statement"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_semicolon"
         }
       ]
     },
