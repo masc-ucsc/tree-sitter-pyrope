@@ -2516,6 +2516,11 @@ void print__binary_times(TSNode node, PrpfmtState &st) {
   emit_group_end(st);
 }
 
+// `..=`, `..<`, `..+`
+static bool is_range_op(std::string_view op_text) {
+  return op_text == "..=" || op_text == "..<" || op_text == "..+";
+}
+
 void print__binary_other(TSNode node, PrpfmtState &st) {
   emit_group_start(st, false, true); // Symmetrical unit
   // Continuations are relative to the surrounding indentation, never the
@@ -2523,6 +2528,17 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
   emit_anchor_off(st);
   bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
+
+  // A pure range chain prints compact (`1..<n`); a chain that mixes a range
+  // with arithmetic keeps the spaces so `a + 1 ..< b` stays readable.
+  bool compact_range = true;
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSNode child = ts_node_child(node, i);
+    if (ts_node_grammar_symbol(child) == sym_binary_other_op && !is_range_op(get_node_text(child, st.source_code))) {
+      compact_range = false;
+      break;
+    }
+  }
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -2536,9 +2552,14 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
             continuation_indent = true;
           }
           std::string_view op_text = get_node_text(child, st.source_code);
-          emit_break_point(st, 50);
-          emit_token(st, op_text);
-          emit_space(st);
+          if (compact_range) {
+            emit_soft_break(st, 50);
+            emit_token(st, op_text);
+          } else {
+            emit_break_point(st, 50);
+            emit_token(st, op_text);
+            emit_space(st);
+          }
         }
         break;
       case sym_comment:

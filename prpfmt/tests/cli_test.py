@@ -173,7 +173,7 @@ class PreservationTest(unittest.TestCase):
 
     def test_repeated_operands_align_with_assignment(self):
         first = 'const compressed_load_offset = (mem_rdata_latched#[5] << 6)'
-        second = '| (mem_rdata_latched#[10 ..= 12] << 3)'
+        second = '| (mem_rdata_latched#[10..=12] << 3)'
         third = '| (mem_rdata_latched#[6] << 2)'
         for indent in (2, 4):
             for depth in (1, 6):
@@ -184,9 +184,9 @@ class PreservationTest(unittest.TestCase):
                     suffix = margin + 'cputs("done")\n'
                     suffix += ''.join(' ' * (indent * n) + '}\n' for n in reversed(range(depth)))
                     source = prefix + margin + ' '.join((first, second, third)) + '\n' + suffix
-                    expected = (prefix + margin + first.replace('#[5]', '#[        5]') + '\n'
+                    expected = (prefix + margin + first.replace('#[5]', '#[      5]') + '\n'
                                 + margin + ' ' * first.index('=') + second + '\n'
-                                + margin + ' ' * first.index('=') + third.replace('#[6]', '#[        6]')
+                                + margin + ' ' * first.index('=') + third.replace('#[6]', '#[      6]')
                                 + '\n' + suffix)
                     out = self.fmt(source, '--indent', str(indent), '--width', '100', '-v')
                     self.assertEqual(out, expected)
@@ -212,22 +212,22 @@ class PreservationTest(unittest.TestCase):
 
     def test_range_step_does_not_become_a_statement(self):
         # A newline before `step` parses as a separate simulation statement.
-        source = 'const result = (0 ..< first_long_operand) step second_long_operand\n'
+        source = 'const result = (0..<first_long_operand) step second_long_operand\n'
         out = self.fmt(source, '--width', '40', '-v')
         self.assertEqual(out, source)
         self.assertEqual(self.fmt(out, '--width', '40', '-v'), out)
 
     def test_repeated_operands_stay_compact_when_they_fit(self):
-        source = ('const x = (data#[5] << 6) | (data#[10 ..= 12] << 3) | (data#[6] << 2)\n')
+        source = ('const x = (data#[5] << 6) | (data#[10..=12] << 3) | (data#[6] << 2)\n')
         self.assertEqual(self.fmt(source, '--width', '200', '-v'), source)
         aligned = self.fmt(source, '--width', '60', '-v')
-        self.assertIn('#[        5]', aligned)
+        self.assertIn('#[      5]', aligned)
         self.assertEqual(self.fmt(aligned, '--width', '200', '-v'), source)
 
     def test_different_operands_use_simple_continuation_indent(self):
         source = ('comb f() -> () {\n'
                   '  const compressed_load_offset = (mem_rdata_latched#[5] << 6) '
-                  '| (mem_rdata_latched#[10 ..= 12] << 3) | (other_data#[6] << 2)\n'
+                  '| (mem_rdata_latched#[10..=12] << 3) | (other_data#[6] << 2)\n'
                   '  cputs("done")\n}\n')
         expected = source.replace(' | ', '\n    | ')
         out = self.fmt(source, '--width', '100', '-v')
