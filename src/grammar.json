@@ -3063,7 +3063,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "_type"
+                      "name": "_generic_value"
                     }
                   ]
                 },
@@ -3167,7 +3167,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "_type"
+                    "name": "_generic_value"
                   },
                   {
                     "type": "ALIAS",
@@ -3206,7 +3206,7 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "_type"
+                          "name": "_generic_value"
                         },
                         {
                           "type": "ALIAS",
@@ -3254,7 +3254,101 @@
           "name": "rvalue",
           "content": {
             "type": "SYMBOL",
-            "name": "_type"
+            "name": "_generic_value"
+          }
+        }
+      ]
+    },
+    "_generic_value": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_type"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "generic_attribute_read"
+          },
+          "named": true,
+          "value": "attribute_read"
+        }
+      ]
+    },
+    "generic_attribute_read": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "argument",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "generic_dotted_name"
+                },
+                "named": true,
+                "value": "dot_expression"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "attrs",
+          "content": {
+            "type": "REPEAT1",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "."
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_list"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "generic_dotted_name": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "item",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            ]
           }
         }
       ]
@@ -5682,6 +5776,15 @@
     [
       "lvalue_item",
       "_suffix_head"
+    ],
+    [
+      "_complex_identifier",
+      "expression_type",
+      "generic_attribute_read",
+      "generic_dotted_name"
+    ],
+    [
+      "generic_dotted_name"
     ]
   ],
   "precedences": [

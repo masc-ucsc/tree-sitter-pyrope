@@ -277,3 +277,105 @@ TEST(Parser, BoolLiteralAsCallTarget) {
   // but a plain bool literal is still a bool literal.
   EXPECT_NE(sexp("x = true\n").find("bool_literal"), std::string::npos);
 }
+
+// --sexp with every whitespace run collapsed to one space, so a test can pin a
+// whole subtree on one line.
+static std::string flat_sexp(const std::string& s) {
+  std::string out;
+  bool        ws = false;
+  for (char c : sexp(s)) {
+    if (c == ' ' || c == '\n' || c == '\t') {
+      ws = true;
+      continue;
+    }
+    if (ws && !out.empty()) out += ' ';
+    ws = false;
+    out += c;
+  }
+  return out;
+}
+
+// Ruling 2026-09-27: a generic ARGUMENT may be a POSTFIX value written bare --
+// an attribute read of a (dotted) name -- at the call site (named or
+// positional). It is the same attribute_read node the expression `a.[bits]`
+// builds (argument = identifier / dot_expression), matching grammar.js.
+TEST(Parser, GenericBindPostfixAttributeRead) {
+  const std::string read_a = "(attribute_read argument: (identifier) attrs: (attribute_list name: (identifier)))";
+  EXPECT_NE(flat_sexp("r = low<N=a.[bits]>(x=b)\n")
+                .find("generic: (generic_type_list item: (arg_assignment lvalue: (identifier) rvalue: " + read_a + "))"),
+            std::string::npos);
+  // dotted field then attribute: the head is a dot_expression, as in an expression
+  EXPECT_NE(flat_sexp("m = addn<N=cfg.w.[max]>(x=b)\n")
+                .find("rvalue: (attribute_read argument: (dot_expression item: (identifier) (identifier)) attrs: "
+                      "(attribute_list name: (identifier)))"),
+            std::string::npos);
+  // positional bind (same fork as `f<T>(x)`: the generic call wins)
+  EXPECT_NE(flat_sexp("r = f<a.[bits]>(x=b)\n").find("generic: (generic_type_list item: " + read_a + ")"),
+            std::string::npos);
+  // chained reads, mixed with a type and a dotted field (which stays a type)
+  auto mixed = flat_sexp("r = f<T=u8, N=a.[bits].[max], M=cfg.w>(x=b)\n");
+  EXPECT_EQ(count(mixed, "attribute_list"), 2u);
+  EXPECT_NE(mixed.find("rvalue: (uint_type)"), std::string::npos);
+  EXPECT_NE(mixed.find("rvalue: (expression_type (identifier) item: (identifier))"), std::string::npos);
+  // declaration, nested call argument, comparison operand, spaced / split `.[`
+  EXPECT_TRUE(parses("const v = addn<N=b.[bits]>(x=b)\n"));
+  EXPECT_TRUE(parses("cassert(addn<N=b.[bits]>(x=1) == 9)\n"));
+  EXPECT_TRUE(parses("r = f<N=a.[bits]>(x) + g<M=b.[max]>(y)\n"));
+  EXPECT_TRUE(parses("r = f<N=a . [bits]>(x)\n"));
+  EXPECT_TRUE(parses("r = f<N=a.\n[bits]\n>(x)\n"));
+  // the parenthesized spellings keep working
+  EXPECT_TRUE(parses("r = f<N=(a.[bits]), M=(W*2)>(x=b)\n"));
+  // `a < b.[bits]` with no `>(` is still a comparison
+  EXPECT_EQ(flat_sexp("c = a < b.[bits]\n").find("generic_type_list"), std::string::npos);
+}
+
+// Same ruling, DECLARATION half: a generic-parameter default may be a bare
+// postfix attribute read (`comb f<N=Z.[bits]>`), on comb/mod and type aliases.
+TEST(Parser, GenericDefaultPostfixAttributeRead) {
+  const std::string def = "definition: (attribute_read argument: (identifier) attrs: (attribute_list name: (identifier)))";
+  EXPECT_NE(flat_sexp("comb addn<N=Z.[bits]>(x:u8) -> (y:u8) { y = x }\n").find(def), std::string::npos);
+  EXPECT_NE(flat_sexp("mod low<N=Z.[bits]>(x:u8) -> (y:u8) { y = x }\n").find(def), std::string::npos);
+  EXPECT_NE(flat_sexp("type Row<N=Z.[bits]> = unsigned(bits=N)\n").find(def), std::string::npos);
+  EXPECT_NE(flat_sexp("mod low<N=cfg.w.[max], T=u8>(x:u8) -> (y:u8) { y = x }\n")
+                .find("definition: (attribute_read argument: (dot_expression item: (identifier) (identifier))"),
+            std::string::npos);
+  EXPECT_TRUE(parses("mod lowp<N=(Z.[bits])>(x:u8) -> (y:u8) { y = x }\n"));
+}
+
+// Only the postfix form is new: an operator expression still needs parentheses
+// (a bare `>`/`>>` would be ambiguous), and member/bit selections or an
+// attribute read of a call are not generic arguments. Mirrors the `:error`
+// cases in test/corpus/generic_postfix.txt.
+TEST(Parser, GenericArgumentOperatorNeedsParens) {
+  EXPECT_FALSE(parses("r = f<N=W*2>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=a.[bits]+1>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=g(a).[bits]>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=a[0]>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=a#[0..<2]>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=a.[bits]>>(x=b)\n"));
+  EXPECT_FALSE(parses("r = f<N=u8.[bits]>(x=b)\n"));
+  EXPECT_EQ(diag_of("comb f<N=W*2>(x:u8) -> (y:u8) { y = x }\n").code, "expected-gt");
+  EXPECT_EQ(diag_of("comb f<N=Z.[bits]+1>(x:u8) -> (y:u8) { y = x }\n").code, "expected-gt");
+  EXPECT_EQ(diag_of("comb f<N=Z.[bits]>>(x:u8) -> (y:u8) { y = x }\n").code, "expected-gt");
+}
+
+// `x < …` is only a GUESSED generic call: when the right operand is no generic
+// argument (`-1`, `~b`, `...b`, `[1, 2]`, `{a}`, `!b`) the guess must back off
+// to the comparison instead of failing with "expected a type" (tree-sitter
+// accepts all of these). A list that opens with a named bind (`f<N=…`) cannot
+// be a comparison, so it stays committed and keeps its precise error.
+TEST(Parser, GenericGuessBacksOffToComparison) {
+  for (const char* src : {"y = x < -1\n", "if x < -1 {\n  y = 1\n}\n", "y = x < ~b\n", "y = x < ...b\n",
+                          "y = x < [1, 2]\n", "y = x < {a}\n", "y = x < !b\n", "while i < -3 {\n  i += 1\n}\n",
+                          "y = x < -1 and z > 3\n", "y = g(a < b, N = -3)\n"}) {
+    SCOPED_TRACE(src);
+    EXPECT_EQ(diag_of(src).code, "");
+    auto t = flat_sexp(src);
+    EXPECT_EQ(t.find("generic_type_list"), std::string::npos);
+    EXPECT_NE(t.find("(op_lt)"), std::string::npos);
+  }
+  // committed: the named bind's value error is reported where it is
+  auto d = diag_of("r = f<N=-3>(a)\n");
+  EXPECT_EQ(d.code, "expected-type");
+  EXPECT_EQ(d.span.start_col, 9u);
+}

@@ -15,7 +15,15 @@ if ! ls "$CORPUS"/*.prp >/dev/null 2>&1; then
 fi
 
 echo "prpparse: building CLI..."
-bazel build //prpparse:prpparse_cli >/dev/null 2>&1
+# BAZEL_FLAGS (optional, word-split on purpose) reaches the build, e.g. an
+# xcode_config override on a machine whose Xcode install is broken. The build
+# log is shown only when the build fails; the script used to exit silently.
+# shellcheck disable=SC2086
+if ! build_log=$(bazel build ${BAZEL_FLAGS:-} //prpparse:prpparse_cli 2>&1); then
+  echo "prpparse: bazel build failed:" >&2
+  printf '%s\n' "$build_log" | tail -n 40 >&2
+  exit 1
+fi
 
 total=0
 fail=0

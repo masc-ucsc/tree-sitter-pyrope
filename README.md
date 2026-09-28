@@ -28,7 +28,7 @@ npm install            # one-time: installs node_modules/tree-sitter-cli
 | Command | Does |
 |---------|------|
 | `make` / `make generate` | Regenerate `src/parser.c` from `grammar.js`. |
-| `make test` / `make test-grammar` | Parse all `full_pyrope/*.prp` — the canonical regression (must stay green). |
+| `make test` / `make test-grammar` | Parse all `full_pyrope/*.prp` and run the unit corpus `test/corpus/*.txt` — the canonical regression (must stay green). |
 | `make test-all` | Also run prpfmt + prpparse (prpfmt is WIP, so this may be red). |
 | `make corpus` | Rebuild `full_pyrope/` from the Pyrope docs in `../docs`. |
 | `make prpfmt` / `make test-prpfmt` | Build the formatter / verify it over the corpus. |

@@ -42,89 +42,46 @@ static bool has_trailing_comment(TSNode node) {
   return false;
 }
 
-// Check if tuple should be formatted vertically based on user-provided line breaks
-static bool is_block_style_tuple(TSNode node) {
-  uint32_t child_count = ts_node_child_count(node);
-
-  // Abort if empty/malformed tuple
-  if (child_count < 3) {
-    return false;
-  }
-
-  TSNode open_paren = ts_node_child(node, 0);
-
-  for (uint32_t i = 1; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    // Check for leading comma (start of its own line)
-    if (symbol == anon_sym_COMMA) {
-      TSNode prev_sib = ts_node_prev_sibling(child);
-      if (!ts_node_is_null(prev_sib) &&
-          ts_node_start_point(child).row > ts_node_end_point(prev_sib).row) {
-        return true;
-      }
-    }
-
-    // Check if first item starts on a different line than '(' (vertical block)
-    if (i == 1) {
-      if (ts_node_start_point(child).row > ts_node_start_point(open_paren).row) {
-        return true;
-      }
-    }
-  }
-  return false;
+// Alignment is limited to consecutive statements of the same kind.
+static std::string declaration_kind(TSNode node, const PrpfmtState &st) {
+  std::string kind(get_node_text(node, st.source_code));
+  std::erase_if(kind, [](unsigned char c) { return std::isspace(c); });
+  return kind;
 }
 
-// Check if function call is assertion (for vertical alignment)
-static bool is_assertion(TSNode node, const PrpfmtState &st) {
-  if (ts_node_grammar_symbol(node) != sym_function_call_expression) {
-    return false;
+static std::string alignment_kind(TSNode node, const PrpfmtState &st) {
+  if (st.mode != PRPFMT_HUMAN || ts_node_is_null(node)) return {};
+  auto symbol = ts_node_grammar_symbol(node);
+  if (symbol == anon_sym_wrap) return "wrap";
+  if (symbol == anon_sym_sat) return "sat";
+  if (symbol == sym_assignment) {
+    auto prev = ts_node_prev_sibling(node);
+    if (!ts_node_is_null(prev)) {
+      auto prefix = ts_node_grammar_symbol(prev);
+      if (prefix == anon_sym_wrap) return "wrap";
+      if (prefix == anon_sym_sat) return "sat";
+    }
+    auto decl = ts_node_child_by_field_name(node, "decl", 4);
+    if (!ts_node_is_null(decl)) return declaration_kind(decl, st);
+    // Kind keywords may precede the lvalue without a field label.
+    for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+      auto child = ts_node_child(node, i);
+      if (ts_node_grammar_symbol(child) == sym_var_or_let_or_reg)
+        return declaration_kind(child, st);
+    }
+    return "assignment";
   }
-
-  TSNode func_name = ts_node_child(node, 0);
-  if (ts_node_is_null(func_name) || ts_node_grammar_symbol(func_name) != sym_identifier) {
-    return false;
-  }
-
-  std::string_view name = get_node_text(func_name, st.source_code);
-  return name == "cassert" || name == "assert" || name == "always";
+  if (symbol == sym_type_statement) return "type";
+  return {};
 }
 
-// Check if a node qualifies for vertical alignment
 static bool is_alignable(TSNode node, const PrpfmtState &st) {
-  // Any node with a trailing comment is alignable
-  if (has_trailing_comment(node)) {
-    return true;
-  }
+  return !alignment_kind(node, st).empty();
+}
 
-  TSSymbol symbol = ts_node_grammar_symbol(node);
-
-  // A comment is only alignable if it is a trailing comment
-  if (symbol == sym_comment) {
-    TSNode prev = ts_node_prev_sibling(node);
-    bool at_start = ts_node_is_null(prev) || (ts_node_end_point(prev).row < ts_node_start_point(node).row);
-    return !at_start;
-  }
-
-  // Function calls named 'assert', 'cassert', or 'always' are alignable
-  if (is_assertion(node, st)) {
-    return true;
-  }
-
-  // Structural nodes with internal alignment operators
-  switch (symbol) {
-    case sym_assignment:
-    case sym_declaration_statement:
-    case sym_enum_assignment:
-    case sym_type_statement:
-    case sym_typed_identifier:
-    case sym__tuple_list:
-    case sym__tuple_item:
-      return true;
-    default:
-      return false;
-  }
+static bool same_alignment_kind(TSNode a, TSNode b, const PrpfmtState &st) {
+  auto kind = alignment_kind(a, st);
+  return !kind.empty() && kind == alignment_kind(b, st);
 }
 
 // Detect standalone line comments within a node to force vertical wrapping
@@ -146,15 +103,7 @@ bool has_recursive_line_comment(TSNode node, const PrpfmtState &st) {
   return false;
 }
 
-// Check if a scope block can be inlined (<= 1 statement and no line comments)
-// KNOWN, PRE-EXISTING: the inline decision is not a fixpoint for a lambda body.
-// `pipe f(...) -> (...) { c = a*b }` inlines on one pass and expands on the next
-// (full_pyrope/file11, file178, file301, file324, file385 flip in one direction or
-// the other, then converge). Nothing is lost -- the token stream is identical and
-// a third pass is stable -- but `prpfmt file` twice is not byte-stable, so it is a
-// formatter defect, not a data one. Making it a fixpoint means choosing one policy
-// (always inline a fitting single-statement body, or never inline) and restyling
-// every affected file, so it is left as a deliberate follow-up.
+// Only expression scopes may be inline; comments require real line breaks.
 static bool is_inline_eligible(TSNode node, const PrpfmtState &st) {
   if (has_recursive_line_comment(node, st)) {
     return false;
@@ -209,10 +158,35 @@ void check_format_directives(std::string_view node_text, PrpfmtState &st) {
  * 1. Entry & High-Level Dispatch
  ******************************************************************************/
 
+// Preserve named leftovers gathered by locally declared variadic functions.
+static void collect_variadic_inputs(TSNode node, PrpfmtState &st) {
+  if (ts_node_grammar_symbol(node) == sym_lambda) {
+    auto name = ts_node_child_by_field_name(node, "name", 4);
+    std::vector<std::string> fixed;
+    bool variadic = false;
+    for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+      auto decl = ts_node_child(node, i);
+      if (ts_node_grammar_symbol(decl) != sym_function_definition_decl) continue;
+      auto input = ts_node_child_by_field_name(decl, "input", 5);
+      for (uint32_t j = 0; j < ts_node_child_count(input); ++j) {
+        auto child = ts_node_child(input, j);
+        if (ts_node_grammar_symbol(child) == anon_sym_DOT_DOT_DOT) variadic = true;
+        if (!variadic && ts_node_grammar_symbol(child) == sym_typed_identifier) {
+          auto id = ts_node_child_by_field_name(child, "identifier", 10);
+          fixed.emplace_back(get_node_text(id, st.source_code));
+        }
+      }
+    }
+    if (variadic) st.variadic_inputs[std::string(get_node_text(name, st.source_code))] = std::move(fixed);
+  }
+  for (uint32_t i = 0; i < ts_node_child_count(node); ++i) collect_variadic_inputs(ts_node_child(node, i), st);
+}
+
 // Top-level entry point for the formatter
 // Manage file-level spacing, statement transitions, and vertical alignment groups
 void print_description(TSTree *tree, PrpfmtState &st) {
   TSNode root_node = ts_tree_root_node(tree);
+  collect_variadic_inputs(root_node, st);
   uint32_t root_child_count = ts_node_child_count(root_node);
 
   TSNode prev_child = {};
@@ -228,7 +202,7 @@ void print_description(TSTree *tree, PrpfmtState &st) {
 
     if (i + 1 < root_child_count) {
       TSNode next = ts_node_child(root_node, i + 1);
-      next_alignable = is_alignable(next, st);
+      next_alignable = same_alignment_kind(child, next, st);
       blank_line_after = has_blank_line_between(child, next);
     }
 
@@ -385,13 +359,15 @@ bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_in
 // Format a scoped block: inline vs vertical layout, inner statement alignment, and transitions
 void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
   uint32_t child_count = ts_node_child_count(node);
-  bool originally_one_line = (ts_node_start_point(node).row == ts_node_end_point(node).row);
   
-  // Force block format (vertical) at top level (nesting_level == 0)
-  // Unless explicitly forced inline by parent (e.g. lambda) or st.allow_inline
-  bool can_inline = is_inline || st.allow_inline || (st.nesting_level > 0 && originally_one_line);
+  // Statements and declarations always use vertical blocks. Only expression
+  // scopes may be compact; Human mode preserves a break after the opening brace.
+  bool can_inline = is_inline && is_inline_eligible(node, st);
+  if (st.mode == PRPFMT_HUMAN && ts_node_named_child_count(node) &&
+      ts_node_start_point(ts_node_named_child(node, 0)).row > ts_node_start_point(node).row) can_inline = false;
   
   emit_group_start(st, false, !can_inline);
+  emit_anchor_off(st);
   st.nesting_level++;
   
   TSNode prev_child = {};
@@ -413,13 +389,11 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
 
     if (i + 1 < child_count) {
       TSNode next = ts_node_child(node, i + 1);
-      next_alignable = is_alignable(next, st);
+      next_alignable = same_alignment_kind(child, next, st);
       blank_line_after = has_blank_line_between(child, next);
     }
 
-    if (!is_inline &&
-        !originally_one_line &&
-        !st.allow_inline &&
+    if (!can_inline &&
         current_alignable &&
         next_alignable &&
         !blank_line_after &&
@@ -429,6 +403,8 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
     }
 
     // Vertical transitions from previous node
+    if (i > 0 && is_attr_prefix && !can_inline && ts_node_grammar_symbol(prev_child) == anon_sym_LBRACE)
+      emit_force_break(st);
     if (i > 0 && !is_attr_prefix) {
       TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
 
@@ -441,15 +417,24 @@ void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline) {
 
       // Apply correct transition (space, soft break, or newline) based on context between items
       if (st.fmt_on) {
-        if (has_trailing_comment) {
+        if (!can_inline && prev_sym == anon_sym_LBRACE) {
+          emit_force_break(st);
+        } else if (symbol == sym_scope_statement && prev_sym == sym_lambda &&
+                   ts_node_start_point(child).row == ts_node_end_point(prev_child).row) {
+          // The grammar can expose a nested lambda body as a sibling scope.
+          // Preserve its attachment to the header across that ambiguous parse.
+          emit_space(st);
+        } else if (has_trailing_comment) {
           emit_space(st);
         } else if (can_inline) {
           emit_break_point(st, 10);
         } else if (prev_sym == anon_sym_LBRACE ||
                    symbol == anon_sym_RBRACE) {
           emit_line_break(st);
-        } else {
-          emit_vertical_transition(st, prev_child, child, true);
+        } else if (symbol != anon_sym_SEMI && symbol != sym__automatic_semicolon &&
+                   prev_sym != anon_sym_wrap && prev_sym != anon_sym_sat) {
+          emit_force_break(st);
+          if (has_blank_line_between(prev_child, child)) emit_blank_line(st);
         }
       }
     }
@@ -521,312 +506,159 @@ void print_stmt_list(TSNode node, PrpfmtState &st) {
   }
 }
 
-// Format a tuple: brackets, commas, and internal item alignment
+// Optional breaks inside a selector or a single argument are never useful:
+// choose the enclosing list's comma boundaries instead. Mandatory comment and
+// statement breaks survive, including scopes inside tuple-valued arguments.
+static void keep_expression_together(PrpfmtState &st, size_t begin) {
+  for (size_t i = begin; i < st.buffer.size(); ++i) {
+    auto &t = st.buffer[i];
+    if (t.type == TOKEN_BREAK_POINT) t.type = TOKEN_SPACE;
+    else if (t.type == TOKEN_SOFT_BREAK || t.type == TOKEN_SOFT_SPACE) {
+      t.type = TOKEN_TEXT;
+      t.text.clear();
+    }
+  }
+}
+
+enum class ListStyle { Tuple, Parameters, Attributes, Generics };
+struct ListEntry {
+  std::vector<TSNode> nodes;
+  std::string key;
+  TSNode value{};
+};
+
+static bool reorderable_value(TSNode node, const PrpfmtState &st, const std::vector<std::string> &keys) {
+  auto symbol = ts_node_grammar_symbol(node);
+  // These may mutate, introduce bindings, or splice positional entries.
+  if (symbol == sym_function_call_expression || symbol == sym_lambda || symbol == sym_scope_statement ||
+      symbol == sym_ref_identifier || symbol == sym_comment || symbol == anon_sym_DOT_DOT_DOT)
+    return false;
+  if (symbol == sym_identifier &&
+      std::find(keys.begin(), keys.end(), get_node_text(node, st.source_code)) != keys.end()) return false;
+  for (uint32_t i = 0; i < ts_node_child_count(node); ++i)
+    if (!reorderable_value(ts_node_child(node, i), st, keys)) return false;
+  return true;
+}
+
+static void print_list_node(TSNode node, PrpfmtState &st, ListStyle style) {
+  auto symbol = ts_node_grammar_symbol(node);
+  if (symbol == sym_comment) print_comment(node, st, false);
+  else if (symbol == sym_attribute_assignment) print_attribute_assignment(node, st);
+  else if (symbol == sym_arg_list) print_arg_list(node, st);
+  else if (symbol == sym_generic_identifier) print_typed_identifier(node, st);
+  else if (symbol == anon_sym_ref || symbol == anon_sym_const || symbol == anon_sym_mut ||
+           symbol == anon_sym_reg || symbol == alias_sym_reg_decl) {
+    emit_node_text(node, st);
+    emit_space(st);
+  } else if (style == ListStyle::Generics && symbol != sym_arg_assignment && symbol != sym_typed_identifier) {
+    print__type(node, st);
+  } else if (!ts_node_is_named(node)) emit_node_text(node, st);
+  else print__tuple_item(node, st, SPACE_NONE);
+}
+
+// One group owns every separator, so overflowing lists explode one item per
+// line. Delay separators until after trailing comments have been classified.
+static void print_list(TSNode node, PrpfmtState &st, ListStyle style,
+                       std::string_view open, std::string_view close, bool delimited = true) {
+  std::vector<ListEntry> entries(1);
+  bool comments = has_recursive_line_comment(node, st);
+  TSNode comma{};
+  uint32_t count = ts_node_child_count(node);
+  for (uint32_t i = delimited ? 1 : 0; i < count - (delimited ? 1 : 0); ++i) {
+    auto child = ts_node_child(node, i);
+    auto symbol = ts_node_grammar_symbol(child);
+    if (symbol == anon_sym_COMMA) {
+      comma = child;
+      // Comments alone are no item: in `(/* c */, 1,)` they lead the next item
+      // instead of printing as an empty slot before a separator (which also
+      // lost the one-element tuple's trailing comma).
+      auto &nodes = entries.back().nodes;
+      bool item = std::any_of(nodes.begin(), nodes.end(),
+                              [](TSNode n) { return ts_node_grammar_symbol(n) != sym_comment; });
+      if (item) entries.emplace_back();
+    } else if (symbol == sym_comment && entries.size() > 1 && entries.back().nodes.empty() &&
+               !ts_node_is_null(comma) && ts_node_start_point(child).row == ts_node_end_point(comma).row) {
+      entries[entries.size() - 2].nodes.push_back(child);
+    } else entries.back().nodes.push_back(child);
+  }
+  // A comma after the last item opened an entry that stayed empty.
+  bool trailing_comma = entries.size() > 1 && entries.back().nodes.empty();
+  if (entries.back().nodes.empty()) entries.pop_back();
+  // `(x,)` is a one-element tuple; `(x)` is just `x` in parentheses. Both parse
+  // as the same single-item `tuple` (the comma is an anonymous token), so the
+  // comma alone carries the meaning and must survive formatting.
+  bool keep_trailing_comma = trailing_comma && entries.size() == 1 && ts_node_grammar_symbol(node) == sym_tuple;
+
+  // Sort only all-named, independent data bindings. Calls, spreads, refs,
+  // comments and cross-field dependencies retain their order. Declarations
+  // and generic parameter lists are interfaces, not sortable argument lists.
+  bool sort = style == ListStyle::Tuple && !comments && entries.size() > 1;
+  bool call = ts_node_grammar_symbol(node) == sym_arg_tuple;
+  std::vector<std::string> keys;
+  for (auto &entry : entries) {
+    TSNode binding{};
+    for (auto child : entry.nodes) {
+      auto symbol = ts_node_grammar_symbol(child);
+      if (symbol == sym_assignment || symbol == sym_arg_assignment) binding = child;
+    }
+    if (ts_node_is_null(binding)) { sort = false; continue; }
+    auto lhs = ts_node_child_by_field_name(binding, "lvalue", 6);
+    entry.value = ts_node_child_by_field_name(binding, "rvalue", 6);
+    if (!ts_node_is_null(lhs) && ts_node_grammar_symbol(lhs) == sym_typed_identifier)
+      lhs = ts_node_child_by_field_name(lhs, "identifier", 10);
+    if (ts_node_is_null(lhs) || ts_node_grammar_symbol(lhs) != sym_identifier || ts_node_is_null(entry.value)) {
+      sort = false;
+      continue;
+    }
+    entry.key = std::string(get_node_text(lhs, st.source_code));
+    if (std::find(keys.begin(), keys.end(), entry.key) != keys.end()) sort = false;
+    keys.push_back(entry.key);
+  }
+  const std::vector<std::string> no_keys;
+  for (const auto &entry : entries)
+    if (!ts_node_is_null(entry.value) && !reorderable_value(entry.value, st, call ? no_keys : keys)) sort = false;
+  if (sort) std::stable_sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) { return a.key < b.key; });
+
+  emit_group_start(st, comments, false);
+  emit_anchor_off(st);
+  emit_token(st, open);
+  emit_indent_inc(st);
+  if (!entries.empty()) emit_soft_break(st, 0);
+  for (size_t i = 0; i < entries.size(); ++i) {
+    auto &nodes = entries[i].nodes;
+    size_t trailing = nodes.size();
+    while (trailing > 0 && ts_node_grammar_symbol(nodes[trailing - 1]) == sym_comment) --trailing;
+    size_t start = st.buffer.size();
+    for (size_t n = 0; n < trailing; ++n) print_list_node(nodes[n], st, style);
+    keep_expression_together(st, start);
+    if (i + 1 < entries.size() || (keep_trailing_comma && trailing > 0)) emit_token(st, ",");
+    for (size_t n = trailing; n < nodes.size(); ++n) {
+      if (n > 0 && ts_node_start_point(nodes[n]).row == ts_node_end_point(nodes[n - 1]).row) emit_space(st);
+      else emit_force_break(st);
+      print_comment(nodes[n], st, false);
+    }
+    if (i + 1 < entries.size()) emit_break_point(st, 0);
+  }
+  emit_indent_dec(st);
+  if (!entries.empty()) emit_soft_break(st, 0);
+  emit_token(st, close);
+  emit_group_end(st);
+}
+
 void print_tuple(TSNode node, PrpfmtState &st) {
-  bool is_block = is_block_style_tuple(node);
-  emit_group_start(st, is_block, true);
-
-  uint32_t child_count = ts_node_child_count(node);
-  TSNode prev_child = {};
-  bool in_align_group = false;
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    if (symbol == anon_sym_LPAREN) {
-      emit_token(st, "(");
-      if (is_block) {
-        emit_anchor_off(st); // Disable inherited assignment anchor
-        emit_indent_inc(st);
-        emit_soft_break(st, 10);
-      } else {
-        emit_anchor(st); // Set anchor for hanging indent
-      }
-      prev_child = child;
-      continue;
-    }
-
-    if (symbol == anon_sym_RPAREN) {
-      if (is_block) {
-        emit_soft_break(st, 10);
-        emit_indent_dec(st);
-      }
-      emit_token(st, ")");
-    } else {
-      bool current_alignable = is_alignable(child, st);
-      bool next_alignable = false;
-      bool blank_line_after = false;
-
-      // Handle vertical alignment
-      if (current_alignable) {
-        for (uint32_t j = i + 1; j < child_count; j++) {
-          TSNode next = ts_node_child(node, j);
-          TSSymbol next_sym = ts_node_grammar_symbol(next);
-          if (next_sym != anon_sym_COMMA &&
-              next_sym != sym_comment) {
-            if (next_sym != anon_sym_RPAREN) {
-              next_alignable = is_alignable(next, st);
-              blank_line_after = has_blank_line_between(child, next);
-            }
-            break;
-          }
-        }
-      }
-
-      if (current_alignable &&
-          next_alignable &&
-          !blank_line_after &&
-          !in_align_group) {
-        emit_align_group_start(st);
-        in_align_group = true;
-      }
-
-      // Transition logic
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      } else {
-        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
-        if (symbol != anon_sym_COMMA &&
-            prev_sym != anon_sym_LPAREN &&
-            prev_sym != anon_sym_COMMA) {
-          emit_space(st);
-        }
-      }
-
-      emit_group_start(st, false, false); // FIREWALL
-      switch (symbol) {
-        case sym_comment:
-          print_comment(child, st, false);
-          break;
-        default:
-          print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
-          break;
-      }
-      emit_group_end(st);
-
-      // Keep group open for trailing comments
-      bool next_is_trailing_comment = false;
-      if (i + 1 < child_count) {
-        TSNode next = ts_node_child(node, i + 1);
-        if (ts_node_grammar_symbol(next) == sym_comment &&
-            ts_node_start_point(next).row == ts_node_end_point(child).row) {
-          next_is_trailing_comment = true;
-        }
-      }
-
-      if (in_align_group &&
-          symbol != anon_sym_COMMA &&
-          symbol != sym_comment &&
-          !next_is_trailing_comment &&
-          (!next_alignable || blank_line_after)) {
-        emit_align_group_end(st);
-        in_align_group = false;
-      }
-    }
-
-    prev_child = child;
-  }
-  emit_group_end(st);
+  print_list(node, st, ListStyle::Tuple, "(", ")");
 }
 
-// HELPER FUNCTION: vertical alignment for assertions
 void print_assertion_args(TSNode node, PrpfmtState &st) {
-  uint32_t child_count = ts_node_child_count(node);
-  TSNode prev_child = {};
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    if (symbol == anon_sym_LPAREN) {
-      emit_token(st, "(");
-      prev_child = child;
-      continue;
-    }
-
-    if (symbol == anon_sym_RPAREN) {
-      emit_token(st, ")");
-    } else {
-      // Transitions
-      if (!ts_node_is_null(prev_child)) {
-        if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-          emit_line_break(st);
-        } else {
-           TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
-           if (symbol != anon_sym_COMMA && prev_sym != anon_sym_LPAREN && prev_sym != anon_sym_COMMA) {
-             emit_space(st);
-           }
-        }
-      }
-
-      switch (symbol) {
-        case sym_comment:
-          print_comment(child, st, false);
-          break;
-        default:
-          print__tuple_list(child, st, SPACE_NONE);
-          break;
-      }
-    }
-    prev_child = child;
-  }
+  print_tuple(node, st);
 }
 
-// Format a square-bracketed tuple: layout style and internal item alignment
 void print_tuple_sq(TSNode node, PrpfmtState &st) {
-  bool is_block = is_block_style_tuple(node);
-  emit_group_start(st, is_block, true);
-
-  uint32_t child_count = ts_node_child_count(node);
-  TSNode prev_child = {};
-  bool in_align_group = false;
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    if (symbol == anon_sym_LBRACK) {
-      emit_token(st, "[");
-      if (is_block) {
-        emit_anchor_off(st); // Disable inherited anchor
-        emit_indent_inc(st);
-        emit_soft_break(st, 10);
-      } else {
-        emit_anchor(st); // Set anchor for hanging indent
-      }
-      prev_child = child;
-      continue;
-    }
-
-    // Transitions for all nodes (including closing bracket and comments)
-    if (symbol != sym_comment && symbol != anon_sym_RBRACK) {
-      if (ts_node_start_point(child).row > ts_node_end_point(prev_child).row) {
-        emit_line_break(st);
-      } else {
-        TSSymbol prev_sym = ts_node_grammar_symbol(prev_child);
-        if (symbol != anon_sym_RBRACK &&
-            symbol != anon_sym_COMMA &&
-            prev_sym != anon_sym_LBRACK &&
-            prev_sym != anon_sym_COMMA) {
-          emit_space(st);
-        }
-      }
-    }
-
-    if (symbol == anon_sym_RBRACK) {
-      if (is_block) {
-        emit_soft_break(st, 10);
-        emit_indent_dec(st);
-      }
-      emit_token(st, "]");
-    } else {
-      bool current_alignable = is_alignable(child, st);
-      bool next_alignable = false;
-      bool blank_line_after = false;
-
-      if (current_alignable) {
-        for (uint32_t j = i + 1; j < child_count; j++) {
-          TSNode next = ts_node_child(node, j);
-          TSSymbol next_sym = ts_node_grammar_symbol(next);
-          if (next_sym != anon_sym_COMMA &&
-              next_sym != sym_comment) {
-            if (next_sym != anon_sym_RBRACK) {
-              next_alignable = is_alignable(next, st);
-              blank_line_after = has_blank_line_between(child, next);
-            }
-            break;
-          }
-        }
-      }
-
-      if (current_alignable &&
-          next_alignable &&
-          !blank_line_after &&
-          !in_align_group) {
-        emit_align_group_start(st);
-        in_align_group = true;
-      }
-
-      emit_group_start(st, false, false); // FIREWALL
-      switch (symbol) {
-        case sym_comment:
-          print_comment(child, st, false);
-          break;
-        default:
-          print__tuple_list(child, st, is_block ? SPACE_BOTH : SPACE_NONE);
-          break;
-      }
-      emit_group_end(st);
-
-      // Keep group open for trailing comments
-      bool next_is_trailing_comment = false;
-      if (i + 1 < child_count) {
-        TSNode next = ts_node_child(node, i + 1);
-        if (ts_node_grammar_symbol(next) == sym_comment &&
-            ts_node_start_point(next).row == ts_node_end_point(child).row) {
-          next_is_trailing_comment = true;
-        }
-      }
-
-      if (in_align_group &&
-          symbol != anon_sym_COMMA &&
-          symbol != sym_comment &&
-          !next_is_trailing_comment &&
-          (!next_alignable || blank_line_after)) {
-        emit_align_group_end(st);
-        in_align_group = false;
-      }
-    }
-
-    prev_child = child;
-  }
-  emit_group_end(st);
+  print_list(node, st, ListStyle::Tuple, "[", "]");
 }
 
-// Format a square-bracketed attribute list (::[...]), handling assignments and comma-separated items
 void print_attribute_sq(TSNode node, PrpfmtState &st) {
-  emit_group_start(st, false, true);
-  uint32_t child_count = ts_node_child_count(node);
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    switch (symbol) {
-      case anon_sym_LBRACK:
-        emit_token(st, "[");
-        emit_indent_inc(st);
-        emit_soft_break(st, 10);
-        break;
-      case anon_sym_RBRACK:
-        emit_soft_break(st, 10);
-        emit_indent_dec(st);
-        emit_token(st, "]");
-        break;
-      case anon_sym_COMMA:
-        emit_token(st, ",");
-        emit_break_point(st, 10);
-        break;
-      case sym_attribute_assignment:
-        print_attribute_assignment(child, st);
-        break;
-      case sym_ref_identifier:
-        print_ref_identifier(child, st);
-        break;
-      case sym_comment:
-        print_comment(child, st, false);
-        break;
-      default:
-        if (ts_node_is_named(child)) {
-          print__expression(child, st, true);
-        } else {
-          emit_node_text(child, st);
-        }
-        break;
-    }
-  }
-  emit_group_end(st);
+  print_list(node, st, ListStyle::Attributes, "[", "]");
 }
 
 // Format an attribute assignment within an attribute list
@@ -842,9 +674,7 @@ void print_attribute_assignment(TSNode node, PrpfmtState &st) {
         print_identifier(child, st);
         break;
       case anon_sym_EQ:
-        emit_space(st);
         emit_token(st, "=");
-        emit_space(st);
         break;
       default:
         if (ts_node_is_named(child)) {
@@ -885,6 +715,23 @@ void print__tuple_list(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
 // is routed back through print__tuple_item so a `ref x` rvalue reaches
 // print_ref_identifier (which is what keeps the space after `ref`).
 void print_arg_assignment(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
+  auto parent = ts_node_parent(node);
+  auto lhs = ts_node_child_by_field_name(node, "lvalue", 6);
+  auto rhs = ts_node_child_by_field_name(node, "rvalue", 6);
+  if (ts_node_grammar_symbol(parent) == sym_arg_tuple &&
+      ts_node_grammar_symbol(lhs) == sym_identifier && ts_node_grammar_symbol(rhs) == sym_identifier &&
+      get_node_text(lhs, st.source_code) == get_node_text(rhs, st.source_code) &&
+      !has_recursive_line_comment(node, st)) {
+    auto call = ts_node_parent(parent);
+    auto callee = ts_node_child_by_field_name(call, "function", 8);
+    auto found = st.variadic_inputs.find(std::string(get_node_text(callee, st.source_code)));
+    auto name = get_node_text(lhs, st.source_code);
+    if (found == st.variadic_inputs.end() ||
+        std::find(found->second.begin(), found->second.end(), name) != found->second.end()) {
+      print_identifier(rhs, st);
+      return;
+    }
+  }
   uint32_t child_count = ts_node_child_count(node);
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode   child  = ts_node_child(node, i);
@@ -945,12 +792,7 @@ void print__tuple_item(TSNode node, PrpfmtState &st, SpacingConfig spacing) {
 void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
   bool old_allow = st.allow_inline;
 
-  // Allow inlining only if nested and originally on one line
-  if (st.nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
-    st.allow_inline = true;
-  } else {
-    st.allow_inline = false;
-  }
+  st.allow_inline = false;
 
   // Decide wrapping for the whole chain, independently of its enclosing
   // statement. Branch headers and short bodies may still stay on one line.
@@ -986,7 +828,7 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
           emit_indent_inc(st);
           continuation_indent = true;
         }
-        emit_break_point(st, 0);
+        if (is_inline) emit_break_point(st, 0); else emit_space(st);
         emit_token(st, "elif");
         emit_space(st);
         emit_anchor(st);
@@ -1003,7 +845,7 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
           emit_indent_inc(st);
           continuation_indent = true;
         }
-        emit_break_point(st, 0);
+        if (is_inline) emit_break_point(st, 0); else emit_space(st);
         emit_token(st, "else");
         break;
       case sym_stmt_list:
@@ -1055,12 +897,7 @@ void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline) {
 
 void print_match_expression(TSNode node, PrpfmtState &st) {
   bool old_allow = st.allow_inline;
-  // Allow inlining only if nested and originally on one line
-  if (st.nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
-    st.allow_inline = true;
-  } else {
-    st.allow_inline = false;
-  }
+  st.allow_inline = false;
 
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
@@ -1189,12 +1026,7 @@ void print_match_expression(TSNode node, PrpfmtState &st) {
 
 void print_for_statement(TSNode node, PrpfmtState &st) {
   bool old_allow = st.allow_inline;
-  // Allow inlining only if nested and originally on one line
-  if (st.nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
-    st.allow_inline = true;
-  } else {
-    st.allow_inline = false;
-  }
+  st.allow_inline = false;
 
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
@@ -1291,12 +1123,7 @@ void print_for_statement(TSNode node, PrpfmtState &st) {
 
 void print_while_statement(TSNode node, PrpfmtState &st) {
   bool old_allow = st.allow_inline;
-  // Allow inlining only if nested and originally on one line
-  if (st.nesting_level > 0 && ts_node_start_point(node).row == ts_node_end_point(node).row) {
-    st.allow_inline = true;
-  } else {
-    st.allow_inline = false;
-  }
+  st.allow_inline = false;
 
   emit_group_start(st, false, true);
   uint32_t child_count = ts_node_child_count(node);
@@ -1548,6 +1375,7 @@ static bool aligned_operand_parts(TSNode node, const PrpfmtState &st, std::vecto
   probe.indent_size = st.indent_size;
   probe.max_width = st.max_width;
   probe.fmt_on = true;
+  probe.mode = st.mode;
   print__expression(node, probe, true);
 
   std::vector<std::string> tokens;
@@ -1619,6 +1447,7 @@ static bool aligned_operand_parts(TSNode node, const PrpfmtState &st, std::vecto
 // Align a homogeneous assignment RHS only when its operands share the same
 // syntax. Unrelated expressions, comments and blocks use ordinary wrapping.
 static bool print_aligned_assignment_rhs(TSNode node, PrpfmtState &st) {
+  if (st.mode == PRPFMT_AI) return false;
   TSSymbol symbol = ts_node_grammar_symbol(node);
   unwrap_hidden(node, symbol);
   if (symbol != sym__binary_other || has_recursive_line_comment(node, st)) {
@@ -1819,7 +1648,8 @@ void print_lvalue_list(TSNode node, PrpfmtState &st) {
         break;
       case anon_sym_COMMA:
         emit_token(st, ",");
-        emit_space(st);
+        // `(a,) = f()`: no space before the closing paren.
+        if (i + 1 < child_count) emit_space(st);
         break;
       case sym_comment:
         print_comment(child, st, false);
@@ -2092,7 +1922,7 @@ void print_lambda(TSNode node, PrpfmtState &st) {
         break;
       case sym_scope_statement:
         emit_space(st);
-        print_scope_statement(child, st, is_inline_eligible(child, st));
+        print_scope_statement(child, st, false);
         break;
       case sym_comment:
         print_comment(child, st, false);
@@ -2145,14 +1975,14 @@ void print_function_definition_decl(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case anon_sym_LT:
-        emit_token(st, "<");
+
         break;
       case anon_sym_GT:
-        emit_token(st, ">");
+
         break;
       case sym_typed_identifier_list:
       case sym_generic_identifier_list:  // `<T, K=1>` (aliased to typed_identifier_list)
-        print_typed_identifier_list(child, st);
+        print_list(child, st, ListStyle::Generics, "<", ">", false);
         break;
       case anon_sym_COLON_COLON:
         emit_token(st, "::");
@@ -2188,107 +2018,8 @@ void print_function_definition_decl(TSNode node, PrpfmtState &st) {
 }
 
 void print_arg_list(TSNode node, PrpfmtState &st) {
-  emit_group_start(st, false, true);
-  if (has_recursive_line_comment(node, st)) {
-    emit_force_break(st);
-  }
-
-  uint32_t child_count = ts_node_child_count(node);
-  bool in_align_group = false;
-
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    TSSymbol symbol = ts_node_grammar_symbol(child);
-
-    switch (symbol) {
-      case anon_sym_LPAREN:
-        emit_token(st, "(");
-        emit_indent_inc(st);
-        emit_soft_break(st, 10);
-        break;
-      case anon_sym_RPAREN:
-        emit_soft_break(st, 10);
-        emit_indent_dec(st);
-        emit_token(st, ")");
-        break;
-      case anon_sym_COMMA:
-        emit_token(st, ",");
-        emit_break_point(st, 10);
-        break;
-      case anon_sym_EQ:
-        emit_token(st, "=");
-        break;
-      case anon_sym_DOT_DOT_DOT:
-        emit_token(st, "...");
-        break;
-      case anon_sym_ref:
-        emit_token(st, "ref");
-        emit_space(st);
-        break;
-      case anon_sym_const:
-        emit_token(st, "const");
-        emit_space(st);
-        break;
-      case anon_sym_mut:
-        emit_token(st, "mut");
-        emit_space(st);
-        break;
-      case alias_sym_reg_decl:
-      case anon_sym_reg:
-        emit_token(st, "reg");
-        emit_space(st);
-        break;
-      case sym_typed_identifier:
-        print_typed_identifier(child, st);
-        break;
-      case sym_arg_list:
-        print_arg_list(child, st);
-        break;
-      case sym_comment:
-        print_comment(child, st, false);
-        break;
-      default:
-        {
-          bool current_alignable = is_alignable(child, st);
-          bool next_alignable = false;
-          bool blank_line_after = false;
-
-          if (current_alignable) {
-            for (uint32_t j = i + 1; j < child_count; j++) {
-              TSNode next = ts_node_child(node, j);
-              TSSymbol next_sym = ts_node_grammar_symbol(next);
-              if (next_sym != anon_sym_COMMA && next_sym != sym_comment) {
-                if (next_sym != anon_sym_RPAREN) {
-                  next_alignable = is_alignable(next, st);
-                  blank_line_after = has_blank_line_between(child, next);
-                }
-                break;
-              }
-            }
-          }
-
-          if (current_alignable && next_alignable && !blank_line_after && !in_align_group) {
-            emit_align_group_start(st);
-            in_align_group = true;
-          }
-
-          if (ts_node_is_named(child)) {
-            print__expression(child, st, true);
-          } else {
-            emit_node_text(child, st);
-          }
-
-          if (in_align_group && symbol != anon_sym_COMMA && symbol != sym_comment && (!next_alignable || blank_line_after)) {
-            emit_align_group_end(st);
-            in_align_group = false;
-          }
-        }
-        break;
-    }
-  }
-  emit_group_end(st);
+  print_list(node, st, ListStyle::Parameters, "(", ")");
 }
-
 
 void print_function_call_expression(TSNode node, PrpfmtState &st) {
   uint32_t child_count = ts_node_child_count(node);
@@ -2317,12 +2048,17 @@ void print_function_call_expression(TSNode node, PrpfmtState &st) {
           print_tuple(child, st);
         }
         break;
+      case anon_sym_LT:
+      case anon_sym_GT:
+        break;
+      case sym_generic_type_list:
+        print_list(child, st, ListStyle::Generics, "<", ">", false);
+        break;
       case sym_comment:
         print_comment(child, st, false);
         break;
-      // NOTE: an attributed callee (`f::[name=u](args)`, whose `function` child is
-      // an attribute_set) needs no case here -- the `function`-field branch below
-      // renders it, which also leaves the attribute's inner text untouched.
+      // Attributed callees are dispatched through print__complex_identifier,
+      // including the same canonical attribute-list formatting as declarations.
       default:
         if (fn && strcmp(fn, "function") == 0) {
           print__complex_identifier(child, st);
@@ -2529,17 +2265,6 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
   bool continuation_indent = false;
   uint32_t child_count = ts_node_child_count(node);
 
-  // A pure range chain prints compact (`1..<n`); a chain that mixes a range
-  // with arithmetic keeps the spaces so `a + 1 ..< b` stays readable.
-  bool compact_range = true;
-  for (uint32_t i = 0; i < child_count; i++) {
-    TSNode child = ts_node_child(node, i);
-    if (ts_node_grammar_symbol(child) == sym_binary_other_op && !is_range_op(get_node_text(child, st.source_code))) {
-      compact_range = false;
-      break;
-    }
-  }
-
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
     TSSymbol symbol = ts_node_grammar_symbol(child);
@@ -2552,7 +2277,9 @@ void print__binary_other(TSNode node, PrpfmtState &st) {
             continuation_indent = true;
           }
           std::string_view op_text = get_node_text(child, st.source_code);
-          if (compact_range) {
+          // Ranges print compact (`1..<n`); Pyrope rejects mixing them with
+          // other priority-3 operators unless parenthesized.
+          if (is_range_op(op_text)) {
             emit_soft_break(st, 50);
             emit_token(st, op_text);
           } else {
@@ -2631,7 +2358,135 @@ void print__binary_step(TSNode node, PrpfmtState &st) {
   emit_group_end(st);
 }
 
+// A generic list at an operand's surface (`f<N=1>(x)`, `f<N=1>(x).y`) next to a
+// glued `<`/`>` reads like one more angle bracket. Bracketed contents are
+// visually enclosed and do not count.
+static bool has_surface_generic(TSNode node) {
+  for (uint32_t i = 0; i < ts_node_child_count(node); i++) {
+    TSNode child = ts_node_child(node, i);
+    switch (ts_node_grammar_symbol(child)) {
+      case sym_generic_type_list:
+        return true;
+      case sym_arg_tuple:
+      case sym_tuple:
+      case sym_tuple_sq:
+      case sym_paren_group:
+      case sym_select:
+        continue;
+      default:
+        if (has_surface_generic(child)) return true;
+    }
+  }
+  return false;
+}
+
+// A comparison operand that prints with no space at its own top level: a name,
+// selection, call, literal, parenthesized/tuple group, or a (always tight)
+// `*`/`/`/`%` chain of those. Only between such operands can the comparator
+// drop its spaces without visually regrouping the expression (`a + 1==b` would
+// read as `a + (1==b)`). A unary operator (`-b`, `not x`) keeps the spaces; a
+// negative literal is a single token and may be glued (`x==-1`).
+static bool is_tight_compare_operand(TSNode node, const PrpfmtState &st) {
+  TSSymbol symbol = ts_node_grammar_symbol(node);
+  unwrap_hidden(node, symbol);
+  switch (symbol) {
+    case sym_identifier:
+    case sym_dot_expression:
+    case sym_member_selection:
+    case sym_bit_selection:
+    case sym_attribute_read:
+    case sym_timed_identifier:
+    case sym_function_call_expression:
+    case sym_paren_group:
+    case sym_tuple:
+    case sym_tuple_sq:
+      return !has_surface_generic(node);
+    case sym_constant:
+      return true;
+    case sym__binary_times:
+      for (uint32_t i = 0; i < ts_node_child_count(node); i++) {
+        TSNode child = ts_node_child(node, i);
+        TSSymbol child_symbol = ts_node_grammar_symbol(child);
+        if (child_symbol == sym_comment) return false;
+        if (child_symbol != sym_binary_times_op && !is_tight_compare_operand(child, st)) return false;
+      }
+      return true;
+    default:
+      return false;
+  }
+}
+
+enum class CompareSpacing {
+  Tight,   // may drop the spaces around its comparators
+  Spaced,  // must keep them, and so must the rest of its chain
+  Words,   // a word comparator: always spaced, never decides for the others
+};
+
+// How a comparison under a logical operator may print. Symbolic comparators
+// (`==`, `!=`, `<`, `<=`, `>`, `>=`) between tight operands with no comment
+// inside can be tight. `a<-1` would read like an arrow, so a `<` keeps its
+// spaces before a negative operand. Word comparators (`in`, `has`, `case`,
+// `does`, `equals`) always keep their spaces.
+static CompareSpacing compare_spacing(TSNode node, const PrpfmtState &st) {
+  bool tight = true;
+  bool after_lt = false;
+  for (uint32_t i = 0; i < ts_node_child_count(node); i++) {
+    TSNode child = ts_node_child(node, i);
+    TSSymbol symbol = ts_node_grammar_symbol(child);
+    if (symbol == sym_binary_compare_op) {
+      std::string_view op = get_node_text(child, st.source_code);
+      if (op.empty() || std::isalpha(static_cast<unsigned char>(op[0]))) return CompareSpacing::Words;
+      after_lt = op == "<";
+    } else if (!ts_node_is_named(child) || symbol == sym_comment || !is_tight_compare_operand(child, st) ||
+               (after_lt && get_node_text(child, st.source_code).starts_with('-'))) {
+      tight = false;
+    }
+  }
+  return tight ? CompareSpacing::Tight : CompareSpacing::Spaced;
+}
+
+// The comparison a logical operand holds, looking through grouping parens and a
+// logical `not`/`!`: `(a == b)` is a paren_group, or a single-item tuple
+// WITHOUT a comma (with one it is a real 1-tuple and not a grouping). Null when
+// the operand is anything else. `commented` is set when a comment sits inside
+// the grouping parens, which keeps that comparison (and so its chain) spaced.
+static TSNode logical_operand_compare(TSNode node, bool &commented) {
+  TSSymbol symbol = ts_node_grammar_symbol(node);
+  unwrap_hidden(node, symbol);
+  while (true) {
+    if (symbol == sym_unary_expression) {
+      TSNode op = ts_node_child_by_field_name(node, "operator", 8);
+      TSNode arg = ts_node_child_by_field_name(node, "argument", 8);
+      if (ts_node_is_null(op) || ts_node_is_null(arg)) return TSNode{};
+      TSSymbol op_symbol = ts_node_grammar_symbol(op);
+      if (op_symbol != anon_sym_not && op_symbol != anon_sym_BANG) return TSNode{};
+      node = arg;
+    } else if (symbol == sym_paren_group || symbol == sym_tuple) {
+      TSNode inner{};
+      for (uint32_t i = 0; i < ts_node_child_count(node); i++) {
+        TSNode child = ts_node_child(node, i);
+        TSSymbol child_symbol = ts_node_grammar_symbol(child);
+        if (child_symbol == anon_sym_LPAREN || child_symbol == anon_sym_RPAREN) continue;
+        if (child_symbol == sym_comment) {
+          commented = true;
+          continue;
+        }
+        if (!ts_node_is_named(child) || !ts_node_is_null(inner)) return TSNode{};
+        inner = child;
+      }
+      if (ts_node_is_null(inner)) return TSNode{};
+      node = inner;
+    } else {
+      return symbol == sym__binary_compare ? node : TSNode{};
+    }
+    symbol = ts_node_grammar_symbol(node);
+    unwrap_hidden(node, symbol);
+  }
+}
+
 void print__binary_compare(TSNode node, PrpfmtState &st) {
+  const bool tight = std::any_of(st.tight_compares.begin(), st.tight_compares.end(),
+                                 [&](TSNode marked) { return ts_node_eq(marked, node); });
   emit_group_start(st, false, false);
   // Continuations are relative to the surrounding indentation, never the
   // assignment or condition column inherited from the parent group.
@@ -2651,6 +2506,14 @@ void print__binary_compare(TSNode node, PrpfmtState &st) {
             continuation_indent = true;
           }
           std::string_view op_text = get_node_text(child, st.source_code);
+          if (tight) {
+            // Same shape as the `*` tier: glued when flat, `== b` on a
+            // continuation line when the comparison itself has to wrap.
+            emit_soft_break(st, 30);
+            emit_token(st, op_text);
+            emit_soft_space(st);
+            break;
+          }
           emit_break_point(st, 30);
           if (st.in_assert && (op_text == "==" || op_text == "!=")) {
             emit_align_relational(st, op_text);
@@ -2680,7 +2543,32 @@ void print__binary_compare(TSNode node, PrpfmtState &st) {
   emit_group_end(st);
 }
 
+// Precedence-based spacing, as `i*N + j` does for arithmetic: the comparisons
+// that are operands of a looser `and`/`or`/`implies` drop the spaces around
+// their symbolic comparators -- `foo!=bar or bar==foo`, `N==0 or (z==0)`,
+// `x==-1 and not (y<=0)`. The operands of one chain decide together: if any of
+// them cannot be tight (`a + 1 == b`, `f<N=1>(x) < y`, a comment in its
+// parens), all keep their spaces. Word comparators (`a in b`) are always spaced
+// and do not decide for the others. A comparison anywhere else (`if a == b`,
+// `x = a == b`, a call argument, the operand of another comparison) is not an
+// operand of a looser operator and keeps its spaces; a nested chain decides
+// for itself.
 void print__binary_logical(TSNode node, PrpfmtState &st) {
+  const size_t marked = st.tight_compares.size();
+  bool tight = true;
+  for (uint32_t i = 0; i < ts_node_child_count(node); i++) {
+    TSNode child = ts_node_child(node, i);
+    if (!ts_node_is_named(child) || ts_node_grammar_symbol(child) == sym_binary_logical_op) continue;
+    bool commented = false;
+    TSNode compare = logical_operand_compare(child, commented);
+    if (ts_node_is_null(compare)) continue;
+    CompareSpacing spacing = commented ? CompareSpacing::Spaced : compare_spacing(compare, st);
+    if (spacing == CompareSpacing::Words) continue;
+    tight = tight && spacing == CompareSpacing::Tight;
+    st.tight_compares.push_back(compare);
+  }
+  if (!tight) st.tight_compares.resize(marked);
+
   emit_group_start(st, false, true); // Symmetrical unit
   // Continuations are relative to the surrounding indentation, never the
   // assignment or condition column inherited from the parent group.
@@ -2723,6 +2611,7 @@ void print__binary_logical(TSNode node, PrpfmtState &st) {
     emit_indent_dec(st);
   }
   emit_group_end(st);
+  st.tight_compares.resize(marked);
 }
 
 void print_unary_expression(TSNode node, PrpfmtState &st) {
@@ -3011,6 +2900,7 @@ void print_attribute_read(TSNode node, PrpfmtState &st) {
 }
 
 void print_select(TSNode node, PrpfmtState &st) {
+  size_t begin = st.buffer.size();
   uint32_t child_count = ts_node_child_count(node);
 
   for (uint32_t i = 0; i < child_count; i++) {
@@ -3039,6 +2929,7 @@ void print_select(TSNode node, PrpfmtState &st) {
         break;
     }
   }
+  keep_expression_together(st, begin);
 }
 
 void print_selection_range(TSNode node, PrpfmtState &st) {
@@ -3351,18 +3242,18 @@ void print_type_statement(TSNode node, PrpfmtState &st) {
         print_identifier(child, st);
         break;
       case anon_sym_LT:
-        emit_token(st, "<");
+
         break;
       case anon_sym_GT:
-        emit_token(st, ">");
+
         break;
       case sym_typed_identifier_list:
       case sym_generic_identifier_list:  // `type Name<T, K=1>` generic params
-        print_typed_identifier_list(child, st);
+        print_list(child, st, ListStyle::Generics, "<", ">", false);
         break;
       case anon_sym_EQ:
         emit_space(st);
-        emit_token(st, "=");
+        emit_align_operator(st, "=");
         emit_space(st);
         break;
       case sym_tuple:
@@ -3532,6 +3423,13 @@ void print__complex_identifier(TSNode node, PrpfmtState &st) {
       break;
     case sym_timed_identifier:
       print_timed_identifier(node, st);
+      break;
+    case sym_attribute_set:
+      for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+        auto child = ts_node_child(node, i);
+        if (ts_node_grammar_symbol(child) == sym_attribute_sq) print_attribute_sq(child, st);
+        else print__complex_identifier(child, st);
+      }
       break;
     default:
       if (ts_node_child_count(node) == 0) {
@@ -4190,13 +4088,18 @@ extern "C" const TSLanguage *tree_sitter_pyrope(void);
 
 int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_width, int verify, char **out_buf,
                          size_t *out_len) {
+  return prpfmt_format_string_mode(src, len, indent_size, max_width, PRPFMT_AI, verify, out_buf, out_len);
+}
+
+int prpfmt_format_string_mode(const char *src, size_t len, int indent_size, int max_width, PrpfmtMode mode,
+                             int verify, char **out_buf, size_t *out_len) {
   if (out_buf) {
     *out_buf = NULL;
   }
   if (out_len) {
     *out_len = 0;
   }
-  if (!src) {
+  if (!src || (mode != PRPFMT_AI && mode != PRPFMT_HUMAN)) {
     return 1;
   }
 
@@ -4218,7 +4121,7 @@ int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_w
   }
 
   PrpfmtState state = {
-      .source_code   = src,
+      .source_code   = std::string_view(src, len),
       .outfile       = NULL,
       .indent_size   = indent_size > 0 ? indent_size : 2,
       .max_width     = max_width > 0 ? max_width : 132,
@@ -4228,6 +4131,7 @@ int prpfmt_format_string(const char *src, size_t len, int indent_size, int max_w
       .fmt_on        = true,
       .inline_exp    = false,
       .buffer        = {},
+      .mode          = mode,
   };
 
   char  *buf = NULL;

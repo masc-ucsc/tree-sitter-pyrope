@@ -3,8 +3,10 @@
 
 #include <cstdio>
 #include <string_view>
+#include <unordered_map>
 #include <tree_sitter/api.h>
 #include "ir.h"
+#include "prpfmt_api.h"
 
 /*
  * SpacingConfig controls the emission of spaces around tokens (primarily operators
@@ -22,13 +24,18 @@ struct PrpfmtState {
   std::string_view source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
   int indent_size;         // Spaces per level (default: 2)
-  int max_width;           // Maximum line width (default: 132)
+  int max_width;           // Human-mode soft width target (default: 132)
   bool in_assert;          // True if currently printing an assertion (for alignment)
   bool allow_inline;       // Contextual permission for blocks to stay on one line
   int nesting_level;       // Current block depth (0 = top level)
   bool fmt_on;             // Toggle for 'prpfmt on/off' directives
   bool inline_exp;         // If true, suppresses newlines for nested expressions
   TokenBuffer buffer;      // Buffer for IR
+  PrpfmtMode mode = PRPFMT_AI;
+  std::unordered_map<std::string, std::vector<std::string>> variadic_inputs;
+  // Comparisons the enclosing logical expression chose to print without spaces
+  // around their comparators (precedence spacing, see print__binary_logical).
+  std::vector<TSNode> tight_compares;
 };
 
 /*

@@ -25,10 +25,16 @@ all: generate
 generate:
 	npm run generate
 
-# Canonical regression check: parse every corpus file. Prints nothing and
-# exits 0 when all of full_pyrope/*.prp parse cleanly.
+# Canonical regression check: parse every corpus file (prints nothing when all
+# of full_pyrope/*.prp parse cleanly), then run the grammar's own unit corpus
+# (test/corpus/*.txt: pinned trees for accepted forms, `:error` cases for the
+# forms that must stay rejected).
 test-grammar: generate
 	@scripts/test.sh
+	@# `tree-sitter test` passes vacuously on an empty/missing test/corpus/.
+	@ls test/corpus/*.txt >/dev/null 2>&1 || \
+	  { echo "test-grammar: no test/corpus/*.txt (the grammar unit corpus is missing)" >&2; exit 1; }
+	@$(TS) test --overview-only
 
 # Rebuild the full_pyrope/ corpus from the (non-deprecated) Pyrope docs.
 # The leading rm clears stale snippets when the doc set shrinks.
@@ -45,13 +51,18 @@ prpfmt: generate
 
 # Run prpfmt -v over the whole corpus (errors / AST validity / idempotency).
 test-prpfmt: prpfmt
+	$(MAKE) -C prpfmt test-api
 	python3 prpfmt/tests/cli_test.py
 	python3 prpfmt/tests/verify_all.py $(CORPUS)
 
 ## --------------------------------------------------------------- prpparse ---
+# Extra bazel flags for every prpparse build/test (e.g. an xcode_config override
+# when the local Xcode install is broken): make test-prpparse BAZEL_FLAGS='…'
+BAZEL_FLAGS ?=
+
 test-prpparse:
 	@if [ -f prpparse/BUILD ] || [ -f prpparse/BUILD.bazel ]; then \
-	  bazel test //prpparse/... && scripts/test_prpparse.sh ; \
+	  bazel test $(BAZEL_FLAGS) //prpparse/... && BAZEL_FLAGS='$(BAZEL_FLAGS)' scripts/test_prpparse.sh ; \
 	else \
 	  echo "prpparse: no build yet (design in prpparse/plan.md) — skipping"; \
 	fi
@@ -60,7 +71,7 @@ test-prpparse:
 # Hard gate (non-zero exit): prpparse must never reject tree-sitter-valid syntax.
 # Also reports syntax-error capture rate + error-span localization quality.
 fuzz-prpparse:
-	bazel build //prpparse:prpparse_cli
+	bazel build $(BAZEL_FLAGS) //prpparse:prpparse_cli
 	python3 prpparse/tests/fuzz.py
 
 ## --------------------------------------------------------------- aggregate --

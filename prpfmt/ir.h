@@ -42,6 +42,7 @@ struct Token {
   int pre_flat_length = 0;   // Metric: flat length of group
   int pre_explode_cost = 0;  // Metric: total penalty of exploded children
   int pre_force_counter = 0; // Metric: tracks mandatory breaks inside
+  int pre_comment_counter = 0; // Metric: a comment ends the measurable code suffix
   int pre_group_end = -1;    // Metric: index of matching group end
 };
 

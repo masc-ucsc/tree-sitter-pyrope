@@ -1385,40 +1385,56 @@ Ast* Parser::try_generic_call(Ast* fn) {
   size_t save = pos_;
   advance();  // '<'
   Bracket_guard _bg(*this);
-  // generic_type_list: type (',' type)*, then '>' immediately followed by '('
+  // generic_type_list: value (',' value)*, then '>' immediately followed by '('.
+  // Each value is a generic ARGUMENT (parse_generic_value: a type, or a bare
+  // postfix attribute read `x.[bits]`), never a full expression.
   Ast* list = node(Kind::generic_type_list, cur().start_byte);
   bool ok    = true;
   while (at(Token_kind::comma)) advance();
-  while (!at(Token_kind::gt) && !eof()) {
-    // A NAMED generic bind (`f<T=u8>`, todo 3g C): `identifier '=' type`,
-    // following the same naming rules as call arguments. Reuse arg_assignment
-    // (lvalue=name, rvalue=type) so prp2lnast's named-arg machinery applies; a
-    // bare positional `type` stays an item as before.
-    if (at(Token_kind::ident) && peek(1).kind == Token_kind::assign) {
-      uint32_t nstart = cur().start_byte;
-      Ast*     aa     = node(Kind::arg_assignment, nstart);
-      Ast*     nm     = leaf(Kind::identifier);
-      nm->field       = Field::f_lvalue;
-      aa->add(nm);
-      accept(Token_kind::assign);  // '='
-      Ast* ty = parse_type();
-      if (!ty) {
-        ok = false;
-        break;
+  // The list is a GUESS. `x < -1`, `x < ~b`, `x < [1, 2]` are comparisons
+  // whose right operand is no generic argument, and parse_generic_value THROWS
+  // on those; a throw here therefore means "not a generic call" -> back off to
+  // the comparison, as tree-sitter (which forks both parses) does. Only a list
+  // that OPENS with a named bind is committed -- `x < N = …` is never a
+  // comparison -- so its errors keep their precise location (`f<N=-3>(a)`:
+  // "expected a type" at the `-`).
+  const bool committed = at(Token_kind::ident) && peek(1).kind == Token_kind::assign;
+  try {
+    while (!at(Token_kind::gt) && !eof()) {
+      // A NAMED generic bind (`f<T=u8>`, todo 3g C): `identifier '=' value`,
+      // following the same naming rules as call arguments. Reuse arg_assignment
+      // (lvalue=name, rvalue=value) so prp2lnast's named-arg machinery applies;
+      // a bare positional value stays an item as before.
+      if (at(Token_kind::ident) && peek(1).kind == Token_kind::assign) {
+        uint32_t nstart = cur().start_byte;
+        Ast*     aa     = node(Kind::arg_assignment, nstart);
+        Ast*     nm     = leaf(Kind::identifier);
+        nm->field       = Field::f_lvalue;
+        aa->add(nm);
+        accept(Token_kind::assign);  // '='
+        Ast* ty = parse_generic_value();
+        if (!ty) {
+          ok = false;
+          break;
+        }
+        aa->add(ty, Field::f_rvalue);
+        finish(aa, nstart);
+        list->add(aa, Field::f_item);
+      } else {
+        Ast* ty = parse_generic_value();
+        if (!ty) {
+          ok = false;
+          break;
+        }
+        list->add(ty, Field::f_item);
       }
-      aa->add(ty, Field::f_rvalue);
-      finish(aa, nstart);
-      list->add(aa, Field::f_item);
-    } else {
-      Ast* ty = parse_type();
-      if (!ty) {
-        ok = false;
-        break;
-      }
-      list->add(ty, Field::f_item);
+      if (!accept(Token_kind::comma)) break;
+      while (at(Token_kind::comma)) advance();
     }
-    if (!accept(Token_kind::comma)) break;
-    while (at(Token_kind::comma)) advance();
+  } catch (const Parse_error&) {
+    if (committed) throw;
+    pos_ = save;  // orphaned arena nodes are harmless (as on the path below)
+    return nullptr;
   }
   if (ok && at(Token_kind::gt) && peek(1).kind == Token_kind::lparen) {
     advance();  // '>'
@@ -2175,6 +2191,57 @@ Ast* Parser::parse_type() {
   error("expected-type", "expected a type");
 }
 
+// A generic ARGUMENT -- a call-site bind (`f<N=…>`, or positional `f<…>`) or a
+// generic-parameter default (`<N=…>`); 06-functions.md: a type (which also
+// covers a literal, a name and a dotted field `cfg.w`), or a POSTFIX attribute
+// read of a (dotted) name written bare: `x.[bits]`, `cfg.w.[max]`. The read is
+// built exactly like its expression spelling -- attribute_read(argument=
+// identifier | dot_expression, attrs=attribute_list+) -- so consumers lower it
+// like any attribute read. Everything else needs parentheses: an operator
+// expression (`<N=(W*2)>`; bare, the closing `>`/`>>` would be ambiguous) or a
+// call (`<N=(g(x))>`; a bare `g(x)` is a type-position call). Mirrors
+// grammar.js `_generic_value`.
+Ast* Parser::parse_generic_value() {
+  // Only a word parse_type would read as a plain (dotted) NAME can head the
+  // read; primitive types, literals, lambda kinds and if/match keep their
+  // type-grammar meaning. `true`/`false` are the exception: tree-sitter lexes
+  // them as a name before `.[` (accept-parity), and the head is then built as
+  // the expression path builds it, a bool constant.
+  const bool bool_head  = at_kw(Keyword::kw_true) || at_kw(Keyword::kw_false);
+  const bool plain_name = at(Token_kind::ident) && !is_lambda_kind(cur()) && !is_primitive_type_word(cur()) &&
+                          !at_constant() && !at_kw(Keyword::kw_if) && !at_kw(Keyword::kw_unique) &&
+                          !at_kw(Keyword::kw_match);
+  if (plain_name || bool_head) {
+    // Lookahead only: `name ('.' name)*` must be followed by `.[` (else it is
+    // the dotted type/name path, `cfg.w`).
+    size_t k = 1;
+    while (peek(k).kind == Token_kind::dot && peek(k + 1).kind == Token_kind::ident) k += 2;
+    if (peek(k).kind == Token_kind::dot && peek(k + 1).kind == Token_kind::lbracket) {
+      uint32_t start = cur().start_byte;
+      Ast*     head  = bool_head ? parse_constant() : leaf(Kind::identifier);
+      if (at(Token_kind::dot) && peek(1).kind == Token_kind::ident) {
+        Ast* de = node(Kind::dot_expression, start);
+        de->add(head, Field::f_item);
+        while (at(Token_kind::dot) && peek(1).kind == Token_kind::ident) {
+          advance();  // '.'
+          de->add(leaf(Kind::identifier));
+        }
+        finish(de, start);
+        head = de;
+      }
+      Ast* ar = node(Kind::attribute_read, start);
+      ar->add(head, Field::f_argument);
+      while (at(Token_kind::dot) && peek(1).kind == Token_kind::lbracket) {
+        advance();  // '.'
+        ar->add(parse_attribute_list(), Field::f_attrs);
+      }
+      finish(ar, start);
+      return ar;
+    }
+  }
+  return parse_type();
+}
+
 Ast* Parser::parse_primitive_type() {
   uint32_t     start = cur().start_byte;
   const Token& t = cur();
@@ -2230,15 +2297,16 @@ Ast* Parser::parse_typed_identifier(bool allow_default, const char* bind_role) {
   }
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) ti->add(parse_type_cast(), Field::f_type);
   // A generic-parameter DECLARATION default (`<T, N=1>`, todo 3g B): the
-  // default type/constant/lambda follows `=`. Only inside a generic list
-  // (allow_default); an `arg_list` parameter default is handled by
-  // parse_arg_list itself. Parse it as a generic ARGUMENT (parse_type — the
-  // same grammar as a `<…>` bind: a type, a constant like `1`, or a lambda
-  // name) NOT a full expression: a full expression would swallow the closing
-  // `>` as a greater-than operator (the C++ `>>` template ambiguity).
+  // default follows `=`. Only inside a generic list (allow_default); an
+  // `arg_list` parameter default is handled by parse_arg_list itself. Parse it
+  // as a generic ARGUMENT (parse_generic_value — the same grammar as a `<…>`
+  // bind: a type, a constant like `1`, a (dotted) name, or a bare postfix
+  // attribute read `Z.[bits]`) NOT a full expression: a full expression would
+  // swallow the closing `>` as a greater-than operator (the C++ `>>` template
+  // ambiguity).
   if (allow_default && at(Token_kind::assign)) {
     advance();  // '='
-    ti->add(parse_type(), Field::f_definition);
+    ti->add(parse_generic_value(), Field::f_definition);
   }
   finish(ti, start);
   return ti;

@@ -37,7 +37,8 @@ void print_help() {
   printf("  -i, --inplace     Rewrite the input file in place.\n");
   printf("  -o, --output FILE Write to FILE instead of stdout.\n");
   printf("      --indent N   Spaces per indent level (default: 2).\n");
-  printf("      --width N    Maximum line width (default: 132).\n");
+  printf("      --mode MODE  ai (default) or human.\n");
+  printf("      --width N    Human-mode soft width target (default: 132; ignored in AI).\n");
   printf("  -v, --verify     Verify that the formatted output is still parseable.\n");
   printf("  -b, --bench      Print timing statistics.\n");
   printf("  -h, --help       Display this help message.\n");
@@ -78,6 +79,7 @@ int main(int argc, char **argv) {
   const char *outfile_path = nullptr;
   int indent_size = 2;
   int max_width = 132;
+  PrpfmtMode mode = PRPFMT_AI;
   bool verify_output = false;
   bool run_benchmark = false;
   bool inplace = false;
@@ -101,8 +103,9 @@ int main(int argc, char **argv) {
     } else if (!positional_only && (arg == "-b" || arg == "--bench")) {
       run_benchmark = true;
     } else if (!positional_only &&
-               (arg == "-o" || arg == "--output" || arg == "--indent" || arg == "--width" ||
-                arg.starts_with("--output=") || arg.starts_with("--indent=") || arg.starts_with("--width="))) {
+               (arg == "-o" || arg == "--output" || arg == "--indent" || arg == "--width" || arg == "--mode" ||
+                arg.starts_with("--output=") || arg.starts_with("--indent=") || arg.starts_with("--width=") ||
+                arg.starts_with("--mode="))) {
       const auto eq = arg.find('=');
       const auto option = arg.substr(0, eq);
       const char *value = nullptr;
@@ -116,6 +119,10 @@ int main(int argc, char **argv) {
       if (option == "-o" || option == "--output") {
         if (*value == '\0') return error("output path must not be empty");
         outfile_path = value;
+      } else if (option == "--mode") {
+        if (std::string_view(value) == "ai") mode = PRPFMT_AI;
+        else if (std::string_view(value) == "human") mode = PRPFMT_HUMAN;
+        else return error("--mode expects ai or human");
       } else {
         const std::string_view text(value);
         int number = 0;
@@ -180,6 +187,7 @@ int main(int argc, char **argv) {
     .fmt_on = true,
     .inline_exp = false,
     .buffer = {},
+    .mode = mode,
   };
 
   double format_start = 0, format_end = 0;

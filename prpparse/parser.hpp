@@ -234,6 +234,9 @@ private:
   // ---- types ----
   Ast* parse_type_cast();
   Ast* parse_type();
+  // A generic ARGUMENT (call-site bind or generic-parameter default): a type,
+  // or a bare postfix attribute read of a (dotted) name (`x.[bits]`).
+  Ast* parse_generic_value();
   Ast* parse_primitive_type();
   Ast* parse_typed_identifier(bool allow_default = false, const char* bind_role = "a name");
   Ast* parse_typed_identifier_list(bool allow_default = false, const char* bind_role = "a name");

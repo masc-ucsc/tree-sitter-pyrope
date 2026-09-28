@@ -31,10 +31,21 @@ make test-all        # also prpparse (bazel unit tests + corpus accept-parity)
 make corpus          # rebuild full_pyrope/ from ../docs (see below)
 ```
 
+The prpparse targets (`test-prpparse`, `fuzz-prpparse`) pass `BAZEL_FLAGS` to
+every bazel call, e.g. an `xcode_config` override when the local Xcode install
+is broken: `make test-prpparse BAZEL_FLAGS='--xcode_version_config=…'`.
+
 `make test` is the authoritative regression check (must stay green). It runs
-`test-grammar` (`scripts/test.sh`, which parses every `full_pyrope/*.prp`) and
+`test-grammar` (`scripts/test.sh`, which parses every `full_pyrope/*.prp`, then
+`tree-sitter test` over the checked-in unit corpus `test/corpus/*.txt`) and
 `test-prpfmt` (reformats every corpus file and re-parses the output). Run
 `make test-grammar` alone for just the parse check.
+
+`test/corpus/*.txt` (tree-sitter's corpus format) pins syntax the docs corpus
+does not cover: expected trees for accepted forms and `:error` cases for forms
+that must stay rejected. Add a case there for every grammar change (refresh the
+expected trees with `tree-sitter test -u`, then review the diff), and mirror it
+in `prpparse/tests/parser_test.cpp` so both parsers keep accept-parity.
 
 Debug a single file:
 

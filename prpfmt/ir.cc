@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdio>
@@ -33,6 +34,7 @@ static Token &push_text(PrpfmtState &st, TokenType type, std::string_view text) 
 static bool has_recent_break(PrpfmtState &st) {
   for (int i = (int)st.buffer.size() - 1; i >= 0; i--) {
     TokenType type = st.buffer[i].type;
+    if (type == TOKEN_TEXT && st.buffer[i].text.empty()) continue;
     if (type == TOKEN_NEWLINE || type == TOKEN_FORCE_BREAK ||
         type == TOKEN_BREAK_POINT || type == TOKEN_SOFT_BREAK) {
       return true;
@@ -176,17 +178,22 @@ void emit_anchor_off(PrpfmtState &st) {
   push_token(st, TOKEN_ANCHOR_OFF);
 }
 
-// Append a newline if not redundant
-void emit_line_break(PrpfmtState &st) {
-  if (!has_recent_break(st))
-    emit_blank_line(st);
+// A required newline upgrades any pending optional break. This matters for
+// comments and scope boundaries, which must survive even in unlimited AI mode.
+void emit_force_break(PrpfmtState &st) {
+  for (auto it = st.buffer.rbegin(); it != st.buffer.rend(); ++it) {
+    if (it->type == TOKEN_NEWLINE || it->type == TOKEN_FORCE_BREAK) return;
+    if (it->type == TOKEN_BREAK_POINT || it->type == TOKEN_SOFT_BREAK) {
+      it->type = TOKEN_FORCE_BREAK;
+      return;
+    }
+    if (!it->text.empty()) break;
+  }
+  push_token(st, TOKEN_FORCE_BREAK);
 }
 
-// Force a newline regardless of group state
-void emit_force_break(PrpfmtState &st) {
-  if (!has_recent_break(st)) {
-    push_token(st, TOKEN_FORCE_BREAK);
-  }
+void emit_line_break(PrpfmtState &st) {
+  emit_force_break(st);
 }
 
 /******************************************************************************
@@ -234,7 +241,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
       // Jump to target alignment column if filtering for this channel
       if (t.target_col > 0 &&
           (channel_filter == TOKEN_TEXT || t.type == channel_filter)) {
-        col = t.target_col;
+        col = std::max(col, t.target_col);
       }
 
       // Record anchor position for subsequent items
@@ -259,7 +266,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
       }
       break;
     case TOKEN_SPACE:
-      col++;
+      if (!at_start) col++;
       break;
     case TOKEN_NEWLINE:
     case TOKEN_FORCE_BREAK:
@@ -272,7 +279,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
       if (is_exploded) {
         col = 0;
         at_start = 1;
-      } else {
+      } else if (!at_start) {
         col++;
       }
       break;
@@ -317,12 +324,23 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
 }
 
 // Calculate flat lengths and explosion penalties for all formatting groups in a single pass
+static bool is_comment_token(const Token &token) {
+  return token.type == TOKEN_ALIGN_COMMENT ||
+         (token.type == TOKEN_TEXT && token.text.starts_with("//"));
+}
+
+// Width is a readability target. A small overflow can cost less than splitting
+// an expression; comma boundaries remain cheap places to break long lists.
+static int overflow_slack(const PrpfmtState &st) {
+  return std::min(12, st.max_width / 10);
+}
+
 static void calculate_group_metrics(PrpfmtState &st) {
   std::array<int, 1024> w_stack;
   int w_top = -1;
   std::array<int, 1024> anchor_stack;
   int a_top = -1;
-  int cur_off = 0, cur_cost = 0, f_count = 0;
+  int cur_off = 0, cur_cost = 0, f_count = 0, comments = 0;
 
   for (int i = 0; i < (int)st.buffer.size(); i++) {
     Token &t = st.buffer[i];
@@ -331,6 +349,7 @@ static void calculate_group_metrics(PrpfmtState &st) {
       t.pre_flat_length = cur_off;
       t.pre_explode_cost = cur_cost;
       t.pre_force_counter = f_count;
+      t.pre_comment_counter = comments;
 
       if (w_top < 1023) {
         w_stack[++w_top] = i;
@@ -345,6 +364,7 @@ static void calculate_group_metrics(PrpfmtState &st) {
         st_t.pre_flat_length = cur_off - st_t.pre_flat_length;
         st_t.pre_explode_cost = cur_cost - st_t.pre_explode_cost;
         st_t.pre_force_counter = (f_count != st_f);
+        st_t.pre_comment_counter = comments != st_t.pre_comment_counter;
         st_t.pre_group_end = i;
       }
     } else if (t.type == TOKEN_ALIGN_GROUP_START) {
@@ -363,7 +383,8 @@ static void calculate_group_metrics(PrpfmtState &st) {
         case TOKEN_ALIGN_MATH:
         case TOKEN_ALIGN_COMMENT:
           // Accumulate width for text and operators
-          cur_off += (int)t.text.size();
+          if (is_comment_token(t)) ++comments;
+          else cur_off += (int)t.text.size();
           break;
         case TOKEN_SPACE:
           cur_off++;
@@ -392,10 +413,11 @@ void prpfmt_solve(PrpfmtState &st) {
 
   // Pre-pass: Measure flat widths and explosion penalties before simulating layout
   calculate_group_metrics(st);
-  int col = 0, indent = 0, at_start = 1, s_ptr = -1;
+  int col = 0, indent = 0, at_start = 1, s_ptr = 0;
   std::array<bool, 256> explode_stack{};
   std::array<bool, 256> propagate_stack{};
   std::array<int, 256> anchor_stack{};
+  anchor_stack.fill(-1);
 
   // Phase 1: Determine which groups must explode (wrap) based on width and penalties
   // Simulate the token layout sequentially to determine the actual column positions
@@ -404,21 +426,41 @@ void prpfmt_solve(PrpfmtState &st) {
 
     if (t.type == TOKEN_GROUP_START) {
       if (!t.exploded) {
-        bool forced = (bool)t.pre_force_counter;
+        bool forced = st.mode == PRPFMT_HUMAN && t.pre_force_counter;
         bool parent_in_bounds = s_ptr >= 0 && s_ptr < (int)explode_stack.size();
         bool parent_exp = parent_in_bounds ? explode_stack[s_ptr] : false;
         bool parent_prop = parent_in_bounds ? propagate_stack[s_ptr] : false;
         bool should_exp = forced;
 
-        if (!should_exp) {
-          // Explode if the flat width exceeds max_width and the penalty is acceptable
-          int overflow = (col + t.pre_flat_length) - st.max_width;
-          should_exp =
-              ((overflow > 0 ? overflow * 1000 : 0) > t.pre_explode_cost);
+        if (!should_exp && st.mode == PRPFMT_HUMAN) {
+          // Include indentation and any flat suffix on the same line: closing
+          // delimiters and the output clause of a header. A trailing comment
+          // stays attached without forcing otherwise fitting code to wrap.
+          int column = at_start ? indent * st.indent_size : col;
+          if (at_start && parent_in_bounds && anchor_stack[s_ptr] > 0) column += anchor_stack[s_ptr];
+          int suffix = 0;
+          for (int j = t.pre_group_end + 1; j > 0 && j < (int)st.buffer.size(); ++j) {
+            auto &next = st.buffer[j];
+            if (is_comment_token(next)) {
+              if (j > 0 && st.buffer[j - 1].type == TOKEN_SPACE) --suffix;
+              break;
+            }
+            if (next.type == TOKEN_BREAK_POINT || next.type == TOKEN_SOFT_BREAK ||
+                next.type == TOKEN_NEWLINE || next.type == TOKEN_FORCE_BREAK) break;
+            if (next.type == TOKEN_GROUP_START) {
+              if (!next.pre_force_counter && !next.pre_comment_counter && !next.exploded) {
+                suffix += next.pre_flat_length;
+                j = next.pre_group_end;
+              }
+            } else if (next.type == TOKEN_SPACE) ++suffix;
+            else suffix += (int)next.text.size();
+          }
+          int slack = std::min(overflow_slack(st), t.pre_explode_cost / 10);
+          should_exp = static_cast<long long>(column) + t.pre_flat_length + suffix >
+                       static_cast<long long>(st.max_width) + slack;
         }
 
-        if (!should_exp && parent_exp && parent_prop && t.propagates) {
-          // Propagate explosion downwards if required by the parent group
+        if (st.mode == PRPFMT_HUMAN && !should_exp && parent_exp && parent_prop && t.propagates) {
           should_exp = true;
         }
         t.exploded = should_exp;
@@ -442,238 +484,57 @@ void prpfmt_solve(PrpfmtState &st) {
     }
   }
 
-  // Initialize the main simulation state machine for Phase 2
-  int main_col = 0, main_indent = 0, main_at_start = 1, main_stack_ptr = 0;
-  std::array<bool, 256> main_explode_stack{};
-  std::array<int, 256> main_anchor_stack;
-  main_anchor_stack.fill(-1);
+  if (st.mode == PRPFMT_AI) return;
 
-  // Phase 2: Calculate target columns for aligned operators and comments
-  for (int i = 0; i < (int)st.buffer.size(); i++) {
-    Token &main_t = st.buffer[i];
-
-    if (main_t.type == TOKEN_ALIGN_GROUP_START) {
-      int base_ind = main_indent, base_sp = main_stack_ptr, group_end_idx = main_t.pre_group_end;
-
-      if (group_end_idx > i) {
-        int l_count = 0;
-
-        // Run a temporary sub-simulation to count the total number of lines in the block
-        {
-          int temp_col = 0, temp_indent = base_ind, temp_at_start = 1, temp_stack_ptr = base_sp;
-          std::array<bool, 256> temp_explode_stack{};
-
-          for (int k = 0; k <= base_sp && k < 256; k++) {
-            temp_explode_stack[k] = main_explode_stack[k];
-          }
-
-          std::array<int, 256> temp_anchor_stack{};
-          for (int k = 0; k <= base_sp && k < 256; k++) {
-            temp_anchor_stack[k] = main_anchor_stack[k];
-          }
-
-          for (int j = i + 1; j < group_end_idx; j++) {
-            if (temp_at_start) {
-              l_count++;
-            }
-            simulate_step(st.buffer[j], temp_col, temp_indent, temp_at_start, st.indent_size,
-                          temp_explode_stack, temp_anchor_stack, temp_stack_ptr, TOKEN_TEXT);
-          }
+  int main_col = 0, main_indent = 0, main_start = 1, main_sp = 0;
+  std::array<bool, 256> main_exp{};
+  std::array<int, 256> main_anc{};
+  main_anc.fill(-1);
+  for (int i = 0; i < (int)st.buffer.size(); ++i) {
+    auto &token = st.buffer[i];
+    if (token.type == TOKEN_ALIGN_GROUP_START && token.pre_group_end > i) {
+      int c = main_col, ind = main_indent, start = main_start, sp = main_sp;
+      auto exp = main_exp;
+      auto anc = main_anc;
+      std::vector<std::pair<int, int>> operators;
+      int target = 0;
+      bool seen_operator = false;
+      for (int j = i + 1; j < token.pre_group_end; ++j) {
+        auto &t = st.buffer[j];
+        if (t.type == TOKEN_ALIGN_OPERATOR && ind == main_indent && !seen_operator) {
+          int column = start ? ind * st.indent_size : c;
+          operators.emplace_back(j, column);
+          target = std::max(target, column);
+          seen_operator = true;
         }
-
-        // Add a safety buffer to the line count to prevent out-of-bounds memory allocation
-        l_count += 5;
-        TokenType chans[] = {TOKEN_ALIGN_OPERATOR, TOKEN_ALIGN_RELATIONAL,
-                             TOKEN_ALIGN_MATH, TOKEN_ALIGN_COMMENT};
-
-        // Solve alignment independently for each "channel" to prevent interference
-        for (int c = 0; c < 4; c++) {
-          TokenType current_channel = chans[c];
-
-          // has_baseline: true if line has a valid anchor/baseline token
-          // has_operator:   true if line contains the target alignment operator
-          // measured_width:  calculated column width for operator on this line
-          std::vector<int> has_baseline(l_count, 0);
-          std::vector<int> has_operator(l_count, 0);
-          std::vector<int> measured_width(l_count, 0);
-          int col = 0, indent = base_ind, at_start = 1, stack_ptr = base_sp, current_line = -1,
-              last_aligned_line = -1;
-          std::array<bool, 256> temp_explode_stack{};
-
-          for (int k = 0; k <= base_sp && k < 256; k++) {
-            temp_explode_stack[k] = main_explode_stack[k];
-          }
-
-          std::array<int, 256> temp_anchor_stack{};
-          for (int k = 0; k <= base_sp && k < 256; k++) {
-            temp_anchor_stack[k] = main_anchor_stack[k];
-          }
-
-          // Pass A: Scan the block to find the maximum column width for this channel
-          for (int j = i + 1; j < group_end_idx; j++) {
-            Token &t = st.buffer[j];
-
-            if (at_start) {
-              current_line++;
-            }
-
-            if (current_line >= 0 && current_line < l_count) {
-              // Only consider tokens valid for alignment if they are near the base nesting level (depth + 3 limit)
-              if (indent == base_ind && stack_ptr <= base_sp + 3 &&
-                  (t.type == TOKEN_TEXT || t.type == TOKEN_ALIGN_OPERATOR ||
-                   t.type == TOKEN_ALIGN_RELATIONAL ||
-                   t.type == TOKEN_ALIGN_MATH ||
-                   t.type == TOKEN_ALIGN_COMMENT)) {
-                has_baseline[current_line] = 1;
-              }
-
-              if (t.type == current_channel) {
-                // Determine if this token should be aligned based on channel and indentation rules
-                if (current_line != last_aligned_line && indent == base_ind && stack_ptr <= base_sp + 3 &&
-                    (current_channel != TOKEN_ALIGN_MATH || at_start)) {
-                  if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_ind) {
-                    int anchor_col = col;
-
-                    if (at_start) {
-                      // Adjust column based on anchor position if available
-                      anchor_col = ((stack_ptr >= 0 && temp_anchor_stack[stack_ptr] >= 0) ? temp_anchor_stack[stack_ptr] : 0) +
-                           (indent * st.indent_size);
-                    }
-
-                    int measured_val = anchor_col;
-                    if (current_channel != TOKEN_ALIGN_COMMENT && !t.text.empty()) {
-                      measured_val += (int)t.text.size();
-                    }
-
-                    has_operator[current_line] = 1;
-                    measured_width[current_line] = measured_val;
-                    last_aligned_line = current_line;
-                  }
-                }
-              }
-            }
-
-            simulate_step(t, col, indent, at_start, st.indent_size, temp_explode_stack, temp_anchor_stack, stack_ptr,
-                          TOKEN_TEXT);
-          }
-
-          int max_line_idx = current_line;
-          std::vector<int> target_col_max(max_line_idx + 1, 0);
-
-          // Calculate the target column (target_col_max) for each line
-          if (current_channel == TOKEN_ALIGN_COMMENT) {
-            int global_max = 0, global_count = 0;
-
-            // Comments align globally across the entire block
-            for (int line_idx = 0; line_idx <= max_line_idx; line_idx++) {
-              if (has_operator[line_idx]) {
-                if (measured_width[line_idx] > global_max) {
-                  global_max = measured_width[line_idx];
-                }
-                global_count++;
-              }
-            }
-
-            if (global_count > 1) {
-              for (int line_idx = 0; line_idx <= max_line_idx; line_idx++) {
-                target_col_max[line_idx] = global_max;
-              }
-            }
-          } else {
-            int run_max = 0, run_count = 0, start_line = 0;
-
-            // Operators align in contiguous sub-groups (break alignment on empty lines)
-            for (int line_idx = 0; line_idx <= max_line_idx; line_idx++) {
-              if (has_baseline[line_idx]) {
-                if (has_operator[line_idx]) {
-                  if (measured_width[line_idx] > run_max) {
-                    run_max = measured_width[line_idx];
-                  }
-                  run_count++;
-                } else {
-                  for (int run_line_idx = start_line; run_line_idx < line_idx; run_line_idx++) {
-                    target_col_max[run_line_idx] = (run_count > 1) ? run_max : 0;
-                  }
-
-                  run_max = 0;
-                  run_count = 0;
-                  start_line = line_idx + 1;
-                }
-              }
-            }
-
-            for (int run_line_idx = start_line; run_line_idx <= max_line_idx; run_line_idx++) {
-              target_col_max[run_line_idx] = (run_count > 1) ? run_max : 0;
-            }
-          }
-
-          col = 0;
-          indent = base_ind;
-          at_start = 1;
-          stack_ptr = base_sp;
-
-          for (int k = 0; k <= base_sp && k < 256; k++) {
-            temp_anchor_stack[k] = main_anchor_stack[k];
-          }
-
-          current_line = -1;
-          last_aligned_line = -1;
-
-          // Pass B: Assign the calculated target column to the matching tokens
-          for (int j = i + 1; j < group_end_idx; j++) {
-            Token &t = st.buffer[j];
-
-            if (at_start) {
-              current_line++;
-            }
-
-            if (current_line >= 0 && current_line <= max_line_idx && t.type == current_channel) {
-              if (current_line != last_aligned_line && indent == base_ind && stack_ptr <= base_sp + 3 &&
-                  (current_channel != TOKEN_ALIGN_MATH || at_start)) {
-                if (current_channel != TOKEN_ALIGN_COMMENT || indent == base_ind) {
-                  int anchor_col = col;
-
-                  if (at_start) {
-                    anchor_col = ((stack_ptr >= 0 && temp_anchor_stack[stack_ptr] >= 0) ? temp_anchor_stack[stack_ptr] : 0) +
-                         (indent * st.indent_size);
-                  }
-
-                  int target = target_col_max[current_line];
-                  if (target > 0) {
-                    if (current_channel != TOKEN_ALIGN_COMMENT && !t.text.empty()) {
-                      target -= (int)t.text.size();
-                    }
-
-                    if (target > anchor_col) {
-                      // Heuristic: Only jump to the target column if it is reasonably close
-                      // Prevent huge gaps (e.g., 50 spaces) just to align one outlier
-                      bool allow =
-                          (current_channel == TOKEN_ALIGN_COMMENT)
-                              ? (target - anchor_col <= 20)
-                              : (target - anchor_col <= 15 || target - anchor_col <= anchor_col / 4);
-                      if (allow) {
-                        t.target_col = target;
-                      }
-                    }
-                  }
-                  last_aligned_line = current_line;
-                }
-              }
-            }
-            simulate_step(t, col, indent, at_start, st.indent_size, temp_explode_stack, temp_anchor_stack, stack_ptr,
-                          current_channel);
-          }
+        simulate_step(t, c, ind, start, st.indent_size, exp, anc, sp, TOKEN_TEXT);
+        if (start) seen_operator = false;
+      }
+      if (operators.size() > 1) {
+        for (auto [index, column] : operators) st.buffer[index].target_col = target;
+        // Allow a modest overflow to preserve the alignment of the whole group,
+        // and do not drop it merely because an attached comment is long.
+        c = main_col; ind = main_indent; start = main_start; sp = main_sp;
+        exp = main_exp; anc = main_anc;
+        bool overflow = false;
+        bool in_comment = false;
+        for (int j = i + 1; j < token.pre_group_end; ++j) {
+          if (is_comment_token(st.buffer[j])) in_comment = true;
+          simulate_step(st.buffer[j], c, ind, start, st.indent_size, exp, anc, sp, TOKEN_TEXT);
+          if (!in_comment && static_cast<long long>(c) > static_cast<long long>(st.max_width) + overflow_slack(st))
+            overflow = true;
+          if (start) in_comment = false;
         }
+        if (overflow) for (auto [index, column] : operators) st.buffer[index].target_col = 0;
       }
     }
-    // Update the main state machine with the current token
-    simulate_step(main_t, main_col, main_indent, main_at_start, st.indent_size,
-                  main_explode_stack, main_anchor_stack, main_stack_ptr, TOKEN_TEXT);
+    simulate_step(token, main_col, main_indent, main_start, st.indent_size, main_exp, main_anc, main_sp, TOKEN_TEXT);
   }
 }
 
 // Translate the resolved IR tokens into final text output
 void prpfmt_render(PrpfmtState &st) {
+  std::string output;
   int indent = 0, col = 0, at_start = 1, stack_ptr = 0;
   std::array<bool, 256> explode_stack{};
   std::array<int, 256> anchor_stack{};
@@ -702,7 +563,7 @@ void prpfmt_render(PrpfmtState &st) {
           int spaces_needed = baseline + (indent * st.indent_size);
 
           for (int j = 0; j < spaces_needed; j++) {
-            fprintf(st.outfile, " ");
+            output += ' ';
             col++;
           }
           at_start = 0;
@@ -711,7 +572,7 @@ void prpfmt_render(PrpfmtState &st) {
           // Pad with spaces to reach the target alignment column
           int padding_spaces = t.target_col - col;
           for (int j = 0; j < padding_spaces; j++) {
-            fprintf(st.outfile, " ");
+            output += ' ';
             col++;
           }
         }
@@ -725,7 +586,7 @@ void prpfmt_render(PrpfmtState &st) {
         }
         if (!t.text.empty()) {
           // Print the actual token text
-          fprintf(st.outfile, "%s", t.text.c_str());
+          output += t.text;
           col += (int)t.text.size();
         }
         break;
@@ -744,32 +605,35 @@ void prpfmt_render(PrpfmtState &st) {
       case TOKEN_SPACE:
         // Print a space if not at the start of a line
         if (!at_start) {
-          fprintf(st.outfile, " ");
+          output += ' ';
           col++;
         }
         break;
       case TOKEN_NEWLINE:
       case TOKEN_FORCE_BREAK:
         // Print a mandatory newline
-        fprintf(st.outfile, "\n");
+        while (!output.empty() && output.back() == ' ') output.pop_back();
+          output += '\n';
         at_start = 1;
         col = 0;
         break;
       case TOKEN_BREAK_POINT:
         // Print a newline if exploded, otherwise a space
         if (is_exploded) {
-          fprintf(st.outfile, "\n");
+          while (!output.empty() && output.back() == ' ') output.pop_back();
+          output += '\n';
           at_start = 1;
           col = 0;
         } else if (!at_start) {
-          fprintf(st.outfile, " ");
+          output += ' ';
           col++;
         }
         break;
       case TOKEN_SOFT_BREAK:
         // Print a newline if exploded, otherwise nothing
         if (is_exploded) {
-          fprintf(st.outfile, "\n");
+          while (!output.empty() && output.back() == ' ') output.pop_back();
+          output += '\n';
           at_start = 1;
           col = 0;
         }
@@ -777,7 +641,7 @@ void prpfmt_render(PrpfmtState &st) {
       case TOKEN_SOFT_SPACE:
         // Print a space if exploded, otherwise nothing
         if (is_exploded && !at_start) {
-          fprintf(st.outfile, " ");
+          output += ' ';
           col++;
         }
         break;
@@ -805,4 +669,5 @@ void prpfmt_render(PrpfmtState &st) {
         break;
     }
   }
+  if (!output.empty()) fwrite(output.data(), 1, output.size(), st.outfile);
 }

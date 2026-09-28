@@ -2269,6 +2269,10 @@
             "named": true
           },
           {
+            "type": "attribute_read",
+            "named": true
+          },
+          {
             "type": "bool_type",
             "named": true
           },
@@ -5177,6 +5181,10 @@
           },
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "attribute_read",
             "named": true
           },
           {

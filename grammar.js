@@ -136,6 +136,13 @@ module.exports = grammar({
     // tuple both start with `_complex_identifier` then `:`, and only what follows
     // the attribute bracket tells them apart, so GLR has to carry both.
     , [$.lvalue_item, $._suffix_head]
+    // A bare postfix generic argument (`f<N=x.[bits]>`, `<N=cfg.w.[max]>`):
+    // the `x` / `x.y` prefix is also a type (`expression_type` /
+    // `dot_expression_type`) and, in expression position, the head of a
+    // comparison chain; only a following `.[` picks the attribute read.
+    , [$._complex_identifier, $.expression_type, $.generic_attribute_read, $.generic_dotted_name]
+    // `x.y` + `.`: end of the dotted name (then `.[`) or one more `.field`.
+    , [$.generic_dotted_name]
   ]
   , extras: $ => [$._space, $.comment]
   , word: $ => $.identifier
@@ -665,33 +672,62 @@ module.exports = grammar({
     )
     , typed_identifier_list: $ => listseq1(field('item', $.typed_identifier))
     // Generic-parameter DECLARATION list (`<T, K=1>`). A typed_identifier
-    // that may carry a `= default`. The default is a generic ARGUMENT — a
-    // type, a constant, or a lambda name — so it is parsed with the type
-    // grammar, not the expression grammar: a full expression would swallow
-    // the closing `>` as a greater-than operator. Aliased to
+    // that may carry a `= default`. The default is a generic ARGUMENT (see
+    // _generic_value) — never a full expression: a full expression would
+    // swallow the closing `>` as a greater-than operator. Aliased to
     // typed_identifier so consumers see one node kind with an optional
     // `definition` field (matches prpparse).
     , generic_identifier: $ => prec.left('typed_identifier', seq(
       field('identifier', $.identifier)
       , optional($._timing_sequence)
       , field('type', optional($.type_cast))
-      , field('definition', optseq('=', $._type))
+      , field('definition', optseq('=', $._generic_value))
     ))
     , generic_identifier_list: $ => listseq1(field('item', alias($.generic_identifier, $.typed_identifier)))
-    // Call-site generic binding list (`f<int,string>(…)`): one type per
-    // generic name, in declaration order. Types, not typed_identifiers —
-    // but a binding may be NAMED (`f<T=u8, K=10>(…)`), following the same
+    // Call-site generic binding list (`f<int,string>(…)`): one generic
+    // argument per generic name, in declaration order. Not typed_identifiers
+    // — but a binding may be NAMED (`f<T=u8, K=10>(…)`), following the same
     // naming rules as call arguments; aliased to arg_assignment so the
     // named-argument machinery applies (matches prpparse). The rvalue is a
-    // type, not an expression, for the same closing-`>` reason as above.
+    // generic argument, not an expression, for the same closing-`>` reason
+    // as above.
     , generic_type_list: $ => listseq1(field('item', choice(
-      $._type
+      $._generic_value
       , alias($.generic_assignment, $.arg_assignment)
     )))
     , generic_assignment: $ => seq(
       field('lvalue', $.identifier)
       , '='
-      , field('rvalue', $._type)
+      , field('rvalue', $._generic_value)
+    )
+    // A generic ARGUMENT — at the call site (`f<N=…>`) and as a parameter
+    // default (`<N=…>`) alike (06-functions.md): a type, a literal, a name, a
+    // dotted field (`cfg.w`; all through the type grammar), or a POSTFIX
+    // attribute read of a (dotted) name written bare: `x.[bits]`,
+    // `cfg.w.[max]`. It surfaces as the same `attribute_read` node an
+    // expression produces (argument = identifier / dot_expression), so
+    // consumers lower it like any attribute read (matches prpparse).
+    // Anything else is parenthesized: an operator expression (`<N=(W*2)>` —
+    // bare, `>`/`>>` would be ambiguous) or a call (`<N=(g(x))>`; a bare
+    // `g(x)` is a type-position call). The `x` / `x.y` prefix is shared with
+    // the type path (`expression_type`/`dot_expression_type`) until `.[`
+    // decides it — a declared GLR conflict.
+    , _generic_value: $ => choice(
+      $._type
+      , alias($.generic_attribute_read, $.attribute_read)
+    )
+    , generic_attribute_read: $ => seq(
+      field('argument', choice(
+        $.identifier
+        , alias($.generic_dotted_name, $.dot_expression)
+      ))
+      , field('attrs', repeat1(seq('.', $.attribute_list)))
+    )
+    // Same shape as an expression `dot_expression` (only the head is an
+    // `item` field), so `cfg.w.[max]` reads like its expression spelling.
+    , generic_dotted_name: $ => seq(
+      field('item', $.identifier)
+      , repeat1(seq('.', $.identifier))
     )
 
     // Expressions. Built from the tiered binary-expression operand chain:

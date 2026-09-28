@@ -58,9 +58,9 @@ TARGET = prpfmt
 # regenerating it whenever parser.c changes keeps the formatter's node dispatch
 # in sync with the grammar (tree-sitter renumbers the ids on every grammar edit).
 SYMBOLS_HDR = ts_symbols.h
-HEADERS     = prpfmt.h ir.h $(SYMBOLS_HDR)
+HEADERS     = prpfmt.h prpfmt_api.h ir.h $(SYMBOLS_HDR)
 
-.PHONY: all clean debug
+.PHONY: all clean debug test-api
 
 all: $(TARGET)
 
@@ -99,5 +99,11 @@ scanner.o: $(SCANNER)
 $(TARGET): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) $(TS_LIBS) -o $(TARGET)
 
+test-api: $(OBJ)
+	$(CXX) $(CXXFLAGS) tests/api_test.cc prpfmt.o ir.o $(C_OBJ) $(TS_LIBS) -o api_test
+	./api_test
+	rm -rf api_test api_test.dSYM
+
 clean:
-	rm -f $(TARGET) $(SYMBOLS_HDR) $(OBJ)
+	rm -f $(TARGET) $(SYMBOLS_HDR) $(OBJ) api_test
+	rm -rf api_test.dSYM

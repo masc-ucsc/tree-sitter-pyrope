@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 import re
+import tempfile
 
 # Import the interactive loop from the other script
 try:
@@ -18,7 +19,7 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split('([0-9]+)', s)]
 
-def run_verification_test(target_dir, prpfmt_bin, debug_mode=False):
+def run_verification_test(target_dir, prpfmt_bin, debug_mode=False, mode="ai"):
     # Resolve absolute path to the executable
     prpfmt_path = prpfmt_bin
     if not os.path.isabs(prpfmt_path):
@@ -53,7 +54,7 @@ def run_verification_test(target_dir, prpfmt_bin, debug_mode=False):
     output_parse_failed_files = []
     other_failed_files = []
 
-    print(f"\n--- Running prpfmt verification on {total_files} files in {target_dir} ---")
+    print(f"\n--- Running prpfmt verification on {total_files} files in {target_dir} ({mode}) ---")
     print(f"Using binary: {prpfmt_path}")
     
     for file_path in all_files:
@@ -61,12 +62,21 @@ def run_verification_test(target_dir, prpfmt_bin, debug_mode=False):
         try:
             # Run prpfmt with verification flag
             result = subprocess.run(
-                [prpfmt_path, file_path, "-v"],
+                [prpfmt_path, file_path, "--mode", mode, "-v"],
                 capture_output=True,
                 text=True,
                 check=False
             )
             
+            if result.returncode == 0:
+                with tempfile.NamedTemporaryFile(mode="w+", suffix=".prp") as second_input:
+                    second_input.write(result.stdout)
+                    second_input.flush()
+                    second = subprocess.run([prpfmt_path, second_input.name, "--mode", mode, "-v"],
+                                            capture_output=True, text=True, check=False)
+                if second.returncode != 0 or second.stdout != result.stdout:
+                    result = subprocess.CompletedProcess(result.args, 4, result.stdout,
+                                                         "Error: second formatting pass is not identical/parseable")
             if result.returncode == 0:
                 passed_count += 1
             else:
@@ -145,7 +155,9 @@ if __name__ == "__main__":
     parser.add_argument("directory", help="The directory containing .prp files to verify.")
     parser.add_argument("-b", "--bin", default="../prpfmt", help="Path to prpfmt executable (default: ../prpfmt)")
     parser.add_argument("-d", "--debug", action="store_true", help="Launch interactive debug mode for failed files.")
+    parser.add_argument("--mode", choices=("ai", "human", "both"), default="both")
     args = parser.parse_args()
 
-    success = run_verification_test(args.directory, args.bin, args.debug)
+    modes = ("ai", "human") if args.mode == "both" else (args.mode,)
+    success = all([run_verification_test(args.directory, args.bin, args.debug, mode) for mode in modes])
     sys.exit(0 if success else 1)
