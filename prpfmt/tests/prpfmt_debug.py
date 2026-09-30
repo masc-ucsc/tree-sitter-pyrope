@@ -6,6 +6,9 @@ import datetime
 import argparse
 import re
 
+# The formatter built in prpfmt/, whatever the cwd.
+DEFAULT_BIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'prpfmt')
+
 # Helper for natural sorting (e.g., file2.prp before file10.prp)
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
@@ -129,20 +132,21 @@ def main():
     parser.add_argument("range", nargs="?", help="Range of files (e.g., '1-9'). Filters by fileN.prp if present, else uses 0-based indices.")
     parser.add_argument("-s", "--stats", action="store_true", 
                         help="Report statistics instead of interactive mode.")
-    parser.add_argument("-b", "--bin", default="../prpfmt", help="Path to prpfmt executable (default: ../prpfmt)")
+    parser.add_argument("-b", "--bin", default=DEFAULT_BIN,
+                        help="Path to prpfmt executable (default: the prpfmt built next to this tests/ directory)")
     args = parser.parse_args()
 
     # Resolve binary path
-    prpfmt_executable = args.bin
-    if not os.path.isabs(prpfmt_executable):
-        # Try relative to CWD first, then relative to script if that fails
-        if not os.path.exists(prpfmt_executable):
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            candidate = os.path.abspath(os.path.join(script_dir, args.bin))
-            if os.path.exists(candidate):
-                prpfmt_executable = candidate
+    # Try relative to the cwd first, then relative to this script. Only a
+    # file counts: from prpfmt/, `../prpfmt` is the prpfmt directory itself.
+    prpfmt_executable = os.path.abspath(args.bin)
+    if not os.path.isfile(prpfmt_executable) and not os.path.isabs(args.bin):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        candidate = os.path.abspath(os.path.join(script_dir, args.bin))
+        if os.path.isfile(candidate):
+            prpfmt_executable = candidate
 
-    if not os.path.exists(prpfmt_executable):
+    if not os.path.isfile(prpfmt_executable):
         print(f"Error: prpfmt executable not found at {args.bin}")
         sys.exit(1)
     

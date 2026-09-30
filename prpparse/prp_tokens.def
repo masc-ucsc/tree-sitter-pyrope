@@ -22,6 +22,13 @@ PRP_TOKEN(integer, "<int>")
 PRP_TOKEN(string,  "<str>")
 PRP_TOKEN(istring, "<istr>")
 PRP_TOKEN(ident,   "<ident>")
+// A built-in type word: `U<N>`/`S<N>` (`U4`, `S20`: `U` or `S` followed by
+// ASCII digits only), `Unsigned`, `Signed`, `Bool`, `String`, `Clock`, `Reset`
+// (token.hpp is_type_word). RESERVED: never an identifier (grammar.js
+// `identifier` + `reserved` exclude the same words). It is a type in type
+// positions and, as an operand or a conversion callee (`x does U8`, `U8(x)`),
+// an `identifier` node naming the type. A name spelled so is written `` `U4` ``.
+PRP_TOKEN(type_word, "<type-word>")
 
 // 3-char operators
 PRP_TOKEN(range_incl,     "..=")

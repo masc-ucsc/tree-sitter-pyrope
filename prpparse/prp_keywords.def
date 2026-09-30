@@ -2,8 +2,8 @@
 //
 // Every word is lexed as a `Token_kind::ident`; if its spelling matches one of
 // these, the token also carries the matching `Keyword` id. The parser decides
-// contextually whether the word is a keyword or a plain identifier (soft
-// keywords: e.g. `comptime` as an attribute name, type names as fields).
+// contextually which language construct the keyword starts. Ordinary names
+// matching any keyword, in any case, always require backticks.
 //
 // `name` is also a valid C++ identifier-paste target; entries that collide with
 // C++ keywords (if/else/for/while/int/bool/true/false/not/and/or) are safe
@@ -52,16 +52,11 @@ PRP_KEYWORD(comb)
 PRP_KEYWORD(mod)
 PRP_KEYWORD(pipe)
 
-// Primitive type names. 'int'/'integer'/'uint' are REMOVED but still recognized
-// (as keywords) so the parser can emit a tailored "use signed/unsigned" error
-// instead of a confusing "undefined name" one.
-PRP_KEYWORD(uint)
-PRP_KEYWORD(unsigned)
-PRP_KEYWORD(signed)
-PRP_KEYWORD(int)
-PRP_KEYWORD(integer)
-PRP_KEYWORD(bool)
-PRP_KEYWORD(string)
+// Built-in type names are NOT keywords: the capitalized type words (`U8`,
+// `Signed`, `Bool`, `Clock`, ...) are their own reserved token
+// (Token_kind::type_word, token.hpp is_type_word), and the old lowercase
+// spellings (`u8`, `bool`, `unsigned`, `int`, ...) are ordinary identifiers
+// (lhd reports their use as a type: "`u8` was renamed `U8`").
 
 // Bit-selection extensions
 PRP_KEYWORD(sext)

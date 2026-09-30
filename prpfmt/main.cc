@@ -167,58 +167,31 @@ int main(int argc, char **argv) {
   // Check if tree has any ERROR or MISSING nodes
   TSNode root = ts_tree_root_node(tree.get());
 
-  if (ts_node_has_error(root)) {
-    fprintf(stderr, "Error: the provided code was unable to be parsed.\n"
-                    "Run: `tree-sitter parse -c /path/to/file` and look"
-                    " for MISSING or ERROR nodes.\n");
+  if (ts_node_has_error(root) || has_leading_bom(source_code)) {
+    fprintf(stderr, "Error: %s: input did not parse; formatting skipped, no output written.\n", infile_path);
     if (outfile != stdout) fclose(outfile);
     return 2;  // RAII frees parser/tree/source_code on the way out
   }
 
-  // Initialize state
-  PrpfmtState state = {
-    .source_code = source_code,
-    .outfile = outfile,
-    .indent_size = indent_size,
-    .max_width = max_width,
-    .in_assert = false,
-    .allow_inline = false,
-    .nesting_level = 0,
-    .fmt_on = true,
-    .inline_exp = false,
-    .buffer = {},
-    .mode = mode,
-  };
-
   double format_start = 0, format_end = 0;
   if (run_benchmark) format_start = get_time_ms();
 
-  print_description(tree.get(), state);
-  prpfmt_solve(state);
+  bool broken = false, too_deep = false;
+  std::string formatted =
+      prpfmt_format(parser.get(), tree.get(), source_code, indent_size, max_width, mode, &broken, &too_deep);
+  if (run_benchmark) format_end = get_time_ms();
+  if (too_deep) {
+    // Nothing was formatted; -i/-o leave their file untouched.
+    fprintf(stderr, "Error: the input nests too deeply to be formatted safely.\n");
+    return 1;
+  }
 
   bool parse_error = false;
   {
-    // Render completely before opening an output path, especially for -i.
-    char *formatted_buf = nullptr;
-    size_t formatted_size = 0;
-    FILE *mem_stream = open_memstream(&formatted_buf, &formatted_size);
-    if (!mem_stream) {
-      perror("open_memstream failed");
-      exit(1);
-    }
-
-    // Temporary swap outfile to capture render
-    state.outfile = mem_stream;
-    prpfmt_render(state);
-    if (run_benchmark) format_end = get_time_ms();
-    fclose(mem_stream);
-
+    const char *formatted_buf = formatted.data();
+    size_t formatted_size = formatted.size();
     // In-place edits always verify before touching the source file.
-    if (verify_output || inplace) {
-      TreePtr verify_tree(ts_parser_parse_string(parser.get(), nullptr,
-                                                 formatted_buf, formatted_size));
-      parse_error = ts_node_has_error(ts_tree_root_node(verify_tree.get()));
-    }
+    if (verify_output || inplace) parse_error = broken;
     // A failed verify must never clobber a FILE destination (-o/-i): that is the
     // whole point of verifying before writing. stdout is different -- it destroys
     // nothing, and the broken text is exactly what the user (and
@@ -229,13 +202,11 @@ int main(int argc, char **argv) {
         outfile = fopen(outfile_path, "w");
         if (!outfile) {
           perror(outfile_path);
-          free(formatted_buf);
           return 1;
         }
       }
       if (fwrite(formatted_buf, 1, formatted_size, outfile) != formatted_size) {
         perror("writing formatted output");
-        free(formatted_buf);
         if (outfile != stdout) fclose(outfile);
         return 1;
       }
@@ -253,7 +224,6 @@ int main(int argc, char **argv) {
       fprintf(stderr, "----------------------------------------------------------------\n\n");
     }
 
-    free(formatted_buf);  // open_memstream allocates with malloc; free is required
   }
 
   if (run_benchmark) {

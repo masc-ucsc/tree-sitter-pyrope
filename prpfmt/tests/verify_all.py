@@ -6,6 +6,9 @@ import argparse
 import re
 import tempfile
 
+# The formatter built in prpfmt/, whatever the cwd.
+DEFAULT_BIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'prpfmt')
+
 # Import the interactive loop from the other script
 try:
     from prpfmt_debug import run_interactive_loop
@@ -21,15 +24,17 @@ def natural_sort_key(s):
 
 def run_verification_test(target_dir, prpfmt_bin, debug_mode=False, mode="ai"):
     # Resolve absolute path to the executable
-    prpfmt_path = prpfmt_bin
-    if not os.path.isabs(prpfmt_path):
-        if not os.path.exists(prpfmt_path):
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            candidate = os.path.abspath(os.path.join(script_dir, prpfmt_bin))
-            if os.path.exists(candidate):
-                prpfmt_path = candidate
+    # A relative path resolves against the cwd first, then this script's
+    # directory. Only a file counts: from prpfmt/, `../prpfmt` is the prpfmt
+    # directory itself.
+    prpfmt_path = os.path.abspath(prpfmt_bin)
+    if not os.path.isfile(prpfmt_path) and not os.path.isabs(prpfmt_bin):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        candidate = os.path.abspath(os.path.join(script_dir, prpfmt_bin))
+        if os.path.isfile(candidate):
+            prpfmt_path = candidate
 
-    if not os.path.exists(prpfmt_path):
+    if not os.path.isfile(prpfmt_path):
         print(f"Error: prpfmt executable not found at {prpfmt_bin}")
         sys.exit(1)
     
@@ -153,7 +158,8 @@ def run_verification_test(target_dir, prpfmt_bin, debug_mode=False, mode="ai"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run prpfmt -v on all .prp files in a directory.")
     parser.add_argument("directory", help="The directory containing .prp files to verify.")
-    parser.add_argument("-b", "--bin", default="../prpfmt", help="Path to prpfmt executable (default: ../prpfmt)")
+    parser.add_argument("-b", "--bin", default=DEFAULT_BIN,
+                        help="Path to prpfmt executable (default: the prpfmt built next to this tests/ directory)")
     parser.add_argument("-d", "--debug", action="store_true", help="Launch interactive debug mode for failed files.")
     parser.add_argument("--mode", choices=("ai", "human", "both"), default="both")
     args = parser.parse_args()

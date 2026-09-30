@@ -27,11 +27,15 @@ typedef enum PrpfmtMode {
  * Returns:
  *   0  success — *out_buf is a malloc'd, NUL-terminated formatted buffer
  *      (the caller frees it with free()) and *out_len its length.
- *   2  the input did not parse (ERROR/MISSING nodes) — *out_buf == NULL.
+ *   2  the input did not parse (ERROR/MISSING nodes). No formatting is
+ *      attempted, even with verify == 0; *out_buf == NULL, *out_len == 0.
+ *      The caller reports the parse failure to the user.
  *   3  verify != 0 and the formatted output failed to re-parse. The formatted
  *      buffer is still returned (so a caller can print it), but the result is
  *      flagged as unsafe.
  *   1  an internal allocation failure — *out_buf == NULL.
+ *   4  the input nests too deeply (a tree deeper than 200000 levels) to be
+ *      formatted safely — *out_buf == NULL.
  *
  * `indent_size` (spaces per level) and `max_width` (soft width target) mirror the
  * CLI --indent and --width knobs. (There are no short spellings: `-w` is not an

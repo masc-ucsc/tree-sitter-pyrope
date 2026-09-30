@@ -12,7 +12,7 @@ def get_order(filename, pattern):
     return funcs
 
 header_funcs = get_order('prpfmt.h', r'^void\s+(print_[a-zA-Z0-9_]+|preserve_whitespace|check_format_directives|emit_node_text)\s*\(')
-source_funcs = get_order('prpfmt.c', r'^void\s+(print_[a-zA-Z0-9_]+|preserve_whitespace|check_format_directives|emit_node_text)\s*\(')
+source_funcs = get_order('prpfmt.cc', r'^void\s+(print_[a-zA-Z0-9_]+|preserve_whitespace|check_format_directives|emit_node_text)\s*\(')
 
 # Compare
 mismatches = []

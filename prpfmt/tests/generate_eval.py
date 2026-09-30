@@ -3,21 +3,27 @@ import random
 import subprocess
 import glob
 
-SNIPPET_DIR = "../../docs/tmp/"
+# Paths resolve from this script, whatever the cwd: the docs corpus
+# (`make corpus` at the repo root builds full_pyrope/) and the prpfmt built in
+# prpfmt/.
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+PRPFMT = os.path.join(os.path.dirname(TESTS_DIR), "prpfmt")
+SNIPPET_DIR = os.path.join(os.path.dirname(os.path.dirname(TESTS_DIR)), "full_pyrope")
 OUTPUT_FILE = "evaluation_data.txt"
 SAMPLE_SIZE = 50
 
 def get_valid_files():
     all_files = glob.glob(os.path.join(SNIPPET_DIR, "file*.prp"))
     valid = []
-    for f in all_files:
-        res = subprocess.run(["tree-sitter", "parse", f], capture_output=True, text=True)
-        if res.returncode == 0 and "ERROR" not in res.stdout:
+    for f in sorted(all_files):
+        # A file is valid when prpfmt formats it (it exits 2 on a parse error).
+        res = subprocess.run([PRPFMT, f], capture_output=True, text=True)
+        if res.returncode == 0:
             valid.append(f)
     return valid
 
 def format_snippet(path):
-    res = subprocess.run(["../../prpfmt", path, "--indent", "2"], capture_output=True, text=True)
+    res = subprocess.run([PRPFMT, path, "--indent", "2"], capture_output=True, text=True)
     return res.stdout
 
 def main():

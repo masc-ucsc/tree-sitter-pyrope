@@ -47,6 +47,21 @@ inline std::string_view keyword_spelling(Keyword k) {
   return "";
 }
 
+// The built-in type words: `U<N>` / `S<N>` (`U` or `S` followed by one or
+// more ASCII digits only: `U1`, `U8`, `S20`), `Unsigned`, `Signed`, `Bool`,
+// `String`, `Clock`, `Reset`. These spellings are RESERVED (lexed as
+// Token_kind::type_word, never as an identifier; grammar.js agrees), so `U4`
+// can not name a variable, port, parameter or field -- `` `U4` `` can. The old
+// lowercase spellings (`u8`, `bool`, `unsigned`, ...) are ordinary identifiers.
+inline bool is_type_word(std::string_view s) {
+  if (s.size() >= 2 && (s[0] == 'U' || s[0] == 'S')) {
+    bool digits = true;
+    for (size_t i = 1; i < s.size() && digits; ++i) digits = s[i] >= '0' && s[i] <= '9';
+    if (digits) return true;
+  }
+  return s == "Unsigned" || s == "Signed" || s == "Bool" || s == "String" || s == "Clock" || s == "Reset";
+}
+
 // Returns the Keyword id for a word spelling, or Keyword::none.
 inline Keyword classify_keyword(std::string_view s) {
   static const std::unordered_map<std::string_view, Keyword> table = {

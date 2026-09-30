@@ -39,30 +39,15 @@ TMP = "/tmp/prpparse_fuzz"
 # Error codes where prpparse is DELIBERATELY stricter than the tree-sitter
 # grammar, so a rejection here is NOT a false positive.
 #
-# grammar.js declares `word: $ => $.identifier` (keyword extraction), which makes
-# a keyword lex as a plain identifier anywhere the keyword token is not valid --
-# so tree-sitter happily accepts `mut if = 3` and `mod f(in:u8)`. Pyrope's rule
-# is that a name whose text collides with a keyword must be backticked
-# (`` `if` ``, `` `in` ``), and prpparse enforces that at the sites that BIND a
-# name.
-#
-# tree-sitter CAN reserve words (the `reserved` word-set feature, 0.25+; the
-# pinned CLI is 0.26.9), and it was prototyped: regeneration is cheap and prpfmt
-# is unaffected. It is not used because it cannot express THIS rule. `reserved`
-# is scoped to lexer/parse state, while the rule is per-syntactic-site:
-#     mut string = 3               must REJECT
-#     x = string(a)                must ACCEPT   (cast call)
-#     mut import = 3               must REJECT
-#     const M = import("lib.math") must ACCEPT
-# A global set holding `string`/`import` kills the call forms, so the prototype
-# had to shrink from 52 words to the 33 that happen not to collide -- a
-# lexer-overlap accident, not the policy -- and even then it over-rejected two
-# DOCUMENTED idioms: the `__memory` config field `const type = 1`
-# (docs 08-memories.md) and the lambda name in `,mod tick(ref self, ...)`
-# (docs 04-variables.md). It would also still leave 22 keywords divergent, so
-# this exemption would be needed anyway. Recorded here instead; counted and
-# printed, just not a gate failure.
-STRICTER_THAN_TS = {"reserved-word-as-name"}
+# The reserved-word rule used to be enforced by prpparse alone (tree-sitter's
+# keyword extraction read a keyword as a plain identifier wherever the keyword
+# token was not valid, so it accepted `mut if = 3`). grammar.js now reserves
+# every keyword at the sites that BIND a name (its `binding` reserved set on
+# `_binding_typed_identifier` & co.), and both parsers agree: a
+# `reserved-word-as-name` rejection of tree-sitter-valid syntax is a real
+# divergence again, not an intentional one. The bucket stays (empty) for any
+# future deliberate divergence.
+STRICTER_THAN_TS: set = set()
 
 # Approximate tokenizer — only needs plausible edit boundaries, not fidelity.
 TOKEN_RE = re.compile(

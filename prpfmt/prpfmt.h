@@ -2,7 +2,9 @@
 #define PRP_FMT_H
 
 #include <cstdio>
+#include <string>
 #include <string_view>
+#include <vector>
 #include <unordered_map>
 #include <tree_sitter/api.h>
 #include "ir.h"
@@ -20,6 +22,19 @@ enum SpacingConfig {
   SPACE_BOTH   = 3
 };
 
+// Parent of every named node, built once per file: tree-sitter's
+// ts_node_parent() walks down from the root (O(depth)), so the per-node
+// ancestor checks were cubic on deeply nested input.
+struct NodeKey {
+  const void *id;
+  uint32_t start;
+  bool operator==(const NodeKey &) const = default;
+};
+struct NodeKeyHash {
+  size_t operator()(const NodeKey &k) const { return std::hash<const void *>()(k.id) ^ (size_t(k.start) << 1); }
+};
+using ParentMap = std::unordered_map<NodeKey, TSNode, NodeKeyHash>;
+
 struct PrpfmtState {
   std::string_view source_code; // Input source for text extraction via get_node_text
   FILE *outfile;           // Output target (stdout or file)
@@ -32,10 +47,49 @@ struct PrpfmtState {
   bool inline_exp;         // If true, suppresses newlines for nested expressions
   TokenBuffer buffer;      // Buffer for IR
   PrpfmtMode mode = PRPFMT_AI;
-  std::unordered_map<std::string, std::vector<std::string>> variadic_inputs;
-  // Comparisons the enclosing logical expression chose to print without spaces
-  // around their comparators (precedence spacing, see print__binary_logical).
-  std::vector<TSNode> tight_compares;
+  // Same-file lambda declarations by (backtick-free) name, used to decide
+  // when `f(x=x)` may print as the shorthand `f(x)` and when a bare `x` in a
+  // call counts as the named binding `x=x` for sorting (see resolve_callee).
+  struct CalleeSig {
+    int decls = 0;             // statement-level `comb|mod|pipe|fluid NAME` declarations
+    bool plain = true;         // no `self` first parameter, no `...` gather
+    std::vector<std::string> params;
+    TSNode scope{};            // block that declares it; calls must sit inside
+  };
+  std::unordered_map<std::string, CalleeSig> callees;
+  // Other bindings of the same names (variables, parameters, aliases, nested
+  // or tuple-member lambdas, imports): any of these makes the name unresolved.
+  std::unordered_map<std::string, int> other_bindings;
+  // The unnamed arguments of every call in the file, by callee name (the last
+  // name of a dotted callee): the name of a bare `x` / `ref x` argument (a
+  // possible same-name pun), or "" for any other value. See
+  // bound_by_position.
+  std::unordered_map<std::string, std::vector<std::string>> unnamed_args;
+  // Comments between a branch's `}` and the next `elif`/`else`, handed from
+  // print_if_expression to the branch block, which prints them after its `{`.
+  std::vector<TSNode> header_comments;
+  // Comments trailing a one-line branch `if c { a } // c` before the next
+  // `elif`/`else`, handed from print_if_expression to that branch's block,
+  // which prints them after its last statement.
+  std::vector<TSNode> tail_comments;
+  const ParentMap *parents = nullptr;  // see parent_of()
+  // Memoized subtree scans (has_recursive_line_comment, holds_vertical_layout,
+  // scope_must_break), keyed by node byte range and symbol, so nested
+  // expressions are scanned once instead of once per enclosing check.
+  struct NodeKey {
+    uint32_t start, end, symbol, kind;
+    bool operator==(const NodeKey &) const = default;
+  };
+  struct NodeKeyHash {
+    size_t operator()(const NodeKey &k) const {
+      uint64_t h = (uint64_t(k.start) << 32) ^ k.end;
+      h ^= (uint64_t(k.symbol) << 8 | k.kind) * 0x9e3779b97f4a7c15ULL;
+      return std::hash<uint64_t>{}(h);
+    }
+  };
+  mutable std::unordered_map<NodeKey, bool, NodeKeyHash> scan_cache;
+  // Indices of the groups emitted but not closed yet (see Token::match).
+  std::vector<int> open_groups;
 };
 
 /*
@@ -51,14 +105,28 @@ struct PrpfmtState {
  * 1. Entry & High-Level Dispatch                                             *
  ******************************************************************************/
 void print_description(TSTree *tree, PrpfmtState &st);
+// A UTF-8 byte order mark at the start of the file is an error (owner ruling
+// 108: only ASCII blanks separate tokens; prpparse "non-ASCII space"), but the
+// tree-sitter runtime skips it, so the formatter refuses such an input itself.
+inline bool has_leading_bom(std::string_view src) { return src.starts_with("\xEF\xBB\xBF"); }
+// Format a parsed file. When the output would reparse into a different shape
+// (see Parse_shape in prpfmt.cc), it formats again keeping every grouping
+// parenthesis and source order. *parse_error: the output does not parse.
+// *too_deep: the input nests too deeply to format safely; nothing is formatted
+// (an empty result) and *parse_error is set as well.
+std::string prpfmt_format(TSParser *parser, TSTree *tree, std::string_view src, int indent_size, int max_width,
+                          PrpfmtMode mode, bool *parse_error, bool *too_deep = nullptr);
 bool print__statement(TSNode node, PrpfmtState &st, TSNode prev_node, bool is_inline);
 
 /******************************************************************************
  * 2. Structural (Scopes, Lists, Tuples)                                      *
  ******************************************************************************/
-void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline);
+// value_block: the branch block of an `if`/`match` expression in value
+// position, whose value keeps its expression layout when the block breaks.
+void print_scope_statement(TSNode node, PrpfmtState &st, bool is_inline, bool value_block = false);
 void print_stmt_list(TSNode node, PrpfmtState &st);
 void print_tuple(TSNode node, PrpfmtState &st);
+void print_type_call_args(TSNode node, PrpfmtState &st);
 void print_assertion_args(TSNode node, PrpfmtState &st);
 void print_tuple_sq(TSNode node, PrpfmtState &st);
 void print_attribute_sq(TSNode node, PrpfmtState &st);
@@ -72,7 +140,7 @@ void print_step_statement(TSNode node, PrpfmtState &st);
  * 3. Control Flow                                                            *
  ******************************************************************************/
 void print_if_expression(TSNode node, PrpfmtState &st, bool is_inline);
-void print_match_expression(TSNode node, PrpfmtState &st);
+void print_match_expression(TSNode node, PrpfmtState &st, bool is_inline);
 void print_for_statement(TSNode node, PrpfmtState &st);
 void print_while_statement(TSNode node, PrpfmtState &st);
 void print_loop_statement(TSNode node, PrpfmtState &st);

@@ -14,12 +14,12 @@
 
 namespace prpparse {
 
-// Recursive-descent Pyrope parser. Mirrors grammar.js rule structure; accepts
-// what grammar.js accepts (overparse parity), with ONE deliberate exception --
-// a bare reserved word where a name is BOUND (`mut if = 3`, `mod f(in:u8)`) is
-// rejected, because Pyrope spells such a name with backticks (`` `if` ``). See
-// README.md "Deliberately stricter than the grammar". Fail-fast: the first
-// syntax error throws Parse_error. parse() returns the materialized hhds Prp_tree.
+// Recursive-descent Pyrope parser. Mirrors grammar.js rule structure and also
+// validates ordinary names uniformly: keywords/type spellings require backticks
+// in every name position, matched case-insensitively. The editor grammar may
+// accept a syntax superset; lhd compile reports these name errors here.
+// Fail-fast: the first syntax error throws Parse_error. parse() returns the
+// materialized hhds Prp_tree.
 class Parser {
 public:
   explicit Parser(const Source_buffer& buf);
@@ -59,7 +59,9 @@ private:
   // where the virtual-semicolon handshake does NOT apply (so `(a\nand b)` keeps
   // continuing the expression). At depth 0 (statement level / inside a scope),
   // a terminator ends an expression. Scopes reset this to 0 (their bodies are
-  // statements). Managed via Bracket_guard / Scope_guard (exception-safe).
+  // statements), and so do `if`/`match` expressions (their headers end at a
+  // newline, also inside brackets). Managed via Bracket_guard / Scope_guard
+  // (exception-safe).
   int  ebd_ = 0;
   bool term_stop() const { return ebd_ == 0 && cur().terminator_before; }
   struct Bracket_guard {
@@ -78,11 +80,22 @@ private:
     Scope_guard& operator=(const Scope_guard&) = delete;
   };
 
+  // Index into toks_ of the first token of the statement being parsed (see
+  // blame()). Set by parse_statement, restored on the way out.
+  size_t stmt_start_ = 0;
+  struct Stmt_start_guard {
+    Parser& p;
+    size_t  saved;
+    explicit Stmt_start_guard(Parser& pp) : p(pp), saved(pp.stmt_start_) { pp.stmt_start_ = pp.pos_; }
+    ~Stmt_start_guard() { p.stmt_start_ = saved; }
+    Stmt_start_guard(const Stmt_start_guard&)            = delete;
+    Stmt_start_guard& operator=(const Stmt_start_guard&) = delete;
+  };
+
   // Index into toks_ of a statement-opening reserved word that is being used
   // the way a plain identifier would be (`stage[0] = a`, `tick = 3`,
   // `in.bits = 1`); kNoKw when the current statement does not open that way.
-  // Pyrope's keywords are soft only where the grammar names them, so such a
-  // statement IS a syntax error -- but the caret lands wherever the keyword
+  // An unescaped keyword used as a name is always a syntax error -- but the caret lands wherever the keyword
   // construct gave up (on the `=` of `stage[0] = a`), which reads as "your
   // expression is broken" when the real answer is "that name needs backticks".
   // Verilog imports hit this constantly, so error() turns the remembered token
@@ -115,6 +128,26 @@ private:
   // Enforce that the current token is a plain name, not a bare reserved word.
   // `role` completes "'reg' is a reserved word, so it cannot be <role>".
   void require_plain_name(const char* role) const;
+  // A reserved type word (`U4`, `S20`, `Bool`, `Clock`, ...) where a NAME is required.
+  [[noreturn]] void error_type_word_name(const Token& t, const std::string& role) const;
+  // `e` is the bare identifier a type word used as a value parses to
+  // (`x does U8`): an expression that may not be reinterpreted as a name
+  // (an assignment target, a tuple field, a named argument). Throws if so.
+  void reject_type_word_name(const Ast* e, const char* role) const;
+  // An assignment target (grammar.js `_single_assignment`: a
+  // `_complex_identifier`, optionally typed): a name, a field, a selector, a
+  // bit-select, an attribute read or a timed name, possibly carrying a
+  // `::[attr]`. Throws `bad-assignment-target` for anything else (`f(x) = 3`,
+  // `a + b = 3`, `(1) = 2`, `[a, b] = f()`).
+  void require_lvalue(const Ast* e) const;
+  // A NAMED binding's name (`f(n = 1)`, `x::[n = 1]`, `(n = local) = f()`):
+  // the grammar admits a plain identifier there (plus a dotted field for a call
+  // argument, `dotted`). Throws `bad-assignment-target` otherwise.
+  void require_binding_name(const Ast* e, bool dotted, const char* role) const;
+  // The condition of an if/elif/while/match (the last init-clause item) is an
+  // expression (grammar.js `condition: $._expression`), never an assignment,
+  // a declaration, a typed field or a `ref`: `if a = 1 { }` is an error.
+  void require_condition(const Ast* c) const;
 
   // ---- cursor ----
   const Token& cur() const { return toks_[pos_ < toks_.size() ? pos_ : toks_.size() - 1]; }
@@ -151,7 +184,13 @@ private:
     a->start_byte = start;
     a->end_byte   = prev_end();
   }
+  // The token a syntax error points at: the current one, unless the statement
+  // being parsed already ended before it (the current token opens the next
+  // logical line, or the input ended), so the error is about what is missing
+  // after the previous token: `enum E:U8 (a, b)` newline `x` points at `)`.
+  const Token&      blame() const;
   [[noreturn]] void error(const char* code, const std::string& message) const;
+  [[noreturn]] void error_enum_expression() const;  // `const C = enum(a, b)`
   // Like error() but attaches a secondary note pointing at an opening bracket
   // (`[open_start, open_end)`), so unclosed-bracket diagnostics show where the
   // bracket was opened. The primary span stays at the current token.
@@ -164,6 +203,12 @@ private:
   Ast* node(Kind k, uint32_t start = 0) { return arena_.make(k, start, start); }
   Ast* leaf(Kind k) {
     const Token& t = cur();
+    // One rule for every ordinary name: bindings, fields, attributes,
+    // arguments, methods and enum members all require the same escaping.
+    // Literal/type operands build their language nodes outside this helper.
+    if (k == Kind::identifier) require_plain_name("a name");
+    // ... and it is a word: `enum 3 = (a)`, `import 3 as x`, `x.[=]` name nothing.
+    if (k == Kind::identifier && t.kind != Token_kind::ident) error("expected-identifier", "expected a name");
     Ast*         a = arena_.make(k, t.start_byte, t.end_byte);
     advance();
     return a;
@@ -203,19 +248,46 @@ private:
   Ast* parse_other();
   Ast* parse_times();
   Ast* parse_unary();
-  Ast* parse_postfix();
+  Ast* parse_type_word_operand();
+  // `name_ctx`: the head is a NAME position only (a `ref` target, the target
+  // after `wrap`/`sat`: grammar.js `_complex_identifier`), where tree-sitter
+  // reads `if`/`unique`/`match` as identifiers (`wrap if.total = x`). Elsewhere
+  // (a value) they always start that construct. Everywhere `comb`/`mod`/`pipe`/
+  // `fluid`/`pub` start a lambda and `true`/`false` are the literals, exactly
+  // like the grammar (a suffix head may be a lambda or a literal).
+  Ast* parse_postfix(bool name_ctx = false);
   Ast* parse_postfix_from(Ast* e);     // suffix chain starting from a parsed operand
   Ast* consume_binary_tail(Ast* lhs);  // continue a binary expression from a parsed operand
-  Ast* parse_atom();
-  Ast* parse_paren();
+  Ast* parse_atom(bool name_ctx = false);
+  Ast* parse_paren(const char* name_role = nullptr);
   Ast* parse_tuple_sq();
   Ast* parse_tuple_item();             // common form; classification discarded
-  Ast* parse_tuple_item(bool& plain);  // sets `plain` = item was a bare expression
+  // Sets `plain` = item was a bare expression. `stmt`: the item is an init-clause
+  // STATEMENT (`if x = f(); x { }`). A destructuring assignment is legal in
+  // neither (`if (a, b) = f(); a { }`, `const q = ((a, b) = g())` are errors).
+  Ast* parse_tuple_item(bool& plain, bool stmt = false);
+  Ast* parse_stmt_item();              // parse_tuple_item(stmt=true)
   // Add one parsed tuple item to `parent`, splicing a decl-keyword no-`=` field
   // into separate decl: / lvalue:|value: siblings (tree-sitter shape).
   void add_tuple_child(Ast* parent, Ast* it);
-  Ast* parse_lvalue_item();
+  // `binding`: the item of a destructuring DECLARATION (`const (a, b) = f()`),
+  // whose names are bound (no reserved word); else a statement's destructuring
+  // targets (`(a, b) = f()`).
+  Ast* parse_lvalue_item(bool binding = false);
+  Ast* parse_slot_path();  // the `dox.b` of a rename slot `x = dox.b`
+  // A reserved word used as a FIELD name: a keyword followed by `=` or `:` at
+  // the start of a tuple entry, a named argument, an attribute or generic
+  // binding (src/scanner.c scan_field_word).
+  bool at_field_word() const;
+  // The type word / field-name checks on the DIRECT entries of an enum body.
+  void check_enum_members(const Ast* values) const;
+  // A format spec (`{x:b}`) inside an interpolation hole: the text from the
+  // `:` at byte `colon` to the hole's end `hi` (grammar.js `_format_spec`).
+  void check_format_spec(uint32_t colon, uint32_t hi) const;
   Ast* tuple_to_lvalue_list(Ast* tup);
+  // The slots and operator of a destructuring assignment (names or `name =
+  // path` renames, untyped, `=` only). Throws on anything else.
+  void check_destructuring(const Ast* list) const;
   Ast* parse_arg_tuple();
   Ast* parse_arg_item();
   Ast* parse_constant();
@@ -230,6 +302,12 @@ private:
   Ast* parse_match_expression();
   Ast* parse_ref_identifier();
   Ast* try_generic_call(Ast* fn);
+  // True when a blank (space, tab, newline, CR, FF, VT) sits right before `t`.
+  [[nodiscard]] bool blank_before(const Token& t) const {
+    if (t.start_byte == 0) return false;
+    const char c = buf_.data()[t.start_byte - 1];
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+  }
 
   // ---- types ----
   Ast* parse_type_cast();
@@ -241,14 +319,13 @@ private:
   Ast* parse_typed_identifier(bool allow_default = false, const char* bind_role = "a name");
   Ast* parse_typed_identifier_list(bool allow_default = false, const char* bind_role = "a name");
   // `bind_role` completes "'reg' is a reserved word, so it cannot be <role>".
-  // nullptr = this list does NOT bind names -- an `enum` body/definition, whose
-  // items are VARIANT names. (The same enum spelled `enum E = (in, out)` goes
-  // through parse_paren and has always accepted keyword spellings there.)
+  // nullptr = this list does NOT bind names.
   Ast* parse_arg_list(const char* bind_role = "a parameter name");
   Ast* parse_function_definition_decl();
   Ast* parse_attribute_sq();
   Ast* parse_attribute_list();
-  Ast* parse_select();
+  // `allow_empty`: an array LENGTH (`x:[]U8`); every other selector needs an index.
+  Ast* parse_select(bool allow_empty = false);
   Ast* parse_selection_range_or_index(Kind container);
   Ast* parse_timing_slot();
   Ast* parse_stmt_list();
@@ -256,16 +333,18 @@ private:
 
   // ---- predicates ----
   bool is_decl_keyword(const Token& t) const;
+  // `const`/`mut`/`reg`/`wire`/`stage`/`comptime`/`ref`: never an array length (`x:[mut]U8`).
+  bool is_array_length_keyword(const Token& t) const;
+  // Skip a list's leading commas; commas alone (`(,)`, `f(,)`, `[,]`) are an
+  // error (grammar.js `listseq1`: a present list holds at least one item).
+  void skip_leading_commas(Token_kind close);
   bool is_lambda_kind(const Token& t) const;
   bool looks_like_lambda();
   bool at_assignment_operator() const;
   bool at_constant() const;
   bool is_primitive_type_word(const Token& t) const;
-  // True when the current if/unique/match token actually starts that construct
-  // (a condition follows). When false, the word is used as a plain identifier,
-  // which tree-sitter permits where the keyword token is not grammatically valid
-  // (e.g. `wrap if.total = x`, `match.field`).
-  bool kw_is_construct_start() const;
+  // Is `e` a bare (not backticked) identifier spelled like a reserved word?
+  bool is_keyword_name(const Ast* e) const;
 };
 
 }  // namespace prpparse

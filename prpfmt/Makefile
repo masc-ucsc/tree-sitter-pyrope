@@ -12,7 +12,7 @@ WARN    = -Wall -Wextra -Wpedantic
 # the stack protector and FORTIFY catch classic C-style overruns. Cheap at -O2.
 HARDEN  = -D_GLIBCXX_ASSERTIONS -fstack-protector-strong -D_FORTIFY_SOURCE=2
 OPT     = -O2
-CXXFLAGS = $(CXXSTD) $(WARN) $(HARDEN) $(OPT)
+CXXFLAGS = $(CXXSTD) $(WARN) $(HARDEN) $(OPT) -pthread
 # The generated/external C is not ours to lint; -Wall only (no -Wextra) keeps
 # the scanner's unused-parameter noise out of the build.
 CFLAGS   = $(OPT) -Wall

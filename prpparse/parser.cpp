@@ -2,6 +2,7 @@
 
 #include "parser.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 
@@ -108,7 +109,6 @@ bool is_expr_start(const Token& t) {
     case Token_kind::integer:
     case Token_kind::string:
     case Token_kind::istring:
-    case Token_kind::question:
     case Token_kind::lparen:
     case Token_kind::lbracket:
     case Token_kind::lbrace:
@@ -117,17 +117,11 @@ bool is_expr_start(const Token& t) {
     case Token_kind::minus:
     case Token_kind::ellipsis:
     case Token_kind::ident:  // identifier, or a keyword-led operand (not/if/...)
+    case Token_kind::type_word:  // `U8`, `U8(x)` as a value
       return true;
     default:
       return false;
   }
-}
-
-bool all_digits(std::string_view s, size_t from) {
-  if (from >= s.size()) return false;
-  for (size_t i = from; i < s.size(); ++i)
-    if (s[i] < '0' || s[i] > '9') return false;
-  return true;
 }
 
 // Precedence-tier wrapper kind for a binary operator kind. tree-sitter wraps
@@ -252,10 +246,137 @@ void Parser::add_kw_as_ident_hint(Diag& d) const {
 // bare it used to declare a name nothing else in the file could refer to.
 void Parser::require_plain_name(const char* role) const {
   const Token& t = cur();
-  if (t.kind != Token_kind::ident || t.kw == Keyword::none) return;  // plain, or backticked
+  if (t.kind == Token_kind::type_word) error_type_word_name(t, role);
+  if (t.kind != Token_kind::ident || t.text.starts_with('`')) return;
+  std::string lower(t.text);
+  for (char& c : lower) if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+  const bool sized = lower.size() > 1 && (lower[0] == 'u' || lower[0] == 's' || lower[0] == 'i')
+                     && lower.find_first_not_of("0123456789", 1) == std::string::npos;
+  const bool type_word = sized || lower == "unsigned" || lower == "signed" || lower == "bool"
+                         || lower == "boolean" || lower == "string" || lower == "clock" || lower == "reset";
+  if (type_word) error_type_word_name(t, role);
+  if (classify_keyword(lower) == Keyword::none && lower != "nil") return;
   error_reserved_name(t, "reserved-word-as-name",
-                      "'" + std::string(t.text) + "' is a reserved word, so it cannot be "
-                          + role);
+                      "'" + std::string(t.text) + "' is reserved (case-insensitive), so it cannot be " + role);
+}
+
+// The type words (`U<N>`, `S<N>`, `Unsigned`, `Signed`, `Bool`, `String`,
+// `Clock`, `Reset`) are reserved: a bare `U4` is always the type, so it can not
+// name a variable, port, parameter or field. The backticked `` `U4` `` is an
+// ordinary name (never the type) in every position.
+void Parser::error_type_word_name(const Token& t, const std::string& role) const {
+  Diag d;
+  d.code     = "reserved-type-name";
+  d.category = std::string(kCategorySyntax);
+  d.message  = "'" + std::string(t.text) + "' is a reserved type word, so it cannot be " + role;
+  d.span     = span_bytes(t.start_byte, t.end_byte);
+  set_kw_hint(d, t);
+  throw Parse_error(std::move(d));
+}
+
+void Parser::reject_type_word_name(const Ast* e, const char* role) const {
+  if (!e || e->kind != Kind::identifier) return;
+  std::string_view text(buf_.data() + e->start_byte, e->end_byte - e->start_byte);
+  if (!is_type_word(text) && text != "nil") return;  // a plain or backticked name
+  Token t;
+  t.kind       = Token_kind::type_word;
+  t.start_byte = e->start_byte;
+  t.end_byte   = e->end_byte;
+  t.text       = text;
+  if (text == "nil")
+    error_reserved_name(t, "reserved-word-as-name", "'nil' is a literal, so it cannot be " + std::string(role));
+  error_type_word_name(t, role);
+}
+
+namespace {
+bool is_lvalue_kind(Kind k) {
+  switch (k) {
+    case Kind::identifier:
+    case Kind::typed_identifier:
+    case Kind::dot_expression:
+    case Kind::member_selection:
+    case Kind::bit_selection:
+    case Kind::attribute_read:
+    case Kind::timed_identifier:
+      return true;
+    default:
+      return false;
+  }
+}
+}  // namespace
+
+// The head of an assignment target's suffix chain: `a` in `a.b[1]#[2]`,
+// `a@[1]`, `a.[x]`. A target is rooted at a NAME (spec 2026-09-29 §7):
+// `f(x).a = 3`, `(a+b).c = 3`, `f(x)[0] = 3`, `true.x = 1` are errors.
+static const Ast* lvalue_root(const Ast* x) {
+  while (x && !x->kids.empty()) {
+    switch (x->kind) {
+      case Kind::dot_expression:
+      case Kind::member_selection:
+      case Kind::bit_selection:
+      case Kind::attribute_read:
+      case Kind::attribute_set:
+      case Kind::timed_identifier:
+      case Kind::typed_identifier:
+        x = x->kids.front();
+        continue;
+      default:
+        return x;
+    }
+  }
+  return x;
+}
+
+void Parser::require_lvalue(const Ast* e) const {
+  const Ast* x = e;
+  // `a::[attr] = v`: the grammar reads the `::[attr]` as the target's type_cast.
+  if (x && x->kind == Kind::attribute_set && !x->kids.empty()) x = x->kids.front();
+  if (x && is_lvalue_kind(x->kind)) {
+    const Ast* root = lvalue_root(x);
+    if (root && root->kind == Kind::identifier) {
+      reject_type_word_name(root, "an assignment target");  // `U8 = 3`, `U8.[max] = 1`
+      return;
+    }
+  }
+  Diag d;
+  d.code     = "bad-assignment-target";
+  d.category = std::string(kCategorySyntax);
+  d.message  = "this cannot be assigned: an assignment target is a name, or a field, a selector or a bit-select"
+               " of a name (or, as a statement, a destructuring `(a, b) = ...` of names)";
+  d.span     = e ? span_bytes(e->start_byte, e->end_byte) : span_bytes(cur().start_byte, cur().end_byte);
+  throw Parse_error(std::move(d));
+}
+
+void Parser::require_condition(const Ast* c) const {
+  switch (c->kind) {
+    case Kind::assignment:
+    case Kind::var_or_let_or_reg:
+    case Kind::typed_field:
+    case Kind::ref_identifier: {
+      Diag d;
+      d.code     = "expected-condition";
+      d.category = std::string(kCategorySyntax);
+      d.message  = "expected a condition expression (an assignment or declaration belongs in the init clause: "
+                   "`if x = f(); x > 3 { ... }`)";
+      d.span     = span_bytes(c->start_byte, c->end_byte);
+      throw Parse_error(std::move(d));
+    }
+    default:
+      return;
+  }
+}
+
+void Parser::require_binding_name(const Ast* e, bool dotted, const char* role) const {
+  if (e && (e->kind == Kind::identifier || (dotted && e->kind == Kind::dot_expression))) {
+    reject_type_word_name(e, role);
+    return;
+  }
+  Diag d;
+  d.code     = "bad-assignment-target";
+  d.category = std::string(kCategorySyntax);
+  d.message  = std::string("expected a name before '=' (") + role + ")";
+  d.span     = e ? span_bytes(e->start_byte, e->end_byte) : span_bytes(cur().start_byte, cur().end_byte);
+  throw Parse_error(std::move(d));
 }
 
 void Parser::error_reserved_name(const Token& kw, const char* code,
@@ -270,8 +391,24 @@ void Parser::error_reserved_name(const Token& kw, const char* code,
   throw Parse_error(std::move(d));
 }
 
+// The expression form `enum(a, b)` was removed (spec 2026-09-29 §7): an enum
+// is only the declaration `enum E = (a, b)` / `enum E:T = (a, b)`.
+void Parser::error_enum_expression() const {
+  Diag d;
+  d.code     = "enum-expression";
+  d.category = std::string(kCategorySyntax);
+  d.message  = "the expression form `enum(...)` was removed: declare the enum as `enum E = (a, b)`";
+  d.span     = span_bytes(cur().start_byte, cur().end_byte);
+  throw Parse_error(std::move(d));
+}
+
+const Token& Parser::blame() const {
+  if (pos_ > stmt_start_ && (eof() || term_stop())) return toks_[pos_ - 1];
+  return cur();
+}
+
 void Parser::error(const char* code, const std::string& message) const {
-  const Token& t = cur();
+  const Token& t = blame();
   Diag         d;
   d.code     = code;
   d.category = std::string(kCategorySyntax);
@@ -334,22 +471,72 @@ bool Parser::is_decl_keyword(const Token& t) const {
       return false;
   }
 }
+bool Parser::is_array_length_keyword(const Token& t) const {
+  if (t.kind != Token_kind::ident) return false;
+  switch (t.kw) {
+    case Keyword::kw_const:
+    case Keyword::kw_mut:
+    case Keyword::kw_reg:
+    case Keyword::kw_wire:
+    case Keyword::kw_stage:
+    case Keyword::kw_comptime:
+    case Keyword::kw_ref:
+      return true;
+    default:
+      return false;
+  }
+}
+void Parser::skip_leading_commas(Token_kind close) {
+  if (!at(Token_kind::comma)) return;
+  while (at(Token_kind::comma)) advance();
+  if (at(close))
+    error("empty-list", "a list of only commas is not allowed (an empty list is written with no comma: `()`, `[]`)");
+}
 bool Parser::is_lambda_kind(const Token& t) const {
   if (t.kind != Token_kind::ident) return false;
   return t.kw == Keyword::kw_comb || t.kw == Keyword::kw_mod || t.kw == Keyword::kw_pipe ||
          t.kw == Keyword::kw_fluid;
 }
 bool Parser::at_assignment_operator() const { return assign_kind(cur().kind) != Kind::invalid; }
-bool Parser::kw_is_construct_start() const {
-  if (at_kw(Keyword::kw_unique)) return peek(1).is_kw(Keyword::kw_if);
-  return is_expr_start(peek(1));  // if / match: a condition must follow
+bool Parser::is_keyword_name(const Ast* e) const {
+  if (!e || e->kind != Kind::identifier || e->end_byte <= e->start_byte) return false;
+  std::string_view text(buf_.data() + e->start_byte, e->end_byte - e->start_byte);
+  return text.front() != '`' && classify_keyword(text) != Keyword::none;
+}
+// Keywords that start a value (grammar.js `_expression`): `if`/`unique`/
+// `match`, `not`, the literals `true`/`false`, and a lambda (`comb`, `mod`,
+// `pipe`, `fluid`, `pub`). Where a value may start, these are never a name.
+static bool is_value_start_kw(const Token& t) {
+  if (t.kind != Token_kind::ident) return false;
+  switch (t.kw) {
+    case Keyword::kw_if:
+    case Keyword::kw_unique:
+    case Keyword::kw_match:
+    case Keyword::kw_not:
+    case Keyword::kw_true:
+    case Keyword::kw_false:
+    case Keyword::kw_comb:
+    case Keyword::kw_mod:
+    case Keyword::kw_pipe:
+    case Keyword::kw_fluid:
+    case Keyword::kw_pub:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool Parser::at_field_word() const {
+  const Token& t = cur();
+  if (t.kind != Token_kind::ident || t.kw == Keyword::none) return false;
+  const Token_kind n = peek(1).kind;
+  return n == Token_kind::assign || n == Token_kind::colon || n == Token_kind::coloncolon;
 }
 bool Parser::at_constant() const {
   switch (cur().kind) {
     case Token_kind::integer:
     case Token_kind::string:
     case Token_kind::istring:
-    case Token_kind::question:
       return true;
     default:
       break;
@@ -357,24 +544,9 @@ bool Parser::at_constant() const {
   return cur().is_kw(Keyword::kw_true) || cur().is_kw(Keyword::kw_false);
 }
 bool Parser::is_primitive_type_word(const Token& t) const {
-  if (t.kind != Token_kind::ident) return false;
-  switch (t.kw) {
-    case Keyword::kw_uint:
-    case Keyword::kw_unsigned:
-    case Keyword::kw_signed:
-    case Keyword::kw_int:      // removed — recognized so parse_primitive_type can
-    case Keyword::kw_integer:  // emit a tailored "use signed/unsigned" error
-    case Keyword::kw_bool:
-    case Keyword::kw_string:
-      return true;
-    default:
-      break;
-  }
-  // u<N> / s<N>  (the legacy i<N> signed spelling was renamed to s<N>)
-  std::string_view s = t.text;
-  if (s.size() >= 2 && s[0] == 'u' && all_digits(s, 1)) return true;
-  if (s.size() >= 2 && s[0] == 's' && all_digits(s, 1)) return true;
-  return false;
+  // U<N> / S<N> / Unsigned / Signed / Bool / String / Clock / Reset: the
+  // reserved type words (token.hpp is_type_word).
+  return t.kind == Token_kind::type_word;
 }
 
 // Lookahead: is this a lambda (vs a fluid/storage declaration or a plain use)?
@@ -450,6 +622,9 @@ Prp_tree& Parser::parse() {
 
 Ast* Parser::parse_description() {
   Ast* root = node(Kind::description, 0);
+  // A `;` means a newline (02-basics "Semicolons"): a run of them may also lead
+  // the file or be all of it (grammar.js `description`).
+  while (at(Token_kind::semicolon)) advance();
   while (!eof()) {
     Ast* s = parse_statement();
     root->add(s);
@@ -472,6 +647,7 @@ Ast* Parser::parse_statement() {
       *this, (t.kind == Token_kind::ident && t.kw != Keyword::none && starts_ident_use(peek(1)))
                  ? pos_
                  : kNoKw);
+  Stmt_start_guard _stg(*this);
 
   if (t.kind == Token_kind::lbrace) return parse_scope();
 
@@ -530,6 +706,7 @@ Ast* Parser::parse_scope() {
     advance();
     sc->add(parse_attribute_sq(), Field::f_attributes);
   }
+  while (at(Token_kind::semicolon)) advance();  // `{ ; x }`: a `;` means a newline
   while (!at(Token_kind::rbrace) && !eof()) {
     sc->add(parse_statement());
     while (at(Token_kind::semicolon)) advance();
@@ -591,14 +768,15 @@ Ast* Parser::parse_while() {
   }
   // optional init (stmt_list ';') then condition
   std::vector<Ast*> items;
-  items.push_back(parse_tuple_item());
+  items.push_back(parse_stmt_item());
   while (at(Token_kind::semicolon)) {
     advance();
     while (at(Token_kind::semicolon)) advance();
     if (at(Token_kind::lbrace)) break;
-    items.push_back(parse_tuple_item());
+    items.push_back(parse_stmt_item());
   }
   Ast* cond = items.back();
+  require_condition(cond);
   items.pop_back();
   if (!items.empty()) {
     Ast* sl = node(Kind::stmt_list, items.front()->start_byte);
@@ -656,48 +834,28 @@ Ast* Parser::parse_loop() {
   return l;
 }
 
-// `tick [N] [clocks=(...)] [resets=(...)] { stmts }` — a non-unrolling,
-// cycle-driven loop usable only inside a `test`. The optional count expression
-// bounds the number of simulation cycles (a watchdog); with no count it runs
-// until a `break`/end-of-test. The optional `clocks=(name=ratio, ...)` /
-// `resets=(name=ticks, ...)` clauses (order-independent) configure the VCD
-// clock/reset waveforms (consumed by the simulation backend, inou/prp/prp_sim).
-// Count -> f_value, clocks tuple -> f_clocks, resets tuple -> f_resets, body ->
-// f_code (mirrors loop_statement). `clocks`/`resets` are not keywords, so a
-// leading clause is what tells us there is no count expression.
+// `tick N { stmts }` — a non-unrolling, cycle-driven loop usable only inside a
+// `test`. The count expression (mandatory: an unbounded `tick { }` is not
+// supported yet, and a tick takes no `clocks=`/`resets=` clauses) bounds the
+// number of simulation cycles. Count -> f_value, body -> f_code (mirrors
+// loop_statement; grammar.js `tick_statement`).
 Ast* Parser::parse_tick_statement() {
   uint32_t start = cur().start_byte;
   advance();  // tick
   Ast* t = node(Kind::tick_statement, start);
-  // A clause is `clocks`/`resets` IMMEDIATELY followed by '=' -- the `= ` lookahead
-  // keeps a count expression that merely starts with the word `clocks`/`resets`
-  // (e.g. a test-local named `clocks`) from being mistaken for a clause.
-  auto at_tick_clause = [&]() {
+  // The removed `clocks=(...)` / `resets=(...)` clauses get a pointed message.
+  auto at_clause = [&]() {
     return at(Token_kind::ident) && (cur().text == "clocks" || cur().text == "resets") &&
            peek(1).kind == Token_kind::assign;
   };
-  if (!at(Token_kind::lbrace) && !at_tick_clause()) {
-    Ast* count   = parse_expression();
-    count->field = Field::f_value;
-    t->add(count);
-  }
-  bool seen_clocks = false, seen_resets = false;
-  while (at_tick_clause()) {
-    const bool  is_clocks = cur().text == "clocks";
-    const char* kw        = is_clocks ? "clocks" : "resets";
-    bool&       seen      = is_clocks ? seen_clocks : seen_resets;
-    if (seen) {
-      error("duplicate-clause", std::string("duplicate '") + kw + "' clause in tick");
-    }
-    seen = true;
-    advance();  // clocks / resets
-    expect(Token_kind::assign, "expected-eq", std::string("expected '=' after '") + kw + "' in tick");
-    if (!at(Token_kind::lparen))
-      error("expected-paren", std::string("expected '(' to open the ") + kw + " list");
-    Ast* tup   = parse_paren();
-    tup->field = is_clocks ? Field::f_clocks : Field::f_resets;
-    t->add(tup);
-  }
+  if (at(Token_kind::lbrace) || at_clause())
+    error("expected-tick-count", "a `tick` needs a cycle count: `tick N { ... }` (an unbounded tick is not supported)");
+  Ast* count   = parse_expression();
+  count->field = Field::f_value;
+  t->add(count);
+  if (at_clause())
+    error("tick-clause", "a `tick` takes only a cycle count: `tick N { ... }` (the `clocks=`/`resets=` clauses were "
+                         "removed; the tick counter is `clock`)");
   t->add(parse_scope(), Field::f_code);
   finish(t, start);
   return t;
@@ -787,21 +945,18 @@ Ast* Parser::parse_type_statement() {
     ts->add(parse_typed_identifier_list(/*allow_default=*/true, "a generic parameter"), Field::f_generic);
     expect(Token_kind::gt, "expected-gt", "expected '>' to close generics");
   }
-  if (at(Token_kind::lparen)) {
-    // trait definition: type Name ( ... )
-    ts->add(parse_paren(), Field::f_definition);
+  // The `=` is mandatory, as for `enum` (owner ruling 106; grammar.js
+  // `type_statement`): `type Pt (x:S8)` is an error.
+  expect(Token_kind::assign, "expected-eq", "expected '=' after the type name (write `type T = (...)`)");
+  if (is_lambda_kind(cur())) {
+    // func type: comb/mod/pipe/fluid function_definition_decl
+    if (at_kw(Keyword::kw_comb)) ts->add(leaf(Kind::comb_lambda), Field::f_func_type);
+    else if (at_kw(Keyword::kw_mod)) ts->add(leaf(Kind::mod_lambda), Field::f_func_type);
+    else if (at_kw(Keyword::kw_pipe)) ts->add(leaf(Kind::pipe_lambda), Field::f_func_type);
+    else ts->add(leaf(Kind::fluid_lambda), Field::f_func_type);
+    ts->add(parse_function_definition_decl());
   } else {
-    expect(Token_kind::assign, "expected-eq", "expected '=' or '(' in type statement");
-    if (is_lambda_kind(cur())) {
-      // func type: comb/mod/pipe/fluid function_definition_decl
-      if (at_kw(Keyword::kw_comb)) ts->add(leaf(Kind::comb_lambda), Field::f_func_type);
-      else if (at_kw(Keyword::kw_mod)) ts->add(leaf(Kind::mod_lambda), Field::f_func_type);
-      else if (at_kw(Keyword::kw_pipe)) ts->add(leaf(Kind::pipe_lambda), Field::f_func_type);
-      else ts->add(leaf(Kind::fluid_lambda), Field::f_func_type);
-      ts->add(parse_function_definition_decl());
-    } else {
-      ts->add(parse_type(), Field::f_alias);
-    }
+    ts->add(parse_type(), Field::f_alias);
   }
   expect_semicolon();
   finish(ts, start);
@@ -827,11 +982,13 @@ Ast* Parser::parse_enum_assignment() {
   Ast* en = node(Kind::enum_assignment, start);
   en->add(leaf(Kind::identifier), Field::f_name);
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) en->add(parse_type_cast(), Field::f_type);
-  if (accept(Token_kind::assign)) {
-    en->add(parse_paren(), Field::f_values);
-  } else {
-    en->add(parse_arg_list(/*bind_role=*/nullptr), Field::f_body);  // enum VARIANT names
-  }
+  // The `=` is required (grammar.js `enum_assignment`): `enum E = (a, b)`,
+  // `enum E:U8 = (a, b)`; `enum E:U8 (a, b)` is a syntax error.
+  expect(Token_kind::assign, "expected-eq", "expected '=' after the enum name (write `enum E = (a, b)`)");
+  if (!at(Token_kind::lparen)) error("expected-paren", "expected '(' to open the enum values");
+  Ast* values = parse_paren("an enum member name");
+  check_enum_members(values);
+  en->add(values, Field::f_values);
   finish(en, start);
   return en;
 }
@@ -846,11 +1003,14 @@ Ast* Parser::parse_var_or_let_or_reg() {
   if (at_kw(Keyword::kw_comptime)) v->add(leaf(Kind::comptime_modifier), Field::f_comptime);
   if (at_kw(Keyword::kw_fluid)) {
     v->add(leaf(Kind::fluid_decl), Field::f_fluid);
-    if (at_kw(Keyword::kw_const)) v->add(leaf(Kind::const_decl), Field::f_storage);
-    else if (at_kw(Keyword::kw_mut)) v->add(leaf(Kind::mut_decl), Field::f_storage);
-    else if (at_kw(Keyword::kw_reg)) v->add(leaf(Kind::reg_decl), Field::f_storage);
-    else if (at_kw(Keyword::kw_wire)) v->add(leaf(Kind::wire_decl), Field::f_storage);
-    else if (at_kw(Keyword::kw_stage)) {
+    // A storage word followed by `=` or `:` attempts a name. Route it through
+    // name validation to diagnose the missing backticks.
+    const bool named = at_field_word();
+    if (!named && at_kw(Keyword::kw_const)) v->add(leaf(Kind::const_decl), Field::f_storage);
+    else if (!named && at_kw(Keyword::kw_mut)) v->add(leaf(Kind::mut_decl), Field::f_storage);
+    else if (!named && at_kw(Keyword::kw_reg)) v->add(leaf(Kind::reg_decl), Field::f_storage);
+    else if (!named && at_kw(Keyword::kw_wire)) v->add(leaf(Kind::wire_decl), Field::f_storage);
+    else if (!named && at_kw(Keyword::kw_stage)) {
       Ast* st = node(Kind::stage_decl, cur().start_byte);
       advance();
       if (at(Token_kind::lbracket)) st->add(parse_timing_slot(), Field::f_timing);
@@ -872,6 +1032,11 @@ Ast* Parser::parse_var_or_let_or_reg() {
     finish(st, st->start_byte);
     v->add(st, Field::f_storage);
   }
+  // `comptime` alone is `comptime const` (grammar.js var_or_let_or_reg); `pub`
+  // alone declares nothing: `pub x = 1` is an error.
+  if (v->kids.size() == 1 && v->kids.front()->kind == Kind::pub_modifier)
+    error("expected-declaration",
+          "expected 'const', 'mut', 'reg', 'wire', 'stage', 'fluid' or 'comptime' after 'pub'");
   finish(v, start);
   return v;
 }
@@ -894,15 +1059,9 @@ Ast* Parser::finish_assignment(uint32_t start, Ast* overflow, Ast* decl, Ast* lv
   // not "you meant an identifier", so drop the backtick hint.
   kw_as_ident_ = kNoKw;
   a->add(op, Field::f_operator);
-  // rvalue: expression | enum_definition | ref_identifier
-  if (at_kw(Keyword::kw_enum)) {
-    uint32_t es = cur().start_byte;
-    advance();
-    Ast* ed = node(Kind::enum_definition, es);
-    ed->add(parse_arg_list(/*bind_role=*/nullptr), Field::f_input);  // enum VARIANT names
-    finish(ed, es);
-    a->add(ed, Field::f_rvalue);
-  } else if (at_kw(Keyword::kw_ref)) {
+  // rvalue: expression | ref_identifier (the expression form `enum(a, b)` is
+  // gone, spec 2026-09-29 §7: parse_atom rejects it)
+  if (at_kw(Keyword::kw_ref)) {
     a->add(parse_ref_identifier(), Field::f_rvalue);
   } else {
     a->add(parse_expression(), Field::f_rvalue);
@@ -936,9 +1095,12 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       std::vector<Ast*> items;
       {
         Bracket_guard _bg(*this);
-        while (at(Token_kind::comma)) advance();
+        // A destructuring/declaration list names at least one slot:
+        // `const () = f()` and `const (,) = f()` are errors (grammar.js lvalue_list).
+        skip_leading_commas(Token_kind::rparen);
+        if (at(Token_kind::rparen)) error("empty-list", "a destructuring list names at least one variable");
         while (!at(Token_kind::rparen) && !eof()) {
-          items.push_back(parse_lvalue_item());
+          items.push_back(parse_lvalue_item(/*binding=*/true));  // `const (a, b)` binds a, b
           if (!accept(Token_kind::comma)) break;
           while (at(Token_kind::comma)) advance();
         }
@@ -947,9 +1109,36 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       for (Ast* it : items) list->add(it, Field::f_item);
       finish(list, list->start_byte);
       if (at_assignment_operator()) {
+        check_destructuring(list);
         Ast* a = finish_assignment(start, overflow, decl, list, nullptr);
         expect_semicolon();
         return a;
+      }
+      if (has_overflow)  // `wrap const (a, b)`: `wrap`/`sat` modify an assignment
+        error("expected-assignment", "expected '=' after the declaration ('wrap'/'sat' need an assignment)");
+      // Without `=` the list declares plain (typed, timed, attributed) names,
+      // as in grammar.js `declaration_statement`: `const (a.b)`, `const (c[1])`,
+      // the rename `const (x = t.a)` and a type after the attributes
+      // (`mut (a::[x]:U8)`, written `a:U8:[x]`) are errors.
+      auto plain = [](auto& self, const Ast* k) -> bool {
+        if (k->kind == Kind::typed_identifier || k->kind == Kind::identifier) return true;
+        return (k->kind == Kind::timed_identifier || k->kind == Kind::attribute_set) && !k->kids.empty() &&
+               self(self, k->kids.front());
+      };
+      for (const Ast* li : list->kids) {
+        const bool typed = std::ranges::any_of(li->kids, [](const Ast* k) { return k->field == Field::f_type; });
+        for (const Ast* k : li->kids) {
+          if (k->field == Field::f_type || (plain(plain, k) && !(typed && k->kind == Kind::attribute_set))) continue;
+          Diag d;
+          d.code     = "bad-declaration-target";
+          d.category = std::string(kCategorySyntax);
+          d.message  = k->kind == Kind::attribute_set
+                           ? "a slot's type comes before its attributes (`a:U8:[attr]`, not `a::[attr]:U8`)"
+                           : "a declaration without '=' lists plain names (`const (a, b)`); a field, a selector or a "
+                             "rename `name = path` needs an assignment";
+          d.span     = span_bytes(li->start_byte, li->end_byte);
+          throw Parse_error(std::move(d));
+        }
       }
       Ast* d = node(Kind::declaration_statement, start);
       d->add(decl, Field::f_decl);
@@ -978,7 +1167,11 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
     // a tuple-literal field keeps its own path (parse_tuple_item), so the memory
     // config `mut mem = (const type = 1, const size = 16, ...)` -- a documented
     // API whose field IS spelled `type` -- is untouched.
-    require_plain_name("a variable name");
+    // A literal or a lambda may still head a (strange) target -- `mut true.x =
+    // 1` -- as in the grammar, whose `_complex_identifier` target admits them.
+    const bool head_kw = at_kw(Keyword::kw_true) || at_kw(Keyword::kw_false) || is_lambda_kind(cur()) ||
+                         at_kw(Keyword::kw_pub);
+    if (!head_kw) require_plain_name("a variable name");
     // The lvalue may be a complex location (`x#[i]`, `a.b`, `arr[i]`) when this
     // is an assignment, or a (typed) identifier when it is a declaration.
     Ast* lv = parse_postfix();
@@ -1000,8 +1193,26 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       lv        = id;
       tc        = tcn;
     }
-    if (!tc && (at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
+    if (!tc && (at(Token_kind::colon) || at(Token_kind::coloncolon)) &&
+        (lv->kind == Kind::identifier || lv->kind == Kind::timed_identifier))
       tc = parse_type_cast();
+    // A timed name (`stage[1] out@[4]`, `mut x@[1]:U8 = 3`) declares the name
+    // with its timing: typed_identifier(identifier, timing, type) as in
+    // grammar.js bindingTypedIdentifier / `_binding_typed_name`.
+    if (lv->kind == Kind::timed_identifier && lv->kids.size() == 2 &&
+        (tc || !at_assignment_operator())) {
+      Ast* id     = lv->kids[0];
+      Ast* timing = lv->kids[1];
+      Ast* w      = node(Kind::typed_identifier, lv->start_byte);
+      id->field   = Field::f_identifier;
+      w->add(id);
+      timing->field = Field::f_timing;
+      w->add(timing);
+      if (tc) w->add(tc, Field::f_type);
+      tc = nullptr;
+      finish(w, lv->start_byte);
+      lv = w;
+    }
     // An identifier lvalue carrying a type wraps as a typed_identifier (mirrors
     // the grammar); an untyped identifier lvalue stays bare (tree-sitter parity).
     Ast* ti = lv;
@@ -1014,10 +1225,18 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
       finish(ti, lv->start_byte);
     }
     if (at_assignment_operator()) {
+      require_lvalue(ti);  // `mut f(x) = 3`
       Ast* a = finish_assignment(start, overflow, decl, ti, tc);
       expect_semicolon();
       return a;
     }
+    // `wrap`/`sat` modify an ASSIGNMENT: `wrap const y:U8` is an error.
+    if (has_overflow)
+      error("expected-assignment", "expected '=' after the declaration ('wrap'/'sat' need an assignment)");
+    // A bare declaration names a variable: `mut a.b` / `mut f(x)` are errors
+    // (grammar.js declaration_statement takes a typed_identifier only).
+    if (ti->kind != Kind::identifier && ti->kind != Kind::typed_identifier)
+      error("expected-assignment", "a declaration without '=' must name a plain variable");
     Ast* d = node(Kind::declaration_statement, start);
     d->add(decl, Field::f_decl);
     // A bare declaration ALWAYS wraps its lvalue in a typed_identifier — even an
@@ -1037,9 +1256,51 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
   }
 
   // No declaration keyword: assignment with a complex lvalue, or expr statement.
-  Ast* e = parse_expression();
+  //
+  // A statement opening with `(` may be a destructuring assignment. Try the
+  // lvalue-list reading first -- the one the grammar's `lvalue_list` gives it,
+  // which (unlike a tuple expression) admits a typed named target `(a = x:U8)
+  // = f()` -- and fall back to the expression when it does not parse as one
+  // or no assignment operator follows (`(a, b) ++ c`, `(x)#[0] = 1`).
+  if (at(Token_kind::lparen)) {
+    const size_t save = pos_;
+    Ast*         list = nullptr;
+    try {
+      advance();  // '('
+      list = node(Kind::lvalue_list, cur().start_byte);
+      Bracket_guard _bg(*this);
+      skip_leading_commas(Token_kind::rparen);
+      while (!at(Token_kind::rparen) && !eof()) {
+        list->add(parse_lvalue_item(), Field::f_item);
+        if (!accept(Token_kind::comma)) break;
+        while (at(Token_kind::comma)) advance();
+      }
+      if (!at(Token_kind::rparen)) list = nullptr;
+    } catch (const Parse_error&) {
+      list = nullptr;
+    }
+    if (list && at(Token_kind::rparen)) {
+      finish(list, list->start_byte);
+      advance();  // ')'
+      if (at_assignment_operator()) {
+        check_destructuring(list);
+        Ast* a = finish_assignment(start, overflow, nullptr, list, nullptr);
+        expect_semicolon();
+        return a;
+      }
+    }
+    pos_ = save;  // orphaned arena nodes are harmless (see try_generic_call)
+  }
+  // After `wrap`/`sat` only an assignment target can follow: a NAME position,
+  // where any keyword is a plain identifier (`wrap if.total = r + a`), as in
+  // the grammar.
+  Ast* e = has_overflow ? parse_postfix(/*name_ctx=*/true) : parse_expression();
+  if (at(Token_kind::colon) || at(Token_kind::coloncolon) || at_assignment_operator())
+    reject_type_word_name(e, "an assignment target");  // `U8 = 3`: `U8` names no variable
   Ast* type_cast = nullptr;
+  bool typed     = false;
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) {
+    typed = true;
     // `lvalue : Type = ...` (only legal with wrap/sat — a typed identifier
     // lvalue folds into a typed_identifier the way the grammar models it).
     type_cast = parse_type_cast();
@@ -1056,13 +1317,22 @@ Ast* Parser::parse_decl_or_assign_or_expr() {
   if (at_assignment_operator()) {
     // `(a, x=b.c) = rhs` — the LHS parsed optimistically as a tuple; an '=' now
     // confirms it is a destructuring lvalue_list.
-    if (e->kind == Kind::tuple) e = tuple_to_lvalue_list(e);
+    if (e->kind == Kind::tuple) {
+      if (typed) error("typed-destructuring", "a destructuring assignment carries no type");
+      e = tuple_to_lvalue_list(e);
+      check_destructuring(e);
+    } else {
+      require_lvalue(e);  // `f(x) = 3`, `a + b = 3`
+    }
     Ast* a = finish_assignment(start, overflow, nullptr, e, type_cast);
     expect_semicolon();
     return a;
   }
-  if (has_overflow || type_cast)
-    error("expected-assignment", "expected an assignment operator");
+  // `value:U8` alone declares nothing (a declaration needs `const`/`mut`/...):
+  // a typed target needs an assignment, as `wrap`/`sat` do.
+  if (has_overflow || typed)
+    error("expected-assignment", "expected an assignment operator (a declaration without '=' needs a keyword:"
+                                 " `mut value:U8`)");
   // expression statement
   expect_semicolon();
   return e;
@@ -1086,6 +1356,8 @@ Ast* Parser::parse_lambda() {
     finish(pl, pl->start_byte);
     lam->add(pl, Field::f_func_type);
   } else {  // fluid
+    // `pub` must head a lambda here (`mut x = pub`, `pub.x` are errors).
+    if (!at_kw(Keyword::kw_fluid)) error("expected-lambda", "expected 'comb', 'mod', 'pipe' or 'fluid'");
     Ast* fl = node(Kind::fluid_lambda, cur().start_byte);
     advance();
     if (at(Token_kind::lbracket)) fl->add(parse_attribute_sq(), Field::f_config);
@@ -1130,7 +1402,7 @@ Ast* Parser::parse_arg_list(const char* bind_role) {
   expect(Token_kind::lparen, "expected-paren", "expected '(' to open argument list");
   Bracket_guard _bg(*this);
   Ast* al = node(Kind::arg_list, start);
-  while (at(Token_kind::comma)) advance();
+  skip_leading_commas(Token_kind::rparen);
   while (!at(Token_kind::rparen) && !eof()) {
     // [mod] typed_identifier [= default]. The `mod` (... / ref / reg) is an
     // anonymous token in the grammar carrying a `mod` field; emit it as an
@@ -1142,7 +1414,7 @@ Ast* Parser::parse_arg_list(const char* bind_role) {
       al->add(m, Field::f_mod);
       advance();
     }
-    // ports bind names too, in and out: `mod f(`in`:u8) -> (`reg`:u8)`
+    // ports bind names too, in and out: `mod f(`in`:U8) -> (`reg`:U8)`
     Ast* ti = parse_typed_identifier(/*allow_default=*/false, bind_role);
     al->add(ti);
     if (accept(Token_kind::assign)) al->add(parse_expression(), Field::f_definition);
@@ -1245,14 +1517,52 @@ Ast* Parser::parse_unary() {
     finish(un, start);
     return un;
   }
-  if ((t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) && kw_is_construct_start())
-    return parse_if_expression();
-  if (t.is_kw(Keyword::kw_match) && kw_is_construct_start()) return parse_match_expression();
+  if (t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) return parse_if_expression();
+  if (t.is_kw(Keyword::kw_match)) return parse_match_expression();
   if (t.kind == Token_kind::lbrace) return parse_scope();
+  if (t.kind == Token_kind::type_word) return parse_type_word_operand();
   return parse_postfix();
 }
 
-Ast* Parser::parse_postfix() { return parse_postfix_from(parse_atom()); }
+// A type word USED AS A VALUE (grammar.js `_type_word_name` /
+// `_type_word_call`): the operand `U8` (`x does U8`, `(t=U8)`) or the
+// conversion call `U8(x)` / `Bool(y)` / `Unsigned(bits=8)`, as an `identifier`
+// / `function_call_expression` node. A conversion call's result is an ordinary
+// value and heads any suffix chain (`U8(x)#[0]`, `U8(x).f`). The bare word takes
+// only an attribute read (`U8.[max]`, grammar.js `attribute_read`), whose result
+// is again an ordinary suffix head; `U8.x`, `U8[0]`, `U8#[0]` and `U8@[1]` stop
+// here and the caller rejects the suffix, exactly like the grammar.
+Ast* Parser::parse_type_word_operand() {
+  const Token& t     = cur();
+  uint32_t     start = t.start_byte;
+  Ast*         id    = arena_.make(Kind::identifier, t.start_byte, t.end_byte);
+  advance();
+  if (term_stop()) return id;
+  if (at(Token_kind::lparen)) {
+    Ast* call = node(Kind::function_call_expression, start);
+    id->field = Field::f_function;
+    call->add(id);
+    call->add(parse_arg_tuple(), Field::f_argument);
+    finish(call, start);
+    return parse_postfix_from(call);
+  }
+  if (at(Token_kind::dot) && peek(1).kind == Token_kind::lbracket) {
+    Ast* ar   = node(Kind::attribute_read, start);
+    id->field = Field::f_argument;
+    ar->add(id);
+    while (at(Token_kind::dot) && peek(1).kind == Token_kind::lbracket) {
+      advance();  // '.'
+      ar->add(parse_attribute_list(), Field::f_attrs);
+    }
+    finish(ar, start);
+    return parse_postfix_from(ar);
+  }
+  if (at(Token_kind::dot) && peek(1).kind != Token_kind::lbracket)
+    error("type-word-field", "a type has no fields: only an attribute read follows a type word (`U8.[max]`)");
+  return id;
+}
+
+Ast* Parser::parse_postfix(bool name_ctx) { return parse_postfix_from(parse_atom(name_ctx)); }
 
 Ast* Parser::consume_binary_tail(Ast* lhs) {
   if (term_stop() || binary_op_any(cur()) == Kind::invalid) return lhs;
@@ -1300,7 +1610,31 @@ Ast* Parser::parse_postfix_from(Ast* e) {
       e = call;
       continue;
     }
-    if (at(Token_kind::lt) && ek == Kind::identifier) {
+    // An explicit generic call `f<T=U8>(x)`. The callee is any name path the
+    // grammar's `_complex_identifier` covers, so dotted callees work too:
+    // `prp.queue.make<T=Signed>(depth=16)` (grammar.js genericTupleCall).
+    // An instance attribute (`a::[x]`) is only followed by the call it
+    // configures (`a::[x](1)`); a selector, bit-select, field or attribute
+    // read of it (`a::[x][1]`, `a::[x]#[1]`, `a::[x].b`, `a::[x].[bits]`,
+    // `a::[x]::[y]`) is an error (grammar.js: attribute_set is no suffix head).
+    if (ek == Kind::attribute_set &&
+        (at(Token_kind::lbracket) || at(Token_kind::hash) || at(Token_kind::dot) ||
+         (at(Token_kind::coloncolon) && peek(1).kind == Token_kind::lbracket)))
+      error("attribute-set-suffix",
+            "an instance attribute `::[...]` can only be followed by a call; parenthesize it to select from it "
+            "(`(a::[x])[1]`)");
+    // A call-site generic list opens only with a `<` GLUED to the callee
+    // (owner ruling 107): a blank right before the `<` makes it a comparison,
+    // so `a < b > (c)` is a comparison chain and `f <N=3>(x)` is an error.
+    // tree-sitter agrees (scanner.c scan_spaced_lt). A comment glued to the
+    // `<` (`f /*c*/<T>(x)`) leaves it glued in both parsers: only the
+    // character right before the `<` counts.
+    // `f <N=3>(x)`: `x < N = ...` is never a comparison, so name the fix.
+    if (at(Token_kind::lt) && callable && ek != Kind::attribute_set && blank_before(cur()) &&
+        peek(1).kind == Token_kind::ident && peek(2).kind == Token_kind::assign)
+      error("spaced-generic",
+            "a generic list's `<` must touch the callee (`f<N=3>(x)`); a `<` after a blank is a comparison");
+    if (at(Token_kind::lt) && callable && ek != Kind::attribute_set && !blank_before(cur())) {
       Ast* g = try_generic_call(e);
       if (g) {
         e = g;
@@ -1325,6 +1659,8 @@ Ast* Parser::parse_postfix_from(Ast* e) {
       de->add(e);
       while (at(Token_kind::dot) && peek(1).kind != Token_kind::lbracket) {
         advance();  // '.'
+        // reserved after `.` too (`t.U8` is an error; write t.`U8`)
+        if (at(Token_kind::type_word)) error_type_word_name(cur(), "a field name");
         de->add(ident_leaf("expected-field", "expected a field name after '.'"));
       }
       finish(de, start);
@@ -1391,21 +1727,21 @@ Ast* Parser::try_generic_call(Ast* fn) {
   Ast* list = node(Kind::generic_type_list, cur().start_byte);
   bool ok    = true;
   while (at(Token_kind::comma)) advance();
-  // The list is a GUESS. `x < -1`, `x < ~b`, `x < [1, 2]` are comparisons
-  // whose right operand is no generic argument, and parse_generic_value THROWS
-  // on those; a throw here therefore means "not a generic call" -> back off to
-  // the comparison, as tree-sitter (which forks both parses) does. Only a list
-  // that OPENS with a named bind is committed -- `x < N = …` is never a
-  // comparison -- so its errors keep their precise location (`f<N=-3>(a)`:
-  // "expected a type" at the `-`).
-  const bool committed = at(Token_kind::ident) && peek(1).kind == Token_kind::assign;
+  // The list is a GUESS. `x < ~b`, `x < [1, 2]` are comparisons whose right
+  // operand is no generic argument, and parse_generic_value THROWS on those; a
+  // throw here therefore means "not a generic call" -> back off to the
+  // comparison, as tree-sitter (which forks both parses) does (`x < -1` backs
+  // off at the missing `>`). Only a list that OPENS with a named bind is
+  // committed -- `x < N = …` is never a comparison -- so its errors keep their
+  // precise location (`f<N=~3>(a)`: "expected a type" at the `~`).
+  const bool committed = (at(Token_kind::ident) || at(Token_kind::type_word)) && peek(1).kind == Token_kind::assign;
   try {
     while (!at(Token_kind::gt) && !eof()) {
-      // A NAMED generic bind (`f<T=u8>`, todo 3g C): `identifier '=' value`,
+      // A NAMED generic bind (`f<T=U8>`, todo 3g C): `identifier '=' value`,
       // following the same naming rules as call arguments. Reuse arg_assignment
       // (lvalue=name, rvalue=value) so prp2lnast's named-arg machinery applies;
       // a bare positional value stays an item as before.
-      if (at(Token_kind::ident) && peek(1).kind == Token_kind::assign) {
+      if ((at(Token_kind::ident) || at(Token_kind::type_word)) && peek(1).kind == Token_kind::assign) {
         uint32_t nstart = cur().start_byte;
         Ast*     aa     = node(Kind::arg_assignment, nstart);
         Ast*     nm     = leaf(Kind::identifier);
@@ -1436,14 +1772,27 @@ Ast* Parser::try_generic_call(Ast* fn) {
     pos_ = save;  // orphaned arena nodes are harmless (as on the path below)
     return nullptr;
   }
-  if (ok && at(Token_kind::gt) && peek(1).kind == Token_kind::lparen) {
+  // An empty list (`mk<>(x)`, `mk<,>(x)`) is no generic call (grammar.js
+  // generic_type_list is listseq1): `<` stays a comparison, which then fails.
+  if (ok && !list->kids.empty() && at(Token_kind::gt) && peek(1).kind == Token_kind::lparen) {
     advance();  // '>'
+    // The argument tuple is still part of the guess: `a < b > (c:d)` is no call
+    // (a typed item is no argument) but a comparison whose right operand is a
+    // tuple, as in tree-sitter.
+    Ast* args = nullptr;
+    try {
+      args = parse_arg_tuple();
+    } catch (const Parse_error&) {
+      if (committed) throw;
+      pos_ = save;
+      return nullptr;
+    }
     Ast* call = node(Kind::function_call_expression, fn->start_byte);
     fn->field = Field::f_function;
     call->add(fn);
     finish(list, list->start_byte);
     call->add(list, Field::f_generic);
-    call->add(parse_arg_tuple(), Field::f_argument);
+    call->add(args, Field::f_argument);
     finish(call, fn->start_byte);
     return call;
   }
@@ -1451,22 +1800,46 @@ Ast* Parser::try_generic_call(Ast* fn) {
   return nullptr;
 }
 
-Ast* Parser::parse_atom() {
+Ast* Parser::parse_atom(bool name_ctx) {
   const Token& t = cur();
   if (t.kind == Token_kind::lparen) return parse_paren();
   if (t.kind == Token_kind::lbracket) return parse_tuple_sq();
-  // `true(...)` / `false(...)`: a bool literal is not callable, so here the word
-  // is used as an identifier (call target) — tree-sitter's soft-keyword rule.
-  bool bool_as_call = (t.is_kw(Keyword::kw_true) || t.is_kw(Keyword::kw_false)) &&
-                      peek(1).kind == Token_kind::lparen;
-  if (at_constant() && !bool_as_call) return parse_constant();
-  if ((t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) && kw_is_construct_start())
-    return parse_if_expression();
-  if (t.is_kw(Keyword::kw_match) && kw_is_construct_start()) return parse_match_expression();
-  if ((is_lambda_kind(t) || t.is_kw(Keyword::kw_pub)) && looks_like_lambda()) return parse_lambda();
+  // Where a value may start, these keywords always start their construct (the
+  // grammar's keyword token is valid there, so tree-sitter never reads them as
+  // a name): `x = if` / `1 + unique` / `pub.x` / `fluid(1)` / `true = 3` are
+  // errors. Only in a NAME position (`ref match.x`, `wrap if.total = x`) are
+  // `if`/`unique`/`match` plain identifiers.
+  // A NAME position (a `_complex_identifier`) still admits a literal or a
+  // lambda as a suffix head (`ref comb f() {}.x`), so those keywords keep
+  // their meaning there too.
+  if (at_constant()) return parse_constant();  // incl. `true`/`false`
+  if ((t.kind == Token_kind::ident && t.text == "nil")
+      || (t.is_kw(Keyword::kw_import) && peek(1).kind == Token_kind::lparen)) {
+    // `nil` and the `import(...)` construct are language syntax, not names.
+    Ast* literal = arena_.make(Kind::identifier, t.start_byte, t.end_byte);
+    advance();
+    return literal;
+  }
+  if (is_lambda_kind(t) || t.is_kw(Keyword::kw_pub)) {
+    // `mut dut = pub`, `fluid.x`: the word can only start a lambda here.
+    if (!looks_like_lambda())
+      error_reserved_name(t, "reserved-word-as-name",
+                          "'" + std::string(t.text) + "' starts a lambda, so it cannot be used as a value");
+    return parse_lambda();
+  }
+  if (!name_ctx) {
+    if (t.is_kw(Keyword::kw_if) || t.is_kw(Keyword::kw_unique)) return parse_if_expression();
+    if (t.is_kw(Keyword::kw_match)) return parse_match_expression();
+  }
+  // parse_unary takes a type word used as a value (parse_type_word_operand);
+  // here (an lvalue, a `ref` target, a suffix head) it would be a name.
+  if (t.kind == Token_kind::type_word) error_type_word_name(t, "a name here");
+  if (t.is_kw(Keyword::kw_enum) && peek(1).kind == Token_kind::lparen && !peek(1).terminator_before) error_enum_expression();
   if (t.kind == Token_kind::ident) {
     Ast* id = leaf(Kind::identifier);
-    if (at(Token_kind::at)) {  // timed_identifier: ident @[...]
+    // timed_identifier: ident @[...]. `@` never continues a statement onto a new
+    // line (src/scanner.c): `const a = b` newline `@[1]` is an error.
+    if (at(Token_kind::at) && !term_stop()) {
       uint32_t start = id->start_byte;
       Ast*     ti    = node(Kind::timed_identifier, start);
       id->field      = Field::f_identifier;
@@ -1493,8 +1866,6 @@ Ast* Parser::parse_constant() {
     lit = leaf(Kind::string_literal);
   } else if (at(Token_kind::istring)) {
     lit = parse_istring();
-  } else if (at(Token_kind::question)) {
-    lit = leaf(Kind::unknown_literal);
   } else {
     lit = leaf(Kind::bool_literal);  // true / false
   }
@@ -1519,7 +1890,10 @@ Ast* Parser::parse_istring() {
   while (i < body_end) {
     char cc = b[i];
     if (cc == '\\') {
-      i += 2;  // escape: skip the escaped char
+      // escape (validated by the lexer): skip all of it, so the braces of
+      // `\u{41}` never open a hole
+      uint32_t e = Lexer::escape_end(b, body_end, i);
+      i          = (e > i) ? e : i + 2;
       continue;
     }
     if (cc == '{') {
@@ -1527,24 +1901,13 @@ Ast* Parser::parse_istring() {
         i += 2;  // `{{` literal brace
         continue;
       }
+      // The hole ends where the LEXER says (Lexer::istring_hole_end): a '}'
+      // inside a comment, a nested string or a backtick name does not close
+      // it. A naive brace count here used to end `"{a /* } */ + 1}"` at the
+      // commented '}' and silently evaluate the hole as `a`.
       uint32_t es    = i + 1;
-      uint32_t j     = es;
-      int      depth = 0;
-      while (j < body_end) {
-        char cj = b[j];
-        if (cj == '\\') {
-          j += 2;
-          continue;
-        }
-        if (cj == '{') {
-          ++depth;
-        } else if (cj == '}') {
-          if (depth == 0) break;
-          --depth;
-        }
-        ++j;
-      }
-      uint32_t close = j;  // the matching '}' (or body_end if unterminated)
+      uint32_t end   = Lexer(buf_).istring_hole_end(i);  // past the matching '}'
+      uint32_t close = (end > es && end <= body_end) ? end - 1 : body_end;
       Ast*     e     = parse_subexpr(es, close);
       if (e) lit->add(e);
       i = (close < body_end) ? close + 1 : body_end;
@@ -1577,11 +1940,87 @@ Ast* Parser::parse_subexpr(uint32_t lo, uint32_t hi) {
     State_guard& operator=(const State_guard&) = delete;
   } guard(*this);
 
-  Lexer sub(buf_);
-  toks_ = sub.tokenize_range(lo, hi);
-  pos_  = 0;
-  ebd_  = 1;  // inside a hole: no virtual-semicolon termination
-  return eof() ? nullptr : parse_expression();
+  Lexer          sub(buf_);
+  const uint32_t spec = sub.hole_spec_colon(lo, hi);  // the spec is text, not code
+  toks_               = sub.tokenize_range(lo, spec);
+  pos_                = 0;
+  ebd_                = 1;  // inside a hole: no virtual-semicolon termination
+  // An empty hole (`{}`, `{ /* c */ }`) is a lexical error; `{:b}` has no expression.
+  if (eof()) error("expected-expression", "expected an expression before the format spec in a string hole");
+  Ast* e = parse_expression();
+  // The hole is ONE expression, optionally followed by a format spec: nothing
+  // else may follow (`"{x y}"`, `"{x)}"`, `"{1{x}}"` are errors, as in the
+  // grammar).
+  if (!eof())
+    error("bad-interpolation", "expected '}' or ':' (a format spec) after the expression in a string hole");
+  if (spec < hi) check_format_spec(spec, hi);
+  return e;
+}
+
+// grammar.js `_format_spec`: `:`, blanks, then a NON-EMPTY run of characters
+// other than `}` `"` `{` newline, where a `/` must not open a comment. After it
+// only blanks and comments may reach the hole's `}` (`hi`): `"{x:b /* c */}"`
+// is spec `:b`, while `"{x:}"`, `"{x: }"`, `"{x:/* c */b}"` and `"{x:{}}"` are
+// errors.
+void Parser::check_format_spec(uint32_t colon, uint32_t hi) const {
+  const char* b         = buf_.data();
+  auto        spec_char = [&](uint32_t i) {
+    const char c = b[i];
+    // A format spec holds no backslash (`"{x:\x4}"` is an error).
+    if (c == '}' || c == '"' || c == '{' || c == '\n' || c == '\\') return false;
+    if (c != '/') return true;
+    if (i + 1 >= hi) return false;
+    const char d = b[i + 1];
+    return !(d == '}' || d == '"' || d == '{' || d == '\n' || d == '/' || d == '*' || d == '\\');
+  };
+  auto bad = [&](uint32_t at_byte) {
+    Diag d;
+    d.code     = "bad-format-spec";
+    d.category = std::string(kCategorySyntax);
+    d.message  = "expected a format spec after ':' (such as `{x:b}`); it can not be empty or hold '{' or a backslash";
+    d.span     = span_bytes(at_byte, at_byte + 1);
+    throw Parse_error(std::move(d));
+  };
+  uint32_t i = colon + 1;
+  while (i < hi && (b[i] == ' ' || b[i] == '\t')) ++i;
+  if (i >= hi || b[i] == ' ' || b[i] == '\t' || !spec_char(i)) bad(colon);
+  while (i < hi && spec_char(i)) i += (b[i] == '/') ? 2 : 1;
+  // Trailing blanks and comments only.
+  while (i < hi) {
+    const char c = b[i];
+    if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f' || c == '\v') {
+      ++i;
+    } else if (c == '/' && i + 1 < hi && b[i + 1] == '/') {
+      while (i < hi && b[i] != '\n') ++i;
+    } else if (c == '/' && i + 1 < hi && b[i + 1] == '*') {
+      int depth = 1;
+      i += 2;
+      while (i < hi && depth > 0) {
+        if (b[i] == '/' && i + 1 < hi && b[i + 1] == '*') {
+          ++depth;
+          i += 2;
+        } else if (b[i] == '*' && i + 1 < hi && b[i + 1] == '/') {
+          --depth;
+          i += 2;
+        } else {
+          ++i;
+        }
+      }
+    } else {
+      bad(i);
+    }
+  }
+}
+
+// The DIRECT entries of an enum body are its members, i.e. FIELDS (`E.a`): a
+// bare type word can not be one (`enum E = (a, U8)`, like `(const U8 = 1)`);
+// grammar.js `_enum_tuple`. A nested value (`l1 = (a, b)`) is an ordinary tuple.
+void Parser::check_enum_members(const Ast* values) const {
+  if (!values) return;
+  for (const Ast* k : values->kids) {
+    if (k->field != Field::f_item && values->kind != Kind::paren_group) continue;
+    reject_type_word_name(k, "an enum member name");
+  }
 }
 
 Ast* Parser::parse_complex_identifier() { return parse_postfix(); }
@@ -1600,7 +2039,28 @@ Ast* Parser::parse_ref_identifier() {
                         "'ref' names the value being referenced, so a name must follow it");
   }
   Ast* r = node(Kind::ref_identifier, start);
-  r->add(parse_postfix());
+  Ast* target = parse_postfix(/*name_ctx=*/true);
+  // grammar.js `ref_identifier`: a `_complex_identifier` (a name, a field, a
+  // selector, a bit-select, an attribute read or a timed name) -- never a
+  // literal, a call or an attribute write (`ref true`, `ref f(x)`).
+  switch (target->kind) {
+    case Kind::identifier:
+    case Kind::dot_expression:
+    case Kind::member_selection:
+    case Kind::bit_selection:
+    case Kind::attribute_read:
+    case Kind::timed_identifier:
+      break;
+    default: {
+      Diag d;
+      d.code     = "bad-ref-target";
+      d.category = std::string(kCategorySyntax);
+      d.message  = "'ref' takes a name, a field, a selector or a bit-select";
+      d.span     = span_bytes(target->start_byte, target->end_byte);
+      throw Parse_error(std::move(d));
+    }
+  }
+  r->add(target);
   finish(r, start);
   return r;
 }
@@ -1608,17 +2068,18 @@ Ast* Parser::parse_ref_identifier() {
 // ===========================================================================
 // Paren / tuple / arg-tuple classification
 // ===========================================================================
-Ast* Parser::parse_paren() {
+Ast* Parser::parse_paren(const char* name_role) {
   uint32_t start = cur().start_byte;
   advance();  // '('
   Bracket_guard _bg(*this);
-  while (at(Token_kind::comma)) advance();
+  skip_leading_commas(Token_kind::rparen);
   if (at(Token_kind::rparen)) {
     advance();
     Ast* tup = node(Kind::tuple, start);
     finish(tup, start);
     return tup;
   }
+  if (name_role) require_plain_name(name_role);
   bool plain = false;
   Ast* first = parse_tuple_item(plain);
   if (plain && at(Token_kind::rparen)) {
@@ -1633,6 +2094,7 @@ Ast* Parser::parse_paren() {
   while (accept(Token_kind::comma)) {
     while (at(Token_kind::comma)) advance();
     if (at(Token_kind::rparen)) break;
+    if (name_role) require_plain_name(name_role);
     add_tuple_child(tup, parse_tuple_item());
   }
   if (!at(Token_kind::rparen))
@@ -1648,7 +2110,7 @@ Ast* Parser::parse_tuple_sq() {
   advance();  // '['
   Bracket_guard _bg(*this);
   Ast* sq = node(Kind::tuple_sq, start);
-  while (at(Token_kind::comma)) advance();
+  skip_leading_commas(Token_kind::rbracket);
   while (!at(Token_kind::rbracket) && !eof()) {
     add_tuple_child(sq, parse_tuple_item());
     if (!accept(Token_kind::comma)) break;
@@ -1667,17 +2129,87 @@ Ast* Parser::parse_tuple_item() {
   return parse_tuple_item(plain);
 }
 
-Ast* Parser::parse_tuple_item(bool& plain) {
+Ast* Parser::parse_stmt_item() {
+  bool plain = false;
+  return parse_tuple_item(plain, /*stmt=*/true);
+}
+
+Ast* Parser::parse_tuple_item(bool& plain, bool stmt) {
+  // The target of an assignment item: a destructuring `(a, b) = f()` only as an
+  // init-clause statement (grammar.js `_stmt_item`), else a plain target.
+  auto item_target = [&](Ast* lv) -> Ast* {
+    if (lv->kind == Kind::tuple) {
+      Diag d;
+      d.code     = "bad-assignment-target";
+      d.category = std::string(kCategorySyntax);
+      d.message  = stmt ? "a destructuring assignment `(a, b) = ...` is a statement of its own, not an init clause"
+                        : "a destructuring assignment `(a, b) = ...` is a statement, not a tuple entry";
+      d.span     = span_bytes(lv->start_byte, lv->end_byte);
+      throw Parse_error(std::move(d));
+    }
+    require_lvalue(lv);  // `(f(x) = 1)`, `(a + b = 1)`
+    return lv;
+  };
   plain = false;
   uint32_t start = cur().start_byte;
+
+  // A reserved word before `=`/`:` names a FIELD (grammar.js `_field_word`):
+  // `(if = 1)`, `(pub:U8 = 0)`, `(in:U8)`. In an init clause (`stmt`) only the
+  // typed-field form exists there (`_stmt_item` typed_field).
+  auto field_word_item = [&](Ast* decl) -> Ast* {
+    Ast* name = leaf(Kind::identifier);
+    Ast* tc   = nullptr;
+    if (at(Token_kind::colon) || at(Token_kind::coloncolon)) tc = parse_type_cast();
+    Ast* lv = name;
+    if (tc) {
+      Ast* ti     = node(Kind::typed_identifier, name->start_byte);
+      name->field = Field::f_identifier;
+      ti->add(name);
+      ti->add(tc, Field::f_type);
+      finish(ti, name->start_byte);
+      lv = ti;
+    }
+    if (at_assignment_operator() && !stmt) return finish_assignment(start, nullptr, decl, lv, nullptr);
+    if (!tc) error("expected-expression", "expected an expression");  // `if =` in an init clause
+    if (decl) {  // `(const in:U8)`: decl + typed_identifier (no value)
+      decl->add(lv, Field::f_lvalue);
+      finish(decl, start);
+      return decl;
+    }
+    Ast* tf = node(Kind::typed_field, start);  // `(in:U8)`
+    name->field = Field::f_identifier;
+    tf->add(name);
+    tc->field = Field::f_type;
+    tf->add(tc);
+    finish(tf, start);
+    return tf;
+  };
+  if (at_field_word()) return field_word_item(nullptr);
 
   if (at_kw(Keyword::kw_ref)) return parse_ref_identifier();
   if ((is_lambda_kind(cur()) || at_kw(Keyword::kw_pub)) && looks_like_lambda()) return parse_lambda();
 
   if (is_decl_keyword(cur())) {
     Ast* decl = parse_var_or_let_or_reg();
+    // In an init clause the declaration BINDS a variable (`while mut i = 0;`):
+    // a keyword can not name it (only a value may follow, `const 3`). In a
+    // tuple it declares a FIELD, which a keyword may name before `=`/`:`.
+    if (stmt) {
+      const Token_kind n = peek(1).kind;
+      if (!is_value_start_kw(cur()) || assign_kind(n) != Kind::invalid || n == Token_kind::colon)
+        require_plain_name("a variable name");  // `while mut unique = 0;`
+    } else if (at_field_word()) {
+      return field_word_item(decl);
+    }
     Ast* lv   = parse_expression();  // a, a.b, a[i], 3, ...
     Ast* tc   = nullptr;
+    // `(const U8)` is a positional value (the type), like `(const 3)`; `U8` can
+    // not name the field: `(const U8 = 1)`, `(const U8:U4)` are errors.
+    bool type_value = false;
+    if (at(Token_kind::colon) || at(Token_kind::coloncolon) || at_assignment_operator())
+      reject_type_word_name(lv, "a tuple field name");
+    else if (lv->kind == Kind::identifier)
+      type_value = is_type_word(std::string_view(buf_.data() + lv->start_byte, lv->end_byte - lv->start_byte));
     if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && lv->kind == Kind::identifier)
       tc = parse_type_cast();
     if (at_assignment_operator()) {
@@ -1692,10 +2224,11 @@ Ast* Parser::parse_tuple_item(bool& plain) {
         lv = ti;
         tc = nullptr;
       }
+      lv = item_target(lv);
       return finish_assignment(start, nullptr, decl, lv, tc);
     }
     // no '=' : decl + typed_identifier (named field) | decl + expression (positional)
-    if (tc || lv->kind == Kind::identifier) {
+    if (tc || (lv->kind == Kind::identifier && !type_value)) {
       Ast* ti  = node(Kind::typed_identifier, lv->start_byte);
       lv->field = Field::f_identifier;
       ti->add(lv);
@@ -1711,10 +2244,12 @@ Ast* Parser::parse_tuple_item(bool& plain) {
 
   Ast* e  = parse_expression();
   Ast* tc = nullptr;
+  if (at(Token_kind::colon) || at(Token_kind::coloncolon) || at_assignment_operator())
+    reject_type_word_name(e, "a tuple field name");  // `(U8=1)`, `(U8:U4)`
   if ((at(Token_kind::colon) || at(Token_kind::coloncolon)) && e->kind == Kind::identifier)
     tc = parse_type_cast();
   if (at_assignment_operator()) {
-    // typed field assignment (`a:bool = nil`) folds name+type into a
+    // typed field assignment (`a:Bool = nil`) folds name+type into a
     // typed_identifier lvalue (tree-sitter parity).
     if (e->kind == Kind::identifier && tc) {
       Ast* ti   = node(Kind::typed_identifier, e->start_byte);
@@ -1725,6 +2260,7 @@ Ast* Parser::parse_tuple_item(bool& plain) {
       e  = ti;
       tc = nullptr;
     }
+    e = item_target(e);
     return finish_assignment(start, nullptr, nullptr, e, tc);
   }
   if (tc) {
@@ -1767,23 +2303,19 @@ void Parser::add_tuple_child(Ast* parent, Ast* it) {
   parent->add(it, Field::f_item);
 }
 
-Ast* Parser::parse_lvalue_item() {
+Ast* Parser::parse_lvalue_item(bool binding) {
   uint32_t start = cur().start_byte;
   // Every lvalue_list entry is an `lvalue_item` wrapper (tree-sitter shape).
   Ast* li = node(Kind::lvalue_item, start);
-  // named_lvalue: name '=' (typed_identifier | dot_expression)
+  // named_lvalue: a rename slot `local = source.path` (spec 2026-09-29 §7/§8:
+  // `(x = dox.b) = dox(a=3)` assigns the RHS field `dox.b` to the local `x`).
+  // Both the local and every component of the source path use ordinary name
+  // validation: keyword/type collisions require backticks, including fields.
   if (cur().kind == Token_kind::ident && peek(1).kind == Token_kind::assign) {
+    require_plain_name("a destructuring target");
     Ast* name = leaf(Kind::identifier);
     advance();  // '='
-    Ast* lv = parse_postfix();
-    if (lv->kind == Kind::identifier) {
-      Ast* ti   = node(Kind::typed_identifier, lv->start_byte);
-      lv->field = Field::f_identifier;
-      ti->add(lv);
-      if (at(Token_kind::colon) || at(Token_kind::coloncolon)) ti->add(parse_type_cast(), Field::f_type);
-      finish(ti, lv->start_byte);
-      lv = ti;
-    }
+    Ast* lv = parse_slot_path();
     Ast* nl   = node(Kind::named_lvalue, start);
     name->field = Field::f_name;
     nl->add(name);
@@ -1794,7 +2326,16 @@ Ast* Parser::parse_lvalue_item() {
     finish(li, start);
     return li;
   }
+  if (binding) {
+    require_plain_name("a variable name");  // `const (if, b) = (1, 2)`
+  } else if (at_field_word() || is_decl_keyword(cur()) || at_kw(Keyword::kw_ref) || is_value_start_kw(cur())) {
+    // At a statement's `(` the entry may also start a tuple entry, so these
+    // keywords are that entry (`(in:U8, b)`, `(const, b)`, `(ref, b)`), never a
+    // destructuring target (grammar.js lexes them as the keyword there).
+    error("bad-assignment-target", "'" + std::string(cur().text) + "' is a reserved word, so it cannot be an assignment target");
+  }
   Ast* e  = parse_postfix();
+  require_lvalue(e);  // `mut (a, f(x)) = g()`
   Ast* tc = nullptr;
   if (at(Token_kind::colon) || at(Token_kind::coloncolon)) tc = parse_type_cast();
   if (e->kind == Kind::identifier) {
@@ -1816,9 +2357,92 @@ Ast* Parser::parse_lvalue_item() {
   return li;
 }
 
+// A destructuring assignment (spec 2026-09-29 §7/§8) is a STATEMENT whose slots
+// are bare names (`(a, b) = f()`, `const (p1, p2) = two(..)`) or renames
+// `name = path` with a dotted name path (`(x = dox.b) = dox(a=3)`); the
+// operator is `=`. Errors: a complex slot (`(a.b, c[1]) = f()`), a typed slot
+// (`const (a:U32, b) = ...`), a path that is no dotted name (`(x = f(a).b) = ..`)
+// and a compound operator (`(a, b) += f()`). `list` is the lvalue_list; the
+// current token is the assignment operator.
+void Parser::check_destructuring(const Ast* list) const {
+  auto fail = [&](const char* code, const std::string& msg, const Ast* at) {
+    Diag d;
+    d.code     = code;
+    d.category = std::string(kCategorySyntax);
+    d.message  = msg;
+    d.span     = at ? span_bytes(at->start_byte, at->end_byte) : span_bytes(cur().start_byte, cur().end_byte);
+    throw Parse_error(std::move(d));
+  };
+  auto typed = [&](const Ast* ti) {
+    for (const Ast* k : ti->kids)
+      if (k->field == Field::f_type)
+        fail("typed-destructuring",
+             "a destructuring slot carries no type (`const (a, b) = f()`; the types come from the right-hand side)", k);
+  };
+  if (list->kids.empty())  // `() = f()` (grammar.js lvalue_list is listseq1)
+    fail("empty-list", "a destructuring list names at least one variable", list);
+  for (const Ast* li : list->kids) {
+    for (const Ast* k : li->kids) {
+      if (k->field == Field::f_type) typed(li);
+      if (k->kind == Kind::typed_identifier) {
+        typed(k);
+      } else if (k->kind == Kind::named_lvalue) {
+        for (const Ast* c : k->kids) {
+          if (c->field != Field::f_lvalue) continue;
+          if (c->kind != Kind::identifier) {
+            bool dotted = c->kind == Kind::dot_expression;
+            for (const Ast* p : c->kids) dotted = dotted && p->kind == Kind::identifier;
+            if (!dotted)
+              fail("bad-destructuring-target", "a rename slot `name = path` takes a name path (`x = dox.b`)", c);
+          }
+        }
+      } else {
+        fail("bad-destructuring-target",
+             "a destructuring slot is a name or a rename `name = path`: assign a field or a selector in its own "
+             "statement",
+             k);
+      }
+    }
+  }
+  if (!at(Token_kind::assign))
+    fail("bad-destructuring-operator", "a destructuring assignment takes `=`, not a compound operator", nullptr);
+}
+
+// The RHS field path of a rename slot (grammar.js `_slot_path`): a word or a
+// dotted run of words -- `b`, `dox.b`, `deep.payload.inner.value` -- as an
+// identifier / dot_expression. It ends the slot: `(x = a[0])`, `(x = f(a).b)`,
+// `(x = y:U8)` and `(x = y@[1])` are errors.
+Ast* Parser::parse_slot_path() {
+  uint32_t start = cur().start_byte;
+  if (!at(Token_kind::ident)) {
+    if (at(Token_kind::type_word)) error_type_word_name(cur(), "a field name");
+    error("bad-destructuring-target", "a rename slot `name = path` takes a name path (`x = dox.b`)");
+  }
+  Ast* head = leaf(Kind::identifier);
+  Ast* path = head;
+  if (at(Token_kind::dot)) {
+    path = node(Kind::dot_expression, start);
+    head->field = Field::f_item;
+    path->add(head);
+    while (at(Token_kind::dot)) {
+      advance();  // '.'
+      if (at(Token_kind::type_word)) error_type_word_name(cur(), "a field name");
+      path->add(ident_leaf("expected-field", "expected a field name after '.'"));
+    }
+    finish(path, start);
+  }
+  if (!at(Token_kind::comma) && !at(Token_kind::rparen)) {
+    if (at(Token_kind::colon) || at(Token_kind::coloncolon))
+      error("typed-destructuring",
+            "a destructuring slot carries no type (`const (a, b) = f()`; the types come from the right-hand side)");
+    error("bad-destructuring-target", "a rename slot `name = path` takes a name path (`x = dox.b`)");
+  }
+  return path;
+}
+
 // Reinterpret a `tuple` parsed at statement start as an `lvalue_list` once a
 // trailing '=' confirms it is a destructuring-assignment LHS (`(a, x=b.c) =
-// rhs`). Each tuple item becomes an `lvalue_item`; a `name = local` item (parsed
+// rhs`). Each tuple item becomes an `lvalue_item`; a `local = path` item (parsed
 // optimistically as a nested assignment) becomes a `named_lvalue`.
 Ast* Parser::tuple_to_lvalue_list(Ast* tup) {
   std::vector<Ast*> items;
@@ -1835,14 +2459,16 @@ Ast* Parser::tuple_to_lvalue_list(Ast* tup) {
         else if (c->field == Field::f_rvalue)
           lv = c;
       }
-      if (name && name->kind == Kind::typed_identifier && !name->kids.empty())
-        name = name->kids.front();
-      if (lv && lv->kind == Kind::identifier) {
-        Ast* ti   = node(Kind::typed_identifier, lv->start_byte);
-        lv->field = Field::f_identifier;
-        ti->add(lv);
-        finish(ti, lv->start_byte);
-        lv = ti;
+      require_binding_name(name, /*dotted=*/false, "a destructuring target");  // `(a.b = x) = f()`
+      require_binding_name(lv, /*dotted=*/true, "a destructuring field path");  // `(a = f(x)) = g()`
+      if (is_keyword_name(name)) {  // `(if = x) = f()`: the local is a plain name
+        Diag d;
+        d.code     = "reserved-word-as-name";
+        d.category = std::string(kCategorySyntax);
+        d.message  = "'" + std::string(buf_.data() + name->start_byte, name->end_byte - name->start_byte) +
+                     "' is a reserved word, so it cannot be a destructuring target";
+        d.span     = span_bytes(name->start_byte, name->end_byte);
+        throw Parse_error(std::move(d));
       }
       Ast* nl = node(Kind::named_lvalue, s);
       if (name) {
@@ -1856,18 +2482,32 @@ Ast* Parser::tuple_to_lvalue_list(Ast* tup) {
       finish(nl, s);
       li->add(nl);
     } else if (it->kind == Kind::identifier) {
+      reject_type_word_name(it, "an assignment target");  // `(U8, b) = f()`
       Ast* ti   = node(Kind::typed_identifier, s);
       it->field = Field::f_identifier;
       ti->add(it);
       finish(ti, s);
       li->add(ti);
     } else if (it->kind == Kind::typed_field) {
+      // `(in:U8, b) = f()`: a keyword before `:` is a tuple FIELD name, which a
+      // destructuring target can not be (grammar.js `_field_word`).
+      if (!it->kids.empty() && is_keyword_name(it->kids.front())) {
+        Diag d;
+        d.code     = "bad-assignment-target";
+        d.category = std::string(kCategorySyntax);
+        d.message  = "a reserved word cannot be an assignment target";
+        d.span     = span_bytes(it->start_byte, it->end_byte);
+        throw Parse_error(std::move(d));
+      }
       it->kind = Kind::typed_identifier;
       li->add(it);
     } else if (it->kind == Kind::typed_identifier) {
       li->add(it);
     } else {
-      // complex lvalue (dot_expression / member_selection / bit_selection)
+      // complex lvalue (dot_expression / member_selection / bit_selection);
+      // anything else -- a call, a literal, a nested tuple -- is an error:
+      // `(a, f(x)) = g()`, `(a, 1) = g()`, `((a, b), c) = g()`.
+      require_lvalue(it);
       it->field = Field::f_identifier;
       li->add(it);
     }
@@ -1885,7 +2525,7 @@ Ast* Parser::parse_arg_tuple() {
   expect(Token_kind::lparen, "expected-paren", "expected '(' to open arguments");
   Bracket_guard _bg(*this);
   Ast* at_ = node(Kind::arg_tuple, start);
-  while (at(Token_kind::comma)) advance();
+  skip_leading_commas(Token_kind::rparen);
   while (!at(Token_kind::rparen) && !eof()) {
     at_->add(parse_arg_item(), Field::f_item);
     if (!accept(Token_kind::comma)) break;
@@ -1900,10 +2540,19 @@ Ast* Parser::parse_arg_tuple() {
 }
 
 Ast* Parser::parse_arg_item() {
-  if (at_kw(Keyword::kw_ref)) return parse_ref_identifier();
   uint32_t start = cur().start_byte;
-  Ast*     e = parse_expression();
+  // `f(pub = 1)`, `__sum(as = (a, b))`: a keyword before `=` names the argument
+  // (grammar.js `_field_word`); before `:` it is an error (no typed argument).
+  Ast* e = nullptr;
+  if (at_field_word()) {
+    e = leaf(Kind::identifier);
+    if (!at(Token_kind::assign)) error("expected-eq", "expected '=' after the argument name");
+  } else {
+    if (at_kw(Keyword::kw_ref)) return parse_ref_identifier();
+    e = parse_expression();
+  }
   if (at(Token_kind::assign)) {
+    require_binding_name(e, /*dotted=*/true, "an argument name");  // `f(U8=1)`, `f(a[0]=1)`
     advance();  // '='
     Ast* aa  = node(Kind::arg_assignment, start);
     e->field = Field::f_lvalue;
@@ -1922,6 +2571,9 @@ Ast* Parser::parse_arg_item() {
 Ast* Parser::parse_if_expression() {
   uint32_t start = cur().start_byte;
   Ast*     ife = node(Kind::if_expression, start);
+  // A header ends at a newline, also inside brackets: `f(y=if a` newline `(b)
+  // { .. })` is an error, as at statement level (grammar.js `_line_end`).
+  Scope_guard _sg(*this);
   // `unique if` is an anonymous `unique` token in the grammar; emit it as an
   // anonymous marker (the consumer reads its text to lower a `unique_if` →
   // Hotmux instead of a priority mux chain).
@@ -1935,14 +2587,15 @@ Ast* Parser::parse_if_expression() {
   // first branch (inline, no wrapper node): init?, condition, code
   {
     std::vector<Ast*> items;
-    items.push_back(parse_tuple_item());
+    items.push_back(parse_stmt_item());
     while (at(Token_kind::semicolon)) {
       advance();
       while (at(Token_kind::semicolon)) advance();
       if (at(Token_kind::lbrace)) break;
-      items.push_back(parse_tuple_item());
+      items.push_back(parse_stmt_item());
     }
     Ast* cond = items.back();
+    require_condition(cond);
     items.pop_back();
     if (!items.empty()) {
       Ast* sl = node(Kind::stmt_list, items.front()->start_byte);
@@ -1960,14 +2613,15 @@ Ast* Parser::parse_if_expression() {
     // leading if-arm (init / condition / code), not a distinct `elif` field —
     // the consumer flattens all branches by those names.
     std::vector<Ast*> items;
-    items.push_back(parse_tuple_item());
+    items.push_back(parse_stmt_item());
     while (at(Token_kind::semicolon)) {
       advance();
       while (at(Token_kind::semicolon)) advance();
       if (at(Token_kind::lbrace)) break;
-      items.push_back(parse_tuple_item());
+      items.push_back(parse_stmt_item());
     }
     Ast* cond = items.back();
+    require_condition(cond);
     items.pop_back();
     if (!items.empty()) {
       Ast* sl = node(Kind::stmt_list, items.front()->start_byte);
@@ -1988,18 +2642,22 @@ Ast* Parser::parse_if_expression() {
 
 Ast* Parser::parse_match_expression() {
   uint32_t start = cur().start_byte;
+  // The subject and each arm end at a newline, also inside brackets (see
+  // parse_if_expression).
+  Scope_guard _sg(*this);
   advance();  // match
   Ast* m = node(Kind::match_expression, start);
   // optional init then condition
   std::vector<Ast*> items;
-  items.push_back(parse_tuple_item());
+  items.push_back(parse_stmt_item());
   while (at(Token_kind::semicolon)) {
     advance();
     while (at(Token_kind::semicolon)) advance();
     if (at(Token_kind::lbrace)) break;
-    items.push_back(parse_tuple_item());
+    items.push_back(parse_stmt_item());
   }
   Ast* cond = items.back();
+  require_condition(cond);
   items.pop_back();
   if (!items.empty()) {
     Ast* sl = node(Kind::stmt_list, items.front()->start_byte);
@@ -2099,13 +2757,20 @@ Ast* Parser::parse_type() {
     // array_type: array_length [base]
     uint32_t start = cur().start_byte;
     Ast*     at_   = node(Kind::array_type, start);
-    at_->add(parse_select(), Field::f_length);  // reuse [..]; length allows empty -> handled below
+    // A storage keyword (or `comptime`/`ref`) is never an array length: `x:[mut]U8`,
+    // `x:[reg]U8`, `x:[stage]` are errors in both parsers (grammar.js: at the
+    // `[` of a type the keyword token wins over the identifier reading).
+    if (is_array_length_keyword(peek(1)))
+      error_reserved_name(peek(1), "reserved-word-as-name",
+                          "'" + std::string(peek(1).text) + "' is a reserved word, so it cannot be an array length");
+    at_->add(parse_select(/*allow_empty=*/true), Field::f_length);  // `[]` defers the size to the initializer
     // base (optional) — must not cross a statement terminator (a new line after
     // `[]` begins the next statement, it is not the array's base type).
     if (!term_stop()) {
       if (at(Token_kind::lbracket)) at_->add(parse_type(), Field::f_base);
       else if (is_primitive_type_word(cur())) at_->add(parse_primitive_type(), Field::f_base);
-      else if (is_lambda_kind(cur()) && looks_like_lambda()) at_->add(parse_lambda(), Field::f_base);
+      else if ((is_lambda_kind(cur()) || at_kw(Keyword::kw_pub)) && looks_like_lambda())
+        at_->add(parse_lambda(), Field::f_base);
       else if (cur().kind == Token_kind::ident || at(Token_kind::lparen) || at_constant() ||
                at_kw(Keyword::kw_if) || at_kw(Keyword::kw_match))
         at_->add(parse_type(), Field::f_base);
@@ -2122,7 +2787,7 @@ Ast* Parser::parse_type() {
   }
   if (is_lambda_kind(cur())) {
     // lambda_type: a body-less lambda SIGNATURE in type position —
-    // `call_method1: comb(a:u8, b:u3) -> (foo:u8, bar:u33)` — the typed
+    // `call_method1: comb(a:U8, b:U3) -> (foo:U8, bar:U33)` — the typed
     // interface of a cpp() binding or any lambda-valued field
     // (07-typesystem.md "The typed interface is the source of truth").
     // The `type X = comb(...)` statement form keeps its own func_type
@@ -2151,6 +2816,9 @@ Ast* Parser::parse_type() {
     return lt;
   }
   if (is_primitive_type_word(cur())) return parse_primitive_type();
+  // `pub` only heads a lambda (grammar.js reads it as the keyword in a type
+  // position too): `x:pub` is an error.
+  if (at_kw(Keyword::kw_pub)) error("expected-type", "expected a type");
   // expression_type: identifier (dotted), constant, tuple, if/match, call.
   // tree-sitter wraps EVERY non-primitive type expression in an `expression_type`
   // node (grammar rule `expression_type`); the consumer gates tuple-shape / inline
@@ -2168,15 +2836,25 @@ Ast* Parser::parse_type() {
     finish(et, start);
     return et;
   }
+  if (at_kw(Keyword::kw_enum) && peek(1).kind == Token_kind::lparen && !peek(1).terminator_before) error_enum_expression();  // `type V = enum(a)`
   if (cur().kind == Token_kind::ident) {
     Ast* et = node(Kind::expression_type, start);
-    Ast* id = leaf(Kind::identifier);
+    Ast* id;
+    if (cur().text == "nil") {
+      id = arena_.make(Kind::identifier, cur().start_byte, cur().end_byte);
+      advance();
+    } else {
+      id = leaf(Kind::identifier);
+    }
     et->add(id);
     while (at(Token_kind::dot) && peek(1).kind == Token_kind::ident) {
       advance();
       et->add(leaf(Kind::identifier), Field::f_item);
     }
-    if (at(Token_kind::lparen)) {
+    // A `(` that opens a new line starts a new statement (02-basics: a line
+    // starting with `(` never continues the previous one): `mut r:Foo` newline
+    // `(a)` is a declaration plus a tuple statement, not the type call `Foo(a)`.
+    if (at(Token_kind::lparen) && !term_stop()) {
       // function_call_type: name ( tuple )
       Ast* fct = node(Kind::function_call_type, start);
       et->field = Field::f_function;
@@ -2203,22 +2881,33 @@ Ast* Parser::parse_type() {
 // grammar.js `_generic_value`.
 Ast* Parser::parse_generic_value() {
   // Only a word parse_type would read as a plain (dotted) NAME can head the
-  // read; primitive types, literals, lambda kinds and if/match keep their
-  // type-grammar meaning. `true`/`false` are the exception: tree-sitter lexes
-  // them as a name before `.[` (accept-parity), and the head is then built as
-  // the expression path builds it, a bool constant.
-  const bool bool_head  = at_kw(Keyword::kw_true) || at_kw(Keyword::kw_false);
-  const bool plain_name = at(Token_kind::ident) && !is_lambda_kind(cur()) && !is_primitive_type_word(cur()) &&
-                          !at_constant() && !at_kw(Keyword::kw_if) && !at_kw(Keyword::kw_unique) &&
-                          !at_kw(Keyword::kw_match);
-  if (plain_name || bool_head) {
+  // read; primitive types, literals (`true`/`false` too), lambda kinds and
+  // if/match keep their type-grammar meaning.
+  const bool plain_name = at(Token_kind::ident) && !is_lambda_kind(cur()) && !at_constant() &&
+                          !at_kw(Keyword::kw_if) && !at_kw(Keyword::kw_unique) && !at_kw(Keyword::kw_match);
+  // `<N=U8.[max]>`: a type word heads the read too (never a dotted path:
+  // `U8.x` is an error), exactly as in an expression (parse_type_word_operand).
+  if (at(Token_kind::type_word) && peek(1).kind == Token_kind::dot && peek(2).kind == Token_kind::lbracket) {
+    uint32_t start = cur().start_byte;
+    Ast*     ar    = node(Kind::attribute_read, start);
+    Ast*     head  = arena_.make(Kind::identifier, cur().start_byte, cur().end_byte);
+    advance();
+    ar->add(head, Field::f_argument);
+    while (at(Token_kind::dot) && peek(1).kind == Token_kind::lbracket) {
+      advance();  // '.'
+      ar->add(parse_attribute_list(), Field::f_attrs);
+    }
+    finish(ar, start);
+    return ar;
+  }
+  if (plain_name) {
     // Lookahead only: `name ('.' name)*` must be followed by `.[` (else it is
     // the dotted type/name path, `cfg.w`).
     size_t k = 1;
     while (peek(k).kind == Token_kind::dot && peek(k + 1).kind == Token_kind::ident) k += 2;
     if (peek(k).kind == Token_kind::dot && peek(k + 1).kind == Token_kind::lbracket) {
       uint32_t start = cur().start_byte;
-      Ast*     head  = bool_head ? parse_constant() : leaf(Kind::identifier);
+      Ast*     head  = leaf(Kind::identifier);
       if (at(Token_kind::dot) && peek(1).kind == Token_kind::ident) {
         Ast* de = node(Kind::dot_expression, start);
         de->add(head, Field::f_item);
@@ -2239,44 +2928,52 @@ Ast* Parser::parse_generic_value() {
       return ar;
     }
   }
+  // A negative literal is a generic value (`f<N=-3>`, owner ruling 102) though
+  // no type (`x:-3` is an error): it reads like `<N=3>`, and the sign is part
+  // of the literal (grammar.js `_negative_generic_value`), so `<N=- 3>` stays
+  // an error.
+  if (at(Token_kind::minus) && peek(1).kind == Token_kind::integer && peek(1).start_byte == cur().end_byte) {
+    uint32_t start = cur().start_byte;
+    advance();  // '-'
+    Ast* lit        = leaf(Kind::integer_literal);
+    lit->start_byte = start;  // the literal's span includes the sign
+    Ast* c          = node(Kind::constant, start);
+    c->add(lit);
+    finish(c, start);
+    Ast* et = node(Kind::expression_type, start);
+    et->add(c);
+    finish(et, start);
+    return et;
+  }
   return parse_type();
 }
 
+// A type word in a TYPE position (grammar.js `_primitive_type`): `U<N>` and
+// `Unsigned` are a `uint_type`, `S<N>` and `Signed` a `sint_type` (both with an
+// optional constraint tuple: `Unsigned(bits=8, max=300)`), and `Bool`,
+// `String`, `Clock`, `Reset` the `bool_type`/`string_type`/`clock_type`/
+// `reset_type` leaves.
 Ast* Parser::parse_primitive_type() {
-  uint32_t     start = cur().start_byte;
-  const Token& t = cur();
-  Kind         k;
-  if (t.is_kw(Keyword::kw_bool)) {
-    Ast* b = node(Kind::bool_type, start);
-    advance();
-    finish(b, start);
-    return b;
+  uint32_t         start = cur().start_byte;
+  std::string_view w     = cur().text;
+  Kind             k;
+  bool             sized = false;  // takes a constraint tuple
+  if (w == "Bool") {
+    k = Kind::bool_type;
+  } else if (w == "String") {
+    k = Kind::string_type;
+  } else if (w == "Clock") {
+    k = Kind::clock_type;
+  } else if (w == "Reset") {
+    k = Kind::reset_type;
+  } else {
+    k     = (w == "Unsigned" || w[0] == 'U') ? Kind::uint_type : Kind::sint_type;
+    sized = true;
   }
-  if (t.is_kw(Keyword::kw_string)) {
-    Ast* s = node(Kind::string_type, start);
-    advance();
-    finish(s, start);
-    return s;
-  }
-  // `int`/`integer`/`uint` were removed as type names. Reject with a tailored
-  // fix-it (they are still keywords only so this message can fire). `signed`/
-  // `unsigned` are the unbounded replacements; `uN`/`sN` the sized ones.
-  if (t.is_kw(Keyword::kw_int) || t.is_kw(Keyword::kw_integer) || t.is_kw(Keyword::kw_uint)) {
-    Diag d;
-    d.code     = "removed-int-type";
-    d.category = std::string(kCategorySyntax);
-    d.message  = "the `" + std::string(t.text) + "` type was removed";
-    d.hint     = "use `signed`/`unsigned` (which reinterpret a value's sign) or a sized `uN`/`sN` type";
-    d.span     = span_bytes(t.start_byte, t.end_byte);
-    throw Parse_error(std::move(d));
-  }
-  if (t.is_kw(Keyword::kw_unsigned) || (t.text.size() >= 2 && t.text[0] == 'u'))
-    k = Kind::uint_type;
-  else
-    k = Kind::sint_type;
   Ast* pt = node(k, start);
   advance();
-  if (at(Token_kind::lparen)) pt->add(parse_paren(), Field::f_constraint);
+  // `Unsigned(bits=3)`; a `(` on the next line is a new statement (see parse_type).
+  if (sized && at(Token_kind::lparen) && !term_stop()) pt->add(parse_paren(), Field::f_constraint);
   finish(pt, start);
   return pt;
 }
@@ -2331,14 +3028,22 @@ Ast* Parser::parse_attribute_sq() {
   expect(Token_kind::lbracket, "expected-bracket", "expected '[' to open attributes");
   Bracket_guard _bg(*this);
   Ast* sq = node(Kind::attribute_sq, start);
-  while (at(Token_kind::comma)) advance();
+  skip_leading_commas(Token_kind::rbracket);
   while (!at(Token_kind::rbracket) && !eof()) {
-    // _attribute_item: _expression | ref_identifier | attribute_assignment
-    if (at_kw(Keyword::kw_ref)) {
+    // _attribute_item: _expression | ref_identifier | attribute_assignment. A
+    // keyword before `=` names the attribute (`::[comptime = 1]`).
+    if (at_kw(Keyword::kw_ref) && !at_field_word()) {
       sq->add(parse_ref_identifier(), Field::f_item);
     } else {
-      Ast* e = parse_expression();
+      Ast* e = nullptr;
+      if (at_field_word()) {
+        e = leaf(Kind::identifier);
+        if (!at(Token_kind::assign)) error("expected-eq", "expected '=' after the attribute name");
+      } else {
+        e = parse_expression();
+      }
       if (at(Token_kind::assign)) {
+        require_binding_name(e, /*dotted=*/false, "an attribute name");  // `x::[U4=1]`
         advance();
         Ast* aa  = node(Kind::attribute_assignment, e->start_byte);
         e->field = Field::f_lvalue;
@@ -2369,11 +3074,16 @@ Ast* Parser::parse_attribute_list() {
   return al;
 }
 
-Ast* Parser::parse_select() {
+Ast* Parser::parse_select(bool allow_empty) {
   uint32_t start = cur().start_byte;
   expect(Token_kind::lbracket, "expected-bracket", "expected '['");
   Bracket_guard _bg(*this);
   Ast* sel = node(Kind::select, start);
+  // A selector (`a[i]`, `a#[i]`, `pipe[N]`) holds one index or range
+  // (grammar.js `select`); only an array LENGTH may be empty (`x:[]U8`,
+  // grammar.js `array_length`). `a[]`, `a#[]`, `pipe[]` are errors.
+  if (at(Token_kind::rbracket) && !allow_empty)
+    error("empty-select", "a selector needs an index or a range (`a[i]`, `a[lo..=hi]`); `[]` is empty");
   if (!at(Token_kind::rbracket)) {
     if (at(Token_kind::dotdot) || at(Token_kind::range_incl) || at(Token_kind::range_excl)) {
       sel->add(parse_selection_range_or_index(Kind::select), Field::f_range);
@@ -2442,12 +3152,12 @@ Ast* Parser::parse_timing_slot() {
 Ast* Parser::parse_stmt_list() {
   uint32_t start = cur().start_byte;
   Ast*     sl = node(Kind::stmt_list, start);
-  sl->add(parse_tuple_item(), Field::f_item);
+  sl->add(parse_stmt_item(), Field::f_item);
   while (at(Token_kind::semicolon)) {
     advance();
     while (at(Token_kind::semicolon)) advance();
     if (at(Token_kind::lbrace) || eof()) break;
-    sl->add(parse_tuple_item(), Field::f_item);
+    sl->add(parse_stmt_item(), Field::f_item);
   }
   finish(sl, start);
   return sl;

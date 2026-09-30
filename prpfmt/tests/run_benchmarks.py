@@ -2,8 +2,13 @@ import os
 import subprocess
 import glob
 
-SNIPPET_DIR = "../../docs/tmp/"
-BENCH_DIR = "benchmarks"
+# Paths resolve from this script, whatever the cwd: the docs corpus
+# (`make corpus` at the repo root builds full_pyrope/) and the prpfmt built in
+# prpfmt/.
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+PRPFMT = os.path.join(os.path.dirname(TESTS_DIR), "prpfmt")
+SNIPPET_DIR = os.path.join(os.path.dirname(os.path.dirname(TESTS_DIR)), "full_pyrope")
+BENCH_DIR = os.path.join(TESTS_DIR, "benchmarks")
 TARGETS = {
     "1KB": 1024,
     "10KB": 10 * 1024,
@@ -15,11 +20,11 @@ def get_valid_snippets():
     print("Finding valid snippets...")
     all_files = glob.glob(os.path.join(SNIPPET_DIR, "file*.prp"))
     valid = []
-    for f in all_files:
+    for f in sorted(all_files):
         try:
-            # Quick check if it parses with tree-sitter
-            res = subprocess.run(["tree-sitter", "parse", f], capture_output=True, text=True)
-            if res.returncode == 0 and "ERROR" not in res.stdout and "MISSING" not in res.stdout:
+            # A snippet is valid when prpfmt formats it (it exits 2 on a parse error).
+            res = subprocess.run([PRPFMT, f], capture_output=True, text=True)
+            if res.returncode == 0:
                 with open(f, 'r') as content:
                     valid.append(content.read())
         except Exception:
@@ -43,7 +48,7 @@ def create_bench_file(name, target_bytes, snippets):
 def run_bench(path):
     print(f"\nBenchmarking {path}...")
     # Run prpfmt with --bench and capture stderr
-    res = subprocess.run(["../../prpfmt", path, "--bench"], capture_output=True, text=True)
+    res = subprocess.run([PRPFMT, path, "--bench"], capture_output=True, text=True)
     print(res.stderr)
 
 def main():
@@ -52,7 +57,7 @@ def main():
         
     snippets = get_valid_snippets()
     if not snippets:
-        print("No valid snippets found!")
+        print(f"No valid snippets found in {SNIPPET_DIR} (run `make corpus` at the repo root)")
         return
 
     for name, size in TARGETS.items():

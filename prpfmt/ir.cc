@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cstdio>
 #include <span>
@@ -27,6 +26,8 @@ static Token &push_token(PrpfmtState &st, TokenType type) {
 static Token &push_text(PrpfmtState &st, TokenType type, std::string_view text) {
   Token &t = push_token(st, type);
   t.text.assign(text.data(), text.size());
+  // Raw `prpfmt off` text keeps its spacing; only formatted comments are marked.
+  t.block_comment = st.fmt_on && (type == TOKEN_TEXT || type == TOKEN_ALIGN_COMMENT) && text.starts_with("/*");
   return t;
 }
 
@@ -39,7 +40,7 @@ static bool has_recent_break(PrpfmtState &st) {
         type == TOKEN_BREAK_POINT || type == TOKEN_SOFT_BREAK) {
       return true;
     }
-    if (type == TOKEN_TEXT || type == TOKEN_SPACE ||
+    if (type == TOKEN_TEXT || type == TOKEN_SPACE || type == TOKEN_SOFT_TEXT ||
         type == TOKEN_ALIGN_OPERATOR || type == TOKEN_ALIGN_RELATIONAL ||
         type == TOKEN_ALIGN_COMMENT) {
       return false;
@@ -52,6 +53,13 @@ static bool has_recent_break(PrpfmtState &st) {
 /******************************************************************************
  * 1. Token IR Emitters                                                       *
  ******************************************************************************/
+
+int text_width(std::string_view text) {
+  int width = 0;
+  for (unsigned char c : text)
+    if ((c & 0xC0) != 0x80) ++width;  // skip UTF-8 continuation bytes
+  return width;
+}
 
 // Append a text token to the IR buffer
 void emit_token(PrpfmtState &st, std::string_view text) {
@@ -100,6 +108,8 @@ void emit_break_point(PrpfmtState &st, int penalty) {
   if (has_recent_break(st)) {
     return;
   }
+  // `a /* c */ + b`: the break prints the space itself, flat or broken.
+  if (!st.buffer.empty() && st.buffer.back().type == TOKEN_SPACE) st.buffer.pop_back();
   push_token(st, TOKEN_BREAK_POINT).penalty = penalty;
 }
 
@@ -114,6 +124,12 @@ void emit_soft_break(PrpfmtState &st, int penalty) {
 // Append a conditional space token: empty when flat, space when exploded
 void emit_soft_space(PrpfmtState &st) {
   push_token(st, TOKEN_SOFT_SPACE);
+}
+
+// Append text that prints only when the enclosing group is exploded (the
+// trailing `,` of a one-item-per-line list); it has no flat width.
+void emit_soft_text(PrpfmtState &st, std::string_view text) {
+  push_text(st, TOKEN_SOFT_TEXT, text);
 }
 
 // Append a token to increment indentation level
@@ -131,11 +147,18 @@ void emit_group_start(PrpfmtState &st, bool force_explode, bool propagates) {
   Token &t = push_token(st, TOKEN_GROUP_START);
   t.exploded = force_explode;
   t.propagates = propagates;
+  st.open_groups.push_back((int)st.buffer.size() - 1);
 }
 
-// End the current smart-wrapping group
+// End the current smart-wrapping group, pairing it with its start (Token::match
+// lets a pass over the buffer jump over a closed group in O(1)).
 void emit_group_end(PrpfmtState &st) {
   push_token(st, TOKEN_GROUP_END);
+  if (st.open_groups.empty()) return;
+  int start = st.open_groups.back(), end = (int)st.buffer.size() - 1;
+  st.open_groups.pop_back();
+  st.buffer[start].match = end;
+  st.buffer[end].match = start;
 }
 
 // Start an alignment block for columnar layout
@@ -205,13 +228,12 @@ void emit_line_break(PrpfmtState &st) {
 // stacks are bounded views (std::span), so the solver can no longer walk off
 // the end of a raw stack array unnoticed.
 static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
-                          int indent_size, std::span<bool> exp_stack,
+                          int indent_size, std::span<char> exp_stack,
                           std::span<int> anc_stack, int &stack_ptr,
                           TokenType channel_filter) {
-  // stack_ptr tracks the true nesting depth, which on pathologically nested
-  // input can exceed the fixed stack capacity. The TOKEN_GROUP_START push
-  // already drops out-of-range writes, so clamp every access here as well:
-  // beyond capacity we fall back to "flat, no anchor" instead of indexing OOB.
+  // The stacks are sized to the deepest group nesting (group_depth), so
+  // stack_ptr stays in range; the clamp is a guard ("flat, no anchor") that
+  // never indexes out of bounds.
   const bool ptr_ok = stack_ptr >= 0 && stack_ptr < (int)exp_stack.size();
   bool is_exploded = ptr_ok ? exp_stack[stack_ptr] : false;
   int current_anchor = ptr_ok ? anc_stack[stack_ptr] : -1;
@@ -232,7 +254,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
   switch (t.type) {
     case TOKEN_TEXT:
       // Update column based on literal text length
-      col += (int)t.text.size();
+      col += text_width(t.text);
       break;
     case TOKEN_ALIGN_OPERATOR:
     case TOKEN_ALIGN_RELATIONAL:
@@ -251,7 +273,7 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
         anc_stack[stack_ptr] = col - indent * indent_size;
       }
 
-      col += (int)t.text.size();
+      col += text_width(t.text);
       break;
     case TOKEN_ANCHOR:
       // Set a manual hanging indent anchor
@@ -296,6 +318,9 @@ static void simulate_step(const Token &t, int &col, int &indent, int &at_start,
         col++;
       }
       break;
+    case TOKEN_SOFT_TEXT:
+      if (is_exploded) col += text_width(t.text);
+      break;
     case TOKEN_INDENT_INC:
       indent++;
       break;
@@ -335,10 +360,22 @@ static int overflow_slack(const PrpfmtState &st) {
   return std::min(12, st.max_width / 10);
 }
 
+// Deepest group nesting in the buffer, which sizes the solver's and the
+// renderer's per-level stacks (fixed-size stacks silently flattened layouts
+// nested deeper than they could hold, so a second pass printed them differently).
+static int group_depth(const PrpfmtState &st) {
+  int depth = 0, deepest = 0;
+  for (const auto &t : st.buffer) {
+    if (t.type == TOKEN_GROUP_START) deepest = std::max(deepest, ++depth);
+    else if (t.type == TOKEN_GROUP_END && depth > 0) --depth;
+  }
+  return deepest;
+}
+
 static void calculate_group_metrics(PrpfmtState &st) {
-  std::array<int, 1024> w_stack;
+  std::vector<int> w_stack(st.buffer.size() + 1);
   int w_top = -1;
-  std::array<int, 1024> anchor_stack;
+  std::vector<int> anchor_stack(st.buffer.size() + 1);
   int a_top = -1;
   int cur_off = 0, cur_cost = 0, f_count = 0, comments = 0;
 
@@ -351,9 +388,7 @@ static void calculate_group_metrics(PrpfmtState &st) {
       t.pre_force_counter = f_count;
       t.pre_comment_counter = comments;
 
-      if (w_top < 1023) {
-        w_stack[++w_top] = i;
-      }
+      w_stack[++w_top] = i;
     } else if (t.type == TOKEN_GROUP_END) {
       if (w_top >= 0) {
         // Calculate total length and penalty by comparing current offsets to starting offsets
@@ -366,11 +401,11 @@ static void calculate_group_metrics(PrpfmtState &st) {
         st_t.pre_force_counter = (f_count != st_f);
         st_t.pre_comment_counter = comments != st_t.pre_comment_counter;
         st_t.pre_group_end = i;
+        // Groups nested in a yielding group see its end in their suffix.
+        t.yield_next = st_t.yield_next;
       }
     } else if (t.type == TOKEN_ALIGN_GROUP_START) {
-      if (a_top < 1023) {
-        anchor_stack[++a_top] = i;
-      }
+      anchor_stack[++a_top] = i;
     } else if (t.type == TOKEN_ALIGN_GROUP_END) {
       if (a_top >= 0) {
         st.buffer[anchor_stack[a_top--]].pre_group_end = i;
@@ -384,7 +419,7 @@ static void calculate_group_metrics(PrpfmtState &st) {
         case TOKEN_ALIGN_COMMENT:
           // Accumulate width for text and operators
           if (is_comment_token(t)) ++comments;
-          else cur_off += (int)t.text.size();
+          else cur_off += text_width(t.text);
           break;
         case TOKEN_SPACE:
           cur_off++;
@@ -408,37 +443,170 @@ static void calculate_group_metrics(PrpfmtState &st) {
   }
 }
 
+// An inline `if` chain that does not fit puts each `elif`/`else` branch on a
+// continuation line with its block inline. When one of those lines still
+// overflows, breaking only that block would print a `}` newline `elif`
+// staircase, so the whole chain takes the statement layout instead: the
+// continuation breaks become spaces and every branch block breaks
+// (`if c {` newline body newline `} elif d {` ... `}`).
+static bool chain_overflows(const PrpfmtState &st, int start, int column, int indent, int suffix) {
+  const int end = st.buffer[start].pre_group_end;
+  int depth = 0, cont = 0, width = column;
+  bool overflow = false;
+  for (int k = start + 1; k < end && !overflow; ++k) {
+    const Token &t = st.buffer[k];
+    switch (t.type) {
+      case TOKEN_GROUP_START: ++depth; break;
+      case TOKEN_GROUP_END: --depth; break;
+      case TOKEN_INDENT_INC: if (depth == 0) ++cont; break;
+      case TOKEN_INDENT_DEC: if (depth == 0) --cont; break;
+      case TOKEN_BREAK_POINT:
+        if (depth == 0) {
+          overflow = width > st.max_width;
+          width = (indent + cont) * st.indent_size;
+        } else ++width;
+        break;
+      case TOKEN_SPACE: ++width; break;
+      case TOKEN_TEXT: case TOKEN_ALIGN_OPERATOR: case TOKEN_ALIGN_RELATIONAL:
+      case TOKEN_ALIGN_MATH: case TOKEN_ALIGN_COMMENT:
+        width += text_width(t.text);
+        break;
+      default: break;
+    }
+  }
+  return overflow || width + suffix > st.max_width;
+}
+
+// The whole chain takes the statement layout. Also used when a branch holds
+// a required line break (a block comment that starts its source line): one
+// branch that must break breaks them all, never a `}` newline `else` tail.
+static void statement_chain(PrpfmtState &st, int start) {
+  const int end = st.buffer[start].pre_group_end;
+  int depth = 0;
+  for (int k = start + 1; k < end; ++k) {
+    Token &t = st.buffer[k];
+    if (t.type == TOKEN_GROUP_START) {
+      if (depth == 0 && t.chain_role == 2) t.exploded = true;
+      ++depth;
+    } else if (t.type == TOKEN_GROUP_END) --depth;
+    else if (depth == 0 && t.type == TOKEN_BREAK_POINT) t.type = TOKEN_SPACE;
+    else if (depth == 0 && (t.type == TOKEN_INDENT_INC || t.type == TOKEN_INDENT_DEC)) {
+      t.type = TOKEN_SOFT_TEXT;  // no-op: no text, no indentation change
+      t.text.clear();
+    }
+  }
+}
+
+static void statement_chain_if_needed(PrpfmtState &st, int start, int column, int indent, int suffix) {
+  if (st.buffer[start].pre_group_end > start && chain_overflows(st, start, column, indent, suffix))
+    statement_chain(st, start);
+}
+
+// Tokens that print nothing and never separate two texts.
+static bool is_marker(const Token &t) {
+  switch (t.type) {
+    case TOKEN_GROUP_START: case TOKEN_GROUP_END: case TOKEN_ALIGN_GROUP_START: case TOKEN_ALIGN_GROUP_END:
+    case TOKEN_INDENT_INC: case TOKEN_INDENT_DEC: case TOKEN_ANCHOR: case TOKEN_ANCHOR_OFF:
+      return true;
+    case TOKEN_TEXT: case TOKEN_ALIGN_OPERATOR: case TOKEN_ALIGN_RELATIONAL: case TOKEN_ALIGN_MATH:
+    case TOKEN_ALIGN_COMMENT: case TOKEN_SOFT_TEXT:
+      return t.text.empty();
+    default:
+      return false;
+  }
+}
+
+// `t` always prints whitespace (a space, or a line break) on the side that
+// touches its neighbor (`leading`: the side that follows the neighbor).
+static bool separates(const Token &t, bool leading) {
+  switch (t.type) {
+    case TOKEN_SPACE: case TOKEN_BREAK_POINT: case TOKEN_NEWLINE: case TOKEN_FORCE_BREAK:
+      return true;
+    case TOKEN_TEXT: case TOKEN_ALIGN_OPERATOR: case TOKEN_ALIGN_RELATIONAL: case TOKEN_ALIGN_MATH:
+    case TOKEN_ALIGN_COMMENT:
+      return std::isspace((unsigned char)(leading ? t.text.front() : t.text.back()));
+    default:  // a soft break, soft space or soft text prints nothing when flat
+      return false;
+  }
+}
+
+// A block comment always has whitespace on both sides (`f( /* c */ a )`,
+// `a:u4 /* g */ =3`, `x /* c */ , y`): wherever a printer glued one to a
+// neighbor (an opening or closing bracket, a comma, an operator), or left
+// only a break that prints nothing when flat, a space goes in between. A
+// space at a line start or end prints nothing, so a broken layout is
+// unchanged. Runs before the layout is solved, so widths count the spaces.
+static void space_block_comments(PrpfmtState &st) {
+  auto &b = st.buffer;
+  std::vector<char> space_before(b.size(), 0), space_after(b.size(), 0);
+  bool any = false;
+  for (size_t i = 0; i < b.size(); ++i) {
+    if (!b[i].block_comment) continue;
+    size_t k = i;
+    while (k > 0 && is_marker(b[k - 1])) --k;
+    if (k > 0 && !separates(b[k - 1], false)) space_before[i] = any = true;
+    k = i + 1;
+    while (k < b.size() && is_marker(b[k])) ++k;
+    if (k < b.size() && !separates(b[k], true)) space_after[i] = any = true;
+  }
+  if (!any) return;
+  TokenBuffer out;
+  out.reserve(b.size() + b.size() / 8);
+  std::vector<int> where(b.size());
+  for (size_t i = 0; i < b.size(); ++i) {
+    if (space_before[i]) out.emplace_back().type = TOKEN_SPACE;
+    where[i] = (int)out.size();
+    out.push_back(std::move(b[i]));
+    if (space_after[i]) out.emplace_back().type = TOKEN_SPACE;
+  }
+  for (auto &t : out)
+    if (t.match >= 0) t.match = where[t.match];
+  b = std::move(out);
+}
+
 // Determine line breaks and column alignments for all tokens in the IR buffer
 void prpfmt_solve(PrpfmtState &st) {
+  space_block_comments(st);
 
   // Pre-pass: Measure flat widths and explosion penalties before simulating layout
   calculate_group_metrics(st);
+  const size_t levels = size_t(group_depth(st)) + 2;
   int col = 0, indent = 0, at_start = 1, s_ptr = 0;
-  std::array<bool, 256> explode_stack{};
-  std::array<bool, 256> propagate_stack{};
-  std::array<int, 256> anchor_stack{};
-  anchor_stack.fill(-1);
+  std::vector<char> explode_stack(levels, 0);
+  std::vector<char> propagate_stack(levels, 0);
+  std::vector<int> anchor_stack(levels, -1);
+  // An inline `if` chain that fits (within its slack) keeps what it holds
+  // flat as well: a branch's operator chain does not break on its own
+  // (`else { x` newline `+ y }`) while the chain stays on one line.
+  std::vector<char> fits_stack(levels, 0);
 
   // Phase 1: Determine which groups must explode (wrap) based on width and penalties
   // Simulate the token layout sequentially to determine the actual column positions
   for (int i = 0; i < (int)st.buffer.size(); i++) {
     Token &t = st.buffer[i];
 
+    bool fits_here = false;
     if (t.type == TOKEN_GROUP_START) {
       if (!t.exploded) {
         bool forced = st.mode == PRPFMT_HUMAN && t.pre_force_counter;
         bool parent_in_bounds = s_ptr >= 0 && s_ptr < (int)explode_stack.size();
         bool parent_exp = parent_in_bounds ? explode_stack[s_ptr] : false;
         bool parent_prop = parent_in_bounds ? propagate_stack[s_ptr] : false;
+        bool parent_fits = parent_in_bounds && fits_stack[s_ptr];
         bool should_exp = forced;
+        if (forced && t.chain_role == 1 && t.pre_group_end > i) statement_chain(st, i);
 
-        if (!should_exp && st.mode == PRPFMT_HUMAN) {
+        if (!should_exp && st.mode == PRPFMT_HUMAN && parent_fits) {
+          fits_here = true;  // see fits_stack
+        } else if (!should_exp && st.mode == PRPFMT_HUMAN) {
           // Include indentation and any flat suffix on the same line: closing
           // delimiters and the output clause of a header. A trailing comment
           // stays attached without forcing otherwise fitting code to wrap.
           int column = at_start ? indent * st.indent_size : col;
           if (at_start && parent_in_bounds && anchor_stack[s_ptr] > 0) column += anchor_stack[s_ptr];
           int suffix = 0;
+          bool yield_armed = t.yield_next;
+          const bool yield_deep = t.yield_next && t.yield_deep;
           for (int j = t.pre_group_end + 1; j > 0 && j < (int)st.buffer.size(); ++j) {
             auto &next = st.buffer[j];
             if (is_comment_token(next)) {
@@ -448,17 +616,40 @@ void prpfmt_solve(PrpfmtState &st) {
             if (next.type == TOKEN_BREAK_POINT || next.type == TOKEN_SOFT_BREAK ||
                 next.type == TOKEN_NEWLINE || next.type == TOKEN_FORCE_BREAK) break;
             if (next.type == TOKEN_GROUP_START) {
-              if (!next.pre_force_counter && !next.pre_comment_counter && !next.exploded) {
+              // A yielding group (a generic list, an `if` branch header) lets
+              // the next group split first: only that group's opening text up
+              // to its first break (`(`, `{`) counts, so `f<T=u1>(` and
+              // `elif c {` stay whole and the arguments or the block break.
+              // An inline `if` chain can break itself (continuation lines or
+              // the statement layout), so nothing of it counts against what
+              // precedes it: `x:T(bits=N) = if c {` keeps the type
+              // annotation whole (its head may overflow modestly) and the
+              // chain breaks instead.
+              if (next.chain_role == 1 || next.chain_role == 3) break;
+              bool yields = yield_armed;
+              yield_armed = yields && yield_deep;  // a deep yield lasts until the first break
+              if (!yields && !next.pre_force_counter && !next.pre_comment_counter && !next.exploded) {
                 suffix += next.pre_flat_length;
                 j = next.pre_group_end;
+                if (next.yield_next) yield_armed = true;
               }
+            } else if (next.type == TOKEN_GROUP_END) {
+              if (next.yield_next) yield_armed = true;
             } else if (next.type == TOKEN_SPACE) ++suffix;
-            else suffix += (int)next.text.size();
+            else suffix += text_width(next.text);
           }
           int slack = std::min(overflow_slack(st), t.pre_explode_cost / 10);
           should_exp = static_cast<long long>(column) + t.pre_flat_length + suffix >
                        static_cast<long long>(st.max_width) + slack;
+          if (should_exp && t.chain_role == 1) statement_chain_if_needed(st, i, column, indent, suffix);
+          fits_here = !should_exp && t.chain_role == 1;
         }
+
+        // A branch block of an inline `if` chain breaks only with its chain
+        // (continuation lines, or the statement layout set by
+        // statement_chain_if_needed); on its own it would print a
+        // `{ a } else {` newline ... staircase.
+        if (should_exp && !forced && t.chain_role == 2 && !parent_exp) should_exp = false;
 
         if (st.mode == PRPFMT_HUMAN && !should_exp && parent_exp && parent_prop && t.propagates) {
           should_exp = true;
@@ -474,8 +665,9 @@ void prpfmt_solve(PrpfmtState &st) {
     if (t.type == TOKEN_GROUP_START) {
       s_ptr++;
 
-      if (s_ptr >= 0 && s_ptr < 256) {
+      if (s_ptr >= 0 && s_ptr < (int)propagate_stack.size()) {
         propagate_stack[s_ptr] = t.propagates;
+        fits_stack[s_ptr] = fits_here;
       }
     } else if (t.type == TOKEN_GROUP_END) {
       if (s_ptr >= 0) {
@@ -487,31 +679,50 @@ void prpfmt_solve(PrpfmtState &st) {
   if (st.mode == PRPFMT_AI) return;
 
   int main_col = 0, main_indent = 0, main_start = 1, main_sp = 0;
-  std::array<bool, 256> main_exp{};
-  std::array<int, 256> main_anc{};
-  main_anc.fill(-1);
+  std::vector<char> main_exp(levels, 0);
+  std::vector<int> main_anc(levels, -1);
   for (int i = 0; i < (int)st.buffer.size(); ++i) {
     auto &token = st.buffer[i];
     if (token.type == TOKEN_ALIGN_GROUP_START && token.pre_group_end > i) {
       int c = main_col, ind = main_indent, start = main_start, sp = main_sp;
       auto exp = main_exp;
       auto anc = main_anc;
+      // Runs of statements whose operator sits on the statement's first
+      // line. A statement broken before its operator (`mut f:Unsigned(`
+      // newline ... `) = 0`) joins no run and ends the current one, so no
+      // padding lands after a closing `)`.
+      std::vector<std::vector<std::pair<int, int>>> runs(1);
       std::vector<std::pair<int, int>> operators;
-      int target = 0;
       bool seen_operator = false;
+      bool first_line = true;
+      const int base_sp = sp;
       for (int j = i + 1; j < token.pre_group_end; ++j) {
         auto &t = st.buffer[j];
         if (t.type == TOKEN_ALIGN_OPERATOR && ind == main_indent && !seen_operator) {
           int column = start ? ind * st.indent_size : c;
-          operators.emplace_back(j, column);
-          target = std::max(target, column);
+          if (first_line) runs.back().emplace_back(j, column);
+          else if (!runs.back().empty()) runs.emplace_back();
           seen_operator = true;
         }
+        bool was_start = start;
         simulate_step(t, c, ind, start, st.indent_size, exp, anc, sp, TOKEN_TEXT);
+        if (start && !was_start) first_line = sp == base_sp;  // a new statement, or a continuation
+        // A trailing comment's line break sits inside the comment's own
+        // group; once that group closes at the line start, the line is the
+        // next statement's (`mut p = 1 // c` newline `mut arr = 2` aligns).
+        else if (start && t.type == TOKEN_GROUP_END && sp == base_sp) first_line = true;
         if (start) seen_operator = false;
       }
-      if (operators.size() > 1) {
-        for (auto [index, column] : operators) st.buffer[index].target_col = target;
+      for (auto &run : runs) {
+        if (run.size() < 2) continue;
+        int target = 0;
+        for (auto [index, column] : run) target = std::max(target, column);
+        for (auto [index, column] : run) {
+          st.buffer[index].target_col = target;
+          operators.emplace_back(index, column);
+        }
+      }
+      if (!operators.empty()) {
         // Allow a modest overflow to preserve the alignment of the whole group,
         // and do not drop it merely because an attached comment is long.
         c = main_col; ind = main_indent; start = main_start; sp = main_sp;
@@ -536,17 +747,15 @@ void prpfmt_solve(PrpfmtState &st) {
 void prpfmt_render(PrpfmtState &st) {
   std::string output;
   int indent = 0, col = 0, at_start = 1, stack_ptr = 0;
-  std::array<bool, 256> explode_stack{};
-  std::array<int, 256> anchor_stack{};
-  explode_stack[0] = false;
-  anchor_stack[0] = -1;
+  const size_t levels = size_t(group_depth(st)) + 2;
+  std::vector<char> explode_stack(levels, 0);
+  std::vector<int> anchor_stack(levels, -1);
 
   for (int i = 0; i < (int)st.buffer.size(); i++) {
     const Token &t = st.buffer[i];
-    // Retrieve context state for the current nesting level. stack_ptr may run
-    // past the fixed stack on pathologically nested input; clamp like the
-    // GROUP_START push does (flat / no anchor beyond capacity) rather than
-    // indexing out of bounds.
+    // Retrieve context state for the current nesting level (the stacks hold
+    // the deepest nesting; the clamp only guards against indexing out of
+    // bounds).
     const bool ptr_ok = stack_ptr >= 0 && stack_ptr < (int)explode_stack.size();
     bool is_exploded = ptr_ok ? explode_stack[stack_ptr] : false;
     int current_anchor = ptr_ok ? anchor_stack[stack_ptr] : -1;
@@ -587,7 +796,7 @@ void prpfmt_render(PrpfmtState &st) {
         if (!t.text.empty()) {
           // Print the actual token text
           output += t.text;
-          col += (int)t.text.size();
+          col += text_width(t.text);
         }
         break;
       case TOKEN_ANCHOR:
@@ -645,6 +854,13 @@ void prpfmt_render(PrpfmtState &st) {
           col++;
         }
         break;
+      case TOKEN_SOFT_TEXT:
+        // Print the text only if exploded (never at a line start)
+        if (is_exploded && !at_start) {
+          output += t.text;
+          col += text_width(t.text);
+        }
+        break;
       case TOKEN_INDENT_INC:
         indent++;
         break;
@@ -654,7 +870,7 @@ void prpfmt_render(PrpfmtState &st) {
       case TOKEN_GROUP_START:
         // Push group state to the context stacks
         stack_ptr++;
-        if (stack_ptr < 256) {
+        if (stack_ptr < (int)explode_stack.size()) {
           explode_stack[stack_ptr] = t.exploded;
           anchor_stack[stack_ptr] = (stack_ptr > 0) ? anchor_stack[stack_ptr - 1] : -1;
         }

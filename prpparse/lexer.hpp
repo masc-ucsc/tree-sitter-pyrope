@@ -30,6 +30,25 @@ public:
   // sub-parsing interpolated-string holes.
   std::vector<Token> tokenize_range(uint32_t lo, uint32_t hi);
 
+  // End (exclusive, past the matching '}') of the interpolation hole whose '{'
+  // sits at `open_brace`. The ONE hole scanner, shared by the lexer (to find
+  // where an interpolated string ends) and Parser::parse_istring (to find the
+  // hole's expression window), so both skip the same comments, nested strings
+  // and backtick names: `"{a /* } */ + 1}"` is ONE hole holding `a + 1`.
+  [[nodiscard]] uint32_t istring_hole_end(uint32_t open_brace) const { return lex_istring_hole(open_brace); }
+
+  // End of the string escape at b[j] == '\\' (`\n`, `\xNN`, `\u{1F600}`, ...),
+  // or `j` when it is not a valid escape. The ONE escape matcher, shared by the
+  // lexer ("..." strings, backticked names) and Parser::parse_istring.
+  static uint32_t escape_end(const char* b, uint32_t n, uint32_t j);
+
+  // Where the format spec of the hole whose code spans [lo, hi) starts: the
+  // first `:` at bracket depth 0 outside strings, backtick names and comments
+  // that does not open an attribute write `::[`; `hi` when there is none. The
+  // spec is text, never code (`{x:'}` holds the spec `'`), so the parser only
+  // lexes [lo, spec) as the hole's expression.
+  [[nodiscard]] uint32_t hole_spec_colon(uint32_t lo, uint32_t hi) const;
+
   [[nodiscard]] const std::vector<Comment_span>& comments() const { return comments_; }
   [[nodiscard]] const std::vector<uint32_t>&      split_points() const { return split_points_; }
 
@@ -48,6 +67,10 @@ private:
   uint32_t lex_string(uint32_t i) const;
   uint32_t lex_istring(uint32_t i) const;
   uint32_t lex_istring_hole(uint32_t i) const;  // from '{' to matching '}'
+  void skip_comment_in(uint32_t& i, uint32_t hi) const;
+  [[noreturn]] void bad_escape(uint32_t j) const;  // invalid escape at b[j] == '\\'
+  // An `@` that begins a line (after a real newline, not one inside a comment).
+  bool gap_has_newline(uint32_t gap_start, uint32_t gap_end) const;
 
   // terminator_before computation (scanner.c handshake).
   void compute_terminators(std::vector<Token>& toks) const;

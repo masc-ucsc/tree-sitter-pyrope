@@ -25,7 +25,8 @@ enum TokenType {
   TOKEN_ALIGN_COMMENT,      // Comment for alignment
   TOKEN_ANCHOR,             // Sets a vertical anchor for hanging indent without aligning
   TOKEN_ANCHOR_OFF,         // Explicitly disables the current anchor
-  TOKEN_FORCE_BREAK         // Forces a newline
+  TOKEN_FORCE_BREAK,        // Forces a newline
+  TOKEN_SOFT_TEXT           // Text printed only when its group is exploded (e.g. a trailing `,`)
 };
 
 // A single IR token. `text` is empty for tokens that carry no literal text
@@ -37,6 +38,12 @@ struct Token {
   std::string text;          // Literal text (empty == none)
   bool exploded = false;     // For Groups: should this group wrap?
   bool propagates = true;    // For Groups: should explosion propagate to children?
+  int chain_role = 0;        // For Groups: 1 an inline `if` chain, 2 one of its branch blocks,
+                             // 3 an `if` in the statement layout
+  bool yield_next = false;   // For Groups: the next group splits first (`f<T=u1>(` newline args)
+  bool yield_deep = false;   // For Groups: with yield_next, only the text up to the next break counts,
+                             // also inside nested groups (`const (a, b) = f(` newline args)
+  bool list = false;         // For Groups: a list's own group (it may break at its commas inside an item)
   int target_col = 0;        // For Alignment: which column should we jump to?
   int penalty = 0;           // For Break Points: cost of breaking here
   int pre_flat_length = 0;   // Metric: flat length of group
@@ -44,6 +51,8 @@ struct Token {
   int pre_force_counter = 0; // Metric: tracks mandatory breaks inside
   int pre_comment_counter = 0; // Metric: a comment ends the measurable code suffix
   int pre_group_end = -1;    // Metric: index of matching group end
+  int match = -1;            // Groups: the matching GROUP_END/GROUP_START index, set when the group closes
+  bool block_comment = false; // Text: a formatted `/* ... */` comment (see space_block_comments)
 };
 
 // The IR buffer is just a growable vector of tokens; std::vector subsumes the
@@ -55,12 +64,16 @@ struct PrpfmtState;
 /******************************************************************************
  * 1. Token IR Emitters                                                       *
  ******************************************************************************/
+// Display columns of `text`: UTF-8 code points, not bytes (a backticked
+// `` `ééé` `` is 5 columns wide, 8 bytes long).
+int text_width(std::string_view text);
 void emit_token(PrpfmtState &st, std::string_view text);
 void emit_space(PrpfmtState &st);
 void emit_blank_line(PrpfmtState &st);
 void emit_break_point(PrpfmtState &st, int penalty);
 void emit_soft_break(PrpfmtState &st, int penalty);
 void emit_soft_space(PrpfmtState &st);
+void emit_soft_text(PrpfmtState &st, std::string_view text);
 void emit_indent_inc(PrpfmtState &st);
 void emit_indent_dec(PrpfmtState &st);
 void emit_group_start(PrpfmtState &st, bool force_explode, bool propagates);

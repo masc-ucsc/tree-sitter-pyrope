@@ -23,14 +23,14 @@
   (sint_type)
   (bool_type)
   (string_type)
+  (clock_type)
+  (reset_type)
 ] @type.builtin
 
-[
-  "int"
-  "uint"
-  "unsigned"
-  "integer"
-] @type.builtin
+; A type word used as a value (`x does U8`, the conversion call `U8(x)`,
+; `U8.[max]`) is an `identifier` node spelled like the reserved type word.
+((identifier) @type.builtin
+  (#match? @type.builtin "^([US][0-9]+|Unsigned|Signed|Bool|String|Clock|Reset)$"))
 
 [
   (expression_type)
