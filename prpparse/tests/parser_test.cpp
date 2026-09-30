@@ -625,7 +625,7 @@ TEST(Parser, ContinuationCase) {
 // name being bound or a field name. It heads a suffix chain only through an
 // attribute read (`U8.[max]`); a conversion call's result heads any chain
 // (`U8(x)#[0]`). The backticked `` `U4` `` is an ordinary name everywhere, and the
-// old lowercase spellings (`u8`, `bool`, `unsigned`, ...) are plain identifiers.
+// old lowercase spellings (`u8`, `bool`, `unsigned`, ...) are banned words.
 TEST(Parser, TypeWordsInTypePositions) {
   auto s = sexp("mut a:U8 = 0\nmut b:S4 = 0\nmut c:Unsigned(bits=8, max=200) = 0\nmut d:Signed(bits=8) = 0\n"
                 "mut e:Bool = false\nmut f:String = \"x\"\nmut w:[4]U2 = 0\n"
@@ -1069,8 +1069,10 @@ TEST(Parser, KeywordIsNoArrayLength) {
   }
 }
 
-// Reservation is case-insensitive in every name position; syntax keywords
-// remain case-sensitive. Exercise the shared name check, including diagnostics.
+// Reservation is EXACT-SPELLING (case-sensitive) in every name position (owner
+// ruling 2026-09-30): `if` is reserved, `IF` is a plain name; `Clock` is a type
+// word, `clock` is a plain name. Exercise the shared name check, including
+// diagnostics.
 TEST(Parser, UniformReservedNames) {
   const std::vector<std::pair<std::string, std::string>> sites = {
       {"const ", " = 1\n"}, {"comb ", "(self) -> () { }\n"},
@@ -1080,15 +1082,65 @@ TEST(Parser, UniformReservedNames) {
       {"const x = f<", "=1>(a=1)\n"}, {"const x = y.[", "]\n"},
       {"enum E = (", ")\n"}, {"const x::[", "=1] = 1\n"},
   };
-  for (const std::string word : {"if", "IF", "If", "tick", "TiCk", "comptime", "CoMpTiMe", "type", "TyPe", "bOoL", "CLOCK", "U8"}) {
+  // Exact spellings of keywords and type words are reserved.
+  for (const std::string word : {"if", "tick", "comptime", "type", "test", "Bool", "Clock", "Reset", "U8", "S4", "Unsigned",
+                                 "Signed", "String"}) {
     for (const auto& [prefix, suffix] : sites) {
       const std::string bad = prefix + word + suffix;
       EXPECT_FALSE(parses(bad)) << bad;
       const auto d = diag_of(bad);
-      EXPECT_NE(d.hint.find("`" + word + "`"), std::string::npos) << bad << d.hint;
+      // `for comptime x in ..` reads `comptime` as a (unsupported) init clause,
+      // which has its own message and no backtick hint.
+      if (d.code != "for-init-unsupported")
+        EXPECT_NE(d.hint.find("`" + word + "`"), std::string::npos) << bad << d.hint;
       EXPECT_TRUE(parses(prefix + "`" + word + "`" + suffix)) << bad;
+    }
+  }
+  // Every other case variant is an ordinary name with no backticks, and the
+  // backticked form is the same name.
+  for (const std::string word : {"IF", "If", "TiCk", "CoMpTiMe", "TyPe", "Test", "bOoL", "BOOL", "CLOCK", "clock", "reset",
+                                 "RESET", "uNsIgNeD", "I32", "NIL"}) {
+    for (const auto& [prefix, suffix] : sites) {
+      EXPECT_TRUE(parses(prefix + word + suffix)) << prefix + word + suffix;
+      EXPECT_TRUE(parses(prefix + "`" + word + "`" + suffix)) << prefix + word + suffix;
     }
   }
   EXPECT_TRUE(parses("const iffy = 1\nconst format = 2\nconst type_data = nil\n"));
   EXPECT_TRUE(parses("const `foo$bar` = 1\nconst x = `foo$bar`\n"));
+}
+
+// `clock` / `reset` (lowercase) are ordinary names; only `Clock` / `Reset` are
+// type words. This is what lets the minted `clock:Clock` / `reset:Reset` and a
+// tick block's `clock` read need no backticks.
+TEST(Parser, LowercaseClockResetArePlainNames) {
+  // binding names
+  EXPECT_TRUE(parses("const clock = 1\nmut reset = 0\nreset = clock\n"));
+  EXPECT_TRUE(parses("reg clock:U8 = 0\n"));
+  // port names typed with the real type words
+  EXPECT_TRUE(parses("mod m(clock:Clock, reset:Reset, x:U1) -> (o:U1) { o = x }\n"));
+  EXPECT_TRUE(parses("comb f(clock:U8, reset:U8) -> (r:U8) { r = clock + reset }\n"));
+  // field names, both reads and writes
+  EXPECT_TRUE(parses("const x = t.clock\nconst y = t.reset\n"));
+  EXPECT_TRUE(parses("x.clock = 1\nx.reset = 2\n"));
+  EXPECT_TRUE(parses("const t = (clock = 1, reset = 2)\n"));
+  // named arguments
+  EXPECT_TRUE(parses("const x = f(clock=1, reset=2)\n"));
+  // bare reference inside a tick block of a test
+  EXPECT_TRUE(parses("test t {\n  tick 3 {\n    dut.a = 100 + clock\n    dut.reset = clock < 2\n  }\n}\n"));
+  // the type words stay reserved as names
+  for (const char* src : {"const Clock = 1\n", "const Reset = 1\n", "mod m(Clock:U1) -> () { }\n",
+                          "mod m(Reset:U1) -> () { }\n", "const x = t.Clock\n", "x.Reset = 1\n",
+                          "const x = f(Clock=1)\n", "const t = (Reset = 1)\n", "reg Clock:U8 = 0\n"}) {
+    EXPECT_FALSE(parses(src)) << src;
+  }
+  EXPECT_EQ(diag_of("const Clock = 1\n").code, "reserved-type-name");
+  EXPECT_EQ(diag_of("const Reset = 1\n").code, "reserved-type-name");
+  // backticked type words are ordinary names
+  EXPECT_TRUE(parses("const `Clock` = 1\nconst `Reset` = 2\nconst x = t.`Clock`\n"));
+  // the old lowercase type spellings stay banned (a separate rule)
+  EXPECT_EQ(diag_of("const bool = 1\n").code, "renamed-type-word");
+  EXPECT_EQ(diag_of("const unsigned = 1\n").code, "renamed-type-word");
+  // reserved keyword spelling is exact
+  EXPECT_FALSE(parses("const if = 1\n"));
+  EXPECT_TRUE(parses("const IF = 1\nconst If = 2\nconst TiCk = 3\n"));
 }

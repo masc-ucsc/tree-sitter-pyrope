@@ -2,6 +2,7 @@
 #define PRP_FMT_H
 
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,15 +57,20 @@ struct PrpfmtState {
     std::vector<std::string> params;
     TSNode scope{};            // block that declares it; calls must sit inside
   };
-  std::unordered_map<std::string, CalleeSig> callees;
-  // Other bindings of the same names (variables, parameters, aliases, nested
-  // or tuple-member lambdas, imports): any of these makes the name unresolved.
-  std::unordered_map<std::string, int> other_bindings;
-  // The unnamed arguments of every call in the file, by callee name (the last
-  // name of a dotted callee): the name of a bare `x` / `ref x` argument (a
-  // possible same-name pun), or "" for any other value. See
-  // bound_by_position.
-  std::unordered_map<std::string, std::vector<std::string>> unnamed_args;
+  // What collect_callees learns about the file's names and calls. Collected
+  // once per file; the states that format string holes share it.
+  struct CallFacts {
+    std::unordered_map<std::string, CalleeSig> callees;
+    // Other bindings of the same names (variables, parameters, aliases, nested
+    // or tuple-member lambdas, imports): any of these makes the name unresolved.
+    std::unordered_map<std::string, int> other_bindings;
+    // The unnamed arguments of every call in the file, by callee name (the last
+    // name of a dotted callee): the name of a bare `x` / `ref x` argument (a
+    // possible same-name pun), or "" for any other value. See
+    // bound_by_position.
+    std::unordered_map<std::string, std::vector<std::string>> unnamed_args;
+  };
+  std::shared_ptr<CallFacts> calls = std::make_shared<CallFacts>();
   // Comments between a branch's `}` and the next `elif`/`else`, handed from
   // print_if_expression to the branch block, which prints them after its `{`.
   std::vector<TSNode> header_comments;

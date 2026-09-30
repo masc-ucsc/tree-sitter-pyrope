@@ -255,7 +255,7 @@ static bool same_alignment_kind(TSNode a, TSNode b, const PrpfmtState &st) {
 }
 
 // Detect standalone line comments within a node to force vertical wrapping
-enum ScanKind : uint32_t { scan_line_comment, scan_vertical, scan_must_break, scan_any_comment, scan_lt, scan_gt, scan_enum_above };
+enum ScanKind : uint32_t { scan_line_comment, scan_vertical, scan_must_break, scan_any_comment, scan_lt, scan_gt, scan_order_above };
 
 // Look up / store a memoized subtree scan (see PrpfmtState::scan_cache).
 template <class F>
@@ -458,6 +458,8 @@ static std::string_view unbacktick(std::string_view s) {
 // The old lowercase type names (`bool`, `unsigned`, `string`, `u8`, ...) are
 // BANNED words (see is_banned_word) and the capitalized type words (`Bool`,
 // `U8`, ...) are reserved (see is_type_word): both keep their backticks too.
+// Matching is case-sensitive: only the exact spellings are reserved, so `IF`,
+// `clock` and `reset` are ordinary names and print without backticks.
 static bool is_reserved_word(std::string_view w) {
   static const std::unordered_set<std::string_view> words = {
       "and",     "as",      "break",  "case",   "comb",   "comptime", "const",  "continue", "does",   "elif",
@@ -559,14 +561,10 @@ static bool backticks_needed(std::string_view w) {
     if (high(c)) non_ascii = true;
     else if (!alpha(c) && !digit(c) && c != '_') return true;
   }
-  // Keep reserved spellings escaped regardless of ASCII case. This is a
-  // formatting policy; is_type_word remains case-sensitive for cast dispatch.
-  std::string folded(w);
-  for (char &c : folded) {
-    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-  }
-  if (is_reserved_word(folded) || is_banned_word(folded) || folded == "clock" || folded == "reset" ||
-      is_placeholder_word(w)) return true;
+  // Reserved-word matching is CASE-SENSITIVE: only the exact spelling of a
+  // keyword, a type word (`Clock`, `U8`) or a banned old type spelling (`u8`)
+  // keeps its backticks. `clock`, `reset`, `IF` and `If` are ordinary names.
+  if (is_reserved_word(w) || is_type_word(w) || is_banned_word(w) || is_placeholder_word(w)) return true;
   // Reserved placeholder spellings must retain their escapes too. Use the
   // grammar for both ASCII digit-led names and all Unicode names.
   return (non_ascii || (w.size() > 1 && w[0] == '_' && digit(w[1]))) && !bare_word_is_identifier(w);
@@ -656,7 +654,7 @@ static void collect_callees(TSNode node, PrpfmtState &st) {
     auto args = ts_node_child_by_field_name(node, "argument", 8);
     if (!ts_node_is_null(fn) && grammar_symbol_of(fn) == sym_identifier && !ts_node_is_null(args) &&
         grammar_symbol_of(args) == sym_arg_tuple) {
-      auto &unnamed = st.unnamed_args[std::string(name_identity(get_node_text(fn, st.source_code)))];
+      auto &unnamed = st.calls->unnamed_args[std::string(name_identity(get_node_text(fn, st.source_code)))];
       for (uint32_t i = 0; i < ts_node_named_child_count(args); ++i) {
         auto item = ts_node_named_child(args, i);
         auto isym = grammar_symbol_of(item);
@@ -679,7 +677,7 @@ static void collect_callees(TSNode node, PrpfmtState &st) {
       auto gsym = grammar_symbol_of(parent_of(parent, st));
       decl = gsym == sym_description || gsym == sym_scope_statement;
       if (decl) {
-        auto &sig = st.callees[name];
+        auto &sig = st.calls->callees[name];
         sig.decls++;
         sig.scope = parent_of(parent, st);
         sig.params.clear();
@@ -699,7 +697,7 @@ static void collect_callees(TSNode node, PrpfmtState &st) {
         }
       }
     }
-    if (!decl && !key && !is_callee_position(node, st)) st.other_bindings[name]++;
+    if (!decl && !key && !is_callee_position(node, st)) st.calls->other_bindings[name]++;
   }
   TSTreeCursor cursor = ts_tree_cursor_new(node);
   if (ts_tree_cursor_goto_first_child(&cursor)) {
@@ -720,9 +718,9 @@ static const PrpfmtState::CalleeSig *resolve_callee(TSNode call, const PrpfmtSta
     fn = ts_node_child_by_field_name(fn, "argument", 8);
   if (ts_node_is_null(fn) || grammar_symbol_of(fn) != sym_identifier) return nullptr;
   auto name = std::string(name_identity(get_node_text(fn, st.source_code)));
-  auto found = st.callees.find(name);
-  if (found == st.callees.end() || found->second.decls != 1 || !found->second.plain) return nullptr;
-  if (st.other_bindings.contains(name)) return nullptr;
+  auto found = st.calls->callees.find(name);
+  if (found == st.calls->callees.end() || found->second.decls != 1 || !found->second.plain) return nullptr;
+  if (st.calls->other_bindings.contains(name)) return nullptr;
   // The declaring block encloses the call: nodes nest, so byte-range
   // containment is ancestry (and costs no parent walk).
   const TSNode scope = found->second.scope;
@@ -735,35 +733,47 @@ static bool declares_param(const PrpfmtState::CalleeSig *sig, std::string_view n
   return sig && std::find(sig->params.begin(), sig->params.end(), name) != sig->params.end();
 }
 
-// Whether a call in this file may bind the input list `list` of a lambda by
-// position: it passes the lambda (by its declared name, or the name its
-// declaration assigns) an unnamed argument that is no same-name pun of one of
-// the list's parameters. Named tuples are unordered (owner ruling 105), so
-// such a call is an error in Pyrope, but lhd still binds a leftover unnamed
-// argument to the first free parameter (`addby(ref m, by=2)` binds `m` to
-// the first one): sorting `addby(ref x:U8, by:U8)` would then bind `m` to
-// `by`. The list keeps its order until lhd rejects the call.
+// Whether a caller may bind the input list `list` of a lambda by position, so
+// the list keeps its order. Named tuples are unordered (owner ruling 105) and
+// lhd rejects an unnamed argument, except a leftover unnamed `ref` one, which
+// it still binds to the parameter at its position (`addby(ref m, by=2)`):
+// sorting `addby(ref x:U8, by:U8)` would then bind `m` to `by`. Such a caller
+// may be
+// - in this file: a call passes the lambda (by name, also as the member
+//   `x.f(...)`) an unnamed argument that is no same-name pun of one of the
+//   list's parameters;
+// - behind another name: the lambda's name appears elsewhere than in its
+//   declaration and its direct calls (an alias `const g = f`, a type's `const
+//   init = f`, a value argument), so those calls are not visible here;
+// - in another file: a `pub` or tuple-member lambda with a `ref` parameter.
+// The list keeps its order until lhd rejects such calls (ruling 64).
 static bool bound_by_position(TSNode list, const PrpfmtState &st) {
   auto decl = parent_of(list, st);
   if (grammar_symbol_of(decl) != sym_function_definition_decl ||
       !ts_node_eq(ts_node_child_by_field_name(decl, "input", 5), list))
     return false;
   auto lam  = parent_of(decl, st);
-  auto name = ts_node_child_by_field_name(lam, "name", 4);
-  if (ts_node_is_null(name)) {  // `const f = comb(a, b) { ... }`
-    auto assign = parent_of(lam, st);
-    if (grammar_symbol_of(assign) == sym_assignment) name = ts_node_child_by_field_name(assign, "lvalue", 6);
-  }
-  if (ts_node_is_null(name) || grammar_symbol_of(name) != sym_identifier) return false;
-  auto found = st.unnamed_args.find(std::string(name_identity(get_node_text(name, st.source_code))));
-  if (found == st.unnamed_args.end()) return false;
+  auto name = grammar_symbol_of(lam) == sym_lambda ? ts_node_child_by_field_name(lam, "name", 4) : TSNode{};
+  if (ts_node_is_null(name) || grammar_symbol_of(name) != sym_identifier) return true;
   std::vector<std::string> params;
-  for (uint32_t i = 0; i < ts_node_named_child_count(list); ++i) {
-    auto item = ts_node_named_child(list, i);
+  bool has_ref = false;
+  for (uint32_t i = 0; i < ts_node_child_count(list); ++i) {
+    auto item = ts_node_child(list, i);
+    if (grammar_symbol_of(item) == anon_sym_ref) has_ref = true;
     if (grammar_symbol_of(item) != sym_typed_identifier) continue;
     auto id = ts_node_child_by_field_name(item, "identifier", 10);
     if (!ts_node_is_null(id)) params.emplace_back(name_identity(get_node_text(id, st.source_code)));
   }
+  // A statement-level declaration is no other binding of its name; a
+  // tuple-member lambda's own name counts once (see collect_callees).
+  auto scope     = grammar_symbol_of(parent_of(lam, st));
+  bool statement = scope == sym_description || scope == sym_scope_statement;
+  if (has_ref && (!statement || !ts_node_is_null(ts_node_child_by_field_name(lam, "pub", 3)))) return true;
+  auto key   = std::string(name_identity(get_node_text(name, st.source_code)));
+  auto other = st.calls->other_bindings.find(key);
+  if (other != st.calls->other_bindings.end() && other->second > (statement ? 0 : 1)) return true;
+  auto found = st.calls->unnamed_args.find(key);
+  if (found == st.calls->unnamed_args.end()) return false;
   for (const auto &arg : found->second)
     if (arg.empty() || std::find(params.begin(), params.end(), arg) == params.end()) return true;
   return false;
@@ -781,9 +791,14 @@ void print_description(TSTree *tree, PrpfmtState &st) {
 
   TSNode prev_child = {};
   bool in_align_group = false;
+  bool printed = false;  // a statement or comment printed
 
   for (uint32_t i = 0; i < root_child_count; i++) {
     TSNode child = ts_node_child(root_node, i);
+    // A `;` means a newline (owner ruling 100), so a run of them before the
+    // first statement or comment prints nothing, not even a blank line.
+    if (!printed && grammar_symbol_of(child) == anon_sym_SEMI) continue;
+    printed = true;
 
     // Lookahead logic to determine if we should start/end a vertical alignment group
     bool current_alignable = is_alignable(child, st);
@@ -834,8 +849,8 @@ void print_description(TSTree *tree, PrpfmtState &st) {
     }
     prev_child = child;
   }
-  // EOF: trailing newline (an empty or blank-only file prints nothing)
-  if (root_child_count > 0) emit_line_break(st);
+  // EOF: trailing newline (an empty, blank-only or `;`-only file prints nothing)
+  if (printed) emit_line_break(st);
   st.parents = nullptr;
 }
 
@@ -1486,17 +1501,26 @@ static TSNode redundant_type_grouping(TSNode type) {
   }
 }
 
-// A named tuple is unordered (owner ruling 105): declarations sort too, but an
-// `enum` member list is no named tuple -- its order gives the members their
-// values (`enum E = (b, a)`), also for the nested lists of a hierarchical enum.
+// A named tuple is unordered (owner ruling 105), so declarations sort too,
+// except in two kinds of list that give their entries an order:
+// - an `enum` member list: the order gives the members their values (`enum E
+//   = (b, a)`), also for the nested lists of a hierarchical enum;
+// - a type layout: a `type` body (with its member lambdas' parameter lists)
+//   and a tuple type (`mut t:(b:U8, a:U8)`). lhd still builds an unnamed
+//   tuple into a typed target in declaration order (`const t:T = (x, 7)`, a
+//   constructor call `T(5, 9)` through an `init` member), so a sorted layout
+//   would build a different value. Ruling 105 makes such a construction an
+//   error; until lhd rejects it, a layout keeps its order.
 // Memoized: each list asks, which was quadratic on nesting.
-static bool in_enum(TSNode node, const PrpfmtState &st) {
+static bool in_ordered_list(TSNode node, const PrpfmtState &st) {
   auto symbol = grammar_symbol_of(node);
-  if (symbol == sym_enum_assignment || symbol == sym_enum_definition) return true;
+  if (symbol == sym_enum_assignment || symbol == sym_enum_definition || symbol == sym_type_statement) return true;
   if (symbol == sym_scope_statement || symbol == sym_description) return false;
   TSNode parent = parent_of(node, st);
   if (ts_node_is_null(parent)) return false;
-  return cached_scan(node, scan_enum_above, st, [&] { return in_enum(parent, st); });
+  // A tuple type, not a type call's arguments (`:Signed(max=3, min=0)`).
+  if (symbol == sym_tuple && grammar_symbol_of(parent) == sym_expression_type) return true;
+  return cached_scan(node, scan_order_above, st, [&] { return in_ordered_list(parent, st); });
 }
 
 static bool is_block_comment(TSNode node, const PrpfmtState &st) {
@@ -1718,12 +1742,13 @@ static void print_list(TSNode node, PrpfmtState &st, ListStyle style,
   }
 
   // Sort only all-named, independent bindings: a named tuple is unordered
-  // (owner ruling 105), so call and tuple lists (also declaring ones and
-  // `type` bodies), parameter lists (a `self` stays first), call-site generic
-  // bindings `<W=M, A=K>` and attribute lists sort. Spreads, refs, calls with
-  // possible side effects, any comment, and cross-field dependencies retain
-  // their order, and so do unnamed (positional) lists, generic parameter
-  // lists and `enum` members (their order gives their values).
+  // (owner ruling 105), so call and tuple lists (also declaring ones),
+  // parameter lists (a `self` stays first), call-site generic bindings `<W=M,
+  // A=K>` and attribute lists sort. Spreads, refs, calls with possible side
+  // effects, any comment, and cross-field dependencies retain their order, and
+  // so do unnamed (positional) lists, generic parameter lists, `enum` members
+  // and type layouts (see in_ordered_list), and a parameter list that a call
+  // may bind by position (see bound_by_position).
   auto list_symbol = grammar_symbol_of(node);
   bool params = style == ListStyle::Parameters && list_symbol == sym_arg_list;
   bool call = list_symbol == sym_arg_tuple;
@@ -1766,7 +1791,7 @@ static void print_list(TSNode node, PrpfmtState &st, ListStyle style,
     if (!keys.insert(std::string(name_identity(get_node_text(lhs, st.source_code)))).second) sort = false;
   }
   // Checked last: it walks the ancestors.
-  if (sort && style == ListStyle::Tuple && !call && in_enum(node, st)) sort = false;
+  if (sort && ((style == ListStyle::Tuple && !call) || params) && in_ordered_list(node, st)) sort = false;
   // Tuple-literal values and parameter defaults may reference sibling names
   // (declare before use); call arguments, generic bindings and attribute
   // values are evaluated in the outer scope.
@@ -5187,9 +5212,8 @@ static std::optional<std::string> format_hole_expression(TSNode expr, const Prpf
       .buffer        = {},
       .mode          = st.mode,
   };
-  sub.callees        = st.callees;
-  sub.other_bindings = st.other_bindings;
-  sub.parents        = st.parents;
+  sub.calls   = st.calls;  // shared, not copied: a file holds many holes
+  sub.parents = st.parents;
   char  *buf = NULL;
   size_t sz  = 0;
   FILE  *mem = open_memstream(&buf, &sz);

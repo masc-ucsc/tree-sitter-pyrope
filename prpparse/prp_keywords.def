@@ -3,7 +3,8 @@
 // Every word is lexed as a `Token_kind::ident`; if its spelling matches one of
 // these, the token also carries the matching `Keyword` id. The parser decides
 // contextually which language construct the keyword starts. Ordinary names
-// matching any keyword, in any case, always require backticks.
+// matching a keyword's exact (lowercase) spelling always require backticks; other
+// case variants (`IF`, `Tick`) are ordinary names.
 //
 // `name` is also a valid C++ identifier-paste target; entries that collide with
 // C++ keywords (if/else/for/while/int/bool/true/false/not/and/or) are safe

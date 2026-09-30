@@ -408,11 +408,14 @@ positional item, or a repeated name keeps its source order.
 
 A named tuple is unordered: no binding is positional (owner ruling 105), so
 declarations sort too. A tuple that declares fields (`(const b=1, const
-a=2)`, `(b:U8=1, a:U8=2)`), the right-hand side of `type X = (...)`, a tuple
-type (`mut t:(b=U4, a=U4)`), tuples in value or generic parameter defaults
-(`comb f<T=(b=1, a=2)>`) and a lambda's parameter and output lists
+a=2)`, `(b:U8=1, a:U8=2)`), tuples in value parameter defaults
+(`comb g(p=(b=1, a=2))`) and a lambda's parameter and output lists
 (`comb f(ref self, b:U8, a:U8=1) -> (y:U8, x:U8)` becomes `comb f(ref self,
 a:U8=1, b:U8) -> (x:U8, y:U8)`: a `self` parameter stays first) all sort.
+A LAYOUT keeps its order: the right-hand side of `type X = (...)`, a tuple
+type (`mut t:(b=U4, a=U4)`, also as a generic default or binding
+`f<T=(b=1, a=2)>`) and an `enum` member list, because a typed tuple is
+constructed positionally by type, so reordering could rebind a value.
 A lambda's parameter list keeps its order while a call in the file passes
 the lambda an unnamed argument that is no same-name pun (`addby(ref m,
 by=2)` into `comb addby(ref x:U8, by:U8)`; `addby(ref x, by=2)` is a pun):
@@ -460,6 +463,11 @@ is decided by the grammar itself (`\p{L}` letters and `\p{Nd}` digits). The
 sort ORDER ignores backticks; the `x=x` shorthand, parameter lookup and
 repeated-name checks compare names by identity, so `` `foo` `` matches `foo`
 but `` `U4` `` never matches the type `U4` (`f(`U4`=U4)` stays as written).
+Reserved-word matching is CASE-SENSITIVE: only the exact spelling is
+reserved. `` `clock` ``, `` `reset` ``, `` `IF` ``, `` `If` `` and `` `I32` ``
+are ordinary names and lose their backticks (`clock`, `reset`, `IF`, `If`,
+`I32`), while `` `Clock` ``, `` `Reset` ``, `` `U8` ``, `` `if` `` and
+`` `u8` `` keep them.
 The old lowercase type spellings (`u`/`s`/`i` followed by digits such as
 `u8`, `s4`, `i32`, and `bool`, `boolean`, `unsigned`, `signed`, `string`) are
 BANNED words: bare they are a syntax error in every position, backticked they

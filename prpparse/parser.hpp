@@ -16,7 +16,8 @@ namespace prpparse {
 
 // Recursive-descent Pyrope parser. Mirrors grammar.js rule structure and also
 // validates ordinary names uniformly: keywords/type spellings require backticks
-// in every name position, matched case-insensitively. The editor grammar may
+// in every name position, matched by EXACT spelling (case-sensitive: `Clock`
+// needs backticks, `clock` does not). The editor grammar may
 // accept a syntax superset; lhd compile reports these name errors here.
 // Fail-fast: the first syntax error throws Parse_error. parse() returns the
 // materialized hhds Prp_tree.

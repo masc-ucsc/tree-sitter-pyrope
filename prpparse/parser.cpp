@@ -248,16 +248,14 @@ void Parser::require_plain_name(const char* role) const {
   const Token& t = cur();
   if (t.kind == Token_kind::type_word) error_type_word_name(t, role);
   if (t.kind != Token_kind::ident || t.text.starts_with('`')) return;
-  std::string lower(t.text);
-  for (char& c : lower) if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
-  const bool sized = lower.size() > 1 && (lower[0] == 'u' || lower[0] == 's' || lower[0] == 'i')
-                     && lower.find_first_not_of("0123456789", 1) == std::string::npos;
-  const bool type_word = sized || lower == "unsigned" || lower == "signed" || lower == "bool"
-                         || lower == "boolean" || lower == "string" || lower == "clock" || lower == "reset";
-  if (type_word) error_type_word_name(t, role);
-  if (classify_keyword(lower) == Keyword::none && lower != "nil") return;
+  // Exact-spelling rule (owner ruling 2026-09-30): only the EXACT text of a
+  // keyword or `nil` is reserved; `IF`, `TiCk`, `clock`, `reset` are plain names.
+  // The type words arrive as Token_kind::type_word (handled above); the old
+  // lowercase type spellings (`u8`, `bool`, ...) never reach here -- the lexer
+  // already rejects them with `renamed-type-word`.
+  if (classify_keyword(t.text) == Keyword::none && t.text != "nil") return;
   error_reserved_name(t, "reserved-word-as-name",
-                      "'" + std::string(t.text) + "' is reserved (case-insensitive), so it cannot be " + role);
+                      "'" + std::string(t.text) + "' is reserved, so it cannot be " + role);
 }
 
 // The type words (`U<N>`, `S<N>`, `Unsigned`, `Signed`, `Bool`, `String`,
@@ -441,7 +439,12 @@ void Parser::error_unclosed(const char* code, const std::string& message, const 
 
 const Token& Parser::expect(Token_kind k, const char* code, const std::string& what) {
   if (at(k)) return advance();
-  error(code, what + " (found '" + std::string(cur().text) + "')");
+  // error() blames the statement's last token when the statement ended early
+  // (see blame()), so name what came next the same way.
+  std::string found = eof()                ? "the end of input"
+                      : &blame() != &cur() ? "the end of the line"
+                                           : "'" + std::string(cur().text) + "'";
+  error(code, what + " (found " + found + ")");
 }
 
 void Parser::expect_semicolon() {
@@ -799,6 +802,13 @@ Ast* Parser::parse_for() {
     advance();
     f->add(parse_attribute_sq(), Field::f_attributes);
   }
+  // `for const k = 2; i in 0..<k {}`: owner ruling 122 adds an init clause
+  // like `if`/`while` have (grammar.js takes it), but lhd does not lower one
+  // yet, so it gets its own message instead of reading `const` as the
+  // induction variable.
+  if (at_kw(Keyword::kw_const) || at_kw(Keyword::kw_mut) || at_kw(Keyword::kw_reg) || at_kw(Keyword::kw_wire) ||
+      at_kw(Keyword::kw_comptime))
+    error("for-init-unsupported", "a `for` init clause is not supported yet: declare the value before the loop");
   // forBinding: '(' typed_identifier_list ')' | typed_identifier
   if (at(Token_kind::lparen)) {
     advance();
@@ -1629,9 +1639,11 @@ Ast* Parser::parse_postfix_from(Ast* e) {
     // tree-sitter agrees (scanner.c scan_spaced_lt). A comment glued to the
     // `<` (`f /*c*/<T>(x)`) leaves it glued in both parsers: only the
     // character right before the `<` counts.
-    // `f <N=3>(x)`: `x < N = ...` is never a comparison, so name the fix.
+    // `f <N=3>(x)` and `f <U8>(x)`: neither `x < N = ...` nor `x < U8 > ...`
+    // is a comparison, so name the fix.
     if (at(Token_kind::lt) && callable && ek != Kind::attribute_set && blank_before(cur()) &&
-        peek(1).kind == Token_kind::ident && peek(2).kind == Token_kind::assign)
+        ((peek(1).kind == Token_kind::ident && peek(2).kind == Token_kind::assign) ||
+         (peek(1).kind == Token_kind::type_word && peek(2).kind == Token_kind::gt)))
       error("spaced-generic",
             "a generic list's `<` must touch the callee (`f<N=3>(x)`); a `<` after a blank is a comparison");
     if (at(Token_kind::lt) && callable && ek != Kind::attribute_set && !blank_before(cur())) {

@@ -581,17 +581,19 @@ class ModeTest(unittest.TestCase):
         self.assertIn('f(a=a)', self.fmt(nested))
 
     def test_declarations_sort(self):
-        # A named tuple is unordered (owner ruling 105): declaring tuples,
-        # `type` bodies and parameter lists sort like any all-named list, a
-        # `self` parameter staying first. An `enum` member list keeps its order
-        # (it gives the values), and so does a declaration whose initializer
-        # reads a sibling field (declare before use).
+        # A named tuple VALUE is unordered (owner ruling 105): declaring
+        # tuples and parameter lists sort like any all-named list, a `self`
+        # parameter staying first. A `type` body is a LAYOUT, like an `enum`
+        # member list: typed-tuple construction binds positionally by type
+        # (qa.md, 2026-09-29), so a layout keeps its order. So does a
+        # declaration whose initializer reads a sibling field (declare before
+        # use).
         for mode in ('ai', 'human'):
             for source, expected in (
-                ('type Foo = (mut zz:U4 = 0, mut aa:U4 = 0)\n', 'type Foo = (mut aa:U4=0, mut zz:U4=0)\n'),
-                ('type Bar = (zz = 1, aa = 2)\n', 'type Bar = (aa=2, zz=1)\n'),
-                ('type Baz = (zz:U4 = 3, aa:U4 = 1)\n', 'type Baz = (aa:U4=1, zz:U4=3)\n'),
-                ('type Qux = (zz:U4, aa:U4)\n', 'type Qux = (aa:U4, zz:U4)\n'),
+                ('type Foo = (mut zz:U4 = 0, mut aa:U4 = 0)\n', 'type Foo = (mut zz:U4=0, mut aa:U4=0)\n'),
+                ('type Bar = (zz = 1, aa = 2)\n', 'type Bar = (zz=1, aa=2)\n'),
+                ('type Baz = (zz:U4 = 3, aa:U4 = 1)\n', 'type Baz = (zz:U4=3, aa:U4=1)\n'),
+                ('type Qux = (zz:U4, aa:U4)\n', 'type Qux = (zz:U4, aa:U4)\n'),
                 ('enum E = (Zz=2, Aa=1)\n', 'enum E = (Zz=2, Aa=1)\n'),
                 ('const t = (zz:U4 = 3, aa = 1)\n', 'const t = (aa=1, zz:U4=3)\n'),
                 ('const t = (mut zz = 3, aa = 1)\n', 'const t = (aa=1, mut zz=3)\n'),
@@ -764,15 +766,41 @@ class ModeTest(unittest.TestCase):
         walk(json.loads((root / 'src' / 'grammar.json').read_text())['rules'])
         words |= set(re.findall(r'^PRP_KEYWORD\((\w+)\)', (root / 'prpparse' / 'prp_keywords.def').read_text(), re.M))
         self.assertIn('in', words)
-        words |= {'nil', 'u8', 's4', 'i32', 'u0', 'boolean', 'bool', 'unsigned', 'signed', 'string', 'clock', 'reset'}
+        words |= {'nil', 'u8', 's4', 'i32', 'u0', 'boolean', 'bool', 'unsigned', 'signed', 'string'}
+        # Reserved-word matching is CASE-SENSITIVE: only the exact spelling
+        # keeps its backticks; every other case variant is an ordinary name.
+        type_word = re.compile(r'(?:[US][0-9]+|Unsigned|Signed|Bool|String|Clock|Reset)')
+        def reserved(v):
+            return v in words or type_word.fullmatch(v) is not None
         variants = {v for w in words for v in (w, w.lower(), w.upper(), w.title(), w.swapcase())}
-        variants |= {'eLsE', 'cLoCk', 'bOoLeAn', 'U999999999999999999999999999999'}
-        source = ''.join(f'const `{w}` = 1\n' for w in sorted(variants))
+        variants |= {'eLsE', 'cLoCk', 'bOoLeAn', 'U999999999999999999999999999999',
+                     'clock', 'reset', 'Clock', 'Reset', 'IF', 'If', 'U8', 'u8', 'I32', 'BOOL', 'Unsigned', 'UNSIGNED'}
+        variants = sorted(variants)
+        source = ''.join(f'const `{w}` = 1\n' for w in variants)
+        expected = ''.join((f'const `{w}` = 1\n' if reserved(w) else f'const {w} = 1\n') for w in variants)
         for mode in ('ai', 'human'):
             out = self.fmt(source, mode)
             # Human mode aligns these declarations; compare their token text.
             self.assertEqual([line.split() for line in out.splitlines()],
-                             [line.split() for line in source.splitlines()])
+                             [line.split() for line in expected.splitlines()])
+
+    def test_backticks_are_case_sensitive(self):
+        # `clock`/`reset` are ordinary names (only `Clock`/`Reset` are type
+        # words), as are other-case variants of a keyword (`IF`, `If`).
+        for mode in ('ai', 'human'):
+            for name in ('clock', 'reset', 'IF', 'If', 'Else', 'NIL', 'True', 'I32', 'BOOL', 'UNSIGNED', 'cLoCk', 'u8x'):
+                with self.subTest(mode=mode, name=name):
+                    self.assertEqual(self.fmt(f'const `{name}` = 1\n', mode), f'const {name} = 1\n')
+            for name in ('Clock', 'Reset', 'U8', 'S4', 'Bool', 'String', 'Unsigned', 'Signed', 'if', 'nil', 'u8', 's4',
+                         'i32', 'bool', 'string'):
+                with self.subTest(mode=mode, name=name):
+                    self.assertEqual(self.fmt(f'const `{name}` = 1\n', mode), f'const `{name}` = 1\n')
+            # In the positions the compiler mints: a port, a field access and a
+            # tick block all use the bare `clock` / `reset`.
+            self.assertEqual(self.fmt('comb f(`clock`:Clock, `reset`:Reset) -> (o) {\n  o = 1\n}\n', mode),
+                             'comb f(clock:Clock, reset:Reset) -> (o) {\n  o = 1\n}\n')
+            self.assertEqual(self.fmt('acc.`reset` = `clock` < 2\n', mode), 'acc.reset = clock < 2\n')
+            self.assertEqual(self.fmt('const c = x.`Clock` + `Reset`\n', mode), 'const c = x.`Clock` + `Reset`\n')
 
     def test_alignment_only_consecutive_same_kind(self):
         source = ('const a = 1\nconst much_longer = 2\ncputs("barrier")\nconst b = 3\n'
@@ -1446,16 +1474,21 @@ class ModeTest(unittest.TestCase):
             self.assertEqual(self.fmt(pun, mode), pun.replace('addby(ref x:U8, by:U8)', 'addby(by:U8, ref x:U8)'))
 
     def test_parameter_defaults_and_tuple_types_sort(self):
-        # Named tuples in defaults and tuple types sort too (owner ruling 105).
+        # A named tuple VALUE in a parameter default sorts (owner ruling 105).
+        # A tuple TYPE (`mut t:(b=U4, a=U4)`, also as a generic default or
+        # binding, which take types) is a layout and keeps its order: typed
+        # tuples are constructed positionally by type (qa.md, 2026-09-29).
         for mode in ('ai', 'human'):
+            source = 'comb g(p=(b=1, a=2)) -> (o) {\n  o = p\n}\n'
+            with self.subTest(mode=mode, source=source):
+                self.assertEqual(self.fmt(source, mode), source.replace('b=1, a=2', 'a=2, b=1'))
             for source in (
                 'comb f<T=(b=1, a=2)>(p) -> (o) {\n  o = p\n}\n',
-                'comb g(p=(b=1, a=2)) -> (o) {\n  o = p\n}\n',
                 'mut t:(b=U4, a=U4) = 0\n',
                 'const x = f<T=(b=1, a=2)>(q)\n',
             ):
                 with self.subTest(mode=mode, source=source):
-                    self.assertEqual(self.fmt(source, mode), source.replace('b=1, a=2', 'a=2, b=1').replace('b=U4, a=U4', 'a=U4, b=U4'))
+                    self.assertEqual(self.fmt(source, mode), source)
             # A type call's arguments are no tuple type: they sort.
             self.assertEqual(self.fmt('mut b:Signed(min=0, max=300) = 0\n', mode), 'mut b:Signed(max=300, min=0) = 0\n')
 

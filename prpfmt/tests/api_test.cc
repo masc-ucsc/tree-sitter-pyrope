@@ -60,17 +60,26 @@ int main() {
   free(out);
 
   // The capitalized type words are reserved: a backticked `U4`/`Bool` is a
-  // name (not the type) and keeps its backticks. Reserved words and banned
-  // type spellings retain their escapes regardless of case.
+  // name (not the type) and keeps its backticks. Matching is case-sensitive:
+  // only the exact spelling of a reserved or banned word keeps its escapes.
   const std::string type_words = "mut `U4`:U8 = U8(x) + `u8` + `Bool`\nmod m(c:Clock, r:Reset) -> (o:S4) {\n  o = 0\n}\n";
   const std::string type_words_expected = "mut `U4`:U8 = U8(x) + `u8` + `Bool`\nmod m(c:Clock, r:Reset) -> (o:S4) {\n  o = 0\n}\n";
   assert(prpfmt_format_string(type_words.data(), type_words.size(), 0, 0, 1, &out, &len) == 0);
   assert(std::string(out, len) == type_words_expected);
   free(out);
 
-  const std::string reserved_case = "const `ELSE` = 1\nconst `eLsE` = 2\nconst `u8` = 3\nconst `I32` = 4\nconst `cLoCk` = 5\n";
+  const std::string reserved_case = "const `else` = 1\nconst `u8` = 3\nconst `Clock` = 5\nconst `U8` = 6\nconst `if` = 7\n";
   assert(prpfmt_format_string(reserved_case.data(), reserved_case.size(), 0, 0, 1, &out, &len) == 0);
   assert(std::string(out, len) == reserved_case);
+  free(out);
+
+  // Other case variants are ordinary names: their backticks drop.
+  const std::string ordinary_case =
+      "const `ELSE` = 1\nconst `eLsE` = 2\nconst `I32` = 4\nconst `cLoCk` = 5\nconst `clock` = 6\nconst `reset` = 7\nconst `IF` = 8\nconst `If` = 9\n";
+  const std::string ordinary_case_expected =
+      "const ELSE = 1\nconst eLsE = 2\nconst I32 = 4\nconst cLoCk = 5\nconst clock = 6\nconst reset = 7\nconst IF = 8\nconst If = 9\n";
+  assert(prpfmt_format_string(ordinary_case.data(), ordinary_case.size(), 0, 0, 1, &out, &len) == 0);
+  assert(std::string(out, len) == ordinary_case_expected);
   free(out);
 
   // Deep nesting formats on a large-stack thread; a tree too deep for it is

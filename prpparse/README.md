@@ -131,7 +131,10 @@ positives; adversarial multi-seed sweeps surface this residual.
 ### Names and reserved words
 
 Every ordinary name uses the same rule: keywords and reserved type spellings
-require backticks, matched case-insensitively. This includes fields, methods,
+require backticks, matched by exact spelling (case-sensitive). `if` is reserved
+but `IF` and `If` are ordinary names; `Clock` and `Reset` are type words but
+`clock` and `reset` are ordinary names. The old lowercase type spellings
+(`u8`, `bool`, `unsigned`, ...) remain banned words (`renamed-type-word`). This includes fields, methods,
 enum members, attributes, named arguments, generic bindings, and both sides of
 renaming. Names containing characters outside the identifier alphabet also
 require backticks; an escaped name must be nonempty. Name lookup remains
