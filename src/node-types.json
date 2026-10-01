@@ -5736,14 +5736,6 @@
     "named": true
   },
   {
-    "type": "bool",
-    "named": false
-  },
-  {
-    "type": "boolean",
-    "named": false
-  },
-  {
     "type": "break",
     "named": false
   },
@@ -6045,19 +6037,11 @@
     "named": true
   },
   {
-    "type": "signed",
-    "named": false
-  },
-  {
     "type": "stage",
     "named": false
   },
   {
     "type": "step",
-    "named": false
-  },
-  {
-    "type": "string",
     "named": false
   },
   {
@@ -6087,10 +6071,6 @@
   {
     "type": "unknown_literal",
     "named": true
-  },
-  {
-    "type": "unsigned",
-    "named": false
   },
   {
     "type": "while",

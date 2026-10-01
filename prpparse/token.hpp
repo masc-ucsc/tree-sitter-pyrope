@@ -52,8 +52,9 @@ inline std::string_view keyword_spelling(Keyword k) {
 // `String`, `Clock`, `Reset`. These spellings are RESERVED (lexed as
 // Token_kind::type_word, never as an identifier; grammar.js agrees), so `U4`
 // can not name a variable, port, parameter or field -- `` `U4` `` can. The old
-// lowercase spellings (`u8`, `bool`, `unsigned`, ...) are BANNED words (the lexer
-// reports `renamed-type-word`); other case variants (`BOOL`, `clock`) are ordinary names.
+// lowercase spellings (`u8`, `s2`, `i32`, `bool`, `unsigned`, ...) are ORDINARY
+// identifiers (owner ruling 2026-09-30; lhd reports their misuse as a type), and so are
+// the other case variants (`BOOL`, `clock`).
 inline bool is_type_word(std::string_view s) {
   if (s.size() >= 2 && (s[0] == 'U' || s[0] == 'S')) {
     bool digits = true;

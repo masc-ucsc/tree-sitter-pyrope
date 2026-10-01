@@ -3,7 +3,7 @@
 This directory contains the regression tests (Python, plus one C++ API test) and the helper scripts for verifying, debugging, and benchmarking the formatter.
 
 ## Core Verification
-- `cli_test.py`: Checks CLI behavior, both layouts, width boundaries, comment attachment, shorthand, sorting (and the lists that keep source order), grouping-parenthesis removal, backticks (dropped only where they change nothing; kept on keywords, on the reserved type words such as `` `U4` `` or `` `Bool` ``, on the banned old spellings such as `` `u8` `` and on reserved placeholders such as `` `_0` ``), alignment, comparison spacing (comparisons are always spaced), one-element tuple commas and idempotency.
+- `cli_test.py`: Checks CLI behavior, both layouts, width boundaries, comment attachment, shorthand, sorting (and the lists that keep source order), grouping-parenthesis removal, backticks (dropped only where they change nothing; kept on keywords, on the reserved type words such as `` `U4` `` or `` `Bool` ``, dropped on the old lowercase spellings such as `` `u8` `` (ordinary names) and kept on reserved placeholders such as `` `_0` ``), alignment, comparison spacing (comparisons are always spaced), one-element tuple commas and idempotency.
 - `api_test.cc`: Checks the default and mode-aware embeddable APIs, byte-count input, failure behavior, and comparison spacing (always spaced) / one-element tuple commas in both layouts.
 - `verify_all.py`: Checks parseability and byte-for-byte idempotency in both modes (`--mode ai|human|both`, default `both`).
 - `prpfmt_debug.py`: Provides a side-by-side diff between original and formatted source code. Includes a `--stats` mode for batch content verification.

@@ -115,15 +115,14 @@ const STRING_ESCAPE = new RegExp('\\\\([ntr\\\\"\'0`]|x[0-7][0-9a-fA-F]|u\\{([0-
 // kept out of `identifier` by its regex).
 const TYPE_WORDS = ['Unsigned', 'Signed', 'Bool', 'String', 'Clock', 'Reset'];
 
-// The BANNED old spellings of the type words (spec 2026-09-29 §7): `u8`, `s20`,
-// `i32` (any `u`/`s`/`i` followed by only ASCII digits), `bool`, `boolean`,
-// `unsigned`, `signed`, `string`. They are not types and not names: in every
-// position (a declaration, a type, a cast callee, a `.field`, a lambda or
-// field name, an operand) the lexer reads them as a banned-word token that no
-// rule accepts, so they are always a syntax error. A backticked spelling
-// (`` `u8` ``) is an ordinary name. prpparse rejects the same words with a
-// diagnostic naming the new spelling ("`u8` was renamed `U8`").
-const BANNED_WORDS = ['bool', 'boolean', 'unsigned', 'signed', 'string'];
+// The OLD lowercase type spellings (`u8`, `s20`, `i32`, `bool`, `boolean`,
+// `unsigned`, `signed`, `string`) are NOT reserved (owner ruling 2026-09-30,
+// reversing spec 2026-09-29 §7): they are ordinary identifiers, usable as a
+// variable, port, parameter, field or lambda name with no backticks. Only the
+// exact new type words (`U<N>`, `S<N>`, `Unsigned`, `Signed`, `Bool`, `String`,
+// `Clock`, `Reset`) are reserved. The "`u8` was renamed `U8`" diagnostic is
+// lhd's (a lowercase word used as a type or cast callee that is not a declared
+// name); neither parser rejects them.
 
 // Every Pyrope keyword is a RESERVED word (02-basics.md "Identifiers"): it is
 // never a name being BOUND -- a declaration, a destructuring declaration, a
@@ -242,9 +241,9 @@ module.exports = grammar({
   // newline in "..." string text, which therefore always fails to parse
   // (prpparse agrees: "newline in interpolated string").
   //
-  // `_never` is never returned by the scanner: it only guards `_banned_word`
-  // (see BANNED_WORDS) so the banned tokens exist in the grammar (a reserved
-  // word must be a token) while no parse can ever accept one.
+  // `_never` is never returned by the scanner: it only guards the placeholder
+  // word and `nil` so those tokens exist in the grammar (a reserved word must
+  // be a token) while no parse can ever accept one.
   //
   // A lambda that is a whole tuple ENTRY (`(comb f(self) { }, 1)`) is never
   // the operand of a binary operator or the head of a suffix there, so
@@ -376,10 +375,10 @@ module.exports = grammar({
   // bindingTypedIdentifier). A keyword FIELD name before `=`/`:` is the
   // external `_field_word`.
   , reserved: {
-    global: $ => TYPE_WORDS.concat(BANNED_WORDS, ALWAYS_RESERVED, [$._banned_sized_word, $._reserved_placeholder_word])
+    global: $ => TYPE_WORDS.concat(ALWAYS_RESERVED, [$._reserved_placeholder_word])
     // `nil` is no keyword (a value elsewhere) but never a name being bound
     // (`const nil = 1` is an error; prpparse agrees).
-    , binding: $ => TYPE_WORDS.concat(BANNED_WORDS, [$._banned_sized_word, $._reserved_placeholder_word], KEYWORDS, ['nil'])
+    , binding: $ => TYPE_WORDS.concat([$._reserved_placeholder_word], KEYWORDS, ['nil'])
   }
 
   , precedences: $ => [
@@ -463,13 +462,13 @@ module.exports = grammar({
       , $.step_statement
       , $.type_statement
       , $.impl_statement
-      // Unreachable (`_never` is never scanned): declares the banned words and
+      // Unreachable (`_never` is never scanned): declares the placeholder word and
       // the `nil` token (reserved only where a name is bound, see `reserved`),
       // and keeps the retired `enum(...)` expression node (`enum_definition`,
       // with its `arg_list`) in the symbol table only so consumers that still
       // name it (prpfmt print_enum_definition) keep compiling. Drop
       // `enum_definition`/`arg_list` once prpfmt no longer references them.
-      , seq($._never, choice($._banned_word, $._reserved_placeholder_word, 'nil', $.enum_definition, $.unknown_literal))
+      , seq($._never, choice($._reserved_placeholder_word, 'nil', $.enum_definition, $.unknown_literal))
     )
     )
     , scope_statement: $ => seq(
@@ -1532,10 +1531,11 @@ module.exports = grammar({
     // parameter or field spelled like one is written in backticks (`` `U4` ``),
     // and the backticked spelling is then an ordinary name (never the type) in
     // every position. The old lowercase spellings (`u8`, `s4`, `i32`, `bool`,
-    // `boolean`, `unsigned`, `signed`, `string`) are BANNED words, a syntax
-    // error in every position (see BANNED_WORDS; prpparse reports "`u8` was
-    // renamed `U8`"). prpparse (lexer.cpp, Token_kind::type_word) reserves the
-    // same type words.
+    // `boolean`, `unsigned`, `signed`, `string`) are ORDINARY identifiers (owner
+    // ruling 2026-09-30): they are no type here, so `x:u8` / `u8(x)` parse as a
+    // name used as a type expression / call and lhd reports "`u8` was renamed
+    // `U8`" when it is not a declared name. prpparse (lexer.cpp,
+    // Token_kind::type_word) reserves the same type words.
     , _primitive_type: $ => choice(
       $.uint_type
       , $.sint_type
@@ -1561,10 +1561,6 @@ module.exports = grammar({
     // The sized type words, reserved (see `identifier`).
     , _UN: $ => token(/U[0-9]+/)
     , _SN: $ => token(/S[0-9]+/)
-    // The banned old sized spellings (`u8`, `s20`, `i32`; see BANNED_WORDS):
-    // only ever produced through the `reserved` sets, never accepted.
-    , _banned_sized_word: $ => token(/[usi][0-9]+/)
-    , _banned_word: $ => choice(...BANNED_WORDS, $._banned_sized_word)
     // Reserved for future placeholders: _[digit][alnum]* (Unicode categories).
     , _reserved_placeholder_word: $ => token(/_[\p{Nd}][\p{L}\p{Nd}]*/)
     // A type word USED AS A VALUE -- an operand `x does U8` / `a equals S4`,
@@ -1674,7 +1670,7 @@ module.exports = grammar({
     // The sign letters `u`/`s` combine with every radix letter (owner ruling
     // 109): `0ux`/`0sx`, `0ud`/`0sd`, `0uo`/`0so`, `0ub`/`0sb`; plain `0x`,
     // `0o`, `0d` and decimals are unsigned. A sign without a radix letter
-    // (`0s12`) is an error: `0` then the banned word `s12` (prpparse:
+    // (`0s12`) is an error: `0` then the plain name `s12` (prpparse:
     // "missing-radix").
     , _hex_number: $ => token(/0(s|S|u|U)?(x|X)[0-9a-fA-F][0-9a-fA-F_]*/)
     , _decimal_number: $ => token(/0((s|S|u|U)?(d|D))?[0-9][0-9_]*/)

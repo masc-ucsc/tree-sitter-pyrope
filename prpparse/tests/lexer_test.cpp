@@ -201,24 +201,27 @@ TEST(Lexer, TypeWords) {
   for (int i = 10; i < 29; ++i) EXPECT_EQ(t[i].kw, Keyword::none) << t[i].text;
 }
 
-// The old lowercase spellings are BANNED words (spec 2026-09-29 §7): the lexer
-// rejects them as identifier tokens with a diagnostic naming the new spelling.
-TEST(Lexer, BannedTypeSpellings) {
-  const std::pair<const char*, const char*> cases[] = {
-      {"u8", "U8"},   {"s20", "S20"}, {"i32", "S32"},        {"u0", "U0"},           {"s1", "S1"},
-      {"i0", "S0"},   {"bool", "Bool"}, {"boolean", "Bool"}, {"unsigned", "Unsigned"}, {"signed", "Signed"},
-      {"string", "String"}};
-  for (const auto& [w, repl] : cases) {
-    try {
-      Lexed lx(std::string("x = ") + w + "\n");
-      ADD_FAILURE() << w << " was accepted";
-    } catch (const Parse_error& e) {
-      EXPECT_EQ(e.diag.code, "renamed-type-word") << w;
-      EXPECT_NE(e.diag.message.find(std::string("`") + w + "` was renamed `" + repl + "`"), std::string::npos)
-          << e.diag.message;
-    }
+// The old lowercase spellings are ORDINARY identifiers (owner ruling
+// 2026-09-30, reversing spec 2026-09-29 §7): no diagnostic, no keyword, no type
+// word. The exact new type words stay reserved.
+TEST(Lexer, OldTypeSpellingsAreIdentifiers) {
+  for (const char* w : {"u8", "s20", "s2", "i32", "u0", "s1", "i0", "bool", "boolean", "unsigned", "signed", "string"}) {
+    Lexed lx(std::string("x = ") + w + "\n");
+    bool  seen = false;
+    for (const auto& tk : lx.t)
+      if (tk.text == w) {
+        EXPECT_EQ(tk.kind, Token_kind::ident) << w;
+        EXPECT_EQ(tk.kw, Keyword::none) << w;
+        seen = true;
+      }
+    EXPECT_TRUE(seen) << w;
   }
-  // only identifier tokens: prose in strings and comments is untouched
+  // a backticked spelling is the same ordinary name (backticks are just unneeded)
+  Lexed bt("`u8` `s2` `bool`");
+  for (int i = 0; i < 3; ++i) EXPECT_EQ(bt.t[i].kind, Token_kind::ident) << i;
+  // the exact new spellings stay type words
+  Lexed tw("U8 S2 Bool Unsigned");
+  for (int i = 0; i < 4; ++i) EXPECT_EQ(tw.t[i].kind, Token_kind::type_word) << i;
   EXPECT_NO_THROW(Lexed{"x = \"a u8 bool string\" // u8 bool\ny = 'signed'\n"});
 }
 

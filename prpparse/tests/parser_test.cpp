@@ -625,7 +625,7 @@ TEST(Parser, ContinuationCase) {
 // name being bound or a field name. It heads a suffix chain only through an
 // attribute read (`U8.[max]`); a conversion call's result heads any chain
 // (`U8(x)#[0]`). The backticked `` `U4` `` is an ordinary name everywhere, and the
-// old lowercase spellings (`u8`, `bool`, `unsigned`, ...) are banned words.
+// old lowercase spellings (`u8`, `bool`, `unsigned`, ...) are ordinary names.
 TEST(Parser, TypeWordsInTypePositions) {
   auto s = sexp("mut a:U8 = 0\nmut b:S4 = 0\nmut c:Unsigned(bits=8, max=200) = 0\nmut d:Signed(bits=8) = 0\n"
                 "mut e:Bool = false\nmut f:String = \"x\"\nmut w:[4]U2 = 0\n"
@@ -662,7 +662,7 @@ TEST(Parser, TypeWordsBacktickedAndLowercaseAreNames) {
   EXPECT_TRUE(parses("const `U4` = 3\nmut y:U4 = `U4`\nconst s = x.`Bool`\nconst t = (`S8`=1)\n"
                      "const c = f(`Clock`=2)\ncomb `Reset`(`U1`) -> (`String`) { `String` = `U1` }\n"));
   EXPECT_EQ(count(sexp("mut z:`U4` = 0\n"), "(uint_type"), 0u);  // a backticked word is a name, not the type
-  // a backticked BANNED word is an ordinary name too
+  // a backticked old spelling is the same ordinary name
   auto s = sexp("const `u8` = 1\nmut `s1` = 2\nconst `i0` = 3\nmut `bool` = true\nconst `unsigned` = 4\n"
                 "const `string` = \"s\"\nconst int = 5\nconst `I8` = 6\nmut x:`u8` = 3\n");
   EXPECT_EQ(count(s, "(expression_type"), 1u);  // `x:`u8``: a user type named `u8`
@@ -832,26 +832,42 @@ TEST(Parser, StringEscapes) {
   EXPECT_TRUE(parses("const a = \"/* x */ {b /* } */} // y\"\n"));
 }
 
-// The old lowercase type spellings are banned words (spec 2026-09-29 §7) in
-// every position; the diagnostic names the new spelling. Backticked they are
-// ordinary names.
-TEST(Parser, BannedTypeSpellings) {
+// The old lowercase type spellings are ORDINARY identifiers (owner ruling
+// 2026-09-30): every position that takes a name takes them, with or without
+// backticks, and the type / cast-callee positions parse too (lhd, not the
+// parser, reports "`u8` was renamed `U8`" for an undeclared one).
+TEST(Parser, OldTypeSpellingsAreNames) {
   for (const char* src :
-       {"const u8 = 3\n", "const s1 = 3\n", "mut i0 = 3\n", "const x = u4 + 1\n", "const bool = 1\n",
-        "const boolean = 1\n", "const x:u8 = 3\n", "const x:i32 = 3\n", "const x = u8(y)\n", "y.bool = 1\n",
-        "comb u8(a) -> (r) { r = a }\n", "comb f(s20:U8) -> (r) { r = 1 }\n", "const t = (u8 = 1, b = 2)\n",
-        "f(i32 = 1)\n", "enum bool = (a, b)\n", "enum E = (string, b)\n", "const x = rnd.boolean()\n",
-        "reg s1:U32 = 0\n", "const x = a.i32\n", "const x = \"{u8}\"\n", "const y = x::[signed]\n",
-        "const y = x.[unsigned]\n", "type string = U8\n", "for u1 in 0..<2 { }\n", "import a.u8 as b\n"}) {
-    EXPECT_FALSE(parses(src)) << src;
+       {"const u8 = 3\n", "const s1 = 3\n", "const s2 = 3\n", "mut i0 = 3\n", "const x = u4 + 1\n",
+        "const bool = 1\n", "const boolean = 1\n", "const unsigned = 1\n", "const signed = 1\n",
+        "const string = \"a\"\n", "const i32 = 1\n",
+        // type position and cast callee
+        "const x:u8 = 3\n", "const x:i32 = 3\n", "const x:boolean = 3\n", "const x = u8(y)\n", "const x = string(3)\n",
+        "const t = (a:bool)\n", "const x = y does bool\n",
+        // field, method, lambda name, parameter, port, parameter default
+        "y.bool = 1\n", "const x = a.i32\n", "const x = rnd.boolean()\n", "comb u8(a) -> (r) { r = a }\n",
+        "comb f(s20:U8) -> (r) { r = 1 }\n", "comb f(s2:U8, u8:U8) -> (i32:U8) { i32 = s2 + u8 }\n",
+        "mod m(clk:Clock, s2:U1) -> (o:U1) { o = s2 }\n", "comb f<u8>(a) -> (r) { r = a }\n",
+        // tuple fields, arguments, enums, registers, loops, attributes, types, imports, tests
+        "const t = (u8 = 1, b = 2)\n", "const t = (mut u8 = 1)\n", "f(i32 = 1)\n", "const x = f(a=bool)\n",
+        "enum bool = (a, b)\n", "enum E = (string, b)\n", "reg s1:U32 = 0\n", "for u1 in 0..<2 { }\n",
+        "const y = x.[unsigned]\n", "const y = x::[signed]\n", "reg r::[u8=1] = 0\n", "type string = U8\n",
+        "import a.u8 as b\n", "import foo as s1\n", "const (u8, b) = f()\n", "test u8 { }\n",
+        "const x = \"{u8}\"\n"}) {
+    EXPECT_TRUE(parses(src)) << src;
   }
-  auto d = diag_of("mut u8 = 5\n");
-  EXPECT_EQ(d.code, "renamed-type-word");
-  EXPECT_NE(d.message.find("`u8` was renamed `U8`"), std::string::npos) << d.message;
-  EXPECT_NE(diag_of("const x:i32 = 3\n").message.find("`i32` was renamed `S32`"), std::string::npos);
-  EXPECT_NE(diag_of("const x:boolean = 3\n").message.find("renamed `Bool`"), std::string::npos);
+  // backticks are unnecessary but legal: the same ordinary name
   EXPECT_TRUE(parses("const `u8` = 3\nconst y = x.`bool` + `s1`\nconst z = \"u8 bool string\" // u8\n"
                      "const u = 1\nconst u_8 = 2\nconst s1x = 3\nconst st1 = 4\nconst in0 = 5\nconst bools = 6\n"));
+  EXPECT_TRUE(parses("const u8 = 1\nconst y = `u8` + u8\n"));
+  // no `renamed-type-word` diagnostic exists in the parser any more; the new
+  // spellings stay reserved (U8 / S2 as names are errors, backticked they pass)
+  for (const char* src : {"const U8 = 3\n", "const S2 = 3\n", "mut Bool = 1\n", "comb f(S2:U8) -> (r) { r = 1 }\n",
+                          "const t = (U8 = 1)\n", "y.S2 = 1\n"}) {
+    EXPECT_FALSE(parses(src)) << src;
+  }
+  EXPECT_EQ(diag_of("const S2 = 3\n").code, "reserved-type-name");
+  EXPECT_TRUE(parses("const `S2` = 3\nconst `U8` = 1\ny.`S2` = 1\n"));
 }
 
 // Reserved type words (spec 2026-09-29 §7): `U`/`S` followed by ANY digits and
@@ -1137,9 +1153,8 @@ TEST(Parser, LowercaseClockResetArePlainNames) {
   EXPECT_EQ(diag_of("const Reset = 1\n").code, "reserved-type-name");
   // backticked type words are ordinary names
   EXPECT_TRUE(parses("const `Clock` = 1\nconst `Reset` = 2\nconst x = t.`Clock`\n"));
-  // the old lowercase type spellings stay banned (a separate rule)
-  EXPECT_EQ(diag_of("const bool = 1\n").code, "renamed-type-word");
-  EXPECT_EQ(diag_of("const unsigned = 1\n").code, "renamed-type-word");
+  // the old lowercase type spellings are ordinary names (owner ruling 2026-09-30)
+  EXPECT_TRUE(parses("const bool = 1\nconst unsigned = 1\n"));
   // reserved keyword spelling is exact
   EXPECT_FALSE(parses("const if = 1\n"));
   EXPECT_TRUE(parses("const IF = 1\nconst If = 2\nconst TiCk = 3\n"));

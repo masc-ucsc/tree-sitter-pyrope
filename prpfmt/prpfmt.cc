@@ -455,9 +455,10 @@ static std::string_view unbacktick(std::string_view s) {
 // `` `nil` `` is a plain name (prp2lnast identifier_to_node), so dropping the
 // backticks would silently turn a variable into the nil literal.
 //
-// The old lowercase type names (`bool`, `unsigned`, `string`, `u8`, ...) are
-// BANNED words (see is_banned_word) and the capitalized type words (`Bool`,
-// `U8`, ...) are reserved (see is_type_word): both keep their backticks too.
+// The capitalized type words (`Bool`, `U8`, ...) are reserved (see
+// is_type_word) and keep their backticks too. The old lowercase type names
+// (`bool`, `unsigned`, `string`, `u8`, `s2`, `i32`, ...) are ORDINARY names
+// (owner ruling 2026-09-30): `` `u8` `` prints as `u8`.
 // Matching is case-sensitive: only the exact spellings are reserved, so `IF`,
 // `clock` and `reset` are ordinary names and print without backticks.
 static bool is_reserved_word(std::string_view w) {
@@ -514,18 +515,6 @@ static bool is_type_word(std::string_view w) {
   return w == "Unsigned" || w == "Signed" || w == "Bool" || w == "String" || w == "Clock" || w == "Reset";
 }
 
-// A BANNED old spelling of a type word (spec 2026-09-29 §7; grammar.js
-// BANNED_WORDS, prpparse "`u8` was renamed `U8`"): `u`, `s` or `i` followed by
-// ASCII digits only (`u8`, `s20`, `i32`, `u0`), or `bool`, `boolean`,
-// `unsigned`, `signed`, `string`. Bare, it is a syntax error in every position;
-// backticked (`` `u8` ``) it is an ordinary name, so its backticks stay.
-static bool is_banned_word(std::string_view w) {
-  if (w.size() >= 2 && (w[0] == 'u' || w[0] == 's' || w[0] == 'i') &&
-      std::all_of(w.begin() + 1, w.end(), [](char c) { return c >= '0' && c <= '9'; }))
-    return true;
-  return w == "bool" || w == "boolean" || w == "unsigned" || w == "signed" || w == "string";
-}
-
 // A reserved placeholder spelling (grammar.js `_reserved_placeholder_word`):
 // `_` followed by a digit and then only letters/digits (`_0`, `_12`, `_1a`).
 // Bare it is not a name; `` `_0` `` is an ordinary name, so its backticks stay.
@@ -545,8 +534,8 @@ static bool is_placeholder_word(std::string_view w) {
 // `` `foo$bar` ``, `` `a b` ``, `` `x.y` ``), one that starts with a digit,
 // `_` alone, a reserved placeholder (`` `_0` ``, `` `_12` ``), a keyword
 // (`` `in` ``, `` `else` ``), a type word (`` `U4` `` is a variable, `U4` the
-// type) or a banned old spelling (`` `u8` ``, `` `bool` ``, `` `string` ``:
-// bare they are syntax errors). Words starting
+// type). The old lowercase spellings (`` `u8` ``, `` `bool` ``) are plain names:
+// their backticks drop. Words starting
 // with `els`/`eli` (`` `elsewhere` ``) drop them too: the grammar scanner and
 // prpparse (which lhd builds from this tree) match `else`/`elif` as whole
 // words, so `elsewhere` at line start is a name that starts a statement.
@@ -562,9 +551,9 @@ static bool backticks_needed(std::string_view w) {
     else if (!alpha(c) && !digit(c) && c != '_') return true;
   }
   // Reserved-word matching is CASE-SENSITIVE: only the exact spelling of a
-  // keyword, a type word (`Clock`, `U8`) or a banned old type spelling (`u8`)
-  // keeps its backticks. `clock`, `reset`, `IF` and `If` are ordinary names.
-  if (is_reserved_word(w) || is_type_word(w) || is_banned_word(w) || is_placeholder_word(w)) return true;
+  // keyword or a type word (`Clock`, `U8`) keeps its backticks. `clock`,
+  // `reset`, `IF`, `If`, `u8`, `s2` and `bool` are ordinary names.
+  if (is_reserved_word(w) || is_type_word(w) || is_placeholder_word(w)) return true;
   // Reserved placeholder spellings must retain their escapes too. Use the
   // grammar for both ASCII digit-led names and all Unicode names.
   return (non_ascii || (w.size() > 1 && w[0] == '_' && digit(w[1]))) && !bare_word_is_identifier(w);

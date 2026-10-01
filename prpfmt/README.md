@@ -392,9 +392,9 @@ callee keeps source order, since its signature is not visible. A callee
 counts as unresolved when its name is also used in the file as anything but
 a callee (a value, an alias, a binding: `const s = f` also stops `f(b=1,
 a=2)` from sorting), and a same-file lambda whose first parameter is `self`
-keeps source order too. A backticked old lowercase spelling
-(`` `u8`(max=3, bits=4) ``; bare `u8` is a banned word) is an ordinary,
-unresolved name, so it keeps source order. The sort key ignores
+keeps source order too. An old lowercase spelling
+(`u8(max=3, bits=4)` or `` `u8`(max=3, bits=4) ``) is an ordinary, unresolved
+name (not a conversion), so it keeps source order. The sort key ignores
 backticks, so `` `in` `` sorts as `in` (between `clk` and `zed`). Values that
 keep source order: spreads, `ref`s, calls with possible side effects (also a
 type-position call in a generic value: `f<W=2, A=g(x)>` stays), and
@@ -464,15 +464,17 @@ sort ORDER ignores backticks; the `x=x` shorthand, parameter lookup and
 repeated-name checks compare names by identity, so `` `foo` `` matches `foo`
 but `` `U4` `` never matches the type `U4` (`f(`U4`=U4)` stays as written).
 Reserved-word matching is CASE-SENSITIVE: only the exact spelling is
-reserved. `` `clock` ``, `` `reset` ``, `` `IF` ``, `` `If` `` and `` `I32` ``
-are ordinary names and lose their backticks (`clock`, `reset`, `IF`, `If`,
-`I32`), while `` `Clock` ``, `` `Reset` ``, `` `U8` ``, `` `if` `` and
-`` `u8` `` keep them.
+reserved. `` `clock` ``, `` `reset` ``, `` `IF` ``, `` `If` ``, `` `I32` `` and
+`` `u8` `` are ordinary names and lose their backticks (`clock`, `reset`, `IF`,
+`If`, `I32`, `u8`), while `` `Clock` ``, `` `Reset` ``, `` `U8` `` and `` `if` ``
+keep them.
 The old lowercase type spellings (`u`/`s`/`i` followed by digits such as
-`u8`, `s4`, `i32`, and `bool`, `boolean`, `unsigned`, `signed`, `string`) are
-BANNED words: bare they are a syntax error in every position, backticked they
-are ordinary names, so `` `u8` `` keeps its backticks. Words that only look
-like them (`int`, `uint`, `u8x`, `booleans`) are ordinary names.
+`u8`, `s2`, `i32`, and `bool`, `boolean`, `unsigned`, `signed`, `string`) are
+ORDINARY names (owner ruling 2026-09-30): bare they format as written, and a
+backticked spelling LOSES its backticks (`` `u8` `` prints `u8`). Only the exact
+new type words (`U<N>`, `S<N>`, `Unsigned`, `Signed`, `Bool`, `String`, `Clock`,
+`Reset`) and keywords keep them. The "`u8` was renamed `U8`" diagnostic belongs
+to lhd, not the formatter.
 
 Block comments: a block comment always has whitespace on both sides, a space
 or a line break; the formatter never glues one to a neighboring token. Inside

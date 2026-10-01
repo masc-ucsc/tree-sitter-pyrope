@@ -172,10 +172,6 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "_banned_word"
-                  },
-                  {
-                    "type": "SYMBOL",
                     "name": "_reserved_placeholder_word"
                   },
                   {
@@ -7034,42 +7030,6 @@
         "value": "S[0-9]+"
       }
     },
-    "_banned_sized_word": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[usi][0-9]+"
-      }
-    },
-    "_banned_word": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "bool"
-        },
-        {
-          "type": "STRING",
-          "value": "boolean"
-        },
-        {
-          "type": "STRING",
-          "value": "unsigned"
-        },
-        {
-          "type": "STRING",
-          "value": "signed"
-        },
-        {
-          "type": "STRING",
-          "value": "string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_banned_sized_word"
-        }
-      ]
-    },
     "_reserved_placeholder_word": {
       "type": "TOKEN",
       "content": {
@@ -7932,35 +7892,11 @@
       },
       {
         "type": "STRING",
-        "value": "bool"
-      },
-      {
-        "type": "STRING",
-        "value": "boolean"
-      },
-      {
-        "type": "STRING",
-        "value": "unsigned"
-      },
-      {
-        "type": "STRING",
-        "value": "signed"
-      },
-      {
-        "type": "STRING",
-        "value": "string"
-      },
-      {
-        "type": "STRING",
         "value": "tick"
       },
       {
         "type": "STRING",
         "value": "step"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "_banned_sized_word"
       },
       {
         "type": "SYMBOL",
@@ -7991,30 +7927,6 @@
       {
         "type": "STRING",
         "value": "Reset"
-      },
-      {
-        "type": "STRING",
-        "value": "bool"
-      },
-      {
-        "type": "STRING",
-        "value": "boolean"
-      },
-      {
-        "type": "STRING",
-        "value": "unsigned"
-      },
-      {
-        "type": "STRING",
-        "value": "signed"
-      },
-      {
-        "type": "STRING",
-        "value": "string"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "_banned_sized_word"
       },
       {
         "type": "SYMBOL",

@@ -650,10 +650,11 @@ class ModeTest(unittest.TestCase):
                     self.assertEqual(self.fmt(decl + source, mode), decl + expected)
         # A same-file lambda named like a conversion (it must be backticked:
         # `U9` is a reserved type word) is an ordinary call; so is a lambda
-        # named like an OLD conversion (`` `u9` ``: a banned word bare).
+        # named like an OLD conversion (`u9`: an ordinary name now).
         self.assertIn('h(z=`U9`(x), a=b)',
                       self.fmt(decl + 'comb `U9`(x) -> (o) { o = x }\nconst o = h(z=`U9`(x), a=b)\n'))
-        self.assertIn('h(z=`u9`(x), a=b)', self.fmt(decl + 'const o = h(z=`u9`(x), a=b)\n'))
+        self.assertIn('h(z=u9(x), a=b)', self.fmt(decl + 'const o = h(z=`u9`(x), a=b)\n'))
+        self.assertIn('h(z=u9(x), a=b)', self.fmt(decl + 'const o = h(z=u9(x), a=b)\n'))
         # Builtin conversions have no gather: their arguments sort.
         self.assertIn('U8(bits=4, max=3)', self.fmt('const q = U8(max=3, bits=4)\n'))
 
@@ -678,13 +679,14 @@ class ModeTest(unittest.TestCase):
             # word: the backticks drop.
             # Also nonreserved underscore names, a non-ASCII letter, a word that only starts
             # like a type word (`U8x`, `S_4`, `U`, `Booleans`), a
-            # word that only starts like a banned old spelling (`u8x`, `s_4`,
-            # `booleans`, `int`, `uint`), and an `els`/`eli` word (the scanner
+            # old lowercase type spellings (`u8`, `s2`, `i32`, `bool`, `unsigned`:
+            # ordinary names since the 2026-09-30 ruling), and an `els`/`eli` word (the scanner
             # and prpparse match `else`/`elif` as whole words).
             for name in ('plain', 'x_1', 'self', 'Upper', '_x', '__y', 'bits', 'assume', 'U8x', 'Sx', 'i', 'elx',
                          'S_4', 'U', 'S', 'Booleans', 'Stringy', 'U8é', '_1_a', '__0', 'é', 'café2',
                          'Ωmega', 'els', 'eli', 'elsev', 'elsewhere', 'u8x', 's_4', 'u', 's', 'booleans', 'strings',
-                         'int', 'integer', 'uint', 'x0', 'a_0'):
+                         'int', 'integer', 'uint', 'x0', 'a_0',
+                         'u8', 's2', 's4', 'i32', 'u0', 's1', 'i0', 'bool', 'boolean', 'unsigned', 'signed', 'string'):
                 with self.subTest(mode=mode, name=name):
                     self.assertEqual(self.fmt(f'const `{name}` = 1\n', mode), f'const {name} = 1\n')
             for src, expected in (('reg r:Unsigned(`bits`=2) = 0\n', 'reg r:Unsigned(bits=2) = 0\n'),
@@ -701,14 +703,12 @@ class ModeTest(unittest.TestCase):
             # the literal.
             # A type word (`U<N>`, `S<N>`, `Unsigned`, `Signed`, `Bool`,
             # `String`, `Clock`, `Reset`) is reserved: `U4` is the type,
-            # `` `U4` `` a name, so its backticks stay too. So do a BANNED old
-            # spelling (`u8`, `s4`, `i32`, `bool`, `boolean`, `unsigned`,
-            # `signed`, `string`: bare they are syntax errors) and a reserved
-            # placeholder (`_0`, `_12`, `_1a`).
+            # `` `U4` `` a name, so its backticks stay too. So do a reserved
+            # placeholder (`_0`, `_12`, `_1a`). The old lowercase spellings
+            # (`u8`, `s2`, `i32`, `bool`, ...) are NOT reserved: see above.
             for name in ('`nil`', '`true`', '`false`', '`in`', '`stage`', '`elif`', '`else`',
                          '`U8`', '`S4`', '`U0`', '`S1`', '`U1333`', '`Unsigned`', '`Signed`', '`Bool`', '`String`',
-                         '`Clock`', '`Reset`', '`u8`', '`s4`', '`i32`', '`u0`', '`s1`', '`i0`', '`bool`', '`boolean`',
-                         '`unsigned`', '`signed`', '`string`', '`_0`', '`_1`', '`_12`', '`_1a`',
+                         '`Clock`', '`Reset`', '`S2`', '`_0`', '`_1`', '`_12`', '`_1a`',
                          '`_`', '`with space`', '`foo[bar]`', '`a.b`', '`x$`', '`foo$bar`', '`$x`', '`3a`',
                          '`a·b`', '`a\u00a0b`', '`é!`'):
                 with self.subTest(mode=mode, name=name):
@@ -734,8 +734,9 @@ class ModeTest(unittest.TestCase):
                 ('const b = Bool(x) and `Clock` == Reset\n', 'const b = Bool(x) and `Clock` == Reset\n'),
                 ('mod m(c:Clock, r:Reset) -> (o:U8) {\n  o = 0\n}\n', 'mod m(c:Clock, r:Reset) -> (o:U8) {\n  o = 0\n}\n'),
                 ('const k = U8.[max] + U8(x)#[0]\n', 'const k = U8.[max] + U8(x)#[0]\n'),
-                # the old lowercase spellings are banned words: their backticks stay
-                ('const c = `u8`(x) + `s4`\n', 'const c = `u8`(x) + `s4`\n'),
+                # the old lowercase spellings are ordinary names: backticks drop
+                ('const c = `u8`(x) + `s4`\n', 'const c = u8(x) + s4\n'),
+                ('const c = u8(x) + s4\n', 'const c = u8(x) + s4\n'),
             ):
                 with self.subTest(mode=mode, src=src):
                     self.assertEqual(self.fmt(src, mode), expected)
@@ -766,7 +767,7 @@ class ModeTest(unittest.TestCase):
         walk(json.loads((root / 'src' / 'grammar.json').read_text())['rules'])
         words |= set(re.findall(r'^PRP_KEYWORD\((\w+)\)', (root / 'prpparse' / 'prp_keywords.def').read_text(), re.M))
         self.assertIn('in', words)
-        words |= {'nil', 'u8', 's4', 'i32', 'u0', 'boolean', 'bool', 'unsigned', 'signed', 'string'}
+        words |= {'nil'}
         # Reserved-word matching is CASE-SENSITIVE: only the exact spelling
         # keeps its backticks; every other case variant is an ordinary name.
         type_word = re.compile(r'(?:[US][0-9]+|Unsigned|Signed|Bool|String|Clock|Reset)')
@@ -774,7 +775,8 @@ class ModeTest(unittest.TestCase):
             return v in words or type_word.fullmatch(v) is not None
         variants = {v for w in words for v in (w, w.lower(), w.upper(), w.title(), w.swapcase())}
         variants |= {'eLsE', 'cLoCk', 'bOoLeAn', 'U999999999999999999999999999999',
-                     'clock', 'reset', 'Clock', 'Reset', 'IF', 'If', 'U8', 'u8', 'I32', 'BOOL', 'Unsigned', 'UNSIGNED'}
+                     'clock', 'reset', 'Clock', 'Reset', 'IF', 'If', 'U8', 'u8', 'I32', 'BOOL', 'Unsigned', 'UNSIGNED',
+                     's2', 'S2', 'i32', 'bool', 'unsigned', 'string'}
         variants = sorted(variants)
         source = ''.join(f'const `{w}` = 1\n' for w in variants)
         expected = ''.join((f'const `{w}` = 1\n' if reserved(w) else f'const {w} = 1\n') for w in variants)
@@ -788,11 +790,11 @@ class ModeTest(unittest.TestCase):
         # `clock`/`reset` are ordinary names (only `Clock`/`Reset` are type
         # words), as are other-case variants of a keyword (`IF`, `If`).
         for mode in ('ai', 'human'):
-            for name in ('clock', 'reset', 'IF', 'If', 'Else', 'NIL', 'True', 'I32', 'BOOL', 'UNSIGNED', 'cLoCk', 'u8x'):
+            for name in ('clock', 'reset', 'IF', 'If', 'Else', 'NIL', 'True', 'I32', 'BOOL', 'UNSIGNED', 'cLoCk', 'u8x',
+                         'u8', 's2', 's4', 'i32', 'bool', 'boolean', 'unsigned', 'signed', 'string'):
                 with self.subTest(mode=mode, name=name):
                     self.assertEqual(self.fmt(f'const `{name}` = 1\n', mode), f'const {name} = 1\n')
-            for name in ('Clock', 'Reset', 'U8', 'S4', 'Bool', 'String', 'Unsigned', 'Signed', 'if', 'nil', 'u8', 's4',
-                         'i32', 'bool', 'string'):
+            for name in ('Clock', 'Reset', 'U8', 'S2', 'S4', 'Bool', 'String', 'Unsigned', 'Signed', 'if', 'nil'):
                 with self.subTest(mode=mode, name=name):
                     self.assertEqual(self.fmt(f'const `{name}` = 1\n', mode), f'const `{name}` = 1\n')
             # In the positions the compiler mints: a port, a field access and a
@@ -1654,21 +1656,34 @@ class ModeTest(unittest.TestCase):
                          'mut p   = 1 // c\nmut arr = 2 // d\n\n'
                          'const b         = 1\nconst test1     = 3 // OK\nconst something = 4 // OK\n')
 
-    def test_banned_words_and_placeholders_keep_backticks(self):
-        # A banned old spelling (`u8`, `bool`, ...) or a reserved placeholder
-        # (`_0`, `_12`) is an ordinary name only when backticked: bare it is
-        # a syntax error, so the backticks stay in every position.
+    def test_old_type_spellings_are_plain_names(self):
+        # The old lowercase type spellings (`u8`, `s2`, `i32`, `bool`,
+        # `unsigned`, ...) are ordinary names since the 2026-09-30 ruling:
+        # bare they format as written, backticked they LOSE their backticks.
+        # The exact new type words (`U8`, `S2`, `Bool`, ...) keep theirs.
+        bare = ('const u8 = 1\n', 'const s2 = 1\n', 'const i32 = 1\n', 'const bool = 1\n', 'const unsigned = 1\n',
+                'const x:u8 = 1\n', 'const x = bool(y)\n', 'y.string = 1\n', 'comb s2(a) -> (o) {\n  o = a\n}\n',
+                'mod m(i32:U8) -> (y:U8) {\n  y = i32\n}\n', 'const q = (boolean=2, i32=1)\n')
         for mode in ('ai', 'human'):
-            for src in ('const `u8` = 2\n', 'const `_0` = 8\n',
-                        'for `_1` in 0..<2 {\n  puts("{`_1`}")\n}\n',
-                        'mod m(`_2`:U8) -> (y:U8) {\n  y = `_2`\n}\n',
-                        'const t = x.`bool`.`_3` + `string`\n',
-                        'comb `s1`(a) -> (o) {\n  o = a\n}\n',
-                        'const q = (`boolean`=2, `i32`=1)\n'):
+            for src in bare:
                 with self.subTest(mode=mode, src=src):
                     self.assertEqual(self.fmt(src, mode), src)
-        for src in ('const u8 = 1\n', 'const x:u8 = 1\n', 'const x = bool(y)\n', 'y.string = 1\n',
-                    'const _0 = 1\n', 'const x = _ + 1\n'):
+                    self.assertEqual(self.fmt(src.replace('u8', '`u8`').replace('i32', '`i32`'), mode), src)
+            for src, expected in (('const `u8` = 2\n', 'const u8 = 2\n'), ('const `s2` = 2\n', 'const s2 = 2\n'),
+                                  ('const t = x.`bool`.`_3` + `string`\n', 'const t = x.bool.`_3` + string\n'),
+                                  ('comb `s1`(a) -> (o) {\n  o = a\n}\n', 'comb s1(a) -> (o) {\n  o = a\n}\n'),
+                                  ('const q = (`boolean`=2, `i32`=1)\n', 'const q = (boolean=2, i32=1)\n'),
+                                  ('const `U8` = 1\nconst `S2` = 2\n', 'const `U8` = 1\nconst `S2` = 2\n')):
+                with self.subTest(mode=mode, src=src):
+                    self.assertEqual(self.fmt(src, mode), expected)
+        # The reserved placeholders keep their backticks (bare they are errors),
+        # and so does the bare `_`.
+        for mode in ('ai', 'human'):
+            for src in ('const `_0` = 8\n', 'for `_1` in 0..<2 {\n  puts("{`_1`}")\n}\n',
+                        'mod m(`_2`:U8) -> (y:U8) {\n  y = `_2`\n}\n'):
+                with self.subTest(mode=mode, src=src):
+                    self.assertEqual(self.fmt(src, mode), src)
+        for src in ('const U8 = 1\n', 'const S2 = 1\n', 'const _0 = 1\n', 'const x = _ + 1\n'):
             with self.subTest(src=src), tempfile.TemporaryDirectory() as wd:
                 path = pathlib.Path(wd) / 'bad.prp'
                 path.write_text(src)
@@ -1705,13 +1720,14 @@ class ModeTest(unittest.TestCase):
         # A lambda with a `self` first parameter keeps source order
         # (documented, not sorted). A conversion on a type word always sorts:
         # the word is reserved, so no binding can shadow it, even where it is
-        # also used as a value (`zz=U8`); a backticked lowercase name (`` `u8` ``,
-        # a banned word bare) is an unresolved call and keeps its order.
+        # also used as a value (`zz=U8`); a lowercase name (`u8`, bare or backticked)
+        # is an ordinary, unresolved call and keeps its order.
         cases = {
             'const t4 = U8(max=3, bits=4)\n': 'const t4 = U8(bits=4, max=3)\n',
             'const t4 = U8(max=3, bits=4)\n\nconst x = (zz=U8, aa=1)\n':
                 'const t4 = U8(bits=4, max=3)\n\nconst x = (aa=1, zz=U8)\n',
-            'const t4 = `u8`(max=3, bits=4)\n': 'const t4 = `u8`(max=3, bits=4)\n',
+            'const t4 = `u8`(max=3, bits=4)\n': 'const t4 = u8(max=3, bits=4)\n',
+            'const t4 = u8(max=3, bits=4)\n': 'const t4 = u8(max=3, bits=4)\n',
             'comb f(self, a, b) -> (r) {\n  r = a\n}\nconst q = f(b=1, a=2)\n':
                 'comb f(self, a, b) -> (r) {\n  r = a\n}\nconst q = f(b=1, a=2)\n',
         }

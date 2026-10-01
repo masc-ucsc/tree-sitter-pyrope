@@ -251,8 +251,8 @@ void Parser::require_plain_name(const char* role) const {
   // Exact-spelling rule (owner ruling 2026-09-30): only the EXACT text of a
   // keyword or `nil` is reserved; `IF`, `TiCk`, `clock`, `reset` are plain names.
   // The type words arrive as Token_kind::type_word (handled above); the old
-  // lowercase type spellings (`u8`, `bool`, ...) never reach here -- the lexer
-  // already rejects them with `renamed-type-word`.
+  // lowercase type spellings (`u8`, `s2`, `bool`, ...) are ordinary names (owner
+  // ruling 2026-09-30) and pass through here like any other identifier.
   if (classify_keyword(t.text) == Keyword::none && t.text != "nil") return;
   error_reserved_name(t, "reserved-word-as-name",
                       "'" + std::string(t.text) + "' is reserved, so it cannot be " + role);

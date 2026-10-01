@@ -104,25 +104,6 @@ bool is_reserved_placeholder(std::string_view w) {
   return true;
 }
 
-// The old lowercase type spellings are BANNED words (spec 2026-09-29 §7): an
-// identifier token spelled `u8`/`s20`/`i32` (`u`, `s` or `i` followed by
-// digits), `bool`, `boolean`, `unsigned`, `signed` or `string` is an error in
-// every position (a name, a type, a cast callee, a field, a lambda name); the
-// backticked `` `u8` `` is an ordinary name. Returns the new spelling, or "" when
-// `w` is not banned.
-std::string banned_word_replacement(std::string_view w) {
-  if (w.size() >= 2 && (w[0] == 'u' || w[0] == 's' || w[0] == 'i')) {
-    bool digits = true;
-    for (size_t k = 1; k < w.size() && digits; ++k) digits = is_digit(w[k]);
-    if (digits) return std::string(1, w[0] == 'u' ? 'U' : 'S') + std::string(w.substr(1));
-  }
-  if (w == "bool" || w == "boolean") return "Bool";
-  if (w == "unsigned") return "Unsigned";
-  if (w == "signed") return "Signed";
-  if (w == "string") return "String";
-  return "";
-}
-
 // --- numeric form matchers (return end offset, or `i` if no match) ----------
 uint32_t m_simple(const char* b, uint32_t n, uint32_t i) {
   if (b[i] == '0') return i + 1;
@@ -763,11 +744,6 @@ std::vector<Token> Lexer::tokenize_range(uint32_t lo, uint32_t hi) {
       if (is_reserved_placeholder(w))
         error("reserved-placeholder-name",
               "`" + std::string(w) + "` is reserved for a future placeholder (use backticks for a name spelled so)",
-              start, end);
-      if (std::string repl = banned_word_replacement(w); !repl.empty())
-        error("renamed-type-word",
-              "`" + std::string(w) + "` was renamed `" + repl + "` (the lowercase type spellings are banned words;"
-                  " write `` `" + std::string(w) + "` `` for a name spelled so)",
               start, end);
       if (is_type_word(w)) {
         // `U4` / `S20` / `Bool` / `Clock` ...: a reserved type word, never an

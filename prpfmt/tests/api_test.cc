@@ -61,14 +61,15 @@ int main() {
 
   // The capitalized type words are reserved: a backticked `U4`/`Bool` is a
   // name (not the type) and keeps its backticks. Matching is case-sensitive:
-  // only the exact spelling of a reserved or banned word keeps its escapes.
+  // only the exact spelling of a reserved word keeps its escapes; the old lowercase type
+  // spellings (`u8`, `s2`, `bool`) are ordinary names and lose them.
   const std::string type_words = "mut `U4`:U8 = U8(x) + `u8` + `Bool`\nmod m(c:Clock, r:Reset) -> (o:S4) {\n  o = 0\n}\n";
-  const std::string type_words_expected = "mut `U4`:U8 = U8(x) + `u8` + `Bool`\nmod m(c:Clock, r:Reset) -> (o:S4) {\n  o = 0\n}\n";
+  const std::string type_words_expected = "mut `U4`:U8 = U8(x) + u8 + `Bool`\nmod m(c:Clock, r:Reset) -> (o:S4) {\n  o = 0\n}\n";
   assert(prpfmt_format_string(type_words.data(), type_words.size(), 0, 0, 1, &out, &len) == 0);
   assert(std::string(out, len) == type_words_expected);
   free(out);
 
-  const std::string reserved_case = "const `else` = 1\nconst `u8` = 3\nconst `Clock` = 5\nconst `U8` = 6\nconst `if` = 7\n";
+  const std::string reserved_case = "const `else` = 1\nconst `S2` = 3\nconst `Clock` = 5\nconst `U8` = 6\nconst `if` = 7\n";
   assert(prpfmt_format_string(reserved_case.data(), reserved_case.size(), 0, 0, 1, &out, &len) == 0);
   assert(std::string(out, len) == reserved_case);
   free(out);
@@ -80,6 +81,17 @@ int main() {
       "const ELSE = 1\nconst eLsE = 2\nconst I32 = 4\nconst cLoCk = 5\nconst clock = 6\nconst reset = 7\nconst IF = 8\nconst If = 9\n";
   assert(prpfmt_format_string(ordinary_case.data(), ordinary_case.size(), 0, 0, 1, &out, &len) == 0);
   assert(std::string(out, len) == ordinary_case_expected);
+  free(out);
+
+  // The old lowercase type spellings are ordinary names (owner ruling
+  // 2026-09-30): bare ones stay bare, backticked ones drop the backticks.
+  const std::string old_spell = "const u8 = 1\nconst s2 = 2\nconst i32 = 3\nconst bool = 4\nconst unsigned = 5\nconst x:u8 = u8(y)\n";
+  assert(prpfmt_format_string(old_spell.data(), old_spell.size(), 0, 0, 1, &out, &len) == 0);
+  assert(std::string(out, len) == old_spell);
+  free(out);
+  const std::string old_spell_bt = "const `u8` = 1\nconst `s2` = 2\nconst `i32` = 3\nconst `bool` = 4\nconst `unsigned` = 5\nconst x:`u8` = `u8`(y)\n";
+  assert(prpfmt_format_string(old_spell_bt.data(), old_spell_bt.size(), 0, 0, 1, &out, &len) == 0);
+  assert(std::string(out, len) == old_spell);
   free(out);
 
   // Deep nesting formats on a large-stack thread; a tree too deep for it is
