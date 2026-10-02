@@ -565,8 +565,21 @@ static void space_block_comments(PrpfmtState &st) {
 }
 
 // Determine line breaks and column alignments for all tokens in the IR buffer
+// AI mode has no width limit, except for an inline `if`/`elif`/`else`
+// EXPRESSION chain: one longer than the default width puts each branch on its
+// own continuation line, the Human-mode chain layout (suggestions6 1.9: a
+// 7-line chain used to come back as one 150+ column line). The width is fixed,
+// so --width still has no effect in AI mode and the layout stays canonical.
+constexpr int kAiChainWidth = 132;
+
 void prpfmt_solve(PrpfmtState &st) {
   space_block_comments(st);
+  struct Width_guard {
+    PrpfmtState &st;
+    int          saved;
+    ~Width_guard() { st.max_width = saved; }
+  } width_guard{st, st.max_width};
+  if (st.mode == PRPFMT_AI) st.max_width = kAiChainWidth;
 
   // Pre-pass: Measure flat widths and explosion penalties before simulating layout
   calculate_group_metrics(st);
@@ -579,6 +592,10 @@ void prpfmt_solve(PrpfmtState &st) {
   // flat as well: a branch's operator chain does not break on its own
   // (`else { x` newline `+ y }`) while the chain stays on one line.
   std::vector<char> fits_stack(levels, 0);
+  // AI mode measures only the OUTERMOST inline `if` chain (kAiChainWidth): a
+  // chain nested inside another stays flat, which keeps AI mode linear on
+  // deeply nested chains (Human mode measures them all).
+  std::vector<char> in_chain_stack(levels, 0);
 
   // Phase 1: Determine which groups must explode (wrap) based on width and penalties
   // Simulate the token layout sequentially to determine the actual column positions
@@ -596,9 +613,12 @@ void prpfmt_solve(PrpfmtState &st) {
         bool should_exp = forced;
         if (forced && t.chain_role == 1 && t.pre_group_end > i) statement_chain(st, i);
 
-        if (!should_exp && st.mode == PRPFMT_HUMAN && parent_fits) {
+        // Human mode measures every group; AI mode only an outermost inline `if` chain.
+        const bool in_chain = parent_in_bounds && in_chain_stack[s_ptr];
+        const bool measured = st.mode == PRPFMT_HUMAN || (t.chain_role == 1 && !in_chain);
+        if (!should_exp && measured && parent_fits) {
           fits_here = true;  // see fits_stack
-        } else if (!should_exp && st.mode == PRPFMT_HUMAN) {
+        } else if (!should_exp && measured) {
           // Include indentation and any flat suffix on the same line: closing
           // delimiters and the output clause of a header. A trailing comment
           // stays attached without forcing otherwise fitting code to wrap.
@@ -668,6 +688,7 @@ void prpfmt_solve(PrpfmtState &st) {
       if (s_ptr >= 0 && s_ptr < (int)propagate_stack.size()) {
         propagate_stack[s_ptr] = t.propagates;
         fits_stack[s_ptr] = fits_here;
+        in_chain_stack[s_ptr] = (s_ptr > 0 && in_chain_stack[s_ptr - 1]) || t.chain_role == 1 || t.chain_role == 3;
       }
     } else if (t.type == TOKEN_GROUP_END) {
       if (s_ptr >= 0) {

@@ -401,6 +401,44 @@ class ModeTest(unittest.TestCase):
         self.assertGreater(len(out.rstrip()), 132)
         self.assertEqual(self.fmt(source, width=132), out)
 
+    def test_comptime_modifier_prints_first(self):
+        # `const comptime` == `comptime const` (owner ruling 2026-10-01); the
+        # formatter prints the documented `comptime`-first spelling.
+        source = ('const comptime N = 4\nmut comptime n = 0\npub const comptime P = 1\n'
+                  'comb f() -> (o) {\n  const comptime k = 2\n  o = k\n}\n')
+        expected = ('comptime const N = 4\ncomptime mut n = 0\npub comptime const P = 1\n'
+                    'comb f() -> (o) {\n  comptime const k = 2\n  o = k\n}\n')
+        for mode in ('ai', 'human'):
+            self.assertEqual(self.fmt(source, mode), expected)
+            self.assertEqual(self.fmt(expected, mode), expected)
+
+    def test_ai_long_if_chain_wraps_between_branches(self):
+        # suggestions6 1.9: AI mode has no width limit for lists, but a long
+        # `if`/`elif`/`else` EXPRESSION used to join onto one 150+ column line.
+        # Past the default 132 columns (plus the Human soft-width slack) each
+        # branch gets its own continuation line, the Human-mode chain layout at
+        # the default width; --width does not change it.
+        chain = ('const blocked = if i == 0 { high#[1..] != 0 } '
+                 'elif mask#[i] == 1 { req#[0..<i] != 0 or high#[(i + 1)..] != 0 } '
+                 'else { high#[0..<i] != 0 or low_request#[0..<i] != 0 }')
+        self.assertGreater(len(chain), 150)
+        expected = chain.replace(' elif', '\n  elif').replace(' else', '\n  else') + '\n'
+        multi_line = ('const blocked = if i == 0 {\n  high#[1..] != 0\n} elif mask#[i] == 1 {\n'
+                      '  req#[0..<i] != 0 or high#[(i + 1)..] != 0\n} else {\n'
+                      '  high#[0..<i] != 0 or low_request#[0..<i] != 0\n}\n')
+        for source in (chain + '\n', multi_line, expected):
+            self.assertEqual(self.fmt(source), expected)
+            self.assertEqual(self.fmt(source, width=40), expected)
+        # nested in a lambda body: the continuation indent follows the scope
+        body = 'comb f(i:U4) -> (o) {\n  ' + chain + '\n  o = blocked\n}\n'
+        out = self.fmt(body)
+        self.assertIn('\n    elif mask#[i] == 1 {', out)
+        self.assertTrue(all(len(line) <= 132 for line in out.splitlines()), out)
+        # a chain that fits stays on one line (`test_expression_blocks_can_be_inline`)
+        short = 'const x = if a { 1 } elif b { 2 } else { 3 }\n'
+        self.assertEqual(self.fmt(short), short)
+        self.assertEqual(self.fmt('const x = if a {\n  1\n} elif b {\n  2\n} else {\n  3\n}\n'), short)
+
     def test_statement_blocks_always_multiline(self):
         source = 'comb f(a:U8) -> (out:U8) { if a == 1 { out = 2 } elif a == 3 { out = 4 } else { out = 0 } }\n'
         expected = ('comb f(a:U8) -> (out:U8) {\n'
@@ -1205,8 +1243,12 @@ class ModeTest(unittest.TestCase):
         self.assertEqual(self.fmt(source, 'human', 90),
                          'const vvvvvvvvvvvvvvvvvvvv = if sel == 1 { ' + 'a' * 40 + ' }\n  elif sel == 2 { ' +
                          'b' * 40 + ' }\n  else { c }\n')
-        # AI mode keeps the chain on one line.
-        self.assertEqual(self.fmt(source, 'ai', 20), source)
+        # AI mode ignores --width, but a chain past the default 132 columns
+        # takes the same continuation lines (suggestions6 1.9).
+        self.assertEqual(self.fmt(source, 'ai', 20), self.fmt(source, 'human', 132))
+        self.assertEqual(self.fmt(source, 'ai', 20),
+                         'const vvvvvvvvvvvvvvvvvvvv = if sel == 1 { ' + 'a' * 40 + ' }\n  elif sel == 2 { ' +
+                         'b' * 40 + ' }\n  else { c }\n')
 
     def test_generic_list_stays_inline_when_arguments_split(self):
         # Human: the argument list / header inputs break first; `<...>` stays
@@ -1402,7 +1444,12 @@ class ModeTest(unittest.TestCase):
                          'const zz = f(\n  a=1,\n  b=if selector_signal_name == 1 {\n    first_option_value_name\n'
                          '  } elif selector_signal_name == 2 {\n    second_option_value + another_long_value_name\n'
                          '  } else {\n    third\n  },\n)\n')
-        self.assertEqual(self.fmt(source, 'ai'), source)
+        # AI mode keeps the argument list joined, but the 171-column chain
+        # still wraps between its branches (suggestions6 1.9).
+        self.assertEqual(self.fmt(source, 'ai'),
+                         'const zz = f(a=1, b=if selector_signal_name == 1 { first_option_value_name }\n'
+                         '    elif selector_signal_name == 2 { second_option_value + another_long_value_name }\n'
+                         '    else { third })\n')
         # A branch block never breaks without its chain (no `{ a } else {`
         # newline staircase), at any width near the boundary.
         source = ('comb f() -> () {\n  const out = g<WIDTH=WIDTH>(clk=clk, pop_ready=pop_ready, '
@@ -1509,7 +1556,8 @@ class ModeTest(unittest.TestCase):
                          ' else { 2 }\n', mode)
         out = self.fmt(nested_if, 'human')
         self.assertEqual(len(out.splitlines()), 5)
-        self.assertEqual(self.fmt(nested_if, 'ai'), nested_if)
+        # the 160-column outer chain is too long for AI mode too (suggestions6 1.9)
+        self.assertEqual(self.fmt(nested_if, 'ai'), out)
 
     def test_block_comment_body_trails_the_header(self):
         # `{ /* c */ }` counts like a trailing comment in both passes, so an

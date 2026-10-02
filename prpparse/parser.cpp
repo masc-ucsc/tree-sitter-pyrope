@@ -1042,6 +1042,29 @@ Ast* Parser::parse_var_or_let_or_reg() {
     finish(st, st->start_byte);
     v->add(st, Field::f_storage);
   }
+  // The modifier may also follow the storage word: `const comptime N = 4` is
+  // `comptime const N = 4` (owner ruling 2026-10-01; prpfmt prints `comptime`
+  // first). The node goes where the leading spelling puts it, so both orders
+  // build the same tree. A `comptime` before `=`/`:` is an attempted NAME and
+  // keeps the reserved-word diagnostic.
+  const auto has_kid = [&](Kind k) {
+    return std::any_of(v->kids.begin(), v->kids.end(), [k](const Ast* a) { return a->kind == k; });
+  };
+  if (at_kw(Keyword::kw_comptime) && !at_field_word()) {
+    if (has_kid(Kind::comptime_modifier)) error("comptime-twice", "`comptime` is written twice in this declaration");
+    Ast* cpt   = leaf(Kind::comptime_modifier);
+    cpt->field = Field::f_comptime;
+    const bool after_pub = !v->kids.empty() && v->kids.front()->kind == Kind::pub_modifier;
+    v->kids.insert(v->kids.begin() + (after_pub ? 1 : 0), cpt);
+  }
+  if (at_kw(Keyword::kw_comptime) && !at_field_word() && has_kid(Kind::comptime_modifier))
+    error("comptime-twice", "`comptime` is written twice in this declaration");
+  // `comptime` makes a VALUE compile-time; a register, a net, a pipeline stage
+  // or a fluid declaration has no compile-time form.
+  if (has_kid(Kind::comptime_modifier)
+      && (has_kid(Kind::fluid_decl) || has_kid(Kind::reg_decl) || has_kid(Kind::wire_decl) || has_kid(Kind::stage_decl)))
+    error("comptime-storage",
+          "`comptime` applies only to `const` or `mut` (a `reg`, `wire`, `stage` or `fluid` is never compile-time)");
   // `comptime` alone is `comptime const` (grammar.js var_or_let_or_reg); `pub`
   // alone declares nothing: `pub x = 1` is an error.
   if (v->kids.size() == 1 && v->kids.front()->kind == Kind::pub_modifier)

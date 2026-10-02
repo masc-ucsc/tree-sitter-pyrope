@@ -2903,51 +2903,12 @@
                     "type": "CHOICE",
                     "members": [
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SEQ",
-                            "members": [
-                              {
-                                "type": "FIELD",
-                                "name": "fluid",
-                                "content": {
-                                  "type": "ALIAS",
-                                  "content": {
-                                    "type": "STRING",
-                                    "value": "fluid"
-                                  },
-                                  "named": true,
-                                  "value": "fluid_decl"
-                                }
-                              },
-                              {
-                                "type": "FIELD",
-                                "name": "storage",
-                                "content": {
-                                  "type": "CHOICE",
-                                  "members": [
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "_storage_kind"
-                                    },
-                                    {
-                                      "type": "BLANK"
-                                    }
-                                  ]
-                                }
-                              }
-                            ]
-                          },
-                          {
-                            "type": "FIELD",
-                            "name": "storage",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "_storage_kind"
-                            }
-                          }
-                        ]
+                        "type": "FIELD",
+                        "name": "storage",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_value_storage_kind"
+                        }
                       },
                       {
                         "type": "BLANK"
@@ -2956,6 +2917,32 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "storage",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_value_storage_kind"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "comptime",
+                  "content": {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "STRING",
+                      "value": "comptime"
+                    },
+                    "named": true,
+                    "value": "comptime_modifier"
+                  }
+                }
+              ]
             },
             {
               "type": "CHOICE",
@@ -3005,6 +2992,29 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    "_value_storage_kind": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "const"
+          },
+          "named": true,
+          "value": "const_decl"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "mut"
+          },
+          "named": true,
+          "value": "mut_decl"
         }
       ]
     },

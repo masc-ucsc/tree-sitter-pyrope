@@ -162,6 +162,12 @@ static bool has_trailing_comment(TSNode node, const PrpfmtState &st) {
 static std::string declaration_kind(TSNode node, const PrpfmtState &st) {
   std::string kind(get_node_text(node, st.source_code));
   std::erase_if(kind, [](unsigned char c) { return std::isspace(c); });
+  // `const comptime` and `comptime const` are one kind (the printer emits
+  // `comptime` first), so the source order never splits an alignment run.
+  if (auto at = kind.find("comptime"); at != std::string::npos) {
+    kind.erase(at, 8);
+    kind.insert(kind.starts_with("pub") ? 3 : 0, "comptime");
+  }
   return kind;
 }
 
@@ -4969,6 +4975,15 @@ void print_timed_identifier(TSNode node, PrpfmtState &st) {
 
 void print_var_or_let_or_reg(TSNode node, PrpfmtState &st) {
   uint32_t child_count = ts_node_child_count(node);
+  // `const comptime x` / `mut comptime x` print `comptime` first, the
+  // documented spelling: it moves to just before the storage word.
+  bool comptime_after_storage = false;
+  bool storage_seen           = false;
+  for (uint32_t i = 0; i < child_count; i++) {
+    TSSymbol symbol = grammar_symbol_of(ts_node_child(node, i));
+    if (symbol == anon_sym_const || symbol == anon_sym_mut) storage_seen = true;
+    if (symbol == anon_sym_comptime) comptime_after_storage = storage_seen;
+  }
 
   for (uint32_t i = 0; i < child_count; i++) {
     TSNode child = ts_node_child(node, i);
@@ -4976,14 +4991,23 @@ void print_var_or_let_or_reg(TSNode node, PrpfmtState &st) {
 
     switch (symbol) {
       case anon_sym_comptime:
+        if (comptime_after_storage) break;  // already printed before the storage word
         emit_token(st, "comptime");
         emit_space(st);
         break;
       case anon_sym_const:
+        if (comptime_after_storage) {
+          emit_token(st, "comptime");
+          emit_space(st);
+        }
         emit_token(st, "const");
         emit_space(st);
         break;
       case anon_sym_mut:
+        if (comptime_after_storage) {
+          emit_token(st, "comptime");
+          emit_space(st);
+        }
         emit_token(st, "mut");
         emit_space(st);
         break;

@@ -88,7 +88,12 @@ If the Pyrope grammar (`grammar.js`) is updated, the following steps must be tak
 ## Formatting policy
 
 AI mode keeps statements and argument lists on one line regardless of width,
-without vertical alignment. Statement and declaration blocks always break after
+without vertical alignment. The one exception is an inline `if`/`elif`/`else`
+expression chain: past the default 132 columns (plus the Human soft-width
+slack), its outermost chain puts each branch on its own continuation line, the
+Human-mode chain layout at the default width (`--width` still has no effect in
+AI mode). A declaration's `comptime` modifier always prints first
+(`const comptime x` becomes `comptime const x`). Statement and declaration blocks always break after
 `{`, including empty and single-statement bodies. Expression blocks may stay
 inline; comments and multi-statement expression blocks require newlines, and
 so does a block whose content always spans lines (a `match` expression, or a

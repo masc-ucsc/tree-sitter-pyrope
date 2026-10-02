@@ -920,12 +920,25 @@ module.exports = grammar({
         // `comptime` alone is shorthand for `comptime const` (04b-attributes.md
         // "comptime modifier"): `comptime c = 1` (prpparse agrees). A kind word
         // after it always belongs to the declaration (`comptime mut x`).
+        // `comptime` only modifies a VALUE (`const`/`mut`), in either order
+        // (owner ruling 2026-10-01): `const comptime x` == `comptime const x`;
+        // prpfmt prints the `comptime`-first spelling. `comptime reg`,
+        // `comptime wire`, `comptime stage` and `comptime fluid` are errors.
         prec.right(seq(
           field('comptime', alias('comptime', $.comptime_modifier))
-          , optional(fluidOrStorage($))
+          , optional(field('storage', $._value_storage_kind))
         ))
+        , seq(
+          field('storage', $._value_storage_kind)
+          , field('comptime', alias('comptime', $.comptime_modifier))
+        )
         , fluidOrStorage($)
       )
+    )
+
+    , _value_storage_kind: $ => choice(
+      alias('const', $.const_decl)
+      , alias('mut', $.mut_decl)
     )
 
     , _storage_kind: $ => choice(

@@ -944,6 +944,30 @@ TEST(Parser, ReservedWordsMatchTheGrammar) {
             std::string::npos);
 }
 
+// `comptime` modifies `const`/`mut` in either order (owner ruling 2026-10-01):
+// `const comptime x` is the same tree as `comptime const x` (prpfmt prints the
+// `comptime`-first spelling). It never applies to `reg`/`wire`/`stage`/`fluid`.
+TEST(Parser, ComptimeModifierOrder) {
+  EXPECT_EQ(sexp("const comptime N = 4\n"), sexp("comptime const N = 4\n"));
+  EXPECT_EQ(sexp("mut comptime n = 0\n"), sexp("comptime mut n = 0\n"));
+  EXPECT_EQ(sexp("pub const comptime N:U8 = 4\n"), sexp("pub comptime const N:U8 = 4\n"));
+  EXPECT_EQ(sexp("const comptime t = (a = 1, b = 2)\n"), sexp("comptime const t = (a = 1, b = 2)\n"));
+  // inside a lambda body too
+  EXPECT_EQ(sexp("comb f() -> (o) {\n  const comptime k = 2\n  o = k\n}\n"),
+            sexp("comb f() -> (o) {\n  comptime const k = 2\n  o = k\n}\n"));
+  // the keyword is still reserved as a NAME
+  EXPECT_EQ(diag_of("const comptime = 1\n").code, "reserved-word-as-name");
+  EXPECT_EQ(diag_of("mut comptime:U8 = 1\n").code, "reserved-word-as-name");
+  EXPECT_EQ(diag_of("const comptime comptime x = 1\n").code, "comptime-twice");
+  EXPECT_EQ(diag_of("comptime const comptime x = 1\n").code, "comptime-twice");
+  for (const char* src : {"comptime reg r = 0\n", "reg comptime r = 0\n", "comptime wire w = 0\n",
+                          "wire comptime w = 0\n", "comptime stage s = 0\n", "comptime fluid const f = 0\n"}) {
+    const Diag d = diag_of(src);
+    EXPECT_EQ(d.code, "comptime-storage") << src;
+    EXPECT_NE(d.message.find("`const` or `mut`"), std::string::npos) << src << d.message;
+  }
+}
+
 // Mirrors the `%` / `@[` cases of test/corpus/continuation_lines.txt.
 TEST(Parser, ContinuationPercentNotTiming) {
   auto s = sexp("const a = 7\n  % 2\nconst b = c\n  // why\n  % d\n");
