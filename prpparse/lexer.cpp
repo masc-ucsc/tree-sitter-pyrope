@@ -739,7 +739,18 @@ std::vector<Token> Lexer::tokenize_range(uint32_t lo, uint32_t hi) {
       // A lone `_` is no name (grammar.js `identifier` needs a second
       // character after a leading `_`): `const _ = 1`, `for _ in ..`,
       // `f(_)`, `a._` are errors; the backticked `` `_` `` is a name.
-      if (w == "_")
+      // The ONE exception is the anonymous tuple entry `_:T` (`v:(_:U4, _:U8)`,
+      // a positional entry that names only its type): a lone `_` right after `(`
+      // or `,` and directly before a single `:`. It lexes as the plain name `_`,
+      // so the parser sees an ordinary typed field; every other use still errors.
+      bool anon_entry = false;
+      if (w == "_" && !toks.empty() &&
+          (toks.back().kind == Token_kind::lparen || toks.back().kind == Token_kind::comma)) {
+        uint32_t j = end;
+        while (j < n && (b[j] == ' ' || b[j] == '\t')) ++j;
+        anon_entry = j < n && b[j] == ':' && !(j + 1 < n && b[j + 1] == ':');
+      }
+      if (w == "_" && !anon_entry)
         error("bare-underscore", "`_` alone is not a name (write `` `_` `` to use it as one)", start, end);
       if (is_reserved_placeholder(w))
         error("reserved-placeholder-name",

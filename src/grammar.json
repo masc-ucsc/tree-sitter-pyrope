@@ -4466,6 +4466,15 @@
                 },
                 "named": true,
                 "value": "identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_anon_slot"
+                },
+                "named": true,
+                "value": "identifier"
               }
             ]
           }
@@ -4479,6 +4488,13 @@
           }
         }
       ]
+    },
+    "_anon_slot": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "_"
+      }
     },
     "typed_identifier_list": {
       "type": "SEQ",

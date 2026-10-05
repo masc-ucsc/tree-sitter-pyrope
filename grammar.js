@@ -1118,9 +1118,12 @@ module.exports = grammar({
     // Like typed_identifier but the type is mandatory: a bare `name:type`
     // tuple-type field (see _tuple_item).
     , typed_field: $ => seq(
-      field('identifier', choice($.identifier, alias($._field_word, $.identifier)))
+      field('identifier', choice($.identifier, alias($._field_word, $.identifier), alias($._anon_slot, $.identifier)))
       , field('type', $.type_cast)
     )
+    // The anonymous tuple-type entry marker `_` of `_:T` (`(_:U4, _:U8)`): a lone
+    // `_` is no name anywhere else (see `identifier`), so it only parses here.
+    , _anon_slot: $ => token('_')
     // A list of names being bound (`mut (a, b)`, `for (i, x) in ...`).
     , typed_identifier_list: $ => listseq1(field('item', alias($._binding_typed_identifier, $.typed_identifier)))
     , _binding_typed_identifier: $ => bindingTypedIdentifier($)

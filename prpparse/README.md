@@ -173,7 +173,8 @@ There are no keyword-name exceptions for fields or attributes.
   non-ASCII blanks (NBSP, the BOM, ZWSP, U+2060, the Unicode spaces) are an
   error outside a string or a comment (`non-ascii-space`, owner ruling 108):
   only ASCII blanks separate tokens. A lone `_` is no name (`bare-underscore`);
-  `` `_` `` is.
+  `` `_` `` is. The one exception is the anonymous tuple-TYPE entry `_:T`
+  (`v:(_:U4, _:U8)`): a `_` right after `(` or `,` and before a single `:`.
 - **Strings.** The escapes are exactly `\n \t \r \\ \" \' \0 \xNN` (at most 7F)
   `\u{1..6 hex}` (a Unicode scalar value: at most 10FFFF, no surrogate) and
   `` \` `` (also inside backticked names);

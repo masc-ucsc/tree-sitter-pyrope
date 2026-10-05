@@ -775,6 +775,15 @@ TEST(Parser, ResolvedDisagreements) {
     EXPECT_FALSE(parses(src)) << src;
   }
   EXPECT_EQ(diag_of("const _ = 8\n").code, "bare-underscore");
+  // `_:T` is the anonymous entry of a tuple TYPE: legal only as `_` directly after
+  // `(` or `,` and before a single `:`; every other lone `_` stays an error.
+  for (const char* src : {"comb f(v:(_:U4, _:U8)) -> (o:U12) { o = 1 }\n", "type P = (_:U4,\n  _:U8)\n",
+                          "mut x:(_ :U4, _:U8) = (3, 54)\n"}) {
+    EXPECT_TRUE(parses(src)) << src;
+  }
+  for (const char* src : {"const x = f(_)\n", "(_, b) = f()\n", "const y:(a:U4, _) = 1\n", "const z = (a, _::U4)\n", "x._:U4\n"}) {
+    EXPECT_FALSE(parses(src)) << src;
+  }
   for (const char* src : {"const tmp::[debug] = 1\n", "const `_` = 8\n`_` = 3\nconst y = a.`_` + `_`\n",
                           "wrap const y:U8 = 3\nsat mut z = 1\n", "const T = (comb f(self) { }, 1)\n",
                           "stage[1] out@[4]\n", "comb f() { stage[1] out@[4]\n  mut z@[1]:U8\n  mut w@[2]:U8 = 3 }\n",
