@@ -3078,7 +3078,7 @@ Ast* Parser::parse_attribute_sq() {
         e = parse_expression();
       }
       if (at(Token_kind::assign)) {
-        require_binding_name(e, /*dotted=*/false, "an attribute name");  // `x::[U4=1]`
+        require_binding_name(e, /*dotted=*/true, "an attribute name");  // `x::[U4=1]`
         advance();
         Ast* aa  = node(Kind::attribute_assignment, e->start_byte);
         e->field = Field::f_lvalue;
