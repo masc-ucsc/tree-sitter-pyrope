@@ -22,17 +22,23 @@ The repo uses a single `Makefile` as the entry point. It needs `tree-sitter-cli`
 installed locally via npm:
 
 ```bash
-npm install            # one-time: installs node_modules/tree-sitter-cli
+npm install            # one-time: installs the CLI and compatible C runtime
 ```
 
 | Command | Does |
 |---------|------|
 | `make` / `make generate` | Regenerate `src/parser.c` from `grammar.js`. |
-| `make test` / `make test-grammar` | Parse all `full_pyrope/*.prp` and run the unit corpus `test/corpus/*.txt` — the canonical regression (must stay green). |
-| `make test-all` | Also run prpfmt + prpparse (prpfmt is WIP, so this may be red). |
+| `make test` | Canonical regression: grammar corpus, formatter API/CLI tests, and formatting of every corpus file. |
+| `make test-grammar` | Parse all `full_pyrope/*.prp` and run the unit corpus `test/corpus/*.txt`. |
+| `make test-all` | Also run prpparse tests and corpus accept-parity. |
 | `make corpus` | Rebuild `full_pyrope/` from the Pyrope docs in `../docs`. |
 | `make prpfmt` / `make test-prpfmt` | Build the formatter / verify it over the corpus. |
 | `make clean` | Clean build artifacts. |
+
+Grammar tests use `scripts/tree-sitter-config.json` and a cache under `build/`,
+so they do not require personal Tree-sitter configuration or a writable home
+cache. `scripts/test.sh` checks the entire corpus in one parser invocation and
+fails if any file is invalid or the corpus is missing.
 
 ### Parsing a single file (debugging the grammar)
 

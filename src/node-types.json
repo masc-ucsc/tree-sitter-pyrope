@@ -723,6 +723,10 @@
         "required": true,
         "types": [
           {
+            "type": "dot_expression",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           }

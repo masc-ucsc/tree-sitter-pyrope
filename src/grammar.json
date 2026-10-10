@@ -2004,6 +2004,10 @@
                 },
                 "named": true,
                 "value": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "dot_expression"
               }
             ]
           }

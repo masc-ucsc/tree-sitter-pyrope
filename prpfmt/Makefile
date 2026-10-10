@@ -23,16 +23,25 @@ CFLAGS   = $(OPT) -Wall
 # alloc}.h). It does NOT provide the tree-sitter *runtime* -- the
 # <tree_sitter/api.h> header and libtree-sitter that this tool links against
 # (ts_parser_new, ts_parser_parse_string, ...). Locate the runtime via
-# pkg-config (e.g. `brew install tree-sitter`), falling back to a sibling
-# tree-sitter source checkout at ../../tree-sitter.
-TS_PC := $(shell pkg-config --exists tree-sitter 2>/dev/null && echo yes)
-ifeq ($(TS_PC),yes)
+# pkg-config when it supports the generated parser's ABI, otherwise compile
+# the pinned runtime source installed by `npm install`. An explicit TS_DIR
+# still selects a prebuilt source checkout for local development.
+TS_PC := $(shell pkg-config --atleast-version=0.25 tree-sitter 2>/dev/null && echo yes)
+ifneq ($(TS_DIR),)
+  TS_CFLAGS := -I$(TS_DIR)/lib/include
+  TS_LIBS   := $(TS_DIR)/libtree-sitter.a
+  TS_DEPS   := $(TS_LIBS)
+else ifeq ($(TS_PC),yes)
   TS_CFLAGS := $(shell pkg-config --cflags tree-sitter)
   TS_LIBS   := $(shell pkg-config --libs tree-sitter)
 else
-  TS_DIR    := ../../tree-sitter
+  TS_DIR    := ../node_modules/tree-sitter/vendor/tree-sitter
   TS_CFLAGS := -I$(TS_DIR)/lib/include
-  TS_LIBS   := $(TS_DIR)/libtree-sitter.a
+  TS_LIBS   := runtime.o
+  TS_DEPS   := runtime.o
+  RUNTIME_SRC := $(TS_DIR)/lib/src/lib.c
+  RUNTIME_DEPS := $(wildcard $(TS_DIR)/lib/src/*.[ch] $(TS_DIR)/lib/src/unicode/*.h) \
+                  $(TS_DIR)/lib/include/tree_sitter/api.h
 endif
 
 CXXFLAGS += $(TS_CFLAGS)
@@ -96,14 +105,23 @@ parser.o: $(GENERATED_PARSER)
 scanner.o: $(SCANNER)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJ)
+ifneq ($(RUNTIME_SRC),)
+$(RUNTIME_SRC):
+	@echo "prpfmt: missing Tree-sitter runtime source; run npm install at the repo root" >&2
+	@exit 1
+
+runtime.o: $(RUNTIME_SRC) $(RUNTIME_DEPS)
+	$(CC) $(CFLAGS) -std=c11 -D_POSIX_C_SOURCE=200112L -D_DEFAULT_SOURCE -c $< -o $@
+endif
+
+$(TARGET): $(OBJ) $(TS_DEPS)
 	$(CXX) $(CXXFLAGS) $(OBJ) $(TS_LIBS) -o $(TARGET)
 
-test-api: $(OBJ)
+test-api: $(OBJ) $(TS_DEPS)
 	$(CXX) $(CXXFLAGS) tests/api_test.cc prpfmt.o ir.o $(C_OBJ) $(TS_LIBS) -o api_test
 	./api_test
 	rm -rf api_test api_test.dSYM
 
 clean:
-	rm -f $(TARGET) $(SYMBOLS_HDR) $(OBJ) api_test
+	rm -f $(TARGET) $(SYMBOLS_HDR) $(OBJ) runtime.o api_test
 	rm -rf api_test.dSYM

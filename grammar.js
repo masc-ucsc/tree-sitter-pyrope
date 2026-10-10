@@ -748,7 +748,7 @@ module.exports = grammar({
       , $.attribute_assignment
     )
     , attribute_assignment: $ => seq(
-      field('lvalue', choice($.identifier, alias($._field_word, $.identifier)))
+      field('lvalue', choice($.identifier, alias($._field_word, $.identifier), $.dot_expression))
       , '='
       , field('rvalue', choice($._expression, $.ref_identifier))
     )

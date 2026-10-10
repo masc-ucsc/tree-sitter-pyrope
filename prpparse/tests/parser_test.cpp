@@ -1192,3 +1192,13 @@ TEST(Parser, LowercaseClockResetArePlainNames) {
   EXPECT_FALSE(parses("const if = 1\n"));
   EXPECT_TRUE(parses("const IF = 1\nconst If = 2\nconst TiCk = 3\n"));
 }
+
+TEST(Parser, SynthesisAttributeKeysAndTupleDefaults) {
+  const std::string source = R"(pub comb f::[synth=(color="crit",adder="cla")](a:U8)->(y:U8) {
+    mut v::[synth.color="lane",synth.adder="brent"] = a+1
+    {::[synth.color=7,synth.grow=false] y=f::[name=u0,synth.color="execute"](a=v).y }
+  })";
+  EXPECT_TRUE(parses(source));
+  EXPECT_NE(sexp(source).find("dot_expression"), std::string::npos);
+  EXPECT_FALSE(parses("mut v::[synth..color=1] = 0"));
+}

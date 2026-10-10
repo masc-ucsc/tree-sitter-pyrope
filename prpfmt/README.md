@@ -11,19 +11,21 @@ hardening checks (`-D_GLIBCXX_ASSERTIONS`, `-fstack-protector-strong`,
 `-D_FORTIFY_SOURCE=2`) so container/buffer misuse traps instead of corrupting
 memory, plus a `make debug` target that adds AddressSanitizer + UBSan.
 
-> **Runtime version:** the formatter dispatches on `ts_node_grammar_symbol()`,
-> which requires a tree-sitter runtime **≥ 0.20.8** (older runtimes, including
-> some sibling `../../tree-sitter` checkouts, lack that symbol and will fail to
-> link). Prefer a pkg-config-installed runtime.
+> **Runtime version:** the generated parser uses ABI 15, requiring a
+> tree-sitter runtime **≥ 0.25**. The formatter also dispatches on
+> `ts_node_grammar_symbol()`. `npm install` supplies a pinned compatible runtime
+> so an old sibling checkout cannot silently become the default.
 
 ## File Structure
 This project depends on the tree-sitter runtime. The Makefile finds it with
-`pkg-config` (e.g. `brew install tree-sitter`); without it, it falls back to a
-built sibling tree-sitter checkout (`TS_DIR = ../../tree-sitter`, linking
-`$(TS_DIR)/libtree-sitter.a` with headers from `$(TS_DIR)/lib/include`):
+`pkg-config` when version 0.25 or newer is installed; otherwise it compiles
+`node_modules/tree-sitter/vendor/tree-sitter/lib/src/lib.c` into `runtime.o`.
+Run `npm install` at the repo root before building. To use a compatible prebuilt
+checkout instead, pass `TS_DIR=/path/to/tree-sitter` to make; it links
+`$(TS_DIR)/libtree-sitter.a` with headers from `$(TS_DIR)/lib/include`.
 ```
 project-root/
-├── tree-sitter/               # fallback runtime (only without pkg-config)
+├── tree-sitter/               # optional prebuilt runtime (explicit TS_DIR)
 │   ├── libtree-sitter.a
 │   └── lib/
 │       └── include/

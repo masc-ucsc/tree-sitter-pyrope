@@ -34,7 +34,8 @@ test-grammar: generate
 	@# `tree-sitter test` passes vacuously on an empty/missing test/corpus/.
 	@ls test/corpus/*.txt >/dev/null 2>&1 || \
 	  { echo "test-grammar: no test/corpus/*.txt (the grammar unit corpus is missing)" >&2; exit 1; }
-	@$(TS) test --overview-only
+	@XDG_CACHE_HOME="$(CURDIR)/build/tree-sitter-cache" $(TS) test \
+	  --config-path scripts/tree-sitter-config.json --overview-only
 
 # Rebuild the full_pyrope/ corpus from the (non-deprecated) Pyrope docs.
 # The leading rm clears stale snippets when the doc set shrinks.

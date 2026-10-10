@@ -73,11 +73,11 @@ struct PrpfmtState {
   std::shared_ptr<CallFacts> calls = std::make_shared<CallFacts>();
   // Comments between a branch's `}` and the next `elif`/`else`, handed from
   // print_if_expression to the branch block, which prints them after its `{`.
-  std::vector<TSNode> header_comments;
+  std::vector<TSNode> header_comments{};
   // Comments trailing a one-line branch `if c { a } // c` before the next
   // `elif`/`else`, handed from print_if_expression to that branch's block,
   // which prints them after its last statement.
-  std::vector<TSNode> tail_comments;
+  std::vector<TSNode> tail_comments{};
   const ParentMap *parents = nullptr;  // see parent_of()
   // Memoized subtree scans (has_recursive_line_comment, holds_vertical_layout,
   // scope_must_break), keyed by node byte range and symbol, so nested
@@ -93,9 +93,9 @@ struct PrpfmtState {
       return std::hash<uint64_t>{}(h);
     }
   };
-  mutable std::unordered_map<NodeKey, bool, NodeKeyHash> scan_cache;
+  mutable std::unordered_map<NodeKey, bool, NodeKeyHash> scan_cache{};
   // Indices of the groups emitted but not closed yet (see Token::match).
-  std::vector<int> open_groups;
+  std::vector<int> open_groups{};
 };
 
 /*

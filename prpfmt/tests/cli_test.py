@@ -2453,6 +2453,9 @@ class DocsTest(unittest.TestCase):
         makefile, readme = (root / 'Makefile').read_text(), (root / 'README.md').read_text()
         self.assertIn('TS_LIBS   := $(TS_DIR)/libtree-sitter.a', makefile)
         self.assertIn('`$(TS_DIR)/libtree-sitter.a`', readme)
+        self.assertIn('node_modules/tree-sitter/vendor/tree-sitter', makefile)
+        self.assertIn('`node_modules/tree-sitter/vendor/tree-sitter/lib/src/lib.c`', readme)
+        self.assertIn('ABI 15', readme)
         # The library sits in the checkout's root, not under its lib/.
         self.assertNotIn('│       └── libtree-sitter.a', readme)
     def test_scripts_find_the_formatter_from_any_cwd(self):
